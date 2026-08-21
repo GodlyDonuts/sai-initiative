@@ -71,6 +71,29 @@ def test_delta_adapter_materializes_exact_sai_mapping_and_packing() -> None:
     assert call["cu_seqlens"].tolist() == [0, 2, 3, 4, 6]
 
 
+def test_scalar_decay_adapter_removes_only_the_gdn_singleton() -> None:
+    calls = Calls()
+    q = torch.randn(1, 3, 2, 4)
+    k = torch.randn(1, 3, 2, 4)
+    v = torch.randn(1, 3, 2, 5)
+    alpha = torch.sigmoid(torch.randn(1, 3, 2, 1))
+    beta = torch.sigmoid(torch.randn(1, 3, 2, 1))
+    fla_delta_recurrence(
+        q,
+        k,
+        v,
+        alpha,
+        beta,
+        None,
+        channel_wise_decay=False,
+        operators=operators(calls),
+    )
+    call = calls.delta[0]
+    assert call["g"].shape == (1, 3, 2)
+    torch.testing.assert_close(call["g"].exp(), alpha.squeeze(-1))
+    assert "use_gate_in_kernel" not in call
+
+
 def test_convolution_adapter_reuses_weights_and_exact_offsets() -> None:
     calls = Calls()
     value = torch.randn(2, 4, 6)

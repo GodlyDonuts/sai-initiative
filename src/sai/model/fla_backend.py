@@ -150,11 +150,14 @@ def fla_delta_recurrence(
     cu_seqlens = None if segment_ids is None else packed_cu_seqlens(segment_ids)
     q = F.normalize(query.float(), dim=-1).to(query.dtype)
     k = F.normalize(key.float(), dim=-1).to(key.dtype)
+    log_decay = alpha.float().log()
+    if not channel_wise_decay:
+        log_decay = log_decay.squeeze(-1)
     mapped = {
         "q": _flatten_packed(q, segment_ids),
         "k": _flatten_packed(k, segment_ids),
         "v": _flatten_packed(value, segment_ids),
-        "g": _flatten_packed(alpha.float().log(), segment_ids),
+        "g": _flatten_packed(log_decay, segment_ids),
         "beta": _flatten_packed(beta.squeeze(-1), segment_ids),
         "scale": 1.0,
         "output_final_state": False,
