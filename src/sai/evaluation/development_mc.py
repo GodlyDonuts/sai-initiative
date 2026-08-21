@@ -288,19 +288,36 @@ def _score_choice(
         raise DevelopmentMCError("choice token coverage differs")
     input_ids = torch.tensor([combined_ids[:-1]], dtype=torch.long, device=device)
     segment_ids = torch.zeros_like(input_ids)
-    logits = model(input_ids, segment_ids)
-    if (
-        not isinstance(logits, torch.Tensor)
-        or logits.ndim != 3
-        or logits.shape[:2] != input_ids.shape
-    ):
-        raise DevelopmentMCError("model logit geometry differs")
-    vocab_size = logits.shape[-1]
+    choice_logits = getattr(model, "choice_logits", None)
+    if callable(choice_logits):
+        selected_logits = choice_logits(
+            input_ids,
+            segment_ids,
+            start_position=len(prompt_ids) - 1,
+            token_count=len(choice_ids),
+        )
+        if (
+            not isinstance(selected_logits, torch.Tensor)
+            or selected_logits.ndim != 2
+            or selected_logits.shape[0] != len(choice_ids)
+        ):
+            raise DevelopmentMCError("specialized choice-logit geometry differs")
+        vocab_size = selected_logits.shape[-1]
+    else:
+        logits = model(input_ids, segment_ids)
+        if (
+            not isinstance(logits, torch.Tensor)
+            or logits.ndim != 3
+            or logits.shape[:2] != input_ids.shape
+        ):
+            raise DevelopmentMCError("model logit geometry differs")
+        vocab_size = logits.shape[-1]
+        start = len(prompt_ids) - 1
+        selected_logits = logits[0, start : start + len(choice_ids)]
     targets = torch.tensor(choice_ids, dtype=torch.long, device=device)
     if bool((targets >= vocab_size).any().item()):
         raise DevelopmentMCError("choice token exceeds model vocabulary")
-    start = len(prompt_ids) - 1
-    selected = F.log_softmax(logits[0, start : start + len(choice_ids)].float(), dim=-1)
+    selected = F.log_softmax(selected_logits.float(), dim=-1)
     log_probability_sum = float(selected.gather(1, targets[:, None]).sum())
     normalized = log_probability_sum / len(choice_ids)
     if not math.isfinite(log_probability_sum) or not math.isfinite(normalized):

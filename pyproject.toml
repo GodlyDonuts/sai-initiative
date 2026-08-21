@@ -32,6 +32,7 @@ sai-compare-short-screen-mc = "sai.evaluation.short_screen_compare:main"
 sai-shard-development-mc = "sai.evaluation.development_mc_shards:main"
 sai-readiness = "sai.readiness:main"
 sai-qwen08-workspace-screen = "sai.training.hf_workspace_screen:main"
+sai-evaluate-qwen08-workspace-mc = "sai.evaluation.hf_workspace_mc:main"
 
 [project.optional-dependencies]
 train = ["torch>=2.6", "tokenizers>=0.22", "transformers>=5.0"]

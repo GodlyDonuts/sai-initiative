@@ -470,6 +470,11 @@ def merge_shards(
         raise DevelopmentMCShardError("shard parent evidence differs")
     if parent_evidence is not None:
         result["parent_evidence"] = parent_evidence
+    workspace_evidence = loaded[0].get("workspace_evidence")
+    if any(item.get("workspace_evidence") != workspace_evidence for item in loaded[1:]):
+        raise DevelopmentMCShardError("shard workspace evidence differs")
+    if workspace_evidence is not None:
+        result["workspace_evidence"] = workspace_evidence
     result["receipt_sha256"] = _canonical_sha256(result)
     return result
 

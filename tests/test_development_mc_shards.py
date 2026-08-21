@@ -110,6 +110,10 @@ def _shard_result(shard: dict[str, object], index: int) -> dict[str, object]:
         "domains": {},
         "rows": scored_rows,
         "parent_evidence": {"unchanged_parent": True},
+        "workspace_evidence": {
+            "state_mode": "recurrent",
+            "training_run_sha256": "3" * 64,
+        },
     }
     value["receipt_sha256"] = _canonical_sha256(value)
     return value
@@ -175,6 +179,10 @@ def test_builds_exact_contiguous_shards_and_merges_standard_result(
         == manifest["full_disjoint_receipt_sha256"]
     )
     assert merged["parent_evidence"] == {"unchanged_parent": True}
+    assert merged["workspace_evidence"] == {
+        "state_mode": "recurrent",
+        "training_run_sha256": "3" * 64,
+    }
     unsigned = dict(merged)
     merged_receipt = unsigned.pop("receipt_sha256")
     assert merged_receipt == _canonical_sha256(unsigned)
@@ -191,6 +199,16 @@ def test_merge_rejects_resigned_binding_and_mutated_shard_source(
     value["receipt_sha256"] = _canonical_sha256(unsigned)
     result_paths[1].write_text(json.dumps(value))
     with pytest.raises(DevelopmentMCShardError, match="execution binding"):
+        merge_shards(manifest_path, result_paths)
+
+    value = json.loads(result_paths[1].read_text())
+    value["bindings"]["runtime_sha256"] = "2" * 64
+    value["workspace_evidence"]["state_mode"] = "reset_average"
+    unsigned = dict(value)
+    unsigned.pop("receipt_sha256")
+    value["receipt_sha256"] = _canonical_sha256(unsigned)
+    result_paths[1].write_text(json.dumps(value))
+    with pytest.raises(DevelopmentMCShardError, match="workspace evidence"):
         merge_shards(manifest_path, result_paths)
 
     source = manifest_path.parent / "shard_00.jsonl"

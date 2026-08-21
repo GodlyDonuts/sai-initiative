@@ -53,6 +53,32 @@ class YesBiasedModel(nn.Module):
         return logits + self.anchor * 0.0
 
 
+class SpecializedYesBiasedModel(nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.anchor = nn.Parameter(torch.zeros(()))
+        self.calls: list[tuple[int, int]] = []
+
+    def forward(self, input_ids: torch.Tensor, segment_ids: torch.Tensor):
+        raise AssertionError("the full-logit path must not run")
+
+    def choice_logits(
+        self,
+        input_ids: torch.Tensor,
+        segment_ids: torch.Tensor,
+        *,
+        start_position: int,
+        token_count: int,
+    ) -> torch.Tensor:
+        assert torch.equal(segment_ids, torch.zeros_like(input_ids))
+        self.calls.append((start_position, token_count))
+        logits = torch.zeros((token_count, 128), device=input_ids.device)
+        targets = [ord(" "), ord("y"), ord("e"), ord("s")]
+        for index, target in enumerate(targets[:token_count]):
+            logits[index, target] = 4.0
+        return logits + self.anchor * 0.0
+
+
 def _artifact(tmp_path: Path, name: str, text: str = "artifact") -> Path:
     path = tmp_path / name
     path.write_text(text)
@@ -243,3 +269,29 @@ def test_result_write_is_atomic_and_refuses_overwrite(tmp_path: Path) -> None:
     assert json.loads(output.read_text())["schema"] == result["schema"]
     with pytest.raises(DevelopmentMCError, match="already exists"):
         write_development_mc(output, result)
+
+
+def test_specialized_choice_logits_preserve_exact_scoring_contract(
+    tmp_path: Path,
+) -> None:
+    source, rows = _population(tmp_path)
+    receipt, training_sha256 = _receipt(tmp_path, source, "mmlu_pro")
+    artifact = _artifact(tmp_path, "artifact")
+    model = SpecializedYesBiasedModel()
+    result = evaluate_development_mc(
+        model,
+        CharacterTokenizer(),
+        benchmark="mmlu_pro",
+        source_path=source,
+        disjoint_receipt_path=receipt,
+        training_source_sha256=training_sha256,
+        checkpoint_paths=[artifact],
+        config_paths=[artifact],
+        tokenizer_paths=[artifact],
+        runtime_paths=[artifact],
+        expected_rows=1,
+        expected_identity_order_sha256=_canonical_sha256([rows[0]["row_id"]]),
+        max_sequence_tokens=256,
+    )
+    assert result["aggregate"]["accuracy"] == 1.0
+    assert model.calls == [(40, 4), (40, 3)]
