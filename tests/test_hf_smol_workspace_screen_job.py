@@ -28,3 +28,27 @@ def test_smol_workspace_job_is_one_h100_and_sub_4b() -> None:
         assert f"${{{field}" in job
     assert "HF_HUB_OFFLINE=1" in job
     assert "TRANSFORMERS_OFFLINE=1" in job
+
+
+def test_smol_workspace_launcher_stages_matched_canaries_and_full_arms() -> None:
+    job = (
+        ROOT / "jobs" / "sai-launch-smollm3-3b-workspace-screen-cpu.sbatch"
+    ).read_text()
+    assert "#SBATCH --gres" not in job
+    assert "#SBATCH --no-requeue" in job
+    assert 'case "${CUDA_VISIBLE_DEVICES:-}"' in job
+    assert "validate_smol_mechanics_receipt" in job
+    assert 'stream["vocab_size"] != 128256' in job
+    assert 'stream["eos_token_id"] != 128012' in job
+    assert "MODEL_MANIFEST" in job
+    assert "RESTORATION_RECEIPT" in job
+    assert "submit_arm recurrent 256" in job
+    assert "submit_arm reset_average 256" in job
+    assert "submit_arm recurrent 61035" in job
+    assert "submit_arm reset_average 61035" in job
+    assert '--dependency="afterok:$dependency"' in job
+    assert 'scancel "${admitted_jobs[@]}"' in job
+    assert '"h100_jobs": 4' in job
+    assert '"maximum_concurrent_h100_jobs": 2' in job
+    assert '"cross_family_confirmation": True' in job
+    assert '"four_b_training_executed": False' in job
