@@ -88,7 +88,14 @@ benchmark evidence selects an architecture.
   four direct CPU descendants are also dependency-staged but ineligible:
   shared Sai stream `769226`, refreshed development populations `769227`, Qwen
   stream `769228`, and SmolLM3 stream `769229`. This prevents a manual recovery
-  gap without requesting a GPU or duplicating healthy work.
+  gap without requesting a GPU or duplicating healthy work. The mutually
+  exclusive downstream recovery graph is also complete: 100M/250M launcher
+  `769232`, parent benchmark launcher `769235`, workspace launcher `769236`,
+  workspace evaluation stage `769237`, and comparison stage `769238`. Two
+  malformed first launcher clones (`769233–769234`) were caught while still
+  dependency-held and canceled with zero elapsed time and zero restarts; their
+  corrected replacements bind the exact fallback population and stream job
+  IDs. No recovery job is eligible while the primary path remains healthy.
   Successful decontamination is followed by 499,998,720-token stream freeze
   `768894`. Dependency-staged launcher `768932` will then run a fresh,
   matched three-family screen over the exact 249,999,360-token prefix using
