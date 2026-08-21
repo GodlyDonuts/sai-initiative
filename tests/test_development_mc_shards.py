@@ -109,6 +109,7 @@ def _shard_result(shard: dict[str, object], index: int) -> dict[str, object]:
         },
         "domains": {},
         "rows": scored_rows,
+        "parent_evidence": {"unchanged_parent": True},
     }
     value["receipt_sha256"] = _canonical_sha256(value)
     return value
@@ -173,6 +174,7 @@ def test_builds_exact_contiguous_shards_and_merges_standard_result(
         merged["bindings"]["source_disjoint_receipt_sha256"]
         == manifest["full_disjoint_receipt_sha256"]
     )
+    assert merged["parent_evidence"] == {"unchanged_parent": True}
     unsigned = dict(merged)
     merged_receipt = unsigned.pop("receipt_sha256")
     assert merged_receipt == _canonical_sha256(unsigned)

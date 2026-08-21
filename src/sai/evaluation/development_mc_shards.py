@@ -465,6 +465,11 @@ def merge_shards(
             "ordered_results": result_files,
         },
     }
+    parent_evidence = loaded[0].get("parent_evidence")
+    if any(item.get("parent_evidence") != parent_evidence for item in loaded[1:]):
+        raise DevelopmentMCShardError("shard parent evidence differs")
+    if parent_evidence is not None:
+        result["parent_evidence"] = parent_evidence
     result["receipt_sha256"] = _canonical_sha256(result)
     return result
 
