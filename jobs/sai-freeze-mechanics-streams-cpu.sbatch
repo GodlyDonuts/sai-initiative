@@ -22,8 +22,8 @@ set -euo pipefail
 : "${TRAIN_STREAM:?TRAIN_STREAM is required}"
 : "${DEVELOPMENT_STREAM:?DEVELOPMENT_STREAM is required}"
 
-test -d "$SAI_ROOT/.git"
 test ! -L "$SAI_ROOT"
+test "$(git -C "$SAI_ROOT" rev-parse --is-inside-work-tree)" = "true"
 test "$(git -C "$SAI_ROOT" rev-parse HEAD)" = "$EXPECTED_COMMIT"
 test -z "$(git -C "$SAI_ROOT" status --short)"
 test -x "$PYTHON"

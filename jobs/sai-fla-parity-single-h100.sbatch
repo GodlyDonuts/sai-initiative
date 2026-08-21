@@ -20,8 +20,8 @@ set -euo pipefail
 : "${FLA_ROOT:?FLA_ROOT is required}"
 : "${OUTPUT:?OUTPUT is required}"
 
-test -d "$SAI_ROOT/.git"
 test ! -L "$SAI_ROOT"
+test "$(git -C "$SAI_ROOT" rev-parse --is-inside-work-tree)" = "true"
 test -x "$PYTHON"
 test -d "$FLA_ROOT/fla"
 test ! -e "$OUTPUT"

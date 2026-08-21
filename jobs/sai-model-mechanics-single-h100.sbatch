@@ -22,8 +22,8 @@ set -euo pipefail
 : "${PARITY_RECEIPT:?PARITY_RECEIPT is required}"
 : "${OUTPUT:?OUTPUT is required}"
 
-test -d "$SAI_ROOT/.git"
 test ! -L "$SAI_ROOT"
+test "$(git -C "$SAI_ROOT" rev-parse --is-inside-work-tree)" = "true"
 test "$(git -C "$SAI_ROOT" rev-parse HEAD)" = "$EXPECTED_COMMIT"
 test -z "$(git -C "$SAI_ROOT" status --short)"
 test -x "$PYTHON"

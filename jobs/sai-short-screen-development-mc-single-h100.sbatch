@@ -59,8 +59,8 @@ for path in \
 done
 
 test -n "${SLURM_JOB_ID:-}"
-test -d "$SAI_ROOT/.git"
 test ! -L "$SAI_ROOT"
+test "$(git -C "$SAI_ROOT" rev-parse --is-inside-work-tree)" = "true"
 test "$(git -C "$SAI_ROOT" rev-parse HEAD)" = "$EXPECTED_COMMIT"
 test -z "$(git -C "$SAI_ROOT" status --short)"
 test -x "$PYTHON"
