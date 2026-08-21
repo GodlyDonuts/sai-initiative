@@ -58,6 +58,8 @@ The first executable CPU oracle and exact 48K scale geometries are documented in
 [`docs/SAI_MODEL_GENERATOR_CONTRACT.md`](docs/SAI_MODEL_GENERATOR_CONTRACT.md)
 and
 [`docs/SAI_48K_SCALE_GEOMETRIES.json`](docs/SAI_48K_SCALE_GEOMETRIES.json).
+The exact no-training 100M comparison planner is specified in
+[`docs/SAI_100M_EXPERIMENT_PLAN.md`](docs/SAI_100M_EXPERIMENT_PLAN.md).
 
 ### Sequence-mixer tournament
 
@@ -158,6 +160,7 @@ One serious regression vetoes a favorable average.
 - [x] freeze matched 48K geometries for all three families at every scale;
 - [x] prove packed-document isolation across attention, RoPE, convolution, and
   recurrent state in the CPU architecture oracle;
+- [x] implement an exact three-family, three-seed iso-data/iso-FLOP planner;
 - [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
 - [ ] qualify production CUDA kernels against the CPU recurrence oracle;

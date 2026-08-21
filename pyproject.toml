@@ -13,6 +13,7 @@ dependencies = []
 sai-freeze-data = "sai.data.freeze:main"
 sai-architecture-plan = "sai.architecture.tournament:main"
 sai-model-plan = "sai.model.planner:main"
+sai-experiment-plan = "sai.training.experiment:main"
 sai-public-gate = "sai.gates.public_benchmarks:main"
 sai-readiness = "sai.readiness:main"
 

@@ -1,0 +1,60 @@
+{
+  "schema": "sai-100m-tournament-template-v1",
+  "status": "prospective",
+  "training_hold": true,
+  "training_authorized": false,
+  "official_training_order_received": false,
+  "gpu_jobs_submitted": 0,
+  "training_updates_completed": 0,
+  "scale": "100m",
+  "vocab_size": 48000,
+  "mixer_families": [
+    "gated_gqa",
+    "gdn_hybrid",
+    "kda_mla_hybrid"
+  ],
+  "seeds": [
+    20260821,
+    20260822,
+    20260823
+  ],
+  "sequence_length": 2048,
+  "sequences_per_full_update": 256,
+  "iso_data_full_updates": 4096,
+  "objective": {
+    "name": "causal_next_token_prediction",
+    "cross_document_targets_masked": true,
+    "padding_targets_masked": true,
+    "training_reduction": "mean_per_valid_token",
+    "validation_reduction": "negative_log_likelihood_per_utf8_byte"
+  },
+  "optimizer": {
+    "name": "adamw",
+    "learning_rate": 0.0006,
+    "betas": [
+      0.9,
+      0.95
+    ],
+    "epsilon": 1e-08,
+    "weight_decay": 0.1,
+    "gradient_clip_norm": 1.0,
+    "decay_matrices_only": true
+  },
+  "schedule": {
+    "name": "linear_warmup_cosine_decay",
+    "warmup_fraction": 0.01,
+    "minimum_learning_rate_ratio": 0.1
+  },
+  "precision": {
+    "parameters": "bfloat16",
+    "activations": "bfloat16",
+    "optimizer_states": "float32",
+    "recurrent_state": "float32"
+  },
+  "comparison": {
+    "iso_data": "same_ordered_token_stream_prefix_and_utf8_bytes",
+    "iso_flop": "exact_common_model_flops_via_integer_sequence_lcm",
+    "hardware_counters_reported_separately": true,
+    "one_changed_factor": "mixer_family"
+  }
+}
