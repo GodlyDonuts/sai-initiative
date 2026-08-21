@@ -93,3 +93,12 @@ def test_empty_or_malformed_boundary_fails_closed(tmp_path: Path) -> None:
     boundary.write_text("\n")
     with pytest.raises(DecontaminationError, match="no usable text"):
         build(source, [boundary], tmp_path / "out", tmp_path / "receipt")
+
+
+def test_cpu_decontamination_job_requires_exact_twenty_boundaries() -> None:
+    root = Path(__file__).resolve().parents[1]
+    job = (root / "jobs" / "sai-decontaminate-mechanics-cpu.sbatch").read_text()
+    assert 'test "${#boundary_paths[@]}" = 20' in job
+    assert "--no-requeue" in job
+    assert "--gres=" not in job
+    assert "EXPECTED_COMMIT" in job
