@@ -151,84 +151,90 @@ def convert(
         import pyarrow.parquet as pq
     except ImportError as error:
         raise FineWebEduError("PyArrow is required for FineWeb conversion") from error
-    source_receipts = []
-    accepted_rows = []
-    seen_text_sha256: set[str] = set()
-    scanned = score_rejected = quality_rejected = duplicates = 0
-    for file_row in payload["files"]:
-        path = source_root / file_row["path"]
-        if (
-            not path.is_file()
-            or path.is_symlink()
-            or path.stat().st_size != file_row["size"]
-            or sha256_file(path) != file_row["sha256"]
-        ):
-            raise FineWebEduError("FineWeb source shard content differs")
-        parquet = pq.ParquetFile(path)
-        required = {"text", "int_score", "url"}
-        if not required.issubset(parquet.schema_arrow.names):
-            raise FineWebEduError("FineWeb Parquet columns differ")
-        row_index = 0
-        file_accepted = 0
-        for batch in parquet.iter_batches(
-            batch_size=1_024, columns=["text", "int_score", "url"]
-        ):
-            table = batch.to_pydict()
-            for text, int_score, url in zip(
-                table["text"], table["int_score"], table["url"], strict=True
-            ):
-                scanned += 1
-                current_index = row_index
-                row_index += 1
-                if (
-                    isinstance(int_score, bool)
-                    or not isinstance(int_score, (int, float))
-                    or not math.isfinite(int_score)
-                    or int_score < 4
-                ):
-                    score_rejected += 1
-                    continue
-                quality = text_quality(text)
-                if not quality["accepted"]:
-                    quality_rejected += 1
-                    continue
-                text_sha256 = hashlib.sha256(text.encode()).hexdigest()
-                if text_sha256 in seen_text_sha256:
-                    duplicates += 1
-                    continue
-                seen_text_sha256.add(text_sha256)
-                host = urlsplit(url if isinstance(url, str) else "").hostname or ""
-                accepted_rows.append(
-                    {
-                        "schema": RAW_SCHEMA,
-                        "text": text,
-                        "source": {
-                            "dataset": payload["dataset"],
-                            "revision": payload["revision"],
-                            "source_file": file_row["path"],
-                            "row_index": current_index,
-                            "license": "ODC-By-1.0_plus_Common_Crawl_terms",
-                            "domain": "english",
-                            "url_host": host.casefold(),
-                            "int_score": int(int_score),
-                            "quality_sha256": canonical_sha256(quality),
-                        },
-                    }
-                )
-                file_accepted += 1
-        source_receipts.append(
-            {**file_row, "rows": row_index, "accepted": file_accepted}
-        )
-    if not accepted_rows:
-        raise FineWebEduError("FineWeb conversion admitted no documents")
     output.parent.mkdir(parents=True, exist_ok=True)
     stage = output.with_name(f".{output.name}.partial.{os.getpid()}")
-    stage.write_text(
-        "".join(
-            json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
-            for row in accepted_rows
-        )
-    )
+    if stage.exists():
+        raise FineWebEduError("FineWeb conversion staging output already exists")
+    source_receipts = []
+    seen_text_sha256: set[str] = set()
+    scanned = accepted = score_rejected = quality_rejected = duplicates = 0
+    try:
+        with stage.open("w") as output_handle:
+            for file_row in payload["files"]:
+                path = source_root / file_row["path"]
+                if (
+                    not path.is_file()
+                    or path.is_symlink()
+                    or path.stat().st_size != file_row["size"]
+                    or sha256_file(path) != file_row["sha256"]
+                ):
+                    raise FineWebEduError("FineWeb source shard content differs")
+                parquet = pq.ParquetFile(path)
+                required = {"text", "int_score", "url"}
+                if not required.issubset(parquet.schema_arrow.names):
+                    raise FineWebEduError("FineWeb Parquet columns differ")
+                row_index = 0
+                file_accepted = 0
+                for batch in parquet.iter_batches(
+                    batch_size=1_024, columns=["text", "int_score", "url"]
+                ):
+                    table = batch.to_pydict()
+                    for text, int_score, url in zip(
+                        table["text"], table["int_score"], table["url"], strict=True
+                    ):
+                        scanned += 1
+                        current_index = row_index
+                        row_index += 1
+                        if (
+                            isinstance(int_score, bool)
+                            or not isinstance(int_score, (int, float))
+                            or not math.isfinite(int_score)
+                            or int_score < 4
+                        ):
+                            score_rejected += 1
+                            continue
+                        quality = text_quality(text)
+                        if not quality["accepted"]:
+                            quality_rejected += 1
+                            continue
+                        text_sha256 = hashlib.sha256(text.encode()).hexdigest()
+                        if text_sha256 in seen_text_sha256:
+                            duplicates += 1
+                            continue
+                        seen_text_sha256.add(text_sha256)
+                        host = (
+                            urlsplit(url if isinstance(url, str) else "").hostname or ""
+                        )
+                        row = {
+                            "schema": RAW_SCHEMA,
+                            "text": text,
+                            "source": {
+                                "dataset": payload["dataset"],
+                                "revision": payload["revision"],
+                                "source_file": file_row["path"],
+                                "row_index": current_index,
+                                "license": "ODC-By-1.0_plus_Common_Crawl_terms",
+                                "domain": "english",
+                                "url_host": host.casefold(),
+                                "int_score": int(int_score),
+                                "quality_sha256": canonical_sha256(quality),
+                            },
+                        }
+                        output_handle.write(
+                            json.dumps(row, sort_keys=True, separators=(",", ":"))
+                            + "\n"
+                        )
+                        accepted += 1
+                        file_accepted += 1
+                source_receipts.append(
+                    {**file_row, "rows": row_index, "accepted": file_accepted}
+                )
+    except BaseException:
+        stage.unlink(missing_ok=True)
+        raise
+    if not accepted:
+        stage.unlink(missing_ok=True)
+        raise FineWebEduError("FineWeb conversion admitted no documents")
     report = {
         "schema": SCHEMA,
         "status": "passed",
@@ -248,7 +254,7 @@ def convert(
             "boilerplate_markers": list(BOILERPLATE_MARKERS),
         },
         "scanned": scanned,
-        "accepted": len(accepted_rows),
+        "accepted": accepted,
         "score_rejected": score_rejected,
         "quality_rejected": quality_rejected,
         "duplicates_rejected": duplicates,
