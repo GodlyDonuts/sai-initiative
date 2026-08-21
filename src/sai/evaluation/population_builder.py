@@ -78,7 +78,10 @@ PARSER_CONTRACT = {
     "assessor_schema": ASSESSOR_SCHEMA,
     "identity": "sha256(benchmark\\0upstream_id\\0normalized_prompt_sha256)",
     "normalized_prompt": "single_ascii_space_join_of_unicode_whitespace_split",
-    "mmlu_pro": "official_five_shot_cot_tail_question_and_lettered_options",
+    "mmlu_pro": (
+        "official_five_shot_cot_tail_question_and_lettered_options_with_"
+        "surrounding_whitespace_normalized"
+    ),
     "musr": "official_cot_zero_shot_context_question_and_numbered_choices",
     "answer_index": "zero_based",
     "pairing": "same_line_same_id_same_upstream_id_same_normalized_prompt_hash",
@@ -239,9 +242,8 @@ def _parse_labeled_choices(text: str, *, alphabet: str) -> list[str]:
             raise PopulationConversionError("MMLU-Pro option prefix differs")
         else:
             choices[-1] += "\n" + line
-    if not 2 <= len(choices) <= len(alphabet) or any(
-        not choice or choice != choice.strip() for choice in choices
-    ):
+    choices = [choice.strip() for choice in choices]
+    if not 2 <= len(choices) <= len(alphabet) or any(not choice for choice in choices):
         raise PopulationConversionError("MMLU-Pro options differ")
     return choices
 
@@ -264,7 +266,7 @@ def _parse_mmlu(prompt: str, domain: str) -> tuple[str, list[str]]:
     if tail.count("\nOptions:\n") != 1:
         raise PopulationConversionError("MMLU-Pro final options boundary differs")
     question, options_text = tail.split("\nOptions:\n")
-    question = _text(question, "MMLU-Pro final question")
+    question = _text(question.strip(), "MMLU-Pro final question")
     return question, _parse_labeled_choices(options_text, alphabet=MMLU_LETTERS)
 
 

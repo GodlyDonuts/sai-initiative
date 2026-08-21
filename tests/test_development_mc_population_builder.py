@@ -237,6 +237,20 @@ def test_mmlu_pair_converts_tail_and_emits_evaluator_compatible_receipt(
     assert json.loads(audit.read_text()) == receipt
 
 
+def test_mmlu_normalizes_frozen_upstream_surrounding_whitespace(
+    tmp_path: Path,
+) -> None:
+    prompt = mmlu_prompt("business", "Question with spacing?", ["alpha", "beta"])
+    prompt = prompt.replace(
+        "Question:\nQuestion with spacing?\nOptions:\nA. alpha\nB. beta\nAnswer:",
+        "Question:\n Question with spacing? \nOptions:\nA. alpha \n\nB. beta\nAnswer:",
+    )
+    _, output, _, _, _, _ = run_conversion(tmp_path, "mmlu_pro", [prompt], "business")
+    row = json.loads(output.read_text())
+    assert row["question"] == "Question with spacing?"
+    assert row["choices"] == ["alpha", "beta"]
+
+
 @pytest.mark.parametrize(
     "domain",
     ["murder_mystery", "object_placements", "team_allocation"],
