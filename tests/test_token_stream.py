@@ -297,3 +297,18 @@ def test_mechanics_stream_job_is_cpu_only_and_freezes_exact_short_budget() -> No
     assert "--prefix-sequences 4096" not in job
     assert "sai-tokenizer-qualification-receipt-v1" in job
     assert "sai-selected-tokenizer-receipt-v1" not in job
+
+
+def test_development_stream_continuation_reuses_validated_train_stream() -> None:
+    job = (
+        Path(__file__).parents[1] / "jobs" / "sai-freeze-development-stream-cpu.sbatch"
+    ).read_text()
+    assert "#SBATCH --gres" not in job
+    assert "#SBATCH --no-requeue" in job
+    assert 'test -d "$TRAIN_STREAM"' in job
+    assert "validate_frozen_stream" in job
+    assert 'train["sequences"] >= 48_828' in job
+    assert 'train["prefix_utf8_bytes"]["48828"] > 0' in job
+    assert "--prefix-sequences 1024" in job
+    assert "--prefix-sequences 4096" not in job
+    assert 'test ! -e "$DEVELOPMENT_STREAM"' in job
