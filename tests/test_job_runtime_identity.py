@@ -14,4 +14,4 @@ def test_all_git_bound_jobs_admit_sealed_linked_worktrees() -> None:
         assert 'test ! -L "$SAI_ROOT"' in script, path.name
         assert 'rev-parse HEAD)" = "$EXPECTED_COMMIT"' in script, path.name
         assert 'status --short)"' in script, path.name
-    assert checked == 18
+    assert checked == 19
