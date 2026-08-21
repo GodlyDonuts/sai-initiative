@@ -93,6 +93,9 @@ arguments=(
 if [[ "${RESUME:-0}" = 1 ]]; then
   arguments+=(--resume)
 fi
+if [[ "${MECHANICS_ONLY:-0}" = 1 ]]; then
+  arguments+=(--mechanics-only)
+fi
 if [[ -n "${BATCH_SIZE:-}" ]]; then
   arguments+=(--batch-size "$BATCH_SIZE")
 fi

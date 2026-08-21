@@ -84,7 +84,7 @@ def test_interrupted_cpu_trajectory_exactly_matches_uninterrupted(
 
 def test_checkpoint_byte_mutation_fails_before_target_mutation(tmp_path: Path) -> None:
     identity = bindings()
-    model = nn.Linear(3, 2)
+    model = nn.Linear(4, 2)
     optimizer = torch.optim.AdamW(model.parameters())
     checkpoint = tmp_path / "mechanics.pt"
     save_mechanics_checkpoint(
@@ -95,7 +95,7 @@ def test_checkpoint_byte_mutation_fails_before_target_mutation(tmp_path: Path) -
         counters=TrainingCounters(0, 0, 0),
         cursor=StreamCursor(identity.ordered_stream_identity_sha256, 0),
     )
-    target = nn.Linear(3, 2)
+    target = nn.Linear(4, 2)
     target_optimizer = torch.optim.AdamW(target.parameters())
     before = {name: tensor.clone() for name, tensor in target.state_dict().items()}
     payload = bytearray(checkpoint.read_bytes())
@@ -113,6 +113,79 @@ def test_checkpoint_byte_mutation_fails_before_target_mutation(tmp_path: Path) -
         torch.equal(before[name], tensor)
         for name, tensor in target.state_dict().items()
     )
+
+
+def test_torn_publication_rolls_back_to_previous_verified_pair(
+    tmp_path: Path,
+) -> None:
+    identity = bindings()
+    model = nn.Linear(4, 2)
+    optimizer = torch.optim.AdamW(model.parameters())
+    checkpoint = tmp_path / "mechanics.pt"
+    save_mechanics_checkpoint(
+        checkpoint,
+        model=model,
+        optimizer=optimizer,
+        bindings=identity,
+        counters=TrainingCounters(1, 2, 10),
+        cursor=StreamCursor(identity.ordered_stream_identity_sha256, 2),
+    )
+    step(model, optimizer)
+    save_mechanics_checkpoint(
+        checkpoint,
+        model=model,
+        optimizer=optimizer,
+        bindings=identity,
+        counters=TrainingCounters(2, 4, 20),
+        cursor=StreamCursor(identity.ordered_stream_identity_sha256, 4),
+    )
+    with checkpoint.open("ab") as handle:
+        handle.write(b"torn-publication")
+
+    target = nn.Linear(4, 2)
+    restored = load_mechanics_checkpoint(
+        checkpoint,
+        model=target,
+        optimizer=torch.optim.AdamW(target.parameters()),
+        expected_bindings=identity,
+    )
+
+    assert restored.recovered_from_previous is True
+    assert restored.counters == TrainingCounters(1, 2, 10)
+    assert restored.cursor == StreamCursor(identity.ordered_stream_identity_sha256, 2)
+    assert checkpoint.stat().st_nlink == 1
+    assert checkpoint_manifest_path(checkpoint).stat().st_nlink == 1
+
+
+def test_valid_current_pair_never_rolls_back_for_a_binding_error(
+    tmp_path: Path,
+) -> None:
+    identity = bindings()
+    model = nn.Linear(4, 2)
+    optimizer = torch.optim.AdamW(model.parameters())
+    checkpoint = tmp_path / "mechanics.pt"
+    for optimizer_steps, sequences in ((1, 2), (2, 4)):
+        save_mechanics_checkpoint(
+            checkpoint,
+            model=model,
+            optimizer=optimizer,
+            bindings=identity,
+            counters=TrainingCounters(optimizer_steps, sequences, sequences * 5),
+            cursor=StreamCursor(identity.ordered_stream_identity_sha256, sequences),
+        )
+    current_checkpoint = checkpoint.read_bytes()
+    current_manifest = checkpoint_manifest_path(checkpoint).read_bytes()
+
+    with pytest.raises(MechanicsCheckpointError, match="bindings"):
+        load_mechanics_checkpoint(
+            checkpoint,
+            model=nn.Linear(4, 2),
+            optimizer=torch.optim.AdamW(nn.Linear(4, 2).parameters()),
+            expected_bindings=bindings(1),
+        )
+
+    assert checkpoint.read_bytes() == current_checkpoint
+    assert checkpoint_manifest_path(checkpoint).read_bytes() == current_manifest
 
 
 def test_binding_and_manifest_mutations_fail_closed(tmp_path: Path) -> None:

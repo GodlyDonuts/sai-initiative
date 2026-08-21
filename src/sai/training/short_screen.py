@@ -116,9 +116,11 @@ def make_bindings(
     micro_batch_size: int,
     sequences_per_update: int,
     training_sequences: int,
+    training_utf8_bytes: int,
     development_sequences: int,
     development_batch_size: int = 1,
     checkpoint_interval: int = 1,
+    mechanics_only: bool = False,
 ) -> tuple[CheckpointBindings, dict[str, Any]]:
     """Derive every checkpoint identity from the complete immutable run spec."""
 
@@ -165,9 +167,11 @@ def make_bindings(
         "micro_batch_size_sequences": micro_batch_size,
         "sequences_per_update": sequences_per_update,
         "training_sequences": training_sequences,
+        "training_utf8_bytes": training_utf8_bytes,
         "development_sequences": development_sequences,
         "development_batch_size_sequences": development_batch_size,
         "checkpoint_interval_steps": checkpoint_interval,
+        "mechanics_only": mechanics_only,
     }
     run_identity = canonical_sha256(specification)
     specification["run_sha256"] = run_identity
@@ -341,6 +345,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         != development_report["tokenizer_identity_sha256"]
     ):
         raise ShortScreenError("training and development tokenizer identities differ")
+    if (
+        train_report["sequence_length"] != 2048
+        or development_report["sequence_length"] != 2048
+    ):
+        raise ShortScreenError("short-screen streams must use 2,048-token sequences")
 
     config, geometry_row = load_bounded_config(args.geometry, args.family)
     if (
@@ -356,6 +365,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         weight_decay=args.weight_decay,
         gradient_clip_norm=args.gradient_clip_norm,
     )
+    training_bytes = _prefix_bytes(train_report, args.training_sequences)
     bindings, specification = make_bindings(
         config=config,
         family=args.family,
@@ -368,11 +378,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         micro_batch_size=args.batch_size,
         sequences_per_update=args.sequences_per_update,
         training_sequences=args.training_sequences,
+        training_utf8_bytes=training_bytes,
         development_sequences=args.development_sequences,
         development_batch_size=args.development_batch_size,
         checkpoint_interval=args.checkpoint_interval,
+        mechanics_only=args.mechanics_only,
     )
-    development_bytes = _prefix_bytes(development_report, args.development_sequences)
+    development_bytes = (
+        None
+        if args.mechanics_only
+        else _prefix_bytes(development_report, args.development_sequences)
+    )
 
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -403,6 +419,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         resumed_from = {
             "checkpoint_sha256": restored.checkpoint_sha256,
             "checkpoint_bytes": restored.checkpoint_bytes,
+            "recovered_from_previous": restored.recovered_from_previous,
             "counters": counters.as_dict(),
             "cursor": cursor.as_dict(),
         }
@@ -417,8 +434,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         counters = TrainingCounters(0, 0, 0)
         cursor = None
 
-    if counters.optimizer_steps >= args.optimizer_steps:
-        raise ShortScreenError("checkpoint has no remaining optimizer budget")
+    if counters.optimizer_steps > args.optimizer_steps:
+        raise ShortScreenError("checkpoint exceeds the optimizer budget")
     expected_completed_sequences = min(
         counters.optimizer_steps * args.sequences_per_update,
         args.training_sequences,
@@ -426,6 +443,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     if counters.sequences != expected_completed_sequences:
         raise ShortScreenError("checkpoint sequence and update budgets differ")
     required_sequences = args.training_sequences - counters.sequences
+    if required_sequences < 0:
+        raise ShortScreenError("checkpoint exceeds the sequence budget")
     train_stream = ReceiptBoundTokenStream(
         args.train_stream,
         expected_ordered_stream_identity_sha256=train_identity,
@@ -519,20 +538,22 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 cursor=train_stream.cursor,
             )
 
-    validation = evaluate_nll(
-        model,
-        _development_batches(
-            args.development_stream,
-            development_identity,
-            sequences=args.development_sequences,
-            batch_size=args.development_batch_size,
-        ),
-        stream_identity_sha256=development_identity,
-        expected_sequences=args.development_sequences,
-        admitted_utf8_bytes=development_bytes,
-        benchmark_disjoint=True,
-        autocast_dtype=torch.bfloat16,
-    )
+    validation = None
+    if not args.mechanics_only:
+        validation = evaluate_nll(
+            model,
+            _development_batches(
+                args.development_stream,
+                development_identity,
+                sequences=args.development_sequences,
+                batch_size=args.development_batch_size,
+            ),
+            stream_identity_sha256=development_identity,
+            expected_sequences=args.development_sequences,
+            admitted_utf8_bytes=development_bytes,
+            benchmark_disjoint=True,
+            autocast_dtype=torch.bfloat16,
+        )
     torch.cuda.synchronize()
     checkpoint_manifest = json.loads(
         args.checkpoint.with_name(f"{args.checkpoint.name}.manifest.json").read_text()
@@ -546,12 +567,12 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         "stream_cursor": train_stream.cursor.as_dict(),
         "terminal_process_observations": {
             "steps": len(losses),
-            "first_loss": losses[0],
-            "last_loss": losses[-1],
-            "minimum_loss": min(losses),
-            "maximum_gradient_norm": max(gradient_norms),
+            "first_loss": losses[0] if losses else None,
+            "last_loss": losses[-1] if losses else None,
+            "minimum_loss": min(losses) if losses else None,
+            "maximum_gradient_norm": max(gradient_norms) if gradient_norms else None,
         },
-        "development_nll": asdict(validation),
+        "development_nll": asdict(validation) if validation is not None else None,
         "checkpoint": checkpoint_manifest["checkpoint"],
         "final_state_sha256": _state_sha256(model),
         "peak_cuda_bytes": torch.cuda.max_memory_allocated(),
@@ -591,6 +612,7 @@ def main() -> int:
     parser.add_argument("--environment-sha256", required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--mechanics-only", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     payload = run(args)

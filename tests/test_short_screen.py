@@ -120,6 +120,7 @@ def test_run_binding_changes_with_every_scientific_identity() -> None:
         micro_batch_size=1,
         sequences_per_update=2,
         training_sequences=5,
+        training_utf8_bytes=100,
         development_sequences=2,
     )
     changed, _ = make_bindings(
@@ -134,6 +135,7 @@ def test_run_binding_changes_with_every_scientific_identity() -> None:
         micro_batch_size=1,
         sequences_per_update=2,
         training_sequences=5,
+        training_utf8_bytes=100,
         development_sequences=2,
     )
     assert first.run_sha256 != changed.run_sha256
@@ -157,6 +159,7 @@ def test_streams_must_be_source_disjoint_and_hashes_exact() -> None:
             micro_batch_size=1,
             sequences_per_update=2,
             training_sequences=5,
+            training_utf8_bytes=100,
             development_sequences=1,
         )
 
@@ -175,16 +178,22 @@ def test_job_is_one_h100_no_requeue_and_has_no_retry_or_4b() -> None:
     assert '"production_cuda_qualified"] is True' in job
     assert 'git -C "$SAI_ROOT" archive --format=tar "$EXPECTED_COMMIT"' in job
     assert 'sha256sum "$ENVIRONMENT_RECEIPT"' in job
+    assert "MECHANICS_ONLY" in job
     assert "retry" not in job.lower()
     assert "4b" not in job.lower()
 
 
-def test_launcher_submits_exactly_three_independent_single_gpu_screens() -> None:
+def test_launcher_submits_three_canaries_then_three_independent_screens() -> None:
     launcher = (ROOT / "jobs" / "sai-launch-100m-short-screens-cpu.sbatch").read_text()
     assert "#SBATCH --gres" not in launcher
     assert "#SBATCH --no-requeue" in launcher
     assert "for family in gated_gqa gdn_hybrid kda_mla_hybrid" in launcher
-    assert 'gpu_jobs_submitted": 3' in launcher
+    assert 'gpu_jobs_submitted": 6' in launcher
+    assert 'maximum_concurrent_gpu_jobs": 3' in launcher
+    assert "MECHANICS_ONLY=1" in launcher
+    assert '--dependency="afterok:$canary_job_id"' in launcher
+    assert "trap cancel_partial_graph ERR" in launcher
+    assert "scancel" in launcher
     assert "TRAINING_SEQUENCES=48828" in launcher
     assert "SEQUENCES_PER_UPDATE=256" in launcher
     assert "OPTIMIZER_STEPS=191" in launcher

@@ -128,6 +128,7 @@ class RestoredCheckpoint:
     cursor: StreamCursor
     checkpoint_sha256: str
     checkpoint_bytes: int
+    recovered_from_previous: bool = False
 
 
 def checkpoint_manifest_path(checkpoint_path: Path) -> Path:
@@ -135,6 +136,16 @@ def checkpoint_manifest_path(checkpoint_path: Path) -> Path:
 
     path = Path(checkpoint_path)
     return path.with_name(f"{path.name}.manifest.json")
+
+
+def _previous_checkpoint_path(checkpoint_path: Path) -> Path:
+    path = Path(checkpoint_path)
+    return path.with_name(f".{path.name}.previous")
+
+
+def _previous_manifest_path(checkpoint_path: Path) -> Path:
+    path = Path(checkpoint_path)
+    return path.with_name(f".{path.name}.manifest.previous.json")
 
 
 def _validate_cursor(
@@ -220,6 +231,15 @@ def _atomic_write(path: Path, writer: Any) -> None:
         raise
 
 
+def _atomic_copy(source: Path, target: Path) -> None:
+    def copy(handle: io.BufferedWriter) -> None:
+        with _read_regular(source)[0] as source_handle:
+            while chunk := source_handle.read(1024 * 1024):
+                handle.write(chunk)
+
+    _atomic_write(target, copy)
+
+
 def _read_regular(path: Path) -> tuple[io.BufferedReader, os.stat_result]:
     flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -303,6 +323,70 @@ def _manifest(
     }
 
 
+def _backup_current_pair(checkpoint_path: Path) -> None:
+    manifest_path = checkpoint_manifest_path(checkpoint_path)
+    checkpoint_exists = checkpoint_path.exists()
+    manifest_exists = manifest_path.exists()
+    if not checkpoint_exists and not manifest_exists:
+        return
+    if not checkpoint_exists or not manifest_exists:
+        raise MechanicsCheckpointError("current checkpoint pair is incomplete")
+    manifest = _read_manifest(manifest_path)
+    descriptor = manifest["checkpoint"]
+    if descriptor["path"] != checkpoint_path.name:
+        raise MechanicsCheckpointError("checkpoint artifact path differs")
+    with _read_regular(checkpoint_path)[0] as handle:
+        if (
+            os.fstat(handle.fileno()).st_size != descriptor["bytes"]
+            or _sha256_handle(handle) != descriptor["sha256"]
+        ):
+            raise MechanicsCheckpointError("current checkpoint pair differs")
+    previous_checkpoint = _previous_checkpoint_path(checkpoint_path)
+    previous_manifest = _previous_manifest_path(checkpoint_path)
+    _atomic_copy(checkpoint_path, previous_checkpoint)
+    _atomic_copy(manifest_path, previous_manifest)
+    previous = _read_manifest(previous_manifest)
+    with _read_regular(previous_checkpoint)[0] as handle:
+        if (
+            previous["checkpoint"]["path"] != checkpoint_path.name
+            or os.fstat(handle.fileno()).st_size != previous["checkpoint"]["bytes"]
+            or _sha256_handle(handle) != previous["checkpoint"]["sha256"]
+        ):
+            raise MechanicsCheckpointError("previous checkpoint pair differs")
+
+
+def _restore_previous_pair(checkpoint_path: Path) -> None:
+    previous_checkpoint = _previous_checkpoint_path(checkpoint_path)
+    previous_manifest = _previous_manifest_path(checkpoint_path)
+    manifest = _read_manifest(previous_manifest)
+    descriptor = manifest["checkpoint"]
+    if descriptor["path"] != checkpoint_path.name:
+        raise MechanicsCheckpointError("previous checkpoint artifact path differs")
+    with _read_regular(previous_checkpoint)[0] as handle:
+        if (
+            os.fstat(handle.fileno()).st_size != descriptor["bytes"]
+            or _sha256_handle(handle) != descriptor["sha256"]
+        ):
+            raise MechanicsCheckpointError("previous checkpoint pair differs")
+    _atomic_copy(previous_checkpoint, checkpoint_path)
+    _atomic_copy(previous_manifest, checkpoint_manifest_path(checkpoint_path))
+
+
+def _current_pair_is_torn(checkpoint_path: Path) -> bool:
+    try:
+        manifest = _read_manifest(checkpoint_manifest_path(checkpoint_path))
+        descriptor = manifest["checkpoint"]
+        if descriptor["path"] != checkpoint_path.name:
+            return True
+        with _read_regular(checkpoint_path)[0] as handle:
+            return (
+                os.fstat(handle.fileno()).st_size != descriptor["bytes"]
+                or _sha256_handle(handle) != descriptor["sha256"]
+            )
+    except MechanicsCheckpointError:
+        return True
+
+
 def save_mechanics_checkpoint(
     checkpoint_path: Path,
     *,
@@ -340,6 +424,7 @@ def save_mechanics_checkpoint(
         "cuda_rng_states": _clone_to_cpu(cuda_rng_states),
     }
     checkpoint_path = _safe_target(Path(checkpoint_path))
+    _backup_current_pair(checkpoint_path)
     _atomic_write(checkpoint_path, lambda handle: torch.save(payload, handle))
     with _read_regular(checkpoint_path)[0] as handle:
         checkpoint_sha256 = _sha256_handle(handle)
@@ -393,7 +478,7 @@ def _validate_optimizer_state(optimizer: torch.optim.Optimizer, saved: Any) -> N
         raise MechanicsCheckpointError("checkpoint optimizer tensors differ")
 
 
-def load_mechanics_checkpoint(
+def _load_mechanics_checkpoint_current(
     checkpoint_path: Path,
     *,
     model: nn.Module,
@@ -496,3 +581,46 @@ def load_mechanics_checkpoint(
         checkpoint_sha256=actual_sha256,
         checkpoint_bytes=actual_bytes,
     )
+
+
+def load_mechanics_checkpoint(
+    checkpoint_path: Path,
+    *,
+    model: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    expected_bindings: CheckpointBindings,
+) -> RestoredCheckpoint:
+    """Restore the current pair, rolling back a torn publication if possible."""
+
+    checkpoint_path = Path(checkpoint_path)
+    try:
+        return _load_mechanics_checkpoint_current(
+            checkpoint_path,
+            model=model,
+            optimizer=optimizer,
+            expected_bindings=expected_bindings,
+        )
+    except MechanicsCheckpointError as current_error:
+        if not _current_pair_is_torn(checkpoint_path) or not (
+            _previous_checkpoint_path(checkpoint_path).exists()
+            and _previous_manifest_path(checkpoint_path).exists()
+        ):
+            raise
+        try:
+            _restore_previous_pair(checkpoint_path)
+            restored = _load_mechanics_checkpoint_current(
+                checkpoint_path,
+                model=model,
+                optimizer=optimizer,
+                expected_bindings=expected_bindings,
+            )
+        except MechanicsCheckpointError:
+            raise current_error from None
+        return RestoredCheckpoint(
+            bindings=restored.bindings,
+            counters=restored.counters,
+            cursor=restored.cursor,
+            checkpoint_sha256=restored.checkpoint_sha256,
+            checkpoint_bytes=restored.checkpoint_bytes,
+            recovered_from_previous=True,
+        )
