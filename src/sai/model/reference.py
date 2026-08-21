@@ -6,6 +6,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from sai.model import fla_backend
 from sai.model.config import SaiModelConfig
 
 
@@ -259,10 +260,19 @@ class GatedGQA(nn.Module):
 
 
 class DeltaMixer(nn.Module):
-    def __init__(self, config: SaiModelConfig, *, channel_wise_decay: bool) -> None:
+    def __init__(
+        self,
+        config: SaiModelConfig,
+        *,
+        channel_wise_decay: bool,
+        backend: str = "reference",
+    ) -> None:
         super().__init__()
+        if backend not in {"reference", "fla"}:
+            raise SaiReferenceError("delta backend differs")
         self.config = config
         self.channel_wise_decay = channel_wise_decay
+        self.backend = backend
         width = config.attention_width
         self.q_proj = nn.Linear(config.hidden_size, width, bias=False)
         self.k_proj = nn.Linear(config.hidden_size, width, bias=False)
@@ -292,15 +302,23 @@ class DeltaMixer(nn.Module):
     ) -> torch.Tensor:
         batch, sequence, _ = hidden.shape
         heads, head_dim = self.config.num_attention_heads, self.config.head_dim
-        q = F.silu(self.q_conv(self.q_proj(hidden), segment_ids)).view(
-            batch, sequence, heads, head_dim
-        )
-        k = F.silu(self.k_conv(self.k_proj(hidden), segment_ids)).view(
-            batch, sequence, heads, head_dim
-        )
-        v = F.silu(self.v_conv(self.v_proj(hidden), segment_ids)).view(
-            batch, sequence, heads, head_dim
-        )
+        if self.backend == "reference":
+            q_flat = F.silu(self.q_conv(self.q_proj(hidden), segment_ids))
+            k_flat = F.silu(self.k_conv(self.k_proj(hidden), segment_ids))
+            v_flat = F.silu(self.v_conv(self.v_proj(hidden), segment_ids))
+        else:
+            q_flat = fla_backend.fla_causal_conv1d(
+                self.q_proj(hidden), self.q_conv.weight, segment_ids
+            )
+            k_flat = fla_backend.fla_causal_conv1d(
+                self.k_proj(hidden), self.k_conv.weight, segment_ids
+            )
+            v_flat = fla_backend.fla_causal_conv1d(
+                self.v_proj(hidden), self.v_conv.weight, segment_ids
+            )
+        q = q_flat.view(batch, sequence, heads, head_dim)
+        k = k_flat.view(batch, sequence, heads, head_dim)
+        v = v_flat.view(batch, sequence, heads, head_dim)
         if self.channel_wise_decay:
             raw_alpha = self.alpha_up(self.alpha_down(hidden))
             raw_alpha = raw_alpha + self.alpha_bias
@@ -309,8 +327,23 @@ class DeltaMixer(nn.Module):
         else:
             alpha = torch.sigmoid(self.alpha_proj(hidden)).unsqueeze(-1)
         beta = torch.sigmoid(self.beta_proj(hidden)).unsqueeze(-1)
-        reset_mask = None if segment_ids is None else _segment_reset_mask(segment_ids)
-        output, _ = causal_delta_recurrence(q, k, v, alpha, beta, reset_mask=reset_mask)
+        if self.backend == "reference":
+            reset_mask = (
+                None if segment_ids is None else _segment_reset_mask(segment_ids)
+            )
+            output, _ = causal_delta_recurrence(
+                q, k, v, alpha, beta, reset_mask=reset_mask
+            )
+        else:
+            output = fla_backend.fla_delta_recurrence(
+                q,
+                k,
+                v,
+                alpha,
+                beta,
+                segment_ids,
+                channel_wise_decay=self.channel_wise_decay,
+            )
         gate = self.gate_up(self.gate_down(hidden)).view_as(output)
         output = self.output_norm(output) * torch.sigmoid(gate)
         return self.o_proj(output.reshape(batch, sequence, -1))
@@ -374,14 +407,20 @@ class GatedMLA(nn.Module):
 
 
 class SaiBlock(nn.Module):
-    def __init__(self, config: SaiModelConfig, layer_type: str) -> None:
+    def __init__(
+        self, config: SaiModelConfig, layer_type: str, *, delta_backend: str
+    ) -> None:
         super().__init__()
         if layer_type == "gated_gqa":
             self.mixer = GatedGQA(config)
         elif layer_type == "gated_deltanet":
-            self.mixer = DeltaMixer(config, channel_wise_decay=False)
+            self.mixer = DeltaMixer(
+                config, channel_wise_decay=False, backend=delta_backend
+            )
         elif layer_type == "kda":
-            self.mixer = DeltaMixer(config, channel_wise_decay=True)
+            self.mixer = DeltaMixer(
+                config, channel_wise_decay=True, backend=delta_backend
+            )
         elif layer_type == "gated_mla":
             self.mixer = GatedMLA(config)
         else:
@@ -398,12 +437,18 @@ class SaiBlock(nn.Module):
 
 
 class SaiCausalLM(nn.Module):
-    def __init__(self, config: SaiModelConfig) -> None:
+    def __init__(
+        self, config: SaiModelConfig, *, delta_backend: str = "reference"
+    ) -> None:
         super().__init__()
+        if delta_backend not in {"reference", "fla"}:
+            raise SaiReferenceError("delta backend differs")
         self.config = config
+        self.delta_backend = delta_backend
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size)
         self.layers = nn.ModuleList(
-            SaiBlock(config, layer_type) for layer_type in config.layer_types()
+            SaiBlock(config, layer_type, delta_backend=delta_backend)
+            for layer_type in config.layer_types()
         )
         self.norm = RMSNorm(config.hidden_size, config.rms_norm_eps)
 

@@ -77,7 +77,7 @@ def packed_cu_seqlens(segment_ids: torch.Tensor) -> torch.Tensor:
         offsets.append((row_index + 1) * sequence)
     if any(left >= right for left, right in pairwise(offsets)):
         raise FlaBackendError("packed segment offsets are not increasing")
-    return torch.tensor(offsets, dtype=torch.int32, device=segment_ids.device)
+    return torch.tensor(offsets, dtype=torch.long, device=segment_ids.device)
 
 
 def _flatten_packed(
