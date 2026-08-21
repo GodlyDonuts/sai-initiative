@@ -20,6 +20,47 @@ training-source hash match the run and whose method is exactly
 `identity-and-contamination-audit`. A boolean assertion without this bound
 receipt is not accepted.
 
+## Frozen Shohin population conversion
+
+`sai-build-development-mc` converts the existing paired Shohin
+`shohin-dense-public-benchmark-question-v1` and
+`shohin-dense-public-benchmark-assessor-v1` JSONL artifacts. It accepts only
+MMLU-Pro and MuSR, requires caller-pinned hashes, row count, and ordered-ID
+hash, and recomputes the original Shohin row identity and normalized prompt
+hash before parsing. MMLU-Pro uses the final question and sequential lettered
+options in its frozen five-shot prompt; MuSR uses its exact domain-specific
+hint placement, final question, and sequential numbered choices. Assessor
+letters and one-based MuSR answers become the canonical zero-based index.
+
+The supplied `sai-decontamination-receipt-v1` must itself be hash-pinned,
+internally valid, and name both exact question and assessor inputs as ordered
+decontamination boundaries. Its admitted training output must still match the
+recorded path, byte count, and SHA-256. The converter emits both the strict
+seven-field `sai-development-mc-source-disjoint-v1` receipt consumed by this
+evaluator and a full `sai-development-mc-population-conversion-v1` audit that
+records input hashes, matched boundary entries, parser contract, exact row
+coverage/order, training evidence, and deterministic output hashes. Outputs
+are create-only, staged and fsynced before per-file atomic publication, with
+rollback on an ordinary publication failure.
+
+Example (all hashes and counts are mandatory frozen inputs):
+
+```bash
+sai-build-development-mc \
+  --benchmark mmlu_pro \
+  --questions /absolute/full.questions.jsonl \
+  --assessors /absolute/full.assessors.jsonl \
+  --expected-questions-sha256 "$QUESTIONS_SHA256" \
+  --expected-assessors-sha256 "$ASSESSORS_SHA256" \
+  --expected-rows 12032 \
+  --expected-identity-order-sha256 "$IDENTITY_ORDER_SHA256" \
+  --training-decontamination-receipt /absolute/decontamination.receipt.json \
+  --expected-training-decontamination-receipt-sha256 "$DECONTAMINATION_FILE_SHA256" \
+  --output-source /absolute/mmlu_pro.development.jsonl \
+  --output-disjoint-receipt /absolute/mmlu_pro.disjoint.json \
+  --output-conversion-receipt /absolute/mmlu_pro.conversion.json
+```
+
 For every choice, the evaluator tokenizes the common prompt and the prompt plus
 `" " + choice` with special tokens disabled. The prompt token IDs must be an
 exact prefix of the combined token IDs. It sums the continuation-token natural
