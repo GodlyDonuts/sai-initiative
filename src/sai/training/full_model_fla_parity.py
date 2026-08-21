@@ -53,17 +53,17 @@ class _RecordedOperators:
 def _tiny_config(family: str) -> SaiModelConfig:
     return SaiModelConfig(
         vocab_size=32,
-        hidden_size=16,
-        intermediate_size=32,
+        hidden_size=32,
+        intermediate_size=64,
         num_hidden_layers=4,
         num_attention_heads=2,
         num_key_value_heads=1,
-        head_dim=8,
+        head_dim=16,
         mixer_family="gdn_hybrid" if family == "gdn" else "kda_mla_hybrid",
         linear_conv_kernel=4,
-        mla_kv_rank=8,
-        mla_qk_head_dim=8,
-        mla_value_head_dim=8,
+        mla_kv_rank=16,
+        mla_qk_head_dim=16,
+        mla_value_head_dim=16,
     )
 
 

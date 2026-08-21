@@ -88,6 +88,7 @@ def test_full_delta_mixer_mapping_matches_reference_for_all_boundaries() -> None
         (family, length) for family in ("gdn", "kda") for length in (1, 63, 64, 65)
     }
     assert all(case["passed"] for case in report["cases"])
+    assert all(case["fla_mapping"]["q_shape"][-1] == 16 for case in report["cases"])
     assert {
         case["sequence_length"]: case["packed_cu_seqlens"]
         for case in report["cases"]
