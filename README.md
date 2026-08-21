@@ -64,7 +64,11 @@ benchmark evidence selects an architecture.
   download because ordinary Newton CPU allocations omit `SLURM_TMPDIR`; no data
   was written. The corrected owner-validated `/tmp` acquisition is job `768891`,
   followed by exact decontamination `768892` and a 499,998,720-token stream
-  freeze `768894`. These CPU jobs neither select a mixer nor authorize 4B.
+  freeze `768894`. Dependency-staged launcher `768932` will then run a fresh,
+  matched three-family screen over the exact 249,999,360-token prefix using
+  three independent one-H100 jobs. This tests whether the near-chance 100M
+  results reflect data starvation or the mixers themselves; it neither selects
+  a mixer in advance nor authorizes 4B.
 - This is a one-seed, approximately 100M-token, iso-data short screen. It is
   not the frozen three-seed iso-data/iso-FLOP tournament and cannot authorize
   the 4B run. The user has authorized sub-4B training; actual 4B training
