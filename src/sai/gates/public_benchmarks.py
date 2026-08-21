@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import math
@@ -180,3 +181,13 @@ def write_analysis(paths: list[Path], output: Path) -> dict[str, Any]:
     temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     os.replace(temporary, output)
     return payload
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--score", type=Path, action="append", required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    payload = write_analysis(args.score, args.output)
+    print(json.dumps({"decision": payload["decision"]}, sort_keys=True))
+    return 0
