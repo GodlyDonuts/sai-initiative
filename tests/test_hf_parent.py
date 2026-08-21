@@ -59,3 +59,17 @@ def test_mechanics_job_is_one_h100_offline_and_no_retry() -> None:
     assert "HF_HUB_OFFLINE=1" in job
     assert "TRANSFORMERS_OFFLINE=1" in job
     assert "retry" not in job.lower()
+
+
+def test_parent_mc_job_is_one_h100_offline_and_no_retry() -> None:
+    job = (
+        Path(__file__).resolve().parents[1]
+        / "jobs"
+        / "sai-qwen35-0p8b-development-mc-single-h100.sbatch"
+    ).read_text()
+    assert "#SBATCH --gres=gpu:nvidia_h100_pcie:1" in job
+    assert "#SBATCH --no-requeue" in job
+    assert "MECHANICS_RECEIPT_SHA256" in job
+    assert "HF_HUB_OFFLINE=1" in job
+    assert "TRANSFORMERS_OFFLINE=1" in job
+    assert "retry" not in job.lower()

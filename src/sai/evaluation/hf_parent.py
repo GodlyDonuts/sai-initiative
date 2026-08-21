@@ -252,6 +252,52 @@ def write_receipt(output: Path, receipt: dict[str, Any]) -> None:
         raise
 
 
+def validate_mechanics_receipt(
+    path: Path, *, expected_file_sha256: str, model_root: Path
+) -> dict[str, Any]:
+    """Replay the immutable mechanics receipt before an expensive evaluation."""
+
+    if _sha256_file(path) != expected_file_sha256:
+        raise HFParentError("mechanics receipt file identity differs")
+    try:
+        receipt = json.loads(Path(path).read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise HFParentError("mechanics receipt is unreadable") from error
+    if not isinstance(receipt, dict):
+        raise HFParentError("mechanics receipt must be an object")
+    unsigned = dict(receipt)
+    claimed = unsigned.pop("receipt_sha256", None)
+    runtime = receipt.get("runtime")
+    environment = receipt.get("environment")
+    forward = receipt.get("forward")
+    snapshot = validate_snapshot(model_root)
+    if (
+        receipt.get("schema") != SCHEMA
+        or receipt.get("status") != "pass"
+        or claimed != canonical_sha256(unsigned)
+        or receipt.get("model_root") != str(Path(model_root).resolve())
+        or not isinstance(runtime, dict)
+        or runtime.get("snapshot_receipt_sha256") != snapshot["receipt_sha256"]
+        or runtime.get("snapshot_tree_sha256") != snapshot["tree_sha256"]
+        or runtime.get("model_class") != EXPECTED_MODEL_CLASS
+        or runtime.get("parameter_count") != EXPECTED_PARAMETER_COUNT
+        or runtime.get("all_parameters_and_buffers_cuda_zero") is not True
+        or not isinstance(environment, dict)
+        or "H100" not in str(environment.get("gpu_name"))
+        or not isinstance(forward, dict)
+        or forward.get("finite") is not True
+        or forward.get("logits_shape") != [1, 1, EXPECTED_VOCAB_SIZE]
+        or receipt.get("training_executed") is not False
+        or receipt.get("optimizer_steps") != 0
+        or receipt.get("backward_calls") != 0
+        or receipt.get("model_state_unchanged") is not True
+        or receipt.get("architecture_result") is not False
+        or receipt.get("four_b_training_executed") is not False
+    ):
+        raise HFParentError("mechanics receipt evidence differs")
+    return receipt
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-root", type=Path, required=True)
