@@ -82,7 +82,10 @@ PARSER_CONTRACT = {
         "official_five_shot_cot_tail_question_and_lettered_options_with_"
         "surrounding_whitespace_normalized"
     ),
-    "musr": "official_cot_zero_shot_context_question_and_numbered_choices",
+    "musr": (
+        "official_cot_zero_shot_context_question_and_numbered_choices_with_"
+        "surrounding_whitespace_normalized"
+    ),
     "answer_index": "zero_based",
     "pairing": "same_line_same_id_same_upstream_id_same_normalized_prompt_hash",
 }
@@ -285,9 +288,8 @@ def _parse_numbered_choices(text: str) -> list[str]:
             raise PopulationConversionError("MuSR choice prefix differs")
         else:
             choices[-1] += "\n" + line
-    if not 2 <= len(choices) <= 16 or any(
-        not choice or choice != choice.strip() for choice in choices
-    ):
+    choices = [choice.strip() for choice in choices]
+    if not 2 <= len(choices) <= 16 or any(not choice for choice in choices):
         raise PopulationConversionError("MuSR choices differ")
     return choices
 
@@ -317,8 +319,8 @@ def _parse_musr(prompt: str, domain: str) -> tuple[str, str, list[str]]:
             raise PopulationConversionError("MuSR context/question boundary differs")
         context, question = body.rsplit("\n\n", 1)
     return (
-        _text(context, "MuSR context"),
-        _text(question, "MuSR final question"),
+        _text(context.strip(), "MuSR context"),
+        _text(question.strip(), "MuSR final question"),
         _parse_numbered_choices(choices_text),
     )
 

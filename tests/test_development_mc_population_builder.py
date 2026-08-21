@@ -272,6 +272,25 @@ def test_musr_extracts_context_question_choices_and_one_based_answer(
     assert row["answer_index"] == 1
 
 
+def test_musr_normalizes_frozen_upstream_surrounding_whitespace(
+    tmp_path: Path,
+) -> None:
+    prompt = musr_prompt(
+        "team_allocation", "Context paragraph.", "Which choice?", ["alpha", "beta"]
+    )
+    prompt = prompt.replace(
+        "Context paragraph.\n\nWhich choice?",
+        "Context paragraph. \n\n Which choice? ",
+    ).replace("1 - alpha\n2 - beta", "1 - alpha \n\n2 - beta")
+    _, output, _, _, _, _ = run_conversion(
+        tmp_path, "musr", [prompt], "team_allocation"
+    )
+    row = json.loads(output.read_text())
+    assert row["context"] == "Context paragraph."
+    assert row["question"] == "Which choice?"
+    assert row["choices"] == ["alpha", "beta"]
+
+
 def test_hash_order_and_boundary_tampering_fail_closed(tmp_path: Path) -> None:
     prompts = [
         mmlu_prompt("logic", "First final question?", ["yes", "no"]),
