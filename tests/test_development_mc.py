@@ -157,8 +157,8 @@ def test_exact_duplicate_distractors_preserve_official_choice_indices(
     tmp_path: Path,
 ) -> None:
     source, rows = _population(tmp_path)
-    rows[0]["choices"] = ["yes", "no", "no"]
-    rows[0]["answer_index"] = 0
+    rows[0]["choices"] = ["yes", "no", "yes"]
+    rows[0]["answer_index"] = 2
     source.write_text(json.dumps(rows[0]) + "\n")
     receipt, training_sha256 = _receipt(tmp_path, source, "mmlu_pro")
     artifacts = [
@@ -185,6 +185,8 @@ def test_exact_duplicate_distractors_preserve_official_choice_indices(
     assert result["aggregate"] == {"correct": 1, "rows": 1, "accuracy": 1.0}
     assert len(result["rows"][0]["choice_scores"]) == 3
     assert result["rows"][0]["predicted_index"] == 0
+    assert result["rows"][0]["answer_index"] == 2
+    assert result["rows"][0]["correct"] is True
 
 
 def test_fail_closed_on_schema_identity_and_disjointness(tmp_path: Path) -> None:

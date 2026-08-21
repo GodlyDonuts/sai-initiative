@@ -39,6 +39,7 @@ SCORING_CONTRACT = {
     "purpose": "source-disjoint-development-screen",
     "choice_score": "sum_natural_log_probability_divided_by_choice_token_count",
     "selection": "highest_normalized_choice_log_likelihood_argmax_first_on_tie",
+    "correctness": "selected_choice_text_equals_answer_choice_text",
     "prompt_special_tokens": False,
     "choice_special_tokens": False,
     "prompt_choice_boundary": "prompt_token_ids_must_prefix_prompt_plus_choice_ids",
@@ -410,7 +411,10 @@ def evaluate_development_mc(
                         "domain": row["domain"],
                         "answer_index": row["answer_index"],
                         "predicted_index": prediction,
-                        "correct": prediction == row["answer_index"],
+                        "correct": (
+                            row["choices"][prediction]
+                            == row["choices"][row["answer_index"]]
+                        ),
                         "choice_scores": choice_scores,
                     }
                 )
