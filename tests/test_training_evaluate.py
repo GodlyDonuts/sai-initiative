@@ -93,3 +93,13 @@ def test_validation_requires_complete_disjoint_coverage() -> None:
             admitted_utf8_bytes=11,
             benchmark_disjoint=True,
         )
+    with pytest.raises(TrainingEvaluationError, match="autocast requires CUDA"):
+        evaluate_nll(
+            model,
+            [_batch()],
+            stream_identity_sha256="a" * 64,
+            expected_sequences=1,
+            admitted_utf8_bytes=11,
+            benchmark_disjoint=True,
+            autocast_dtype=torch.bfloat16,
+        )

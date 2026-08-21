@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Iterable
+from contextlib import nullcontext
 from dataclasses import dataclass
 
 import torch
@@ -48,6 +49,7 @@ def evaluate_nll(
     expected_sequences: int,
     admitted_utf8_bytes: int,
     benchmark_disjoint: bool,
+    autocast_dtype: torch.dtype | None = None,
 ) -> ValidationResult:
     """Evaluate a complete frozen validation prefix without changing model state."""
 
@@ -69,13 +71,24 @@ def evaluate_nll(
     except ValueError as error:
         raise TrainingEvaluationError("validation stream identity differs") from error
 
+    if autocast_dtype is not None and autocast_dtype is not torch.bfloat16:
+        raise TrainingEvaluationError("validation autocast dtype differs")
+    model_device = next(model.parameters()).device
+    if autocast_dtype is not None and model_device.type != "cuda":
+        raise TrainingEvaluationError("validation autocast requires CUDA")
+
     original_training = model.training
     versions_before = _state_versions(model)
     total_nll = 0.0
     sequences = targets = 0
     model.eval()
     try:
-        with torch.inference_mode():
+        autocast = (
+            torch.autocast(device_type="cuda", dtype=autocast_dtype)
+            if autocast_dtype is not None
+            else nullcontext()
+        )
+        with torch.inference_mode(), autocast:
             for batch in batches:
                 try:
                     target_count = _validate_batch(batch)
