@@ -12,6 +12,7 @@ from sai.evaluation.hf_workspace_compare import (
     compare,
     write_comparison,
 )
+from sai.training.hf_smol_workspace_screen import SCHEMA as SMOL_TRAINING_SCHEMA
 
 
 def _workspace(
@@ -264,3 +265,46 @@ def test_comparison_rejects_resigned_row_identity_drift(tmp_path: Path) -> None:
             recurrent_training_result=paths["training"]["recurrent"],
             reset_training_result=paths["training"]["reset_average"],
         )
+
+
+def test_comparison_reuses_exact_gate_with_cross_family_schema(tmp_path: Path) -> None:
+    paths = _inputs(tmp_path)
+    for mode in ("recurrent", "reset_average"):
+        training_path = paths["training"][mode]
+        training = json.loads(training_path.read_text())
+        training["schema"] = SMOL_TRAINING_SCHEMA
+        training.pop("receipt_sha256")
+        training["receipt_sha256"] = canonical_sha256(training)
+        training_path.write_text(json.dumps(training))
+        training_file_sha = hashlib.sha256(training_path.read_bytes()).hexdigest()
+        for benchmark in ("mmlu_pro", "musr"):
+            value = json.loads(paths[mode][benchmark].read_text())
+            value["workspace_evidence"][
+                "training_result_file_sha256"
+            ] = training_file_sha
+            value["workspace_evidence"]["training_receipt_sha256"] = training[
+                "receipt_sha256"
+            ]
+            value["workspace_evidence"]["cross_family_confirmation"] = True
+            value.pop("receipt_sha256")
+            value["receipt_sha256"] = canonical_sha256(value)
+            paths[mode][benchmark].write_text(json.dumps(value))
+    result = compare(
+        parent_paths=paths["parent"],
+        recurrent_paths=paths["recurrent"],
+        reset_paths=paths["reset_average"],
+        recurrent_training_result=paths["training"]["recurrent"],
+        reset_training_result=paths["training"]["reset_average"],
+        training_schema=SMOL_TRAINING_SCHEMA,
+        comparison_schema="sai-smollm3-3b-matched-workspace-comparison-v1",
+        pass_action="cross_family_factor_confirmed_await_user_4b_authorization",
+        fail_action="reject_recurrent_workspace_cross_family",
+        claim_limit="cross-family test limit",
+    )
+    assert result["schema"] == "sai-smollm3-3b-matched-workspace-comparison-v1"
+    assert result["pass"] is True
+    assert result["action"] == (
+        "cross_family_factor_confirmed_await_user_4b_authorization"
+    )
+    assert result["four_b_training_authorized"] is False
+    assert result["claim_limit"] == "cross-family test limit"

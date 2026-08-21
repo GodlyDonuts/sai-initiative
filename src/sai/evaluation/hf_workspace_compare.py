@@ -152,7 +152,11 @@ def _paired_rows(
 
 
 def _load_training_result(
-    path: Path, workspace_evidence: dict[str, Any], *, mode: str
+    path: Path,
+    workspace_evidence: dict[str, Any],
+    *,
+    mode: str,
+    training_schema: str = TRAINING_SCHEMA,
 ) -> tuple[dict[str, Any], str]:
     file_sha256 = _sha256_file(path)
     try:
@@ -164,7 +168,7 @@ def _load_training_result(
     unsigned = dict(result)
     claimed = unsigned.pop("receipt_sha256", None)
     if (
-        result.get("schema") != TRAINING_SCHEMA
+        result.get("schema") != training_schema
         or result.get("status") != "complete"
         or result.get("state_mode") != mode
         or result.get("training_sequences") != 61_035
@@ -218,6 +222,15 @@ def compare(
     reset_paths: dict[str, Path],
     recurrent_training_result: Path,
     reset_training_result: Path,
+    training_schema: str = TRAINING_SCHEMA,
+    comparison_schema: str = SCHEMA,
+    pass_action: str = "authorize_sub4b_confirmation",
+    fail_action: str = "reject_recurrent_workspace",
+    claim_limit: str = (
+        "A pass authorizes only a larger sub-4B confirmation. A failure rejects "
+        "this recurrent workspace factor. Neither outcome executes or authorizes "
+        "4B training."
+    ),
 ) -> dict[str, Any]:
     """Return the frozen, paired two-board development decision."""
 
@@ -241,10 +254,16 @@ def compare(
     recurrent_workspace = loaded[BENCHMARKS[0]]["recurrent"][0]["workspace_evidence"]
     reset_workspace = loaded[BENCHMARKS[0]]["reset_average"][0]["workspace_evidence"]
     recurrent_training, recurrent_training_file_sha256 = _load_training_result(
-        recurrent_training_result, recurrent_workspace, mode="recurrent"
+        recurrent_training_result,
+        recurrent_workspace,
+        mode="recurrent",
+        training_schema=training_schema,
     )
     reset_training, reset_training_file_sha256 = _load_training_result(
-        reset_training_result, reset_workspace, mode="reset_average"
+        reset_training_result,
+        reset_workspace,
+        mode="reset_average",
+        training_schema=training_schema,
     )
     if any(
         recurrent_training.get(field) != reset_training.get(field)
@@ -329,7 +348,7 @@ def compare(
     }
     passed = all(checks.values())
     payload: dict[str, Any] = {
-        "schema": SCHEMA,
+        "schema": comparison_schema,
         "status": "complete",
         "benchmarks": boards,
         "macro": {
@@ -340,9 +359,7 @@ def compare(
         },
         "checks": checks,
         "pass": passed,
-        "action": (
-            "authorize_sub4b_confirmation" if passed else "reject_recurrent_workspace"
-        ),
+        "action": pass_action if passed else fail_action,
         "bootstrap": {
             "method": "paired_row_resampling_stratified_by_benchmark",
             "replicates": BOOTSTRAP_REPLICATES,
@@ -387,11 +404,7 @@ def compare(
         "architecture_locked": False,
         "four_b_training_executed": False,
         "four_b_training_authorized": False,
-        "claim_limit": (
-            "A pass authorizes only a larger sub-4B confirmation. A failure rejects "
-            "this recurrent workspace factor. Neither outcome executes or authorizes "
-            "4B training."
-        ),
+        "claim_limit": claim_limit,
     }
     payload["receipt_sha256"] = canonical_sha256(payload)
     return payload
