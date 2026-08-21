@@ -191,6 +191,9 @@ def test_launcher_submits_three_canaries_then_three_independent_screens() -> Non
     assert 'gpu_jobs_submitted": 6' in launcher
     assert 'maximum_concurrent_gpu_jobs": 3' in launcher
     assert "MECHANICS_ONLY=1" in launcher
+    assert '"${LOG_ROOT:?LOG_ROOT is required}"' in launcher
+    assert '--output="$LOG_ROOT/sai_short_screen_%j.out"' in launcher
+    assert '--error="$LOG_ROOT/sai_short_screen_%j.err"' in launcher
     assert '--dependency="afterok:$canary_job_id"' in launcher
     assert "trap cancel_partial_graph ERR" in launcher
     assert "scancel" in launcher

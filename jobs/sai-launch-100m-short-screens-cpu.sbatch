@@ -21,6 +21,7 @@ set -euo pipefail
 : "${DEVELOPMENT_STREAM:?DEVELOPMENT_STREAM is required}"
 : "${ENVIRONMENT_RECEIPT:?ENVIRONMENT_RECEIPT is required}"
 : "${OUTPUT_ROOT:?OUTPUT_ROOT is required}"
+: "${LOG_ROOT:?LOG_ROOT is required}"
 
 test -d "$SAI_ROOT/.git"
 test ! -L "$SAI_ROOT"
@@ -33,6 +34,9 @@ test -d "$TRAIN_STREAM"
 test -d "$DEVELOPMENT_STREAM"
 test -f "$ENVIRONMENT_RECEIPT"
 test ! -L "$ENVIRONMENT_RECEIPT"
+test -d "$LOG_ROOT"
+test ! -L "$LOG_ROOT"
+test -w "$LOG_ROOT"
 test -d "$(dirname "$OUTPUT_ROOT")"
 test ! -L "$(dirname "$OUTPUT_ROOT")"
 test ! -e "$OUTPUT_ROOT"
@@ -92,6 +96,8 @@ for family in gated_gqa gdn_hybrid kda_mla_hybrid; do
     env -u SLURM_OVERLAP -u SLURM_WHOLE sbatch --parsable \
       --chdir="$SAI_ROOT" \
       --time=00:45:00 \
+      --output="$LOG_ROOT/sai_short_screen_%j.out" \
+      --error="$LOG_ROOT/sai_short_screen_%j.err" \
       --export=SAI_ROOT="$SAI_ROOT",EXPECTED_COMMIT="$EXPECTED_COMMIT",PYTHON="$PYTHON",FLA_ROOT="$FLA_ROOT",GEOMETRY="$GEOMETRY",FAMILY="$family",TRAIN_STREAM="$TRAIN_STREAM",TRAIN_IDENTITY="$train_identity",DEVELOPMENT_STREAM="$DEVELOPMENT_STREAM",DEVELOPMENT_IDENTITY="$development_identity",DEVELOPMENT_SEQUENCES=1,OPTIMIZER_STEPS=1,TRAINING_SEQUENCES=256,SEQUENCES_PER_UPDATE=256,BATCH_SIZE=8,DEVELOPMENT_BATCH_SIZE=1,CHECKPOINT_INTERVAL=1,SEED=20260821,MECHANICS_ONLY=1,ENVIRONMENT_RECEIPT="$ENVIRONMENT_RECEIPT",CHECKPOINT="$canary_checkpoint",OUTPUT="$canary_output" \
       "$SAI_ROOT/jobs/sai-short-screen-single-h100.sbatch"
   )"
@@ -102,6 +108,8 @@ for family in gated_gqa gdn_hybrid kda_mla_hybrid; do
       --chdir="$SAI_ROOT" \
       --dependency="afterok:$canary_job_id" \
       --kill-on-invalid-dep=yes \
+      --output="$LOG_ROOT/sai_short_screen_%j.out" \
+      --error="$LOG_ROOT/sai_short_screen_%j.err" \
       --export=SAI_ROOT="$SAI_ROOT",EXPECTED_COMMIT="$EXPECTED_COMMIT",PYTHON="$PYTHON",FLA_ROOT="$FLA_ROOT",GEOMETRY="$GEOMETRY",FAMILY="$family",TRAIN_STREAM="$TRAIN_STREAM",TRAIN_IDENTITY="$train_identity",DEVELOPMENT_STREAM="$DEVELOPMENT_STREAM",DEVELOPMENT_IDENTITY="$development_identity",DEVELOPMENT_SEQUENCES=4096,OPTIMIZER_STEPS=191,TRAINING_SEQUENCES=48828,SEQUENCES_PER_UPDATE=256,BATCH_SIZE=8,DEVELOPMENT_BATCH_SIZE=8,CHECKPOINT_INTERVAL=10,SEED=20260821,ENVIRONMENT_RECEIPT="$ENVIRONMENT_RECEIPT",CHECKPOINT="$checkpoint",OUTPUT="$output" \
       "$SAI_ROOT/jobs/sai-short-screen-single-h100.sbatch"
   )"
@@ -110,7 +118,7 @@ for family in gated_gqa gdn_hybrid kda_mla_hybrid; do
 done
 
 dispatch="$OUTPUT_ROOT/dispatch.json"
-"$PYTHON" -P -s -B - "$dispatch" "$EXPECTED_COMMIT" "$train_identity" "$development_identity" "${canary_job_ids[*]}" "${full_job_ids[*]}" <<'PY'
+"$PYTHON" -P -s -B - "$dispatch" "$EXPECTED_COMMIT" "$train_identity" "$development_identity" "$LOG_ROOT" "${canary_job_ids[*]}" "${full_job_ids[*]}" <<'PY'
 import json
 import os
 import pathlib
@@ -123,9 +131,10 @@ payload = {
     "source_commit": sys.argv[2],
     "training_stream_identity_sha256": sys.argv[3],
     "development_stream_identity_sha256": sys.argv[4],
+    "log_root": sys.argv[5],
     "families": ["gated_gqa", "gdn_hybrid", "kda_mla_hybrid"],
-    "canary_job_ids": [int(value) for value in sys.argv[5].split()],
-    "full_job_ids": [int(value) for value in sys.argv[6].split()],
+    "canary_job_ids": [int(value) for value in sys.argv[6].split()],
+    "full_job_ids": [int(value) for value in sys.argv[7].split()],
     "gpu_jobs_submitted": 6,
     "maximum_concurrent_gpu_jobs": 3,
     "gpus_per_job": 1,
