@@ -27,3 +27,11 @@ def test_quality_filter_accepts_clean_english_and_rejects_pathologies() -> None:
     assert text_quality(repeated)["accepted"] is False
     controls = ("Technical language and scientific context. " * 20) + ("\x00" * 20)
     assert text_quality(controls)["accepted"] is False
+
+
+def test_cpu_acquisition_job_holds_no_gpu_and_is_no_requeue() -> None:
+    job = (ROOT / "jobs" / "sai-fineweb-edu-mechanics-cpu.sbatch").read_text()
+    assert "--no-requeue" in job
+    assert "--gres=" not in job
+    assert "--acquire" in job
+    assert "EXPECTED_COMMIT" in job

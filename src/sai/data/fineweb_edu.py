@@ -106,6 +106,41 @@ def _manifest(path: Path) -> dict[str, Any]:
     return payload
 
 
+def acquire(manifest: Path, source_root: Path) -> list[Path]:
+    """Download the exact manifest members and verify every byte before use."""
+
+    payload = _manifest(manifest)
+    if source_root.exists():
+        raise FineWebEduError("FineWeb acquisition root already exists")
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError as error:
+        raise FineWebEduError("Hugging Face Hub is required for acquisition") from error
+    source_root.mkdir(parents=True)
+    paths = []
+    for row in payload["files"]:
+        downloaded = Path(
+            hf_hub_download(
+                repo_id=payload["dataset"],
+                filename=row["path"],
+                repo_type="dataset",
+                revision=payload["revision"],
+                local_dir=source_root,
+            )
+        )
+        expected = source_root / row["path"]
+        if (
+            downloaded.resolve() != expected.resolve()
+            or not expected.is_file()
+            or expected.is_symlink()
+            or expected.stat().st_size != row["size"]
+            or sha256_file(expected) != row["sha256"]
+        ):
+            raise FineWebEduError("downloaded FineWeb source shard differs")
+        paths.append(expected)
+    return paths
+
+
 def convert(
     manifest: Path, source_root: Path, output: Path, receipt: Path
 ) -> dict[str, Any]:
@@ -239,7 +274,10 @@ def main() -> None:
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--receipt", type=Path, required=True)
+    parser.add_argument("--acquire", action="store_true")
     args = parser.parse_args()
+    if args.acquire:
+        acquire(args.manifest, args.source_root)
     report = convert(args.manifest, args.source_root, args.output, args.receipt)
     print(
         json.dumps(
