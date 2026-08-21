@@ -266,6 +266,7 @@ class DeltaMixer(nn.Module):
         *,
         channel_wise_decay: bool,
         backend: str = "reference",
+        fla_operators: fla_backend.FlaBackendOperators | None = None,
     ) -> None:
         super().__init__()
         if backend not in {"reference", "fla"}:
@@ -273,6 +274,7 @@ class DeltaMixer(nn.Module):
         self.config = config
         self.channel_wise_decay = channel_wise_decay
         self.backend = backend
+        self.fla_operators = fla_operators
         width = config.attention_width
         self.q_proj = nn.Linear(config.hidden_size, width, bias=False)
         self.k_proj = nn.Linear(config.hidden_size, width, bias=False)
@@ -307,14 +309,26 @@ class DeltaMixer(nn.Module):
             k_flat = F.silu(self.k_conv(self.k_proj(hidden), segment_ids))
             v_flat = F.silu(self.v_conv(self.v_proj(hidden), segment_ids))
         else:
+            operator_override = (
+                {} if self.fla_operators is None else {"operators": self.fla_operators}
+            )
             q_flat = fla_backend.fla_causal_conv1d(
-                self.q_proj(hidden), self.q_conv.weight, segment_ids
+                self.q_proj(hidden),
+                self.q_conv.weight,
+                segment_ids,
+                **operator_override,
             )
             k_flat = fla_backend.fla_causal_conv1d(
-                self.k_proj(hidden), self.k_conv.weight, segment_ids
+                self.k_proj(hidden),
+                self.k_conv.weight,
+                segment_ids,
+                **operator_override,
             )
             v_flat = fla_backend.fla_causal_conv1d(
-                self.v_proj(hidden), self.v_conv.weight, segment_ids
+                self.v_proj(hidden),
+                self.v_conv.weight,
+                segment_ids,
+                **operator_override,
             )
         q = q_flat.view(batch, sequence, heads, head_dim)
         k = k_flat.view(batch, sequence, heads, head_dim)
@@ -343,6 +357,7 @@ class DeltaMixer(nn.Module):
                 beta,
                 segment_ids,
                 channel_wise_decay=self.channel_wise_decay,
+                **operator_override,
             )
         gate = self.gate_up(self.gate_down(hidden)).view_as(output)
         output = self.output_norm(output) * torch.sigmoid(gate)

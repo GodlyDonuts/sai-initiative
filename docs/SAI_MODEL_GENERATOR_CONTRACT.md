@@ -82,6 +82,15 @@ before an official 100M run:
    recurrent, cache, and reset paths; and
 5. receive the user's explicit official training order.
 
+`sai.training.full_model_fla_parity.run_full_delta_mixer_parity` is the bounded
+end-to-end gate for item 1. It runs the current `DeltaMixer` mapping for both GDN
+and KDA at sequence boundaries 1, 63, 64, and 65; compares outputs, input
+gradients, and every named parameter gradient; records packed offsets even when
+the segment ID repeats across batch rows; and verifies the literal FLA `scale=1`
+mapping. Only the real FLA 0.4.2 CUDA/BF16 path can qualify production. Its small
+reference geometry does not replace the independent exact B8 x 2,048 mechanics
+canary and cannot provide architecture-quality evidence.
+
 Primary implementation references are the official
 [Kimi Linear model](https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Base),
 [Kimi Linear report](https://arxiv.org/abs/2510.26692), and
