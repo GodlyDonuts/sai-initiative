@@ -33,11 +33,11 @@ _METRICS = (
     "chunk_packed_vs_reset_state",
     "recurrent_packed_vs_reset_output",
     "recurrent_packed_vs_reset_state",
-    "gradient_q_chunk_vs_recurrent",
-    "gradient_k_chunk_vs_recurrent",
-    "gradient_v_chunk_vs_recurrent",
-    "gradient_g_chunk_vs_recurrent",
-    "gradient_beta_chunk_vs_recurrent",
+    "gradient_q_chunk_packed_vs_reset",
+    "gradient_k_chunk_packed_vs_reset",
+    "gradient_v_chunk_packed_vs_reset",
+    "gradient_g_chunk_packed_vs_reset",
+    "gradient_beta_chunk_packed_vs_reset",
 )
 _TOP_LEVEL_KEYS = {
     "schema",
@@ -227,7 +227,9 @@ def _call(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     output = operator(
         **inputs,
+        scale=1.0,
         output_final_state=True,
+        use_qk_l2norm_in_kernel=True,
         cu_seqlens=cu_seqlens,
     )
     if (
@@ -244,6 +246,8 @@ def _packed_execution(
     operator: Callable[..., tuple[torch.Tensor, torch.Tensor]],
     base_inputs: dict[str, torch.Tensor],
     cu_seqlens: torch.Tensor,
+    *,
+    backward: bool,
 ) -> dict[str, Any]:
     inputs = {
         name: value.detach().clone().requires_grad_(True)
@@ -252,8 +256,8 @@ def _packed_execution(
     output, state = _call(operator, inputs, cu_seqlens)
     if not _finite_tensor(output) or not _finite_tensor(state):
         raise FlaParityError("FLA packed forward produced non-finite values")
-    loss = output.float().square().mean()
-    loss.backward()
+    if backward:
+        output.float().square().mean().backward()
     gradients = {name: value.grad for name, value in inputs.items()}
     return {
         "output": output.detach(),
@@ -266,18 +270,29 @@ def _reset_execution(
     operator: Callable[..., tuple[torch.Tensor, torch.Tensor]],
     base_inputs: dict[str, torch.Tensor],
     offsets: tuple[int, ...],
-) -> tuple[torch.Tensor, torch.Tensor]:
+    *,
+    backward: bool,
+) -> dict[str, Any]:
+    inputs = {
+        name: value.detach().clone().requires_grad_(True)
+        for name, value in base_inputs.items()
+    }
     outputs = []
     states = []
-    with torch.no_grad():
-        for start, stop in zip(offsets[:-1], offsets[1:], strict=True):
-            segment = {
-                name: value[:, start:stop] for name, value in base_inputs.items()
-            }
-            output, state = _call(operator, segment, None)
-            outputs.append(output)
-            states.append(state)
-    return torch.cat(outputs, dim=1), torch.cat(states, dim=0)
+    for start, stop in zip(offsets[:-1], offsets[1:], strict=True):
+        segment = {name: value[:, start:stop] for name, value in inputs.items()}
+        output, state = _call(operator, segment, None)
+        outputs.append(output)
+        states.append(state)
+    combined_output = torch.cat(outputs, dim=1)
+    combined_state = torch.cat(states, dim=0)
+    if backward:
+        combined_output.float().square().mean().backward()
+    return {
+        "output": combined_output.detach(),
+        "state": combined_state.detach(),
+        "gradients": {name: value.grad for name, value in inputs.items()},
+    }
 
 
 def _probe_family(
@@ -305,10 +320,10 @@ def _probe_family(
         value_dim=value_dim,
     )
     cu_seqlens = torch.tensor(offsets, device=device, dtype=torch.long)
-    chunk_packed = _packed_execution(chunk, base, cu_seqlens)
-    recurrent_packed = _packed_execution(recurrent, base, cu_seqlens)
-    chunk_reset = _reset_execution(chunk, base, offsets)
-    recurrent_reset = _reset_execution(recurrent, base, offsets)
+    chunk_packed = _packed_execution(chunk, base, cu_seqlens, backward=True)
+    recurrent_packed = _packed_execution(recurrent, base, cu_seqlens, backward=False)
+    chunk_reset = _reset_execution(chunk, base, offsets, backward=True)
+    recurrent_reset = _reset_execution(recurrent, base, offsets, backward=False)
 
     forward = thresholds["forward"]
     state = thresholds["state"]
@@ -321,16 +336,16 @@ def _probe_family(
             chunk_packed["state"], recurrent_packed["state"], **state
         ),
         "chunk_packed_vs_reset_output": _metric(
-            chunk_packed["output"], chunk_reset[0], **forward
+            chunk_packed["output"], chunk_reset["output"], **forward
         ),
         "chunk_packed_vs_reset_state": _metric(
-            chunk_packed["state"], chunk_reset[1], **state
+            chunk_packed["state"], chunk_reset["state"], **state
         ),
         "recurrent_packed_vs_reset_output": _metric(
-            recurrent_packed["output"], recurrent_reset[0], **forward
+            recurrent_packed["output"], recurrent_reset["output"], **forward
         ),
         "recurrent_packed_vs_reset_state": _metric(
-            recurrent_packed["state"], recurrent_reset[1], **state
+            recurrent_packed["state"], recurrent_reset["state"], **state
         ),
     }
     gradients = []
@@ -341,16 +356,16 @@ def _probe_family(
         "packed_recurrent_state": _tensor_sha256(recurrent_packed["state"]),
     }
     for name in ("q", "k", "v", "g", "beta"):
-        chunk_gradient = chunk_packed["gradients"][name]
-        recurrent_gradient = recurrent_packed["gradients"][name]
-        gradients.extend((chunk_gradient, recurrent_gradient))
-        if chunk_gradient is None or recurrent_gradient is None:
+        packed_gradient = chunk_packed["gradients"][name]
+        reset_gradient = chunk_reset["gradients"][name]
+        gradients.extend((packed_gradient, reset_gradient))
+        if packed_gradient is None or reset_gradient is None:
             continue
-        metrics[f"gradient_{name}_chunk_vs_recurrent"] = _metric(
-            chunk_gradient, recurrent_gradient, **gradient
+        metrics[f"gradient_{name}_chunk_packed_vs_reset"] = _metric(
+            packed_gradient, reset_gradient, **gradient
         )
-        tensor_hashes[f"chunk_gradient_{name}"] = _tensor_sha256(chunk_gradient)
-        tensor_hashes[f"recurrent_gradient_{name}"] = _tensor_sha256(recurrent_gradient)
+        tensor_hashes[f"chunk_packed_gradient_{name}"] = _tensor_sha256(packed_gradient)
+        tensor_hashes[f"chunk_reset_gradient_{name}"] = _tensor_sha256(reset_gradient)
     all_present = all(value is not None for value in gradients)
     all_finite = all(_finite_tensor(value) for value in gradients)
     metric_boundary = set(metrics) == set(_METRICS)
@@ -603,16 +618,16 @@ def validate_receipt(payload: Any) -> dict[str, Any]:
                 "packed_chunk_state",
                 "packed_recurrent_output",
                 "packed_recurrent_state",
-                "chunk_gradient_q",
-                "recurrent_gradient_q",
-                "chunk_gradient_k",
-                "recurrent_gradient_k",
-                "chunk_gradient_v",
-                "recurrent_gradient_v",
-                "chunk_gradient_g",
-                "recurrent_gradient_g",
-                "chunk_gradient_beta",
-                "recurrent_gradient_beta",
+                "chunk_packed_gradient_q",
+                "chunk_reset_gradient_q",
+                "chunk_packed_gradient_k",
+                "chunk_reset_gradient_k",
+                "chunk_packed_gradient_v",
+                "chunk_reset_gradient_v",
+                "chunk_packed_gradient_g",
+                "chunk_reset_gradient_g",
+                "chunk_packed_gradient_beta",
+                "chunk_reset_gradient_beta",
             }
             or any(
                 not isinstance(digest, str)

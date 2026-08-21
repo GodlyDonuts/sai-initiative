@@ -22,10 +22,14 @@ def _mock_recurrence(
     g: torch.Tensor,
     beta: torch.Tensor,
     *,
+    scale: float,
     output_final_state: bool,
+    use_qk_l2norm_in_kernel: bool,
     cu_seqlens: torch.Tensor | None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     del output_final_state
+    assert scale == 1.0
+    assert use_qk_l2norm_in_kernel is True
     offsets = (
         [0, q.shape[1]]
         if cu_seqlens is None
