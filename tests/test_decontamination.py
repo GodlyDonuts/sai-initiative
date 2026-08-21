@@ -8,9 +8,11 @@ import pytest
 from sai.data.decontamination import (
     RAW_SCHEMA,
     DecontaminationError,
+    _shingles,
     build,
     validate,
 )
+from sai.data.token_stream import canonical_sha256
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> Path:
@@ -102,3 +104,13 @@ def test_cpu_decontamination_job_requires_exact_twenty_boundaries() -> None:
     assert "--no-requeue" in job
     assert "--gres=" not in job
     assert "EXPECTED_COMMIT" in job
+
+
+def test_shingle_index_uses_compact_byte_exact_sha256_keys() -> None:
+    tokens = [str(index) for index in range(15)]
+    observed = _shingles(tokens, 13)
+    assert observed == {
+        bytes.fromhex(canonical_sha256(tokens[index : index + 13]))
+        for index in range(3)
+    }
+    assert all(isinstance(value, bytes) and len(value) == 32 for value in observed)

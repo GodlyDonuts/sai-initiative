@@ -51,16 +51,16 @@ def _strings(value: Any) -> list[str]:
     return []
 
 
-def _shingles(tokens: list[str], width: int) -> set[str]:
+def _shingles(tokens: list[str], width: int) -> set[bytes]:
     if len(tokens) < width:
         return set()
     return {
-        canonical_sha256(tokens[index : index + width])
+        bytes.fromhex(canonical_sha256(tokens[index : index + width]))
         for index in range(len(tokens) - width + 1)
     }
 
 
-def _text_shingles(text: str) -> tuple[set[str], set[str]]:
+def _text_shingles(text: str) -> tuple[set[bytes], set[bytes]]:
     normalized = _normalize(text)
     return (
         _shingles(_WORD.findall(normalized), POLICY["word_shingle_tokens"]),
@@ -70,11 +70,11 @@ def _text_shingles(text: str) -> tuple[set[str], set[str]]:
 
 def boundary_index(
     paths: list[Path],
-) -> tuple[set[str], set[str], list[dict[str, Any]]]:
+) -> tuple[set[bytes], set[bytes], list[dict[str, Any]]]:
     if not paths:
         raise DecontaminationError("at least one benchmark boundary is required")
-    words: set[str] = set()
-    code: set[str] = set()
+    words: set[bytes] = set()
+    code: set[bytes] = set()
     receipts = []
     resolved = set()
     for order, path in enumerate(paths):
@@ -164,7 +164,7 @@ def _compute(
     words, code, boundary_receipts = boundary_index(boundaries)
     boundary_manifest_sha256 = canonical_sha256(boundary_receipts)
     policy_sha256 = canonical_sha256(POLICY)
-    seen_text: set[str] = set()
+    seen_text: set[bytes] = set()
     accepted_identity_digest = hashlib.sha256()
     dropped_evidence_digest = hashlib.sha256()
     scanned = accepted = dropped = 0
@@ -182,9 +182,7 @@ def _compute(
             except json.JSONDecodeError as error:
                 raise DecontaminationError("raw source JSONL is malformed") from error
             normalized_text = _normalize(raw["text"])
-            normalized_text_sha256 = hashlib.sha256(
-                normalized_text.encode()
-            ).hexdigest()
+            normalized_text_sha256 = hashlib.sha256(normalized_text.encode()).digest()
             word_shingles, code_shingles = _text_shingles(raw["text"])
             word_overlap = words.intersection(word_shingles)
             code_overlap = code.intersection(code_shingles)
