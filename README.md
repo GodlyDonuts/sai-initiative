@@ -125,8 +125,12 @@ benchmark evidence selects an architecture.
   `6badcd593aee3052e3d66afb315b979e2cc62c4a61f9cef31c07203912478a0f`.
   Sai reopens its exact external manifest, receipt, and every weight member; a
   fresh CPU replay passed all 12 members and all `6,167,865,576` bytes. CPU-only
-  stream job `769203` is staged after decontamination to freeze the same
-  499,998,720-token source under the exact Smol tokenizer. The one-H100
+  first stream job `769203` was cancelled before allocation (zero elapsed,
+  zero restarts) when preflight found that Hugging Face's base `vocab_size`
+  excludes Smol's 256 added tokens, including EOS `128012`. The packer now
+  binds the full tokenizer length `128256`; corrected CPU job `769208` is
+  staged after decontamination to freeze the same 499,998,720-token source
+  under the exact Smol tokenizer. The one-H100
   no-training mechanics entry point remains unscheduled. This host will be used
   only if the 0.8B recurrent factor passes; preparing it is not a result and
   does not consume the terminal 4B boundary.
