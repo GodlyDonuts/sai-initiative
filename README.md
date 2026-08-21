@@ -29,10 +29,19 @@ benchmark evidence selects an architecture.
   source-disjoint real development benchmarks.
 - The exact six-shard FineWeb-Edu mechanics prefix is pinned at revision
   `87f09149ef4734204d70ed1d046ddc9ca3f2b8f9` (`12,914,392,174` source bytes).
-  CPU acquisition/conversion is active as job `768138`; it consumes no GPU.
-- Current critical path: finish corpus acquisition, replay decontamination,
-  build/qualify 64K/48K/32K tokenizers, freeze the shared stream, then run the
-  matched 100M real-benchmark tournament. No 4B training is authorized.
+  CPU job `768138` completed with zero restarts after scanning `4,354,000`
+  rows and admitting `572,973` documents. The resulting `3,103,125,021`-byte
+  JSONL is SHA-256
+  `529ff4526cfef27adfc9cac1ab14f1f36bfcd4b2f6b593ff17ed19f47981882b`;
+  its conversion receipt file is SHA-256
+  `3aee2c518a2eb387a89fd155b5a811592ae778c9133adb9fbe49a0191f87b4fc`.
+- The CPU-only dependency chain is live: `768140` replays decontamination
+  against all ten development-board question and assessor pairs, `768141`
+  builds and qualifies the 64K/48K/32K tokenizers, and `768142` freezes the
+  exact training/development token streams. No GPU is bound to those jobs.
+- Current critical path: finish that data chain, then run matched sub-4B
+  training and source-disjoint real-development benchmark screens. No 4B
+  training is authorized.
 
 ## Current target
 
