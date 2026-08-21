@@ -57,6 +57,24 @@ class MappingTokenizer(CharacterTokenizer):
         return UserDict(super().__call__(text, **kwargs))
 
 
+class AddedVocabularyTokenizer:
+    eos_token_id = 5
+    vocab_size = 4
+
+    def __len__(self):
+        return 6
+
+    def __call__(self, text, *, add_special_tokens=False, return_offsets_mapping=False):
+        assert text == "a"
+        assert not add_special_tokens
+        assert return_offsets_mapping
+        return {"input_ids": [4], "offset_mapping": [(0, 1)]}
+
+    def decode(self, token_ids, **kwargs):
+        assert token_ids == [4]
+        return "a"
+
+
 def document(index: int, text: str, *, benchmark_disjoint: bool = True) -> dict:
     return {
         "schema": ROW_SCHEMA,
@@ -151,6 +169,27 @@ def test_freeze_accepts_hugging_face_style_mapping_output(tmp_path: Path) -> Non
         prefix_sequences={1},
     )
     assert report["status"] == "complete"
+
+
+def test_freeze_uses_full_tokenizer_length_for_added_eos_tokens(
+    tmp_path: Path,
+) -> None:
+    input_path = write_documents(tmp_path / "added.jsonl", [document(0, "a")])
+    output = tmp_path / "stream"
+    report = freeze(
+        AddedVocabularyTokenizer(),
+        [input_path],
+        output,
+        tokenizer_identity_sha256="b" * 64,
+        sequence_length=2,
+        prefix_sequences={1},
+    )
+    assert report["vocab_size"] == 6
+    assert report["eos_token_id"] == 5
+    assert struct.unpack("<2I", (output / "shard_00000.tokens.u32le").read_bytes()) == (
+        4,
+        5,
+    )
 
 
 def test_freeze_is_byte_deterministic_across_output_roots(tmp_path: Path) -> None:

@@ -317,12 +317,19 @@ def freeze(
         )
     ):
         raise TokenStreamError("packed stream geometry differs")
-    vocabulary_size = getattr(tokenizer, "vocab_size", None)
+    base_vocabulary_size = getattr(tokenizer, "vocab_size", None)
+    try:
+        vocabulary_size = len(tokenizer)  # type: ignore[arg-type]
+    except TypeError:
+        vocabulary_size = base_vocabulary_size
     eos_token_id = getattr(tokenizer, "eos_token_id", None)
     if (
-        isinstance(vocabulary_size, bool)
+        isinstance(base_vocabulary_size, bool)
+        or not isinstance(base_vocabulary_size, int)
+        or base_vocabulary_size <= 0
+        or isinstance(vocabulary_size, bool)
         or not isinstance(vocabulary_size, int)
-        or vocabulary_size <= 0
+        or vocabulary_size < base_vocabulary_size
         or isinstance(eos_token_id, bool)
         or not isinstance(eos_token_id, int)
         or not 0 <= eos_token_id < vocabulary_size
