@@ -189,9 +189,8 @@ def _validate_row(row: dict[str, Any], benchmark: str) -> dict[str, Any]:
             not isinstance(choice, str) or not choice or choice != choice.strip()
             for choice in choices
         )
-        or len(set(choices)) != len(choices)
     ):
-        raise DevelopmentMCError("choices must contain 2-16 unique stripped strings")
+        raise DevelopmentMCError("choices must contain 2-16 nonempty stripped strings")
     answer_index = row.get("answer_index")
     if (
         isinstance(answer_index, bool)

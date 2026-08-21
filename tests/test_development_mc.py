@@ -153,6 +153,40 @@ def test_exact_supported_schema_scores_normalized_choices_and_binds_artifacts(
     }
 
 
+def test_exact_duplicate_distractors_preserve_official_choice_indices(
+    tmp_path: Path,
+) -> None:
+    source, rows = _population(tmp_path)
+    rows[0]["choices"] = ["yes", "no", "no"]
+    rows[0]["answer_index"] = 0
+    source.write_text(json.dumps(rows[0]) + "\n")
+    receipt, training_sha256 = _receipt(tmp_path, source, "mmlu_pro")
+    artifacts = [
+        _artifact(tmp_path, "checkpoint.pt"),
+        _artifact(tmp_path, "config.json"),
+        _artifact(tmp_path, "tokenizer.json"),
+        _artifact(tmp_path, "runtime.py"),
+    ]
+    result = evaluate_development_mc(
+        YesBiasedModel(),
+        CharacterTokenizer(),
+        benchmark="mmlu_pro",
+        source_path=source,
+        disjoint_receipt_path=receipt,
+        training_source_sha256=training_sha256,
+        checkpoint_paths=[artifacts[0]],
+        config_paths=[artifacts[1]],
+        tokenizer_paths=[artifacts[2]],
+        runtime_paths=[artifacts[3]],
+        expected_rows=1,
+        expected_identity_order_sha256=_canonical_sha256([rows[0]["row_id"]]),
+        max_sequence_tokens=256,
+    )
+    assert result["aggregate"] == {"correct": 1, "rows": 1, "accuracy": 1.0}
+    assert len(result["rows"][0]["choice_scores"]) == 3
+    assert result["rows"][0]["predicted_index"] == 0
+
+
 def test_fail_closed_on_schema_identity_and_disjointness(tmp_path: Path) -> None:
     source, rows = _population(tmp_path)
     row = rows[0]
