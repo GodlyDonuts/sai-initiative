@@ -62,6 +62,8 @@ The exact no-training 100M comparison planner is specified in
 [`docs/SAI_100M_EXPERIMENT_PLAN.md`](docs/SAI_100M_EXPERIMENT_PLAN.md).
 The tokenizer/data specialization workstream is reconciled with that ladder in
 [`docs/SAI_4B_SPECIALIZATION_RESEARCH_PLAN.md`](docs/SAI_4B_SPECIALIZATION_RESEARCH_PLAN.md).
+The exact lossless 64K/48K/32K measurement boundary is frozen in
+[`docs/SAI_TOKENIZER_QUALIFICATION_CONTRACT.md`](docs/SAI_TOKENIZER_QUALIFICATION_CONTRACT.md).
 
 ### Sequence-mixer tournament
 
@@ -165,6 +167,8 @@ One serious regression vetoes a favorable average.
 - [x] implement an exact three-family, three-seed iso-data/iso-FLOP planner;
 - [x] implement deterministic binary token packing with exact UTF-8 prefix and
   cross-document boundary receipts;
+- [x] implement the exact 64K/48K/32K tokenizer qualifier and protected Unicode
+  suite without building or selecting a candidate;
 - [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
 - [ ] qualify production CUDA kernels against the CPU recurrence oracle;

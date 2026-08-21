@@ -114,7 +114,8 @@ def sha256_tree(root: Path) -> str:
     return canonical_sha256(rows)
 
 
-def _normalize_document(row: Any) -> dict[str, Any]:
+def normalize_document(row: Any) -> dict[str, Any]:
+    """Validate and canonicalize one benchmark-disjoint source document."""
     if not isinstance(row, dict) or row.get("schema") != ROW_SCHEMA:
         raise TokenStreamError("pretraining document schema differs")
     text = row.get("text")
@@ -411,7 +412,7 @@ def freeze(
                         continue
                     documents_scanned += 1
                     try:
-                        row = _normalize_document(json.loads(line))
+                        row = normalize_document(json.loads(line))
                     except (json.JSONDecodeError, TokenStreamError):
                         malformed += 1
                         continue

@@ -63,6 +63,10 @@ cross-document target masking, total geometry, and cumulative UTF-8 bytes for
 all requested prefixes. The implemented binary format and replay rules are in
 [`SAI_ORDERED_TOKEN_STREAM_CONTRACT.md`](SAI_ORDERED_TOKEN_STREAM_CONTRACT.md).
 The environment receipt binds exact Python, Torch, CUDA, and Triton versions.
+The implemented `sai-qualify-tokenizers` entry point and its protected suite are
+specified in
+[`SAI_TOKENIZER_QUALIFICATION_CONTRACT.md`](SAI_TOKENIZER_QUALIFICATION_CONTRACT.md).
+Its prospective 48K receipt authorizes no training by itself.
 
 The planner reopens and revalidates every input whenever its output is checked.
 Missing, mutated, reordered, shortened, mismatched-tokenizer, or prematurely
