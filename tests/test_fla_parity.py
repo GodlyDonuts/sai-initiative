@@ -29,7 +29,7 @@ def _mock_recurrence(
 ) -> tuple[torch.Tensor, torch.Tensor]:
     del output_final_state
     assert scale == 1.0
-    assert use_qk_l2norm_in_kernel is True
+    assert use_qk_l2norm_in_kernel is False
     offsets = (
         [0, q.shape[1]]
         if cu_seqlens is None

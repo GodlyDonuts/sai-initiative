@@ -207,8 +207,13 @@ def _inputs(
         value = torch.randn(*shape, *tail, generator=generator) * scale
         return value.to(device=device, dtype=dtype).detach().requires_grad_(True)
 
-    q = normal((key_dim,))
-    k = normal((key_dim,))
+    # Sai normalizes q/k outside the recurrence with torch's 1e-12 default
+    # epsilon.  FLA's in-kernel normalization uses a different epsilon, so the
+    # production mapping must materialize Sai's exact values before dispatch.
+    q = F.normalize(normal((key_dim,)).float(), dim=-1)
+    q = q.to(dtype=dtype).detach().requires_grad_(True)
+    k = F.normalize(normal((key_dim,)).float(), dim=-1)
+    k = k.to(dtype=dtype).detach().requires_grad_(True)
     v = normal((value_dim,))
     gate_tail = () if family == "gated_delta" else (key_dim,)
     raw_gate = torch.randn(*shape, *gate_tail, generator=generator)
@@ -229,7 +234,7 @@ def _call(
         **inputs,
         scale=1.0,
         output_final_state=True,
-        use_qk_l2norm_in_kernel=True,
+        use_qk_l2norm_in_kernel=False,
         cu_seqlens=cu_seqlens,
     )
     if (
@@ -426,9 +431,9 @@ def run_parity_mechanics(
         "value_dim": 16,
     }
     thresholds = {
-        "forward": {"absolute_tolerance": 0.03, "relative_tolerance": 0.08},
-        "state": {"absolute_tolerance": 0.03, "relative_tolerance": 0.08},
-        "gradient": {"absolute_tolerance": 0.06, "relative_tolerance": 0.15},
+        "forward": {"absolute_tolerance": 0.005, "relative_tolerance": 0.005},
+        "state": {"absolute_tolerance": 0.005, "relative_tolerance": 0.005},
+        "gradient": {"absolute_tolerance": 0.02, "relative_tolerance": 0.02},
     }
     generator = torch.Generator(device="cpu")
     generator.manual_seed(seed)
@@ -587,9 +592,9 @@ def validate_receipt(payload: Any) -> dict[str, Any]:
         "key_dim": 16,
         "value_dim": 16,
     } or thresholds != {
-        "forward": {"absolute_tolerance": 0.03, "relative_tolerance": 0.08},
-        "state": {"absolute_tolerance": 0.03, "relative_tolerance": 0.08},
-        "gradient": {"absolute_tolerance": 0.06, "relative_tolerance": 0.15},
+        "forward": {"absolute_tolerance": 0.005, "relative_tolerance": 0.005},
+        "state": {"absolute_tolerance": 0.005, "relative_tolerance": 0.005},
+        "gradient": {"absolute_tolerance": 0.02, "relative_tolerance": 0.02},
     }:
         raise FlaParityError("FLA parity geometry or thresholds differ")
     cases = payload.get("cases")
