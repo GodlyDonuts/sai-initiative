@@ -266,3 +266,13 @@ def test_tokenizer_tree_hash_rejects_links_and_changes_with_bytes(
     (root / "link").symlink_to(root / "tokenizer.json")
     with pytest.raises(TokenStreamError, match="contains a link"):
         sha256_tree(root)
+
+
+def test_mechanics_stream_job_is_cpu_only_and_freezes_exact_short_budget() -> None:
+    root = Path(__file__).resolve().parents[1]
+    job = (root / "jobs" / "sai-freeze-mechanics-streams-cpu.sbatch").read_text()
+    assert "--no-requeue" in job
+    assert "--gres=" not in job
+    assert "--prefix-sequences 48828" in job
+    assert "--prefix-sequences 4096" in job
+    assert "sai-selected-tokenizer-receipt-v1" in job
