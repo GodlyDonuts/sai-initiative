@@ -11,6 +11,7 @@ import shutil
 import struct
 import sys
 from collections import Counter
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -33,7 +34,7 @@ class OffsetTokenizer(Protocol):
         *,
         add_special_tokens: bool,
         return_offsets_mapping: bool,
-    ) -> dict[str, Any]: ...
+    ) -> Mapping[str, Any]: ...
 
     def decode(
         self,
@@ -166,7 +167,7 @@ def _tokenize(
     tokenizer: OffsetTokenizer, text: str, vocabulary_size: int
 ) -> tuple[list[int], list[int]]:
     encoded = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
-    if not isinstance(encoded, dict):
+    if not isinstance(encoded, Mapping):
         raise TokenStreamError("tokenizer output differs")
     token_ids = encoded.get("input_ids")
     offsets = encoded.get("offset_mapping")

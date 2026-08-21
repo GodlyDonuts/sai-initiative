@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import struct
+from collections import UserDict
 from pathlib import Path
 
 import pytest
@@ -49,6 +50,11 @@ class GapTokenizer(CharacterTokenizer):
 class NormalizingTokenizer(CharacterTokenizer):
     def decode(self, token_ids, **kwargs):
         return super().decode(token_ids, **kwargs).upper()
+
+
+class MappingTokenizer(CharacterTokenizer):
+    def __call__(self, text, **kwargs):
+        return UserDict(super().__call__(text, **kwargs))
 
 
 def document(index: int, text: str, *, benchmark_disjoint: bool = True) -> dict:
@@ -133,6 +139,18 @@ def test_freeze_packs_exact_tokens_boundaries_and_utf8_prefixes(
         False,
         False,
     ]
+
+
+def test_freeze_accepts_hugging_face_style_mapping_output(tmp_path: Path) -> None:
+    report = freeze(
+        MappingTokenizer(),
+        [source(tmp_path)],
+        tmp_path / "stream",
+        tokenizer_identity_sha256="a" * 64,
+        sequence_length=8,
+        prefix_sequences={1},
+    )
+    assert report["status"] == "complete"
 
 
 def test_freeze_is_byte_deterministic_across_output_roots(tmp_path: Path) -> None:
