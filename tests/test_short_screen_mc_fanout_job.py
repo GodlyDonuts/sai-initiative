@@ -14,6 +14,8 @@ def test_fanout_is_cpu_only_bounded_and_waits_for_exact_completed_inputs() -> No
     assert "--gres=" not in job
     assert '""|NoDevFiles' in job
     assert "CPU evaluation launcher was exposed to a GPU" in job
+    assert 'rev-parse --is-inside-work-tree)" = "true"' in job
+    assert 'test -d "$SAI_ROOT/.git"' not in job
     assert 'short_screen_state" = "COMPLETED"' in job
     assert 'population_state" = "COMPLETED"' in job
     assert 'geometry_row["scale"] == "100m"' in job

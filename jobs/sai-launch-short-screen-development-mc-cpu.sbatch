@@ -54,8 +54,8 @@ case "${CUDA_VISIBLE_DEVICES:-}" in
   ""|NoDevFiles) ;;
   *) echo "CPU evaluation launcher was exposed to a GPU" >&2; exit 2 ;;
 esac
-test -d "$SAI_ROOT/.git"
 test ! -L "$SAI_ROOT"
+test "$(git -C "$SAI_ROOT" rev-parse --is-inside-work-tree)" = "true"
 test "$(git -C "$SAI_ROOT" rev-parse HEAD)" = "$EXPECTED_COMMIT"
 test -z "$(git -C "$SAI_ROOT" status --short)"
 test -x "$PYTHON"

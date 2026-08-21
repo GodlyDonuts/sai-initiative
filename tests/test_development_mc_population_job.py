@@ -10,6 +10,8 @@ def test_cpu_population_job_freezes_exact_two_benchmark_graph() -> None:
     assert "--gres=" not in job
     assert '""|NoDevFiles' in job
     assert "CPU population job was exposed to a GPU" in job
+    assert 'rev-parse --is-inside-work-tree)" = "true"' in job
+    assert 'test -d "$SAI_ROOT/.git"' not in job
     assert "DECONTAMINATION_JOB_ID" in job
     assert 'decontamination_state" = "COMPLETED"' in job
     assert "fineweb_edu_mechanics_admitted_be505b6_r1.receipt.json" in job
