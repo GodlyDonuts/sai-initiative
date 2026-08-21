@@ -9,6 +9,11 @@ description = "Benchmark-first research and training infrastructure for Sai 4B"
 requires-python = ">=3.11"
 dependencies = []
 
+[project.scripts]
+sai-freeze-data = "sai.data.freeze:main"
+sai-public-gate = "sai.gates.public_benchmarks:main"
+sai-readiness = "sai.readiness:main"
+
 [project.optional-dependencies]
 train = ["torch>=2.6", "transformers>=5.0"]
 dev = ["black>=25.0", "pytest>=8.0", "ruff>=0.11"]

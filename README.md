@@ -83,7 +83,9 @@ One serious regression vetoes a favorable average.
 - [x] encode the five-board benchmark gate and historical falsification;
 - [x] prototype frozen-parent replay KL with a matched zero-weight control;
 - [x] begin a lossless tokenizer-capacity auditor;
-- [ ] freeze skill, direct, deliberate, replay, and RL prompt banks;
+- [x] implement deterministic, benchmark-disjoint freezing for skill, direct,
+  deliberate, replay, and RL-prompt banks;
+- [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify untouched and reduced tokenizer candidates;
 - [ ] package the immutable 4B parent and Sai training runtime;
 - [ ] run a low-token SFT/control pilot;
@@ -93,6 +95,7 @@ One serious regression vetoes a favorable average.
 ## Repository layout
 
 - `src/sai/gates/` — real-benchmark promotion decisions
+- `src/sai/data/` — verified role populations and contamination filtering
 - `src/sai/training/` — behavior preservation and reasoning training
 - `src/sai/tokenizer/` — vocabulary capacity measurement and surgery
 - `tests/` — fail-closed regression coverage

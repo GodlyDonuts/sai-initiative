@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 from typing import Any
 
@@ -222,3 +224,19 @@ def validate(payload: Any) -> dict[str, Any]:
 
 def load_and_validate(path: Path) -> dict[str, Any]:
     return validate(json.loads(path.read_text()))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    if args.output.exists():
+        raise ReadinessError("readiness receipt already exists")
+    receipt = load_and_validate(args.manifest)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = args.output.with_name(f".{args.output.name}.tmp.{os.getpid()}")
+    temporary.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n")
+    os.replace(temporary, args.output)
+    print(json.dumps({"status": receipt["status"]}, sort_keys=True))
+    return 0
