@@ -15,6 +15,7 @@ import torch
 import torch.nn.functional as F
 
 from sai.model.config import SaiModelConfig
+from sai.model.initialization import POLICY_SHA256, initialize_sai_model
 from sai.model.reference import SaiCausalLM, exact_parameter_count
 from sai.training.fla_parity import canonical_sha256, validate_receipt
 from sai.training.runner import TrainingRunConfig, build_adamw
@@ -84,9 +85,9 @@ def _run_family(
 ) -> dict[str, Any]:
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    model = SaiCausalLM(config, delta_backend="fla").to(
-        device="cuda", dtype=torch.bfloat16
-    )
+    model = SaiCausalLM(config, delta_backend="fla")
+    initialization = initialize_sai_model(model, seed=seed)
+    model = model.to(device="cuda", dtype=torch.bfloat16)
     model.train()
     initial_state = _state_sha256(model)
     optimizer = build_adamw(
@@ -158,6 +159,7 @@ def _run_family(
         "family": family,
         "config": config.as_dict(),
         "parameters": exact_parameter_count(model),
+        "initialization": initialization,
         "sequence_length": sequence_length,
         "segments": 2,
         "valid_targets_per_step": int(target_mask.sum().item()),
@@ -171,12 +173,15 @@ def _run_family(
         "initial_state_sha256": initial_state,
         "final_state_sha256": final_state,
         "state_changed": initial_state != final_state,
+        "random_token_loss_sanity_maximum": 25.0,
+        "random_token_loss_sanity_passed": all(value <= 25.0 for value in losses),
         "peak_cuda_bytes": torch.cuda.max_memory_allocated(),
     }
     result["passed"] = bool(
         result["all_parameters_received_gradients"]
         and result["all_values_finite"]
         and result["state_changed"]
+        and result["random_token_loss_sanity_passed"]
     )
     del optimizer, model
     torch.cuda.empty_cache()
@@ -225,6 +230,7 @@ def run(
         "parity_receipt_path": str(parity_receipt.resolve()),
         "parity_receipt_file_sha256": sha256_file(parity_receipt),
         "parity_receipt_sha256": parity["receipt_sha256"],
+        "initialization_policy_sha256": POLICY_SHA256,
         "seed": seed,
         "sequence_length": sequence_length,
         "optimizer_steps_per_family": optimizer_steps,
