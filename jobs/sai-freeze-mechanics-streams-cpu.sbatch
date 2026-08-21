@@ -46,7 +46,7 @@ import pathlib
 import sys
 
 payload = json.loads(pathlib.Path(sys.argv[1]).read_text())
-assert payload["schema"] == "sai-selected-tokenizer-receipt-v1"
+assert payload["schema"] == "sai-tokenizer-qualification-receipt-v1"
 assert payload["status"] == "qualified"
 assert payload["vocab_size"] == 48_000
 print(payload["tokenizer_identity_sha256"])
