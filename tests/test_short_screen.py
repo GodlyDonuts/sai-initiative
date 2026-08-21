@@ -173,5 +173,7 @@ def test_job_is_one_h100_no_requeue_and_has_no_retry_or_4b() -> None:
     assert "SEQUENCES_PER_UPDATE" in job
     assert "ENVIRONMENT_RECEIPT" in job
     assert '"production_cuda_qualified"] is True' in job
+    assert 'git -C "$SAI_ROOT" archive --format=tar "$EXPECTED_COMMIT"' in job
+    assert 'sha256sum "$ENVIRONMENT_RECEIPT"' in job
     assert "retry" not in job.lower()
     assert "4b" not in job.lower()

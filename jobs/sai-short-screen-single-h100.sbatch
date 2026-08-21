@@ -27,8 +27,6 @@ set -euo pipefail
 : "${DEVELOPMENT_SEQUENCES:?DEVELOPMENT_SEQUENCES is required}"
 : "${OPTIMIZER_STEPS:?OPTIMIZER_STEPS is required}"
 : "${TRAINING_SEQUENCES:?TRAINING_SEQUENCES is required}"
-: "${CODE_SHA256:?CODE_SHA256 is required}"
-: "${ENVIRONMENT_SHA256:?ENVIRONMENT_SHA256 is required}"
 : "${ENVIRONMENT_RECEIPT:?ENVIRONMENT_RECEIPT is required}"
 : "${CHECKPOINT:?CHECKPOINT is required}"
 : "${OUTPUT:?OUTPUT is required}"
@@ -47,7 +45,11 @@ test ! -L "$ENVIRONMENT_RECEIPT"
 test -d "$(dirname "$CHECKPOINT")"
 test -d "$(dirname "$OUTPUT")"
 test ! -e "$OUTPUT"
-test "$(sha256sum "$ENVIRONMENT_RECEIPT" | cut -d ' ' -f 1)" = "$ENVIRONMENT_SHA256"
+
+code_sha256="$(git -C "$SAI_ROOT" archive --format=tar "$EXPECTED_COMMIT" | sha256sum | cut -d ' ' -f 1)"
+environment_sha256="$(sha256sum "$ENVIRONMENT_RECEIPT" | cut -d ' ' -f 1)"
+test "${#code_sha256}" = 64
+test "${#environment_sha256}" = 64
 
 "$PYTHON" -P -s -B - "$ENVIRONMENT_RECEIPT" <<'PY'
 import json
@@ -82,8 +84,8 @@ arguments=(
   --development-sequences "$DEVELOPMENT_SEQUENCES"
   --optimizer-steps "$OPTIMIZER_STEPS"
   --training-sequences "$TRAINING_SEQUENCES"
-  --code-sha256 "$CODE_SHA256"
-  --environment-sha256 "$ENVIRONMENT_SHA256"
+  --code-sha256 "$code_sha256"
+  --environment-sha256 "$environment_sha256"
   --checkpoint "$CHECKPOINT"
   --output "$OUTPUT"
 )
