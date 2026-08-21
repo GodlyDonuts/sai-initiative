@@ -8,6 +8,7 @@ import json
 import os
 import re
 import unicodedata
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -153,18 +154,20 @@ def _raw_row(row: Any, *, source_path_sha256: str, line_number: int) -> dict[str
 
 
 def _compute(
-    source: Path, boundaries: list[Path]
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    source: Path,
+    boundaries: list[Path],
+    on_accepted: Callable[[dict[str, Any]], None],
+) -> dict[str, Any]:
     if not source.is_file() or source.is_symlink():
         raise DecontaminationError("raw source is missing or unsafe")
     source_sha256 = sha256_file(source)
     words, code, boundary_receipts = boundary_index(boundaries)
     boundary_manifest_sha256 = canonical_sha256(boundary_receipts)
     policy_sha256 = canonical_sha256(POLICY)
-    accepted = []
-    dropped = []
     seen_text: set[str] = set()
-    scanned = 0
+    accepted_identity_digest = hashlib.sha256()
+    dropped_evidence_digest = hashlib.sha256()
+    scanned = accepted = dropped = 0
     with source.open() as handle:
         for line_number, line in enumerate(handle, start=1):
             if not line.strip():
@@ -179,11 +182,14 @@ def _compute(
             except json.JSONDecodeError as error:
                 raise DecontaminationError("raw source JSONL is malformed") from error
             normalized_text = _normalize(raw["text"])
+            normalized_text_sha256 = hashlib.sha256(
+                normalized_text.encode()
+            ).hexdigest()
             word_shingles, code_shingles = _text_shingles(raw["text"])
             word_overlap = words.intersection(word_shingles)
             code_overlap = code.intersection(code_shingles)
-            duplicate = normalized_text in seen_text
-            seen_text.add(normalized_text)
+            duplicate = normalized_text_sha256 in seen_text
+            seen_text.add(normalized_text_sha256)
             decision = {
                 "raw_identity_sha256": raw["raw_identity_sha256"],
                 "boundary_manifest_sha256": boundary_manifest_sha256,
@@ -194,7 +200,8 @@ def _compute(
             }
             evidence_sha256 = canonical_sha256(decision)
             if word_overlap or code_overlap or duplicate:
-                dropped.append({**decision, "evidence_sha256": evidence_sha256})
+                dropped += 1
+                dropped_evidence_digest.update(bytes.fromhex(evidence_sha256))
                 continue
             source_row = raw["source"]
             output = {
@@ -219,10 +226,12 @@ def _compute(
                 },
             }
             identity = canonical_sha256(output)
-            accepted.append({**output, "identity_sha256": identity})
+            accepted += 1
+            accepted_identity_digest.update(bytes.fromhex(identity))
+            on_accepted({**output, "identity_sha256": identity})
     if not scanned or not accepted:
         raise DecontaminationError("decontamination admitted no documents")
-    metadata = {
+    return {
         "source": {
             "path": str(source.resolve()),
             "bytes": source.stat().st_size,
@@ -233,16 +242,12 @@ def _compute(
         "policy": POLICY,
         "policy_sha256": policy_sha256,
         "scanned": scanned,
-        "accepted": len(accepted),
-        "dropped": len(dropped),
-        "accepted_identity_sha256": canonical_sha256(
-            [row["identity_sha256"] for row in accepted]
-        ),
-        "dropped_evidence_sha256": canonical_sha256(
-            [row["evidence_sha256"] for row in dropped]
-        ),
+        "accepted": accepted,
+        "dropped": dropped,
+        "identity_accumulation": "ordered_raw_sha256_bytes",
+        "accepted_identity_sha256": accepted_identity_digest.hexdigest(),
+        "dropped_evidence_sha256": dropped_evidence_digest.hexdigest(),
     }
-    return accepted, metadata
 
 
 def build(
@@ -250,15 +255,22 @@ def build(
 ) -> dict[str, Any]:
     if output.exists() or receipt.exists():
         raise DecontaminationError("decontamination output already exists")
-    rows, metadata = _compute(source, boundaries)
     output.parent.mkdir(parents=True, exist_ok=True)
     stage = output.with_name(f".{output.name}.partial.{os.getpid()}")
-    stage.write_text(
-        "".join(
-            json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
-            for row in rows
-        )
-    )
+    if stage.exists():
+        raise DecontaminationError("decontamination staging output already exists")
+    try:
+        with stage.open("w") as output_handle:
+            metadata = _compute(
+                source,
+                boundaries,
+                lambda row: output_handle.write(
+                    json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+                ),
+            )
+    except BaseException:
+        stage.unlink(missing_ok=True)
+        raise
     output_sha256 = sha256_file(stage)
     payload = {
         "schema": RECEIPT_SCHEMA,
@@ -291,23 +303,26 @@ def validate(receipt: Path) -> dict[str, Any]:
         raise DecontaminationError("decontamination receipt hash differs")
     source = Path(payload.get("source", {}).get("path", ""))
     boundaries = [Path(row.get("path", "")) for row in payload.get("boundaries", [])]
-    rows, metadata = _compute(source, boundaries)
     output = Path(payload.get("output", {}).get("path", ""))
-    expected_bytes = "".join(
-        json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n" for row in rows
-    ).encode()
     if (
         not output.is_file()
         or output.is_symlink()
-        or output.read_bytes() != expected_bytes
-        or payload.get("output")
-        != {
-            "path": str(output.resolve()),
-            "bytes": len(expected_bytes),
-            "sha256": hashlib.sha256(expected_bytes).hexdigest(),
-        }
+        or payload.get("output", {}).get("path") != str(output.resolve())
+        or payload.get("output", {}).get("bytes") != output.stat().st_size
+        or payload.get("output", {}).get("sha256") != sha256_file(output)
     ):
         raise DecontaminationError("decontaminated output differs")
+    with output.open() as output_handle:
+
+        def compare_row(row: dict[str, Any]) -> None:
+            observed = output_handle.readline()
+            expected = json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
+            if observed != expected:
+                raise DecontaminationError("decontaminated output differs")
+
+        metadata = _compute(source, boundaries, compare_row)
+        if output_handle.read(1):
+            raise DecontaminationError("decontaminated output differs")
     for key, value in metadata.items():
         if payload.get(key) != value:
             raise DecontaminationError("decontamination replay differs")
