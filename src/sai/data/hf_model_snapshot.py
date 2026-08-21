@@ -29,7 +29,7 @@ FILES: dict[str, dict[str, Any]] = {
     },
     "README.md": {
         "size": 61_705,
-        "git_blob_sha1": "5824f1761b2b3a55a2141a9a1172a7f92c2ad9",
+        "git_blob_sha1": "5824f1761b2b3a55a2141a9a1172a7f92c7c2ad9",
     },
     "chat_template.jinja": {
         "size": 7_755,

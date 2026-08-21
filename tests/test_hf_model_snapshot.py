@@ -29,6 +29,9 @@ def test_pinned_qwen_snapshot_binds_exact_revision_and_weight() -> None:
     assert FILES["tokenizer.json"]["sha256"] == (
         "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
     )
+    assert FILES["README.md"]["git_blob_sha1"] == (
+        "5824f1761b2b3a55a2141a9a1172a7f92c7c2ad9"
+    )
     assert len(FILES) == 13
 
 
