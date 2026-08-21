@@ -38,14 +38,24 @@ benchmark evidence selects an architecture.
   `[-2.726, +2.197] pp`; both are below the `37.099%` uniform-choice baseline.
   This is evidence of no capability separation, not an architecture win.
 - The original output-free monolithic MMLU-Pro jobs were stopped after exact
-  workload measurement showed 113,990 independent choice forwards. Each full
-  12,032-row population is now eight immutable 1,504-row shards: KDA jobs
-  `768764–768771` merge through `768772`; GDN jobs `768773–768780` merge through
-  `768781`. The shared shard manifest covers every source identity exactly once
-  and is SHA-256 `35d714c6ba8f5f2509be3c71e8fc805b4caa54c2c49812315a05dbbcd2e7ba8b`.
-  GQA job `768523` is still training; its benchmark fanout is dependency-staged.
-  The final comparator reports paired wins/losses, domains, 95% intervals, and
-  chance baselines.
+  workload measurement showed 113,990 independent choice forwards. Eight
+  immutable 1,504-row shards per model completed without retries: KDA jobs
+  `768764–768771` merged through `768772`; GDN jobs `768773–768780` merged through
+  `768781`. The shared manifest covers all 12,032 identities exactly once and is
+  SHA-256 `35d714c6ba8f5f2509be3c71e8fc805b4caa54c2c49812315a05dbbcd2e7ba8b`.
+  KDA scored `1,133/12,032 = 9.4166%`; GDN scored
+  `1,113/12,032 = 9.2503%`. The exact variable-choice uniform baseline is
+  `11.0877%`. Paired GDN-minus-KDA is `-0.166 pp`, 95% interval
+  `[-0.533, +0.200] pp`. Both recurrent candidates fail the real-capability
+  screen and are not promoted. Their immutable merged result files are SHA-256
+  `06959cdbd5a038870fcc5a9da58e5ce49c8edc63a526f7265b3bd3e30d42b4d6`
+  and `830261b871521297412b589d9ef20371449043bf0fa31292445c13babf3ae04e`.
+  GQA job `768523` remains the unresolved reference family.
+- A separate architecture-independent 30-file FineWeb-Edu prefix is now pinned
+  for the next 300M factor screen. It covers exactly `64,562,434,300` raw
+  upstream bytes at revision `87f09149…b8f9`; CPU job `768858` is staged to use
+  node-local scratch so those Parquet bytes never consume Lustre quota. It does
+  not select a mixer or authorize the 4B run.
 - This is a one-seed, approximately 100M-token, iso-data short screen. It is
   not the frozen three-seed iso-data/iso-FLOP tournament and cannot authorize
   the 4B run. The user has authorized sub-4B training; actual 4B training
