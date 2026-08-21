@@ -12,6 +12,7 @@ dependencies = []
 [project.scripts]
 sai-freeze-data = "sai.data.freeze:main"
 sai-architecture-plan = "sai.architecture.tournament:main"
+sai-model-plan = "sai.model.planner:main"
 sai-public-gate = "sai.gates.public_benchmarks:main"
 sai-readiness = "sai.readiness:main"
 

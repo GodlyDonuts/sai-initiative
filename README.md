@@ -47,13 +47,17 @@ repair a weak base architecture or compensate for lost general capability.
 
 Sai now treats the complete model stack as an empirical tournament. No paper,
 company, or fashionable mechanism is promoted directly into the 4B model. Every
-change must first beat an equal-data, equal-FLOP control at smaller scales and
-survive source-disjoint capability and retention tests.
+change must first beat declared iso-data and iso-FLOP controls at smaller scales
+and survive source-disjoint capability and retention tests.
 
 The machine-readable plan is
 [`docs/SAI_FRONTIER_ARCHITECTURE_TOURNAMENT.json`](docs/SAI_FRONTIER_ARCHITECTURE_TOURNAMENT.json),
 and its rationale is documented in
 [`docs/SAI_FRONTIER_ARCHITECTURE_TOURNAMENT.md`](docs/SAI_FRONTIER_ARCHITECTURE_TOURNAMENT.md).
+The first executable CPU oracle and exact 48K scale geometries are documented in
+[`docs/SAI_MODEL_GENERATOR_CONTRACT.md`](docs/SAI_MODEL_GENERATOR_CONTRACT.md)
+and
+[`docs/SAI_48K_SCALE_GEOMETRIES.json`](docs/SAI_48K_SCALE_GEOMETRIES.json).
 
 ### Sequence-mixer tournament
 
@@ -83,8 +87,9 @@ separates two questions:
 - does reinvesting the saved parameter budget into depth or FFN capacity improve
   the fixed-total-parameter system?
 
-Cross-tokenizer training is matched by admitted UTF-8 bytes and model FLOPs, not
-raw token count. Multilingual fluency may be deprioritized, but arbitrary Unicode,
+Cross-tokenizer comparisons include an iso-data contrast matched by admitted
+UTF-8 bytes and an iso-FLOP contrast matched by the analytical and measured
+compute ledger. Multilingual fluency may be deprioritized, but arbitrary Unicode,
 identifiers, URLs, source code, math, and scientific notation must remain lossless.
 
 ### Conditional memory and objectives
@@ -149,9 +154,11 @@ One serious regression vetoes a favorable average.
   deliberate, replay, and RL-prompt banks;
 - [x] replace the R1-centered plan with a verified 2026 architecture tournament;
 - [x] freeze the 100M → 300M → 1B → 4B promotion ladder and factor isolation;
+- [x] implement causal CPU reference mixers and exact parameter ledgers;
+- [x] freeze matched 48K geometries for all three families at every scale;
 - [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
-- [ ] implement and CPU-test the architecture generator and reference kernels;
+- [ ] qualify production CUDA kernels against the CPU recurrence oracle;
 - [ ] freeze matched data/FLOP/seed manifests for the 100M tournament;
 - [ ] wait for the user's official training order;
 - [ ] run the 100M mechanics tournament, then evidence-gated 300M/1B stages;
@@ -162,6 +169,7 @@ One serious regression vetoes a favorable average.
 ## Repository layout
 
 - `src/sai/gates/` — real-benchmark promotion decisions
+- `src/sai/model/` — scalable configurations, parameter ledgers, and CPU oracles
 - `src/sai/data/` — verified role populations and contamination filtering
 - `src/sai/training/` — behavior preservation and reasoning training
 - `src/sai/tokenizer/` — vocabulary capacity measurement and surgery

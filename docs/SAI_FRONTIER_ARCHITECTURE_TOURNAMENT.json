@@ -59,11 +59,20 @@
   ],
   "matching": {
     "one_changed_factor_per_primary_contrast": true,
-    "same_admitted_utf8_bytes": true,
-    "same_model_flops": true,
     "same_data_order": true,
     "same_sequence_curriculum": true,
     "same_decoding": true,
+    "primary_contrasts": {
+      "iso_data": {
+        "same_admitted_utf8_bytes": true,
+        "model_flops_may_differ_and_are_reported": true
+      },
+      "iso_flop": {
+        "same_model_flops": true,
+        "same_ordered_stream_prefix": true,
+        "admitted_utf8_bytes_may_differ_and_are_reported": true
+      }
+    },
     "cross_tokenizer_loss_unit": "negative_log_likelihood_per_utf8_byte",
     "promotion_requires_positive_paired_95ci": true,
     "material_domain_regression_allowed": false

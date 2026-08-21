@@ -49,11 +49,20 @@ SECONDARY_FACTORS = [
 ]
 REQUIRED_MATCHING = {
     "one_changed_factor_per_primary_contrast": True,
-    "same_admitted_utf8_bytes": True,
-    "same_model_flops": True,
     "same_data_order": True,
     "same_sequence_curriculum": True,
     "same_decoding": True,
+    "primary_contrasts": {
+        "iso_data": {
+            "same_admitted_utf8_bytes": True,
+            "model_flops_may_differ_and_are_reported": True,
+        },
+        "iso_flop": {
+            "same_model_flops": True,
+            "same_ordered_stream_prefix": True,
+            "admitted_utf8_bytes_may_differ_and_are_reported": True,
+        },
+    },
     "cross_tokenizer_loss_unit": "negative_log_likelihood_per_utf8_byte",
     "promotion_requires_positive_paired_95ci": True,
     "material_domain_regression_allowed": False,

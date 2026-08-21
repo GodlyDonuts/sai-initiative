@@ -64,8 +64,10 @@ variant.
 ### Stage 2: approximately 300M parameters
 
 Run three seeds per factor on frozen data. Change exactly one factor from its
-control and match admitted UTF-8 bytes, model FLOPs, sequence curriculum,
-optimizer updates, initialization policy, and evaluation decoding. Promotion
+control. Every factor has two declared contrasts: iso-data holds admitted UTF-8
+bytes fixed and reports the compute difference; iso-FLOP holds model FLOPs fixed
+and consumes a prefix of the same ordered data stream. Both retain the same
+sequence curriculum, initialization policy, and evaluation decoding. Promotion
 requires a positive paired 95% confidence bound on the declared primary metric
 and no material domain regression.
 
@@ -96,8 +98,9 @@ terminal. One serious regression rejects promotion regardless of macro average.
 8. Residual: standard PreNorm versus Block AttnRes, only after core selection.
 9. Future-summary prediction: exploratory 300M branch only.
 
-No factor can be credited from a comparison that changes architecture, tokenizer,
-data, FLOPs, tokens, and optimizer simultaneously.
+No factor can be credited from a comparison that changes architecture, data
+identity/order, optimizer, and evaluation contract simultaneously. Iso-data and
+iso-FLOP results must remain separately labeled; they are not interchangeable.
 
 ## Tokenizer accounting
 
@@ -112,8 +115,10 @@ parameters and 5,120 BF16 bytes. Relative to 248,320 entries:
 
 Tokenizer-only tests keep body geometry fixed. Reallocation tests separately
 hold total parameters near 4B and reinvest savings into depth or FFN width. This
-prevents attributing a depth gain to segmentation or vice versa. Cross-tokenizer
-loss is normalized by source bytes, not tokens.
+prevents attributing a depth gain to segmentation or vice versa. Iso-data
+tokenizer budgets use admitted UTF-8 bytes; iso-FLOP budgets use the exact same
+ordered stream but may consume a different-length prefix. Validation loss is
+normalized by source bytes, not tokens.
 
 Protected behavior includes ASCII, byte fallback, English, source-code syntax,
 whitespace/indentation, identifiers, URLs, numbers, units, Greek, math, LaTeX,

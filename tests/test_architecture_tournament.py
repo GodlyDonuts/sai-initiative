@@ -50,7 +50,7 @@ def test_skipping_the_scale_ladder_fails_closed() -> None:
 
 def test_unmatched_flops_fail_closed() -> None:
     payload = plan()
-    payload["matching"]["same_model_flops"] = False
+    payload["matching"]["primary_contrasts"]["iso_flop"]["same_model_flops"] = False
     with pytest.raises(TournamentError, match="matched-comparison"):
         validate(payload)
 

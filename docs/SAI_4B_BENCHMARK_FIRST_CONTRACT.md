@@ -7,10 +7,12 @@ Status: prospective. This document authorizes no GPU work by itself.
 The external reference is
 `Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`. It is not the
 presumed Sai parent. The primary equal-compute control is the conventional
-architecture from the frozen tournament at the same parameter class, trained
-on the same admitted bytes, data order, model FLOPs, sequence curriculum,
-updates, and seeds. The Sai candidate differs only by the factor set that won
-the 100M, 300M, and 1B promotion ladder.
+architecture from the frozen tournament at the same parameter class. Its
+iso-data comparison uses the same admitted bytes, data order, sequence
+curriculum, updates, and seeds while reporting compute. Its iso-FLOP comparison
+uses the same ordered data stream and compute budget but may consume a
+different-length prefix. The Sai candidate differs only by the factor set that
+won the 100M, 300M, and 1B promotion ladder.
 
 Candidate and control remain single-pass causal language models. Neither
 receives a draft, verifier result, benchmark label, or second model call at
@@ -39,8 +41,10 @@ units, Greek and math symbols, LaTeX, and technical/scientific notation.
 
 Tokenizer-only tests retain body geometry. Parameter-reallocation tests are a
 separate contrast that reinvests saved vocabulary parameters into depth or FFN
-capacity while matching total parameters. Cross-tokenizer budgets use admitted
-UTF-8 bytes and model FLOPs, and validation loss is normalized per source byte.
+capacity while matching total parameters. Iso-data tokenizer budgets use
+admitted UTF-8 bytes; iso-FLOP budgets use the same ordered stream and compute
+budget but may consume a different-length prefix. Validation loss is normalized
+per source byte.
 
 ## Public decision
 
