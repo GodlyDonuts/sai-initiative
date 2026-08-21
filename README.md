@@ -151,9 +151,13 @@ benchmark evidence selects an architecture.
   binds the full tokenizer length `128256`; corrected CPU job `769208` is
   staged after decontamination to freeze the same 499,998,720-token source
   under the exact Smol tokenizer. The one-H100
-  no-training mechanics entry point remains unscheduled. This host will be used
-  only if the 0.8B recurrent factor passes; preparing it is not a result and
-  does not consume the terminal 4B boundary.
+  no-training mechanics entry point remains unscheduled. Commit `d58937c`
+  additionally prepares—but does not launch—the same recurrent-vs-reset factor
+  on this host: a proportional `79,722,496`-parameter, 16-slot workspace with
+  identical initialization, optimizer, source prefix, objective, calls, and
+  modeled workspace FLOPs across arms. The sole changed factor remains reactor
+  state carry. This host will be used only if the 0.8B recurrent factor passes;
+  preparing it is not a result and does not consume the terminal 4B boundary.
 - Thirteen obsolete Q36 score jobs (`759843`, `759860`, `760174`, `760180`,
   `760185`, `760187`, `760194`, `760201`, `760206`, `760208`, `760215`,
   `760216`, and `760217`) were terminally cancelled after each was proven held
