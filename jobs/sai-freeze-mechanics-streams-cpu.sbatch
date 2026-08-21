@@ -60,6 +60,7 @@ test "${#tokenizer_sha256}" = 64
   --source "$TRAIN_CORPUS" \
   --output "$TRAIN_STREAM" \
   --sequence-length 2048 \
+  --prefix-sequences 256 \
   --prefix-sequences 12207 \
   --prefix-sequences 24414 \
   --prefix-sequences 48828

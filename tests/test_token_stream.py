@@ -273,6 +273,7 @@ def test_mechanics_stream_job_is_cpu_only_and_freezes_exact_short_budget() -> No
     job = (root / "jobs" / "sai-freeze-mechanics-streams-cpu.sbatch").read_text()
     assert "--no-requeue" in job
     assert "--gres=" not in job
+    assert "--prefix-sequences 256" in job
     assert "--prefix-sequences 48828" in job
     assert "--prefix-sequences 4096" in job
     assert "sai-selected-tokenizer-receipt-v1" in job

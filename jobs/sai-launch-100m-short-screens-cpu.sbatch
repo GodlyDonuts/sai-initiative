@@ -51,6 +51,8 @@ train = validate_frozen_stream(pathlib.Path(sys.argv[1]), verify_sources=True)
 development = validate_frozen_stream(pathlib.Path(sys.argv[2]), verify_sources=True)
 assert train["sequences"] >= 48_828
 assert development["sequences"] >= 4_096
+assert train["prefix_utf8_bytes"]["256"] > 0
+assert train["prefix_utf8_bytes"]["48828"] > 0
 assert development["prefix_utf8_bytes"]["4096"] > 0
 assert train["tokenizer_identity_sha256"] == development["tokenizer_identity_sha256"]
 print(
