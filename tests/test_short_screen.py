@@ -204,3 +204,28 @@ def test_launcher_submits_three_canaries_then_three_independent_screens() -> Non
     assert "DEVELOPMENT_SEQUENCES=4096" not in launcher
     assert "--array" not in launcher
     assert "retry" not in launcher.lower()
+
+
+def test_250m_token_launcher_is_matched_independent_and_fail_closed() -> None:
+    launcher = (
+        ROOT / "jobs" / "sai-launch-100m-250m-token-screens-cpu.sbatch"
+    ).read_text()
+    assert "#SBATCH --gres" not in launcher
+    assert "#SBATCH --no-requeue" in launcher
+    assert "for family in gated_gqa gdn_hybrid kda_mla_hybrid" in launcher
+    assert 'gpu_jobs_submitted": 3' in launcher
+    assert 'maximum_concurrent_gpu_jobs": 3' in launcher
+    assert '"training_tokens": 249_999_360' in launcher
+    assert '"training_sequences": 122_070' in launcher
+    assert '"optimizer_steps": 477' in launcher
+    assert 'train["prefix_utf8_bytes"]["122070"] > 0' in launcher
+    assert "TRAINING_SEQUENCES=122070" in launcher
+    assert "OPTIMIZER_STEPS=477" in launcher
+    assert "DEVELOPMENT_SEQUENCES=1024" in launcher
+    assert "SEED=20260821" in launcher
+    assert "trap cancel_partial_graph ERR" in launcher
+    assert "scancel" in launcher
+    assert "--array" not in launcher
+    assert "MECHANICS_ONLY" not in launcher
+    assert "4B" not in launcher
+    assert "retry" not in launcher.lower()
