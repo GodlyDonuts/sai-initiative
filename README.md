@@ -37,8 +37,11 @@ benchmark evidence selects an architecture.
   restarts. It is slowest and has the worst held-out NLL: `5.65844` per target
   (`286.70` perplexity, `1.20524` NLL/UTF-8 byte). Its immutable result file is
   SHA-256 `592bf31ab880b532bb230016e17b77052578fd84da911add5fa86e9a8147afd6`.
-  Its final real-board fanout is MMLU-Pro shards `768911–768918`, MuSR job
-  `768919`, and merge `768920`.
+  Its eight independent MMLU-Pro shards `768911–768918` and merge `768920`
+  completed without retries: `1,101/12,032 = 9.1506%`, also below the exact
+  `11.0877%` uniform baseline. The merged result file is SHA-256
+  `0ba400ec78a89f86fcfd002897a45a8ad6529ff3efab32d1c506aad1544f9001`.
+  MuSR job `768919` remains the final missing real-board input.
 - On the complete 756-row source-disjoint MuSR development population, KDA
   scored `257/756 = 33.995%` and GDN scored `255/756 = 33.730%`. The paired
   GDN-minus-KDA delta is `-0.265 pp`, 95% paired normal interval
@@ -57,13 +60,16 @@ benchmark evidence selects an architecture.
   screen and are not promoted. Their immutable merged result files are SHA-256
   `06959cdbd5a038870fcc5a9da58e5ce49c8edc63a526f7265b3bd3e30d42b4d6`
   and `830261b871521297412b589d9ef20371449043bf0fa31292445c13babf3ae04e`.
-  GQA job `768523` remains the unresolved reference family.
+  GQA is worse on the complete MMLU-Pro board; no family has cleared the
+  capability floor at this token budget.
 - A separate architecture-independent 30-file FineWeb-Edu prefix is now pinned
   for the next 300M factor screen. It covers exactly `64,562,434,300` raw
   upstream bytes at revision `87f09149…b8f9`. Attempt `768858` failed before
   download because ordinary Newton CPU allocations omit `SLURM_TMPDIR`; no data
-  was written. The corrected owner-validated `/tmp` acquisition is job `768891`,
-  followed by exact decontamination `768892` and a 499,998,720-token stream
+  was written. Corrected job `768891` then scanned exactly 21,855,000 documents
+  and admitted 2,661,644 into a 14,491,695,743-byte source whose SHA-256 is
+  `2f908f5f225de109a21f66fb9fb31baa1f35b4a57f1d6d2a3f60fa95a98ea7e6`.
+  Exact decontamination `768892` is running, followed by 499,998,720-token stream
   freeze `768894`. Dependency-staged launcher `768932` will then run a fresh,
   matched three-family screen over the exact 249,999,360-token prefix using
   three independent one-H100 jobs. This tests whether the near-chance 100M
