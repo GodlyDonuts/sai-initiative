@@ -161,6 +161,8 @@ One serious regression vetoes a favorable average.
 - [x] prove packed-document isolation across attention, RoPE, convolution, and
   recurrent state in the CPU architecture oracle;
 - [x] implement an exact three-family, three-seed iso-data/iso-FLOP planner;
+- [x] implement deterministic binary token packing with exact UTF-8 prefix and
+  cross-document boundary receipts;
 - [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
 - [ ] qualify production CUDA kernels against the CPU recurrence oracle;

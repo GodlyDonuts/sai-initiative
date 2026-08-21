@@ -60,8 +60,9 @@ The tokenizer receipt must prove a 48K vocabulary, byte fallback, exact
 round-trip behavior, and preserved special tokens. The ordered-stream receipt
 must bind tokenizer identity, source-manifest identity, benchmark disjointness,
 cross-document target masking, total geometry, and cumulative UTF-8 bytes for
-all requested prefixes. The environment receipt binds exact Python, Torch, CUDA,
-and Triton versions.
+all requested prefixes. The implemented binary format and replay rules are in
+[`SAI_ORDERED_TOKEN_STREAM_CONTRACT.md`](SAI_ORDERED_TOKEN_STREAM_CONTRACT.md).
+The environment receipt binds exact Python, Torch, CUDA, and Triton versions.
 
 The planner reopens and revalidates every input whenever its output is checked.
 Missing, mutated, reordered, shortened, mismatched-tokenizer, or prematurely

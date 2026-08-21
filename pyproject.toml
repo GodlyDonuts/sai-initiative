@@ -11,6 +11,7 @@ dependencies = []
 
 [project.scripts]
 sai-freeze-data = "sai.data.freeze:main"
+sai-freeze-token-stream = "sai.data.token_stream:main"
 sai-architecture-plan = "sai.architecture.tournament:main"
 sai-model-plan = "sai.model.planner:main"
 sai-experiment-plan = "sai.training.experiment:main"
