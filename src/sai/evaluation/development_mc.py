@@ -16,6 +16,7 @@ import platform
 import uuid
 from collections import defaultdict
 from collections.abc import Sequence
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -326,6 +327,7 @@ def evaluate_development_mc(
     expected_rows: int,
     expected_identity_order_sha256: str,
     max_sequence_tokens: int,
+    autocast_dtype: torch.dtype | None = None,
 ) -> dict[str, Any]:
     """Score an exact development population without mutating model state."""
 
@@ -335,6 +337,8 @@ def evaluate_development_mc(
     max_sequence_tokens = _positive_integer(
         max_sequence_tokens, "maximum sequence tokens"
     )
+    if autocast_dtype is not None and autocast_dtype is not torch.bfloat16:
+        raise DevelopmentMCError("evaluation autocast dtype differs")
     expected_identity_order_sha256 = _sha256(
         expected_identity_order_sha256, "expected identity-order SHA256"
     )
@@ -373,10 +377,17 @@ def evaluate_development_mc(
     original_training = model.training
     versions_before = _model_versions(model)
     device = next(model.parameters()).device
+    if autocast_dtype is not None and device.type != "cuda":
+        raise DevelopmentMCError("evaluation autocast requires CUDA")
     scored_rows: list[dict[str, Any]] = []
     model.eval()
     try:
-        with torch.inference_mode():
+        autocast = (
+            torch.autocast(device_type="cuda", dtype=autocast_dtype)
+            if autocast_dtype is not None
+            else nullcontext()
+        )
+        with torch.inference_mode(), autocast:
             for row in validated:
                 prompt = _prompt(row, benchmark)
                 choice_scores = [

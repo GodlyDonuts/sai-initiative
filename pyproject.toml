@@ -27,6 +27,7 @@ sai-workspace-performance = "sai.adaptive.performance:main"
 sai-oracle-slow-path = "sai.adaptive.oracle:main"
 sai-public-gate = "sai.gates.public_benchmarks:main"
 sai-build-development-mc = "sai.evaluation.population_builder:main"
+sai-evaluate-short-screen-mc = "sai.evaluation.short_screen_mc:main"
 sai-readiness = "sai.readiness:main"
 
 [project.optional-dependencies]
