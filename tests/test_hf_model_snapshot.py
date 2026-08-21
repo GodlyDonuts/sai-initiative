@@ -70,6 +70,7 @@ def test_job_is_cpu_only_exact_and_no_retry() -> None:
     assert "#SBATCH --gres" not in job
     assert "#SBATCH --no-requeue" in job
     assert "SLURM_TMPDIR:-/tmp" in job
-    assert "4_000_000_000" in job
+    assert "4000000000" in job
+    assert "4_000_000_000" not in job
     assert 'find "$cache_root" -xdev -depth -delete' in job
     assert "retry" not in job.lower()

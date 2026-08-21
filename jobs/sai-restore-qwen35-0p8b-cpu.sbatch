@@ -42,7 +42,7 @@ scratch_parent="${SLURM_TMPDIR:-/tmp}"
 test -d "$scratch_parent"
 test ! -L "$scratch_parent"
 available_bytes="$(( $(df -Pk "$scratch_parent" | awk 'NR==2 {print $4}') * 1024 ))"
-(( available_bytes >= 4_000_000_000 ))
+(( available_bytes >= 4000000000 ))
 umask 077
 cache_root="$(mktemp -d "$scratch_parent/sai-qwen08-$SLURM_JOB_ID.XXXXXX")"
 case "$cache_root" in "$scratch_parent"/sai-qwen08-"$SLURM_JOB_ID".??????) ;; *) exit 2 ;; esac
