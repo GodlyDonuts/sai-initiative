@@ -1,0 +1,1 @@
+"""Benchmark-first promotion gates."""
