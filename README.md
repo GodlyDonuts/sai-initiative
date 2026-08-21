@@ -66,6 +66,10 @@ The exact lossless 64K/48K/32K measurement boundary is frozen in
 [`docs/SAI_TOKENIZER_QUALIFICATION_CONTRACT.md`](docs/SAI_TOKENIZER_QUALIFICATION_CONTRACT.md).
 The high-upside conditional-compute thesis and its ordered kill tests are in
 [`docs/SAI_ADAPTIVE_COMPUTE_FALSIFICATION_PLAN.md`](docs/SAI_ADAPTIVE_COMPUTE_FALSIFICATION_PLAN.md).
+Its exact Gate-0 workspace mechanics and oracle evidence boundary are in
+[`docs/SAI_16_SLOT_WORKSPACE_CONTRACT.md`](docs/SAI_16_SLOT_WORKSPACE_CONTRACT.md)
+and
+[`docs/SAI_ORACLE_SLOW_PATH_CONTRACT.md`](docs/SAI_ORACLE_SLOW_PATH_CONTRACT.md).
 
 ### Sequence-mixer tournament
 
@@ -173,6 +177,8 @@ One serious regression vetoes a favorable average.
   suite without building or selecting a candidate;
 - [x] define an oracle-first falsification ladder for latent workspace,
   fixed-point recurrence, regret gating, and sparse semantic memory;
+- [x] implement exact 16-slot workspace accounting, a bitwise fast bypass, and a
+  row-level equal-FLOP oracle analyzer without training;
 - [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
 - [ ] qualify production CUDA kernels against the CPU recurrence oracle;

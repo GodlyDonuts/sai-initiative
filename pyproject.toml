@@ -16,6 +16,8 @@ sai-qualify-tokenizers = "sai.tokenizer.qualification:main"
 sai-architecture-plan = "sai.architecture.tournament:main"
 sai-model-plan = "sai.model.planner:main"
 sai-experiment-plan = "sai.training.experiment:main"
+sai-workspace-plan = "sai.adaptive.planner:main"
+sai-oracle-slow-path = "sai.adaptive.oracle:main"
 sai-public-gate = "sai.gates.public_benchmarks:main"
 sai-readiness = "sai.readiness:main"
 

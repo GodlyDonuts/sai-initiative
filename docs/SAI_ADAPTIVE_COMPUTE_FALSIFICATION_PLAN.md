@@ -79,6 +79,9 @@ and retrieval kernels with full memory traffic included.
 Kill any design that exceeds its parameter/activation budget, loses its claimed
 efficiency after memory movement, or materially expands important token domains.
 
+The implemented no-training mechanics and exact ledgers are in
+[`SAI_16_SLOT_WORKSPACE_CONTRACT.md`](SAI_16_SLOT_WORKSPACE_CONTRACT.md).
+
 ### Gate 1 — isolated workspace and oracle routing
 
 At the 300M factor-screen stage, compare one selected base checkpoint under:
@@ -95,6 +98,9 @@ and forced-fast evaluation remain mandatory.
 Kill the workspace if paired oracle selection has no positive 95% confidence
 bound against both controls on the frozen source-disjoint macro, or if any
 retention benchmark crosses the declared serious-regression boundary.
+
+The offline pairing, compute-match, bootstrap, and receipt rules are in
+[`SAI_ORACLE_SLOW_PATH_CONTRACT.md`](SAI_ORACLE_SLOW_PATH_CONTRACT.md).
 
 ### Gate 2 — recurrence causality
 

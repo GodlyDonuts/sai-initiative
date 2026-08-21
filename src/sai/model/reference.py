@@ -433,7 +433,7 @@ class SaiCausalLM(nn.Module):
                     seen.add(value)
                     previous = value
 
-    def forward(
+    def hidden_states(
         self, input_ids: torch.Tensor, segment_ids: torch.Tensor | None = None
     ) -> torch.Tensor:
         if input_ids.ndim != 2 or input_ids.dtype != torch.long:
@@ -442,8 +442,17 @@ class SaiCausalLM(nn.Module):
         hidden = self.embed_tokens(input_ids)
         for layer in self.layers:
             hidden = layer(hidden, segment_ids)
-        hidden = self.norm(hidden)
+        return self.norm(hidden)
+
+    def project(self, hidden: torch.Tensor) -> torch.Tensor:
+        if hidden.ndim != 3 or hidden.shape[-1] != self.config.hidden_size:
+            raise SaiReferenceError("hidden-state geometry differs")
         return F.linear(hidden, self.lm_head_weight)
+
+    def forward(
+        self, input_ids: torch.Tensor, segment_ids: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        return self.project(self.hidden_states(input_ids, segment_ids))
 
 
 def exact_parameter_count(module: nn.Module) -> int:
