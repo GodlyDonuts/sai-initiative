@@ -245,6 +245,64 @@ def write_receipt(output: Path, receipt: dict[str, Any]) -> None:
         raise
 
 
+def validate_smol_mechanics_receipt(
+    path: Path,
+    *,
+    expected_file_sha256: str,
+    model_root: Path,
+    manifest_path: Path,
+    restoration_receipt_path: Path,
+) -> dict[str, Any]:
+    """Replay a completed Smol mechanics receipt before scoring or training."""
+
+    if _sha256_file(path) != expected_file_sha256:
+        raise SmolParentError("Smol mechanics receipt file identity differs")
+    try:
+        receipt = json.loads(Path(path).read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise SmolParentError("Smol mechanics receipt is unreadable") from error
+    if not isinstance(receipt, dict):
+        raise SmolParentError("Smol mechanics receipt must be an object")
+    unsigned = dict(receipt)
+    claimed = unsigned.pop("receipt_sha256", None)
+    snapshot = validate_external_snapshot(
+        model_root,
+        manifest_path=manifest_path,
+        receipt_path=restoration_receipt_path,
+        spec=SNAPSHOT_SPEC,
+    )
+    runtime = receipt.get("runtime")
+    environment = receipt.get("environment")
+    forward = receipt.get("forward")
+    if (
+        receipt.get("schema") != SCHEMA
+        or receipt.get("status") != "pass"
+        or claimed != canonical_sha256(unsigned)
+        or receipt.get("model_root") != str(Path(model_root).resolve())
+        or receipt.get("manifest_path") != str(Path(manifest_path).resolve())
+        or receipt.get("restoration_receipt_path")
+        != str(Path(restoration_receipt_path).resolve())
+        or not isinstance(runtime, dict)
+        or runtime.get("snapshot") != snapshot
+        or runtime.get("model_class") != EXPECTED_MODEL_CLASS
+        or runtime.get("parameter_count") != EXPECTED_PARAMETER_COUNT
+        or runtime.get("all_parameters_and_buffers_cuda_zero") is not True
+        or not isinstance(environment, dict)
+        or "H100" not in str(environment.get("gpu_name"))
+        or not isinstance(forward, dict)
+        or forward.get("finite") is not True
+        or forward.get("logits_shape") != [1, 1, EXPECTED_VOCAB_SIZE]
+        or receipt.get("training_executed") is not False
+        or receipt.get("optimizer_steps") != 0
+        or receipt.get("backward_calls") != 0
+        or receipt.get("model_state_unchanged") is not True
+        or receipt.get("architecture_result") is not False
+        or receipt.get("four_b_training_executed") is not False
+    ):
+        raise SmolParentError("Smol mechanics receipt evidence differs")
+    return receipt
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model-root", type=Path, required=True)
