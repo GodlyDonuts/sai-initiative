@@ -508,13 +508,14 @@
   "geometry_method": "nearest_64_ffn_width_with_exact_analytical_parameter_ledger",
   "gpu_jobs_submitted": 0,
   "official_training_order_received": false,
-  "plan_sha256": "8888035052add6b03366a9a14c9098e24c134e91704a2682fca06544aa8716d5",
+  "plan_sha256": "5582bb1112aeac15746b500841f4ded282cedc1c049593a396ce8823e45bdb2c",
   "reference_scope": [
     "causal_forward",
     "backward_gradients",
     "kda_gdn_recurrent_state",
     "gqa_partial_rope",
     "nope_gated_mla",
+    "packed_document_isolation",
     "tied_embeddings"
   ],
   "schema": "sai-model-geometry-plan-v1",

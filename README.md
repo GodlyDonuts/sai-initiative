@@ -156,6 +156,8 @@ One serious regression vetoes a favorable average.
 - [x] freeze the 100M → 300M → 1B → 4B promotion ladder and factor isolation;
 - [x] implement causal CPU reference mixers and exact parameter ledgers;
 - [x] freeze matched 48K geometries for all three families at every scale;
+- [x] prove packed-document isolation across attention, RoPE, convolution, and
+  recurrent state in the CPU architecture oracle;
 - [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
 - [ ] qualify production CUDA kernels against the CPU recurrence oracle;

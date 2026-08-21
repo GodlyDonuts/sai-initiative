@@ -50,7 +50,7 @@ class CausalDepthwiseConv1d(nn.Module):
         self.weight = nn.Parameter(torch.empty(channels, 1, kernel_size))
         nn.init.normal_(self.weight, mean=0.0, std=kernel_size**-0.5)
 
-    def forward(self, value: torch.Tensor) -> torch.Tensor:
+    def _unsegmented(self, value: torch.Tensor) -> torch.Tensor:
         batch, sequence, channels = value.shape
         convolved = F.conv1d(
             value.transpose(1, 2),
@@ -60,6 +60,24 @@ class CausalDepthwiseConv1d(nn.Module):
         )[..., :sequence]
         return convolved.transpose(1, 2).reshape(batch, sequence, channels)
 
+    def forward(
+        self, value: torch.Tensor, segment_ids: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        if segment_ids is None:
+            return self._unsegmented(value)
+        output = torch.zeros_like(value)
+        for batch_index, row in enumerate(segment_ids.tolist()):
+            start = 0
+            for index in range(1, len(row) + 1):
+                if index == len(row) or row[index] != row[start]:
+                    output[batch_index : batch_index + 1, start:index] = (
+                        self._unsegmented(
+                            value[batch_index : batch_index + 1, start:index]
+                        )
+                    )
+                    start = index
+        return output
+
 
 def causal_delta_recurrence(
     query: torch.Tensor,
@@ -68,6 +86,7 @@ def causal_delta_recurrence(
     alpha: torch.Tensor,
     beta: torch.Tensor,
     initial_state: torch.Tensor | None = None,
+    reset_mask: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     """Reference KDA/GDN delta-rule recurrence with FP32 recurrent state."""
 
@@ -87,6 +106,10 @@ def causal_delta_recurrence(
     expected_state = (batch, heads, key_dim, value_dim)
     if initial_state is not None and initial_state.shape != expected_state:
         raise SaiReferenceError("initial recurrent state differs")
+    if reset_mask is not None and (
+        reset_mask.shape != (batch, sequence) or reset_mask.dtype != torch.bool
+    ):
+        raise SaiReferenceError("reset mask must be boolean per token")
 
     state = (
         torch.zeros(expected_state, device=query.device, dtype=torch.float32)
@@ -97,6 +120,9 @@ def causal_delta_recurrence(
     q_float = F.normalize(query.float(), dim=-1)
     k_float = F.normalize(key.float(), dim=-1)
     for index in range(sequence):
+        if reset_mask is not None:
+            keep = (~reset_mask[:, index]).view(batch, 1, 1, 1)
+            state = torch.where(keep, state, torch.zeros_like(state))
         q_t = q_float[:, index]
         k_t = k_float[:, index]
         v_t = value[:, index].float()
@@ -111,12 +137,18 @@ def causal_delta_recurrence(
 
 
 def _apply_partial_rope(
-    query: torch.Tensor, key: torch.Tensor, fraction: float
+    query: torch.Tensor,
+    key: torch.Tensor,
+    fraction: float,
+    position_ids: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, torch.Tensor]:
     rotary_dim = int(query.shape[-1] * fraction)
     if rotary_dim == 0:
         return query, key
-    positions = torch.arange(query.shape[1], device=query.device, dtype=torch.float32)
+    if position_ids is None:
+        position_ids = torch.arange(query.shape[1], device=query.device).expand(
+            query.shape[0], -1
+        )
     inverse = 1.0 / (
         10_000
         ** (
@@ -124,9 +156,9 @@ def _apply_partial_rope(
             / rotary_dim
         )
     )
-    angles = torch.outer(positions, inverse)
-    cosine = angles.cos()[None, :, None, :]
-    sine = angles.sin()[None, :, None, :]
+    angles = position_ids.float().unsqueeze(-1) * inverse[None, None, :]
+    cosine = angles.cos().unsqueeze(2)
+    sine = angles.sin().unsqueeze(2)
 
     def rotate(value: torch.Tensor) -> torch.Tensor:
         rotated, remainder = value[..., :rotary_dim], value[..., rotary_dim:]
@@ -137,6 +169,43 @@ def _apply_partial_rope(
         return torch.cat((paired.to(value.dtype), remainder), dim=-1)
 
     return rotate(query), rotate(key)
+
+
+def _segment_position_ids(segment_ids: torch.Tensor) -> torch.Tensor:
+    positions = torch.zeros_like(segment_ids)
+    for index in range(1, segment_ids.shape[1]):
+        positions[:, index] = torch.where(
+            segment_ids[:, index] == segment_ids[:, index - 1],
+            positions[:, index - 1] + 1,
+            0,
+        )
+    return positions
+
+
+def _segment_attention_mask(
+    segment_ids: torch.Tensor, dtype: torch.dtype
+) -> torch.Tensor:
+    sequence = segment_ids.shape[1]
+    same_segment = segment_ids[:, :, None] == segment_ids[:, None, :]
+    causal = torch.ones(
+        sequence, sequence, device=segment_ids.device, dtype=torch.bool
+    ).tril()
+    allowed = same_segment & causal
+    mask = torch.zeros(
+        segment_ids.shape[0],
+        1,
+        sequence,
+        sequence,
+        device=segment_ids.device,
+        dtype=dtype,
+    )
+    return mask.masked_fill(~allowed.unsqueeze(1), float("-inf"))
+
+
+def _segment_reset_mask(segment_ids: torch.Tensor) -> torch.Tensor:
+    reset = torch.ones_like(segment_ids, dtype=torch.bool)
+    reset[:, 1:] = segment_ids[:, 1:] != segment_ids[:, :-1]
+    return reset
 
 
 class GatedGQA(nn.Module):
@@ -153,7 +222,9 @@ class GatedGQA(nn.Module):
         self.q_norm = RMSNorm(config.head_dim, config.rms_norm_eps)
         self.k_norm = RMSNorm(config.head_dim, config.rms_norm_eps)
 
-    def forward(self, hidden: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, hidden: torch.Tensor, segment_ids: torch.Tensor | None = None
+    ) -> torch.Tensor:
         batch, sequence, _ = hidden.shape
         heads = self.config.num_attention_heads
         key_value_heads = self.config.num_key_value_heads
@@ -167,12 +238,21 @@ class GatedGQA(nn.Module):
         repeats = heads // key_value_heads
         key = key.repeat_interleave(repeats, dim=2)
         value = value.repeat_interleave(repeats, dim=2)
-        query, key = _apply_partial_rope(query, key, self.config.rope_fraction)
+        positions = None if segment_ids is None else _segment_position_ids(segment_ids)
+        query, key = _apply_partial_rope(
+            query, key, self.config.rope_fraction, positions
+        )
+        attention_mask = (
+            None
+            if segment_ids is None
+            else _segment_attention_mask(segment_ids, query.dtype)
+        )
         output = F.scaled_dot_product_attention(
             query.transpose(1, 2),
             key.transpose(1, 2),
             value.transpose(1, 2),
-            is_causal=True,
+            attn_mask=attention_mask,
+            is_causal=attention_mask is None,
         ).transpose(1, 2)
         output = output * torch.sigmoid(gate.view(batch, sequence, heads, head_dim))
         return self.o_proj(output.reshape(batch, sequence, -1))
@@ -207,16 +287,18 @@ class DeltaMixer(nn.Module):
         self.output_norm = RMSNorm(config.head_dim, config.rms_norm_eps)
         self.o_proj = nn.Linear(width, config.hidden_size, bias=False)
 
-    def forward(self, hidden: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, hidden: torch.Tensor, segment_ids: torch.Tensor | None = None
+    ) -> torch.Tensor:
         batch, sequence, _ = hidden.shape
         heads, head_dim = self.config.num_attention_heads, self.config.head_dim
-        q = F.silu(self.q_conv(self.q_proj(hidden))).view(
+        q = F.silu(self.q_conv(self.q_proj(hidden), segment_ids)).view(
             batch, sequence, heads, head_dim
         )
-        k = F.silu(self.k_conv(self.k_proj(hidden))).view(
+        k = F.silu(self.k_conv(self.k_proj(hidden), segment_ids)).view(
             batch, sequence, heads, head_dim
         )
-        v = F.silu(self.v_conv(self.v_proj(hidden))).view(
+        v = F.silu(self.v_conv(self.v_proj(hidden), segment_ids)).view(
             batch, sequence, heads, head_dim
         )
         if self.channel_wise_decay:
@@ -227,7 +309,8 @@ class DeltaMixer(nn.Module):
         else:
             alpha = torch.sigmoid(self.alpha_proj(hidden)).unsqueeze(-1)
         beta = torch.sigmoid(self.beta_proj(hidden)).unsqueeze(-1)
-        output, _ = causal_delta_recurrence(q, k, v, alpha, beta)
+        reset_mask = None if segment_ids is None else _segment_reset_mask(segment_ids)
+        output, _ = causal_delta_recurrence(q, k, v, alpha, beta, reset_mask=reset_mask)
         gate = self.gate_up(self.gate_down(hidden)).view_as(output)
         output = self.output_norm(output) * torch.sigmoid(gate)
         return self.o_proj(output.reshape(batch, sequence, -1))
@@ -255,7 +338,9 @@ class GatedMLA(nn.Module):
             heads * config.mla_value_head_dim, config.hidden_size, bias=False
         )
 
-    def forward(self, hidden: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, hidden: torch.Tensor, segment_ids: torch.Tensor | None = None
+    ) -> torch.Tensor:
         batch, sequence, _ = hidden.shape
         heads = self.config.num_attention_heads
         query = self.q_proj(hidden).view(
@@ -271,11 +356,17 @@ class GatedMLA(nn.Module):
         key, value = key_value.split(
             [self.config.mla_qk_head_dim, self.config.mla_value_head_dim], dim=-1
         )
+        attention_mask = (
+            None
+            if segment_ids is None
+            else _segment_attention_mask(segment_ids, query.dtype)
+        )
         output = F.scaled_dot_product_attention(
             query.transpose(1, 2),
             key.transpose(1, 2),
             value.transpose(1, 2),
-            is_causal=True,
+            attn_mask=attention_mask,
+            is_causal=attention_mask is None,
             scale=self.config.mla_qk_head_dim**-0.5,
         ).transpose(1, 2)
         gate = torch.sigmoid(self.gate_proj(hidden)).view_as(output)
@@ -299,8 +390,10 @@ class SaiBlock(nn.Module):
         self.post_mixer_norm = RMSNorm(config.hidden_size, config.rms_norm_eps)
         self.feed_forward = SwiGLU(config)
 
-    def forward(self, hidden: torch.Tensor) -> torch.Tensor:
-        hidden = hidden + self.mixer(self.input_norm(hidden))
+    def forward(
+        self, hidden: torch.Tensor, segment_ids: torch.Tensor | None = None
+    ) -> torch.Tensor:
+        hidden = hidden + self.mixer(self.input_norm(hidden), segment_ids)
         return hidden + self.feed_forward(self.post_mixer_norm(hidden))
 
 
@@ -318,12 +411,37 @@ class SaiCausalLM(nn.Module):
     def lm_head_weight(self) -> nn.Parameter:
         return self.embed_tokens.weight
 
-    def forward(self, input_ids: torch.Tensor) -> torch.Tensor:
+    @staticmethod
+    def _validate_segment_ids(
+        input_ids: torch.Tensor, segment_ids: torch.Tensor | None
+    ) -> None:
+        if segment_ids is None:
+            return
+        if (
+            segment_ids.shape != input_ids.shape
+            or segment_ids.dtype != torch.long
+            or segment_ids.device != input_ids.device
+        ):
+            raise SaiReferenceError("segment_ids must match input_ids as a LongTensor")
+        for row in segment_ids.tolist():
+            seen: set[int] = set()
+            previous = None
+            for value in row:
+                if value != previous:
+                    if value in seen:
+                        raise SaiReferenceError("segment identities must be contiguous")
+                    seen.add(value)
+                    previous = value
+
+    def forward(
+        self, input_ids: torch.Tensor, segment_ids: torch.Tensor | None = None
+    ) -> torch.Tensor:
         if input_ids.ndim != 2 or input_ids.dtype != torch.long:
             raise SaiReferenceError("input_ids must be a rank-two LongTensor")
+        self._validate_segment_ids(input_ids, segment_ids)
         hidden = self.embed_tokens(input_ids)
         for layer in self.layers:
-            hidden = layer(hidden)
+            hidden = layer(hidden, segment_ids)
         hidden = self.norm(hidden)
         return F.linear(hidden, self.lm_head_weight)
 

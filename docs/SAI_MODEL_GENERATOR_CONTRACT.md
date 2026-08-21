@@ -70,14 +70,17 @@ when the architectures execute different operations.
 ## Boundaries
 
 This is not a fast kernel, a throughput claim, or a training authorization. The
-following remain required before an official 100M run:
+CPU oracle proves that packed examples match independent-document execution:
+attention masks, RoPE positions, causal convolution windows, and recurrent
+state reset at every contiguous segment boundary. The following remain required
+before an official 100M run:
 
 1. compare the oracle against the qualified FLA KDA/GDN kernels on Linux/CUDA;
-2. implement variable-length packed boundaries without recurrent-state leakage;
-3. bind optimizer, data order, UTF-8 byte budget, FLOPs, seeds, and environment;
-4. prove production parameter counts match the selected ledger;
-5. qualify forward, backward, chunkwise, recurrent, cache, and reset paths; and
-6. receive the user's explicit official training order.
+2. bind optimizer, data order, UTF-8 byte budget, FLOPs, seeds, and environment;
+3. prove production parameter counts match the selected ledger;
+4. qualify CPU/CUDA parity for packed boundaries, forward, backward, chunkwise,
+   recurrent, cache, and reset paths; and
+5. receive the user's explicit official training order.
 
 Primary implementation references are the official
 [Kimi Linear model](https://huggingface.co/moonshotai/Kimi-Linear-48B-A3B-Base),

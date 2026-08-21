@@ -19,6 +19,7 @@ from sai.model.config import (
 from sai.model.planner import SaiModelPlanError, build_plan, validate_plan
 from sai.model.reference import (
     SaiCausalLM,
+    SaiReferenceError,
     causal_delta_recurrence,
     exact_parameter_count,
 )
@@ -164,6 +165,82 @@ def test_every_reference_family_is_causal_and_has_finite_gradients(family: str) 
     gradients = [parameter.grad for parameter in model.parameters()]
     assert gradients and all(gradient is not None for gradient in gradients)
     assert all(torch.isfinite(gradient).all() for gradient in gradients)
+
+
+@pytest.mark.parametrize("family", ["gated_gqa", "gdn_hybrid", "kda_mla_hybrid"])
+def test_packed_documents_equal_independent_for_every_family(family: str) -> None:
+    torch.manual_seed(20260821)
+    model = SaiCausalLM(tiny_config(family)).eval()
+    first = torch.tensor([[3, 7, 11, 19]], dtype=torch.long)
+    second = torch.tensor([[23, 29, 31]], dtype=torch.long)
+    packed = torch.cat((first, second), dim=1)
+    segment_ids = torch.tensor([[41, 41, 41, 41, 97, 97, 97]], dtype=torch.long)
+
+    with torch.no_grad():
+        packed_logits = model(packed, segment_ids)
+        first_logits = model(first)
+        second_logits = model(second)
+
+    torch.testing.assert_close(
+        packed_logits[:, : first.shape[1]], first_logits, rtol=2e-4, atol=5e-6
+    )
+    torch.testing.assert_close(
+        packed_logits[:, first.shape[1] :], second_logits, rtol=2e-4, atol=5e-6
+    )
+
+
+@pytest.mark.parametrize("family", ["gated_gqa", "gdn_hybrid", "kda_mla_hybrid"])
+def test_packed_suffix_cannot_change_an_earlier_document(family: str) -> None:
+    torch.manual_seed(29)
+    model = SaiCausalLM(tiny_config(family)).eval()
+    segment_ids = torch.tensor([[0, 0, 0, 1, 1, 1]], dtype=torch.long)
+    first_packing = torch.tensor([[2, 3, 5, 7, 11, 13]], dtype=torch.long)
+    second_packing = torch.tensor([[2, 3, 5, 71, 73, 79]], dtype=torch.long)
+
+    with torch.no_grad():
+        first_logits = model(first_packing, segment_ids)
+        second_logits = model(second_packing, segment_ids)
+
+    torch.testing.assert_close(
+        first_logits[:, :3], second_logits[:, :3], rtol=0, atol=0
+    )
+
+
+@pytest.mark.parametrize(
+    "segment_ids,match",
+    [
+        (torch.tensor([[0, 0, 1, 1, 0]], dtype=torch.long), "contiguous"),
+        (torch.tensor([[0, 0, 1, 1, 1]], dtype=torch.int32), "LongTensor"),
+        (torch.tensor([[0, 0, 1, 1]], dtype=torch.long), "LongTensor"),
+    ],
+)
+def test_invalid_packed_segment_geometry_fails_closed(
+    segment_ids: torch.Tensor, match: str
+) -> None:
+    model = SaiCausalLM(tiny_config("gdn_hybrid"))
+    with pytest.raises(SaiReferenceError, match=match):
+        model(torch.tensor([[2, 3, 5, 7, 11]], dtype=torch.long), segment_ids)
+
+
+def test_delta_recurrence_reset_discards_prior_document_state() -> None:
+    generator = torch.Generator().manual_seed(31)
+    query = torch.randn(1, 8, 2, 4, generator=generator)
+    key = torch.randn(1, 8, 2, 4, generator=generator)
+    value = torch.randn(1, 8, 2, 5, generator=generator)
+    alpha = torch.sigmoid(torch.randn(1, 8, 2, 4, generator=generator))
+    beta = torch.sigmoid(torch.randn(1, 8, 2, 1, generator=generator))
+    reset = torch.zeros(1, 8, dtype=torch.bool)
+    reset[:, 4] = True
+
+    packed_output, packed_state = causal_delta_recurrence(
+        query, key, value, alpha, beta, reset_mask=reset
+    )
+    independent_output, independent_state = causal_delta_recurrence(
+        query[:, 4:], key[:, 4:], value[:, 4:], alpha[:, 4:], beta[:, 4:]
+    )
+
+    torch.testing.assert_close(packed_output[:, 4:], independent_output, rtol=0, atol=0)
+    torch.testing.assert_close(packed_state, independent_state, rtol=0, atol=0)
 
 
 def test_scale_planner_stays_near_each_target_for_every_core_family() -> None:

@@ -43,6 +43,7 @@ def build_plan(vocab_size: int) -> dict[str, Any]:
             "kda_gdn_recurrent_state",
             "gqa_partial_rope",
             "nope_gated_mla",
+            "packed_document_isolation",
             "tied_embeddings",
         ],
         "geometries": frozen_scale_geometries(vocab_size),
