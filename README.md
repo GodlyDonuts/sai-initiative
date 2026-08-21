@@ -32,6 +32,13 @@ benchmark evidence selects an architecture.
   with zero restarts. Held-out NLL is lower at `5.58370` per target (`266.05`
   perplexity, `1.18932` NLL/UTF-8 byte). Its immutable result file is SHA-256
   `accba7dc5728ffa6317a08bd0d61271778d04f44a89568b7bc8b0cd4d60a601b`.
+- Gated GQA (`100,481,024` parameters) completed the same 191 updates,
+  48,828 sequences, and 99,831,130 valid targets in job `768523` with zero
+  restarts. It is slowest and has the worst held-out NLL: `5.65844` per target
+  (`286.70` perplexity, `1.20524` NLL/UTF-8 byte). Its immutable result file is
+  SHA-256 `592bf31ab880b532bb230016e17b77052578fd84da911add5fa86e9a8147afd6`.
+  Its final real-board fanout is MMLU-Pro shards `768911–768918`, MuSR job
+  `768919`, and merge `768920`.
 - On the complete 756-row source-disjoint MuSR development population, KDA
   scored `257/756 = 33.995%` and GDN scored `255/756 = 33.730%`. The paired
   GDN-minus-KDA delta is `-0.265 pp`, 95% paired normal interval
@@ -53,9 +60,11 @@ benchmark evidence selects an architecture.
   GQA job `768523` remains the unresolved reference family.
 - A separate architecture-independent 30-file FineWeb-Edu prefix is now pinned
   for the next 300M factor screen. It covers exactly `64,562,434,300` raw
-  upstream bytes at revision `87f09149…b8f9`; CPU job `768858` is staged to use
-  node-local scratch so those Parquet bytes never consume Lustre quota. It does
-  not select a mixer or authorize the 4B run.
+  upstream bytes at revision `87f09149…b8f9`. Attempt `768858` failed before
+  download because ordinary Newton CPU allocations omit `SLURM_TMPDIR`; no data
+  was written. The corrected owner-validated `/tmp` acquisition is job `768891`,
+  followed by exact decontamination `768892` and a 499,998,720-token stream
+  freeze `768894`. These CPU jobs neither select a mixer nor authorize 4B.
 - This is a one-seed, approximately 100M-token, iso-data short screen. It is
   not the frozen three-seed iso-data/iso-FLOP tournament and cannot authorize
   the 4B run. The user has authorized sub-4B training; actual 4B training
