@@ -123,8 +123,11 @@ benchmark evidence selects an architecture.
   `a07cc9a04f16550a088caea529712d1d335b0ac1`, with `3,075,098,624` text
   parameters, a `6,167,865,576`-byte sealed tree, and tree SHA-256
   `6badcd593aee3052e3d66afb315b979e2cc62c4a61f9cef31c07203912478a0f`.
-  Sai now reopens its exact external manifest, receipt, and every weight member,
-  and has a one-H100 no-training mechanics entry point. This host will be used
+  Sai reopens its exact external manifest, receipt, and every weight member; a
+  fresh CPU replay passed all 12 members and all `6,167,865,576` bytes. CPU-only
+  stream job `769203` is staged after decontamination to freeze the same
+  499,998,720-token source under the exact Smol tokenizer. The one-H100
+  no-training mechanics entry point remains unscheduled. This host will be used
   only if the 0.8B recurrent factor passes; preparing it is not a result and
   does not consume the terminal 4B boundary.
 - This is a one-seed, approximately 100M-token, iso-data short screen. It is
