@@ -1,0 +1,359 @@
+{
+  "accounting_scope": {
+    "activation_scope": "analytical_incremental_tensor_geometry_not_framework_peak",
+    "flop_convention": "matmul_attention_one_multiply_add_equals_two_normalization_softmax_nonlinearity_excluded",
+    "memory_traffic_microbenchmark_still_required": true,
+    "parameter_count_exact": true,
+    "production_allocator_peak_still_required": true
+  },
+  "candidates": [
+    {
+      "base_geometry_identity_sha256": "3552719c5cfafafbb819eab7b68a0eb8d82a0f0917838c5083cb556e5d95890f",
+      "base_mixer_family": "gated_gqa",
+      "base_parameters": 298786560,
+      "candidate_identity_sha256": "a3cded44ca828b520ce9bef6743c011e0a31025e2f8a00b52eeb5459aef73925",
+      "combined_parameters_without_base_reallocation": 310004736,
+      "workspace_activation_ledger": {
+        "bytes_per_element": 2,
+        "convention": "analytical_incremental_workspace_tensor_geometry_excluding_backbone_allocator_and_autograd",
+        "maximum_stage_bytes": 3563520,
+        "maximum_stage_elements": 1781760,
+        "persistent_workspace_state_bytes": 12288,
+        "persistent_workspace_state_elements": 6144,
+        "sequence_length": 2048,
+        "stage_elements": {
+          "compiler": 1781760,
+          "reactor_attention": 38400,
+          "reactor_feed_forward": 67584,
+          "reader": 14304
+        }
+      },
+      "workspace_config": {
+        "hidden_size": 768,
+        "num_heads": 6,
+        "num_slots": 16,
+        "reactor_intermediate_size": 1536,
+        "reactor_layers": 4,
+        "rms_norm_eps": 1e-06,
+        "workspace_size": 384
+      },
+      "workspace_flop_ledgers_by_iterations": {
+        "1": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 2789892096,
+          "iterations": 1,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "16": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 7343333376,
+          "iterations": 16,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "2": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 3093454848,
+          "iterations": 2,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "4": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 3700580352,
+          "iterations": 4,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "8": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 4914831360,
+          "iterations": 8,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        }
+      },
+      "workspace_fraction_of_combined_parameters": 0.0361871116704488,
+      "workspace_parameter_ledger": {
+        "compiler": 885888,
+        "learned_slots": 6144,
+        "reactor": 9440256,
+        "reactor_per_layer": 2360064,
+        "reader_zero_initialized_output_included": 885888,
+        "total": 11218176
+      }
+    },
+    {
+      "base_geometry_identity_sha256": "cb5a26a94ae189a89ff3767dd54a50b5109b632be60f0713816473e928ec926d",
+      "base_mixer_family": "gdn_hybrid",
+      "base_parameters": 299283072,
+      "candidate_identity_sha256": "8952f6d5b8099e050a95a80716edcc916599ba1b550d6f1235ed0fca0dc23705",
+      "combined_parameters_without_base_reallocation": 310501248,
+      "workspace_activation_ledger": {
+        "bytes_per_element": 2,
+        "convention": "analytical_incremental_workspace_tensor_geometry_excluding_backbone_allocator_and_autograd",
+        "maximum_stage_bytes": 3563520,
+        "maximum_stage_elements": 1781760,
+        "persistent_workspace_state_bytes": 12288,
+        "persistent_workspace_state_elements": 6144,
+        "sequence_length": 2048,
+        "stage_elements": {
+          "compiler": 1781760,
+          "reactor_attention": 38400,
+          "reactor_feed_forward": 67584,
+          "reader": 14304
+        }
+      },
+      "workspace_config": {
+        "hidden_size": 768,
+        "num_heads": 6,
+        "num_slots": 16,
+        "reactor_intermediate_size": 1536,
+        "reactor_layers": 4,
+        "rms_norm_eps": 1e-06,
+        "workspace_size": 384
+      },
+      "workspace_flop_ledgers_by_iterations": {
+        "1": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 2789892096,
+          "iterations": 1,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "16": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 7343333376,
+          "iterations": 16,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "2": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 3093454848,
+          "iterations": 2,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "4": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 3700580352,
+          "iterations": 4,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "8": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 4914831360,
+          "iterations": 8,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        }
+      },
+      "workspace_fraction_of_combined_parameters": 0.036129246089213786,
+      "workspace_parameter_ledger": {
+        "compiler": 885888,
+        "learned_slots": 6144,
+        "reactor": 9440256,
+        "reactor_per_layer": 2360064,
+        "reader_zero_initialized_output_included": 885888,
+        "total": 11218176
+      }
+    },
+    {
+      "base_geometry_identity_sha256": "1a27d1145389f3795e4c693e7aaee4456e38aa44a10ba3d5401b0311d2118e6f",
+      "base_mixer_family": "kda_mla_hybrid",
+      "base_parameters": 298246872,
+      "candidate_identity_sha256": "e7152ce051663e4e1778e17a0cd89c4e7dda82839597c156df608cd52e830e94",
+      "combined_parameters_without_base_reallocation": 309465048,
+      "workspace_activation_ledger": {
+        "bytes_per_element": 2,
+        "convention": "analytical_incremental_workspace_tensor_geometry_excluding_backbone_allocator_and_autograd",
+        "maximum_stage_bytes": 3563520,
+        "maximum_stage_elements": 1781760,
+        "persistent_workspace_state_bytes": 12288,
+        "persistent_workspace_state_elements": 6144,
+        "sequence_length": 2048,
+        "stage_elements": {
+          "compiler": 1781760,
+          "reactor_attention": 38400,
+          "reactor_feed_forward": 67584,
+          "reader": 14304
+        }
+      },
+      "workspace_config": {
+        "hidden_size": 768,
+        "num_heads": 6,
+        "num_slots": 16,
+        "reactor_intermediate_size": 1536,
+        "reactor_layers": 4,
+        "rms_norm_eps": 1e-06,
+        "workspace_size": 384
+      },
+      "workspace_flop_ledgers_by_iterations": {
+        "1": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 2789892096,
+          "iterations": 1,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "16": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 7343333376,
+          "iterations": 16,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "2": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 3093454848,
+          "iterations": 2,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "4": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 3700580352,
+          "iterations": 4,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        },
+        "8": {
+          "compiler": 2475687936,
+          "convention": "workspace_matmul_attention_one_multiply_add_equals_two",
+          "forced_fast_increment": 0,
+          "forced_slow_increment": 4914831360,
+          "iterations": 8,
+          "reactor_per_iteration": 303562752,
+          "reactor_per_layer": 75890688,
+          "reader": 10641408,
+          "scope": "one_next_token_decision_excluding_selected_base",
+          "sequence_length": 2048
+        }
+      },
+      "workspace_fraction_of_combined_parameters": 0.03625021976633691,
+      "workspace_parameter_ledger": {
+        "compiler": 885888,
+        "learned_slots": 6144,
+        "reactor": 9440256,
+        "reactor_per_layer": 2360064,
+        "reader_zero_initialized_output_included": 885888,
+        "total": 11218176
+      }
+    }
+  ],
+  "checks": {
+    "architecture_not_locked": true,
+    "base_backbone_not_shrunk_or_reallocated": true,
+    "one_new_factor_only": true,
+    "oracle_evidence_not_yet_available": true,
+    "training_remains_unauthorized": true,
+    "workspace_parameters_independent_of_recurrence_horizon": true
+  },
+  "geometry_plan_sha256": "5582bb1112aeac15746b500841f4ded282cedc1c049593a396ce8823e45bdb2c",
+  "gpu_jobs_submitted": 0,
+  "official_training_order_received": false,
+  "plan_sha256": "5d39a4f0b3f3e3021de96ae22f83ba4de18fe6645b668bc3313aeb031c931f06",
+  "primary_100m_screen_unchanged": true,
+  "recurrence_horizons": [
+    1,
+    2,
+    4,
+    8,
+    16
+  ],
+  "schema": "sai-16-slot-workspace-plan-v1",
+  "selected_backbone_family": null,
+  "sequence_length": 2048,
+  "stage": "300m_post_mixer_factor_screen",
+  "status": "prospective_cpu_accounting",
+  "training_authorized": false,
+  "training_hold": true,
+  "training_updates_completed": 0,
+  "workspace_factor": {
+    "bidirectional_workspace_attention": true,
+    "fixed_point_loss_included": false,
+    "forced_fast_is_direct_base_bypass": true,
+    "learned_exact_anchors_included": false,
+    "learned_regret_controller_included": false,
+    "num_slots": 16,
+    "query_conditioned_compiler": true,
+    "reader_applies_only_to_final_generation_position": true,
+    "reader_output_initialized_exactly_zero": true,
+    "reinject_initial_slots_each_reactor_block": true,
+    "semantic_memory_included": false,
+    "typed_side_channels_included": false
+  }
+}

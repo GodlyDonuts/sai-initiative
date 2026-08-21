@@ -11,9 +11,14 @@ dependencies = []
 
 [project.scripts]
 sai-freeze-data = "sai.data.freeze:main"
+sai-freeze-token-stream = "sai.data.token_stream:main"
+sai-qualify-tokenizers = "sai.tokenizer.qualification:main"
 sai-architecture-plan = "sai.architecture.tournament:main"
 sai-model-plan = "sai.model.planner:main"
 sai-experiment-plan = "sai.training.experiment:main"
+sai-workspace-plan = "sai.adaptive.planner:main"
+sai-workspace-performance = "sai.adaptive.performance:main"
+sai-oracle-slow-path = "sai.adaptive.oracle:main"
 sai-public-gate = "sai.gates.public_benchmarks:main"
 sai-readiness = "sai.readiness:main"
 

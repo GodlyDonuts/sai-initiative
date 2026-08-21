@@ -1,0 +1,18 @@
+{"schema":"sai-tokenizer-protected-string-v1","id":"ascii-printable","category":"ascii","text":"ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789 !@#$%^&*()[]{}<>~`'\";:,.?/\\|_-+="}
+{"schema":"sai-tokenizer-protected-string-v1","id":"english-prose","category":"english","text":"A compact model should explain difficult ideas clearly, precisely, and without wasting the reader's time."}
+{"schema":"sai-tokenizer-protected-string-v1","id":"english-contractions","category":"english","text":"It's useful when a model can't be tricked by apostrophes, em dashes—or unusual punctuation."}
+{"schema":"sai-tokenizer-protected-string-v1","id":"python-code","category":"code","text":"def fibonacci(n: int) -> int:\n    a, b = 0, 1\n    for _ in range(n):\n        a, b = b, a + b\n    return a"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"rust-code","category":"code","text":"fn clamp<T: Ord>(x: T, lo: T, hi: T) -> T { std::cmp::min(std::cmp::max(x, lo), hi) }"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"json-shell-code","category":"code","text":"{\"cmd\": \"rg --files src | sort\", \"ok\": true, \"exit_code\": 0}"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"indentation-tabs","category":"whitespace_and_indentation","text":"root:\n  child:\n\tvalue = 42\n\n    return value\n"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"identifier-mix","category":"identifiers","text":"HTTPRequest2D _private_value CUDA_VISIBLE_DEVICES sha256_file x86_64 std::vector<int>"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"urls-paths","category":"urls","text":"https://example.org/api/v2/items?q=delta%20rule#results /usr/local/bin/python C:\\Users\\Sai\\model.json"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"numbers-units","category":"numbers_and_units","text":"−273.15 °C; 9.80665 m/s²; 80 GiB; 232448 bytes; 1,048,576 sequences; $0.0006"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"greek-letters","category":"greek","text":"α β γ δ ε θ λ μ π σ φ ψ ω Γ Δ Θ Λ Π Σ Φ Ψ Ω"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"math-operators","category":"math","text":"∀x∈ℝ: x²≥0; ∑ᵢ₌₁ⁿ i=n(n+1)/2; A⊗B; ∇·E=ρ/ε₀; P(A∣B)=P(A∩B)/P(B)"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"latex-equation","category":"latex","text":"\\[ S_t = \\operatorname{diag}(\\alpha_t)S_{t-1} + k_t(v_t-k_t^\\top S_{t-1})^\\top \\]"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"latex-code-block","category":"latex","text":"Let $f(x)=\\int_0^x e^{-t^2}\\,dt$ and compute $\\frac{d}{dx}f(x)$."}
+{"schema":"sai-tokenizer-protected-string-v1","id":"science-notation","category":"science_notation","text":"6.02214076e23 mol⁻¹; 1.602176634×10⁻¹⁹ C; 2.99792458E+08 m s^-1; pH=7.00"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"unicode-cjk","category":"unicode_fallback","text":"任意のUnicode文字列は損失なく往復できる必要があります。变量与函数必须保持原样。"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"unicode-multilingual","category":"unicode_fallback","text":"Français naïf; Español mañana; Ελληνικά; Русский; العربية; हिन्दी; 한국어; emoji 🧠⚙️🚀"}
+{"schema":"sai-tokenizer-protected-string-v1","id":"unicode-combining","category":"unicode_fallback","text":"é ≠ é; Z͑ͫ̓a͂ͫl̓gͧo̚; 👩🏽‍💻; 🏳️‍🌈; 𝔘𝔫𝔦𝔠𝔬𝔡𝔢"}
