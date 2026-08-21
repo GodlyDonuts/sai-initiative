@@ -1,0 +1,132 @@
+#!/bin/bash
+#SBATCH --job-name=sai-stream-500m-cpu
+#SBATCH --partition=normal
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=64G
+#SBATCH --time=08:00:00
+#SBATCH --no-requeue
+#SBATCH --output=/dev/null
+#SBATCH --error=/dev/null
+
+set -euo pipefail
+
+: "${SAI_ROOT:?SAI_ROOT is required}"
+: "${EXPECTED_COMMIT:?EXPECTED_COMMIT is required}"
+: "${PYTHON:?PYTHON is required}"
+: "${TOKENIZER_ROOT:?TOKENIZER_ROOT is required}"
+: "${SELECTED_RECEIPT:?SELECTED_RECEIPT is required}"
+: "${TRAIN_CORPUS:?TRAIN_CORPUS is required}"
+: "${TRAIN_CORPUS_RECEIPT:?TRAIN_CORPUS_RECEIPT is required}"
+: "${LOG_ROOT:?LOG_ROOT is required}"
+: "${TRAIN_STREAM:?TRAIN_STREAM is required}"
+: "${SLURM_JOB_ID:?SLURM_JOB_ID is required}"
+
+require_absolute() {
+  case "$1" in
+    /*) ;;
+    *) echo "path must be absolute: $1" >&2; exit 2 ;;
+  esac
+}
+
+for path in "$SAI_ROOT" "$PYTHON" "$TOKENIZER_ROOT" "$SELECTED_RECEIPT" \
+  "$TRAIN_CORPUS" "$TRAIN_CORPUS_RECEIPT" "$LOG_ROOT" "$TRAIN_STREAM"; do
+  require_absolute "$path"
+done
+
+case "${CUDA_VISIBLE_DEVICES:-}" in
+  ""|NoDevFiles) ;;
+  *) echo "CPU stream freezer was exposed to a GPU" >&2; exit 2 ;;
+esac
+test ! -L "$SAI_ROOT"
+test "$(git -C "$SAI_ROOT" rev-parse --is-inside-work-tree)" = "true"
+test "$(git -C "$SAI_ROOT" rev-parse HEAD)" = "$EXPECTED_COMMIT"
+test -z "$(git -C "$SAI_ROOT" status --short)"
+test -x "$PYTHON"
+test -d "$TOKENIZER_ROOT"
+test ! -L "$TOKENIZER_ROOT"
+for path in "$SELECTED_RECEIPT" "$TRAIN_CORPUS" "$TRAIN_CORPUS_RECEIPT"; do
+  test -f "$path"
+  test ! -L "$path"
+done
+test -d "$LOG_ROOT"
+test ! -L "$LOG_ROOT"
+test ! -e "$TRAIN_STREAM"
+
+job_record="$(scontrol show job -o "$SLURM_JOB_ID")"
+stdout_path="$(printf '%s\n' "$job_record" | tr ' ' '\n' | sed -n 's/^StdOut=//p')"
+stderr_path="$(printf '%s\n' "$job_record" | tr ' ' '\n' | sed -n 's/^StdErr=//p')"
+case "$stdout_path" in "$LOG_ROOT"/*) ;; *) exit 2 ;; esac
+case "$stderr_path" in "$LOG_ROOT"/*) ;; *) exit 2 ;; esac
+
+tokenizer_sha256="$("$PYTHON" -P -s -B - \
+  "$SELECTED_RECEIPT" "$TRAIN_CORPUS" "$TRAIN_CORPUS_RECEIPT" <<'PY'
+import hashlib
+import json
+import pathlib
+import sys
+
+selected_path, corpus_path, corpus_receipt_path = map(pathlib.Path, sys.argv[1:])
+selected = json.loads(selected_path.read_text())
+assert selected["schema"] == "sai-tokenizer-qualification-receipt-v1"
+assert selected["status"] == "qualified"
+assert selected["vocab_size"] == 48_000
+assert selected["byte_fallback"] is True
+assert selected["roundtrip_failures"] == 0
+assert selected["special_tokens_preserved"] is True
+receipt = json.loads(corpus_receipt_path.read_text())
+assert receipt["schema"] == "sai-decontamination-receipt-v1"
+assert receipt["status"] == "passed"
+assert receipt["scanned"] == receipt["accepted"] + receipt["dropped"]
+assert receipt["accepted"] > 0
+assert len(receipt["boundaries"]) == 20
+assert receipt["output"]["path"] == str(corpus_path.resolve())
+assert receipt["output"]["bytes"] == corpus_path.stat().st_size
+assert receipt["output"]["sha256"] == hashlib.sha256(
+    corpus_path.read_bytes()
+).hexdigest()
+print(selected["tokenizer_identity_sha256"])
+PY
+)"
+test "${#tokenizer_sha256}" = 64
+
+export PYTHONPATH="$SAI_ROOT/src"
+export PYTHONDONTWRITEBYTECODE=1
+export OPENBLAS_NUM_THREADS=1
+export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
+export TOKENIZERS_PARALLELISM=false
+
+"$PYTHON" -P -s -B -m sai.data.token_stream \
+  --tokenizer-root "$TOKENIZER_ROOT" \
+  --expected-tokenizer-sha256 "$tokenizer_sha256" \
+  --source "$TRAIN_CORPUS" \
+  --output "$TRAIN_STREAM" \
+  --sequence-length 2048 \
+  --prefix-sequences 256 \
+  --prefix-sequences 61035 \
+  --prefix-sequences 122070 \
+  --prefix-sequences 183105 \
+  --prefix-sequences 244140
+
+"$PYTHON" -P -s -B - "$TRAIN_STREAM" "$tokenizer_sha256" <<'PY'
+import pathlib
+import sys
+
+from sai.data.token_stream import validate_frozen_stream
+
+stream = validate_frozen_stream(pathlib.Path(sys.argv[1]), verify_sources=True)
+assert stream["tokenizer_identity_sha256"] == sys.argv[2]
+assert stream["sequence_length"] == 2_048
+assert stream["sequences"] == 244_140
+assert stream["valid_tokens"] == 499_998_720
+assert set(stream["prefix_utf8_bytes"]) == {
+    "256",
+    "61035",
+    "122070",
+    "183105",
+    "244140",
+}
+assert stream["benchmark_disjoint"] is True
+assert stream["cross_document_targets_masked"] is True
+PY
