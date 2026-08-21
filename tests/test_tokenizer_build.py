@@ -16,6 +16,7 @@ def test_tokenizer_tournament_job_is_cpu_only_and_replays_decontamination() -> N
     assert "--no-requeue" in job
     assert "--gres=" not in job
     assert "sai.data.decontamination validate" in job
+    assert "sai.data.split" in job
     assert "sai.tokenizer.build" in job
     assert "sai.tokenizer.qualification" in job
 

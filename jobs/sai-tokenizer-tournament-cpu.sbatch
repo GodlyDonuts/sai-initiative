@@ -15,8 +15,11 @@ set -euo pipefail
 : "${SAI_ROOT:?SAI_ROOT is required}"
 : "${EXPECTED_COMMIT:?EXPECTED_COMMIT is required}"
 : "${PYTHON:?PYTHON is required}"
-: "${CORPUS:?CORPUS is required}"
+: "${SOURCE_CORPUS:?SOURCE_CORPUS is required}"
 : "${DECONTAMINATION_RECEIPT:?DECONTAMINATION_RECEIPT is required}"
+: "${TRAIN_CORPUS:?TRAIN_CORPUS is required}"
+: "${DEVELOPMENT_CORPUS:?DEVELOPMENT_CORPUS is required}"
+: "${SPLIT_RECEIPT:?SPLIT_RECEIPT is required}"
 : "${CANDIDATE_ROOT:?CANDIDATE_ROOT is required}"
 : "${REPORT:?REPORT is required}"
 : "${SELECTED_RECEIPT:?SELECTED_RECEIPT is required}"
@@ -26,8 +29,11 @@ test ! -L "$SAI_ROOT"
 test "$(git -C "$SAI_ROOT" rev-parse HEAD)" = "$EXPECTED_COMMIT"
 test -z "$(git -C "$SAI_ROOT" status --short)"
 test -x "$PYTHON"
-test -f "$CORPUS"
+test -f "$SOURCE_CORPUS"
 test -f "$DECONTAMINATION_RECEIPT"
+test ! -e "$TRAIN_CORPUS"
+test ! -e "$DEVELOPMENT_CORPUS"
+test ! -e "$SPLIT_RECEIPT"
 test ! -e "$CANDIDATE_ROOT"
 test ! -e "$REPORT"
 test ! -e "$SELECTED_RECEIPT"
@@ -41,15 +47,21 @@ export TOKENIZERS_PARALLELISM=false
 "$PYTHON" -P -s -B -m sai.data.decontamination validate \
   --receipt "$DECONTAMINATION_RECEIPT"
 
+"$PYTHON" -P -s -B -m sai.data.split \
+  --source "$SOURCE_CORPUS" \
+  --train "$TRAIN_CORPUS" \
+  --development "$DEVELOPMENT_CORPUS" \
+  --receipt "$SPLIT_RECEIPT"
+
 "$PYTHON" -P -s -B -m sai.tokenizer.build \
-  --corpus "$CORPUS" \
+  --corpus "$TRAIN_CORPUS" \
   --output-root "$CANDIDATE_ROOT"
 
 exec "$PYTHON" -P -s -B -m sai.tokenizer.qualification \
   --candidate "32k=$CANDIDATE_ROOT/32k" \
   --candidate "48k=$CANDIDATE_ROOT/48k" \
   --candidate "64k=$CANDIDATE_ROOT/64k" \
-  --corpus "$CORPUS" \
+  --corpus "$TRAIN_CORPUS" \
   --protected-suite "$SAI_ROOT/docs/SAI_TOKENIZER_PROTECTED_SUITE.jsonl" \
   --output "$REPORT" \
   --selected-48k-output "$SELECTED_RECEIPT"
