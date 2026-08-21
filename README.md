@@ -37,10 +37,15 @@ benchmark evidence selects an architecture.
   GDN-minus-KDA delta is `-0.265 pp`, 95% paired normal interval
   `[-2.726, +2.197] pp`; both are below the `37.099%` uniform-choice baseline.
   This is evidence of no capability separation, not an architecture win.
-- Full 12,032-row MMLU-Pro jobs `768627` (KDA) and `768702` (GDN) are running.
-  GQA job `768523` is still training; its MMLU-Pro and MuSR fanout is already
-  dependency-staged. The final comparator reports exact paired wins/losses,
-  domains, 95% intervals, and chance baselines.
+- The original output-free monolithic MMLU-Pro jobs were stopped after exact
+  workload measurement showed 113,990 independent choice forwards. Each full
+  12,032-row population is now eight immutable 1,504-row shards: KDA jobs
+  `768764–768771` merge through `768772`; GDN jobs `768773–768780` merge through
+  `768781`. The shared shard manifest covers every source identity exactly once
+  and is SHA-256 `35d714c6ba8f5f2509be3c71e8fc805b4caa54c2c49812315a05dbbcd2e7ba8b`.
+  GQA job `768523` is still training; its benchmark fanout is dependency-staged.
+  The final comparator reports paired wins/losses, domains, 95% intervals, and
+  chance baselines.
 - This is a one-seed, approximately 100M-token, iso-data short screen. It is
   not the frozen three-seed iso-data/iso-FLOP tournament and cannot authorize
   the 4B run. The user has authorized sub-4B training; actual 4B training
