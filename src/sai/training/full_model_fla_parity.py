@@ -453,11 +453,9 @@ def main() -> int:
     parser.add_argument("--seed", type=int, default=20260821)
     args = parser.parse_args()
     payload = run_full_delta_mixer_parity(device="cuda", seed=args.seed)
-    if not payload["production_cuda_qualified"]:
-        raise FullModelFlaParityError("production full-model parity failed")
     _write_create_only(args.output, payload)
     print(json.dumps({"status": payload["status"], "output": str(args.output)}))
-    return 0
+    return 0 if payload["production_cuda_qualified"] else 1
 
 
 if __name__ == "__main__":
