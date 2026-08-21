@@ -177,3 +177,16 @@ def test_job_is_one_h100_no_requeue_and_has_no_retry_or_4b() -> None:
     assert 'sha256sum "$ENVIRONMENT_RECEIPT"' in job
     assert "retry" not in job.lower()
     assert "4b" not in job.lower()
+
+
+def test_launcher_submits_exactly_three_independent_single_gpu_screens() -> None:
+    launcher = (ROOT / "jobs" / "sai-launch-100m-short-screens-cpu.sbatch").read_text()
+    assert "#SBATCH --gres" not in launcher
+    assert "#SBATCH --no-requeue" in launcher
+    assert "for family in gated_gqa gdn_hybrid kda_mla_hybrid" in launcher
+    assert 'gpu_jobs_submitted": 3' in launcher
+    assert "TRAINING_SEQUENCES=48828" in launcher
+    assert "SEQUENCES_PER_UPDATE=256" in launcher
+    assert "OPTIMIZER_STEPS=191" in launcher
+    assert "--array" not in launcher
+    assert "retry" not in launcher.lower()
