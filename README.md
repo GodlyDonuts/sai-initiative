@@ -118,6 +118,15 @@ benchmark evidence selects an architecture.
   intervals against both the unchanged parent and matched reset control. Its
   pass can authorize only another sub-4B confirmation; it cannot authorize the
   4B run. These are staged experiments, not positive architecture results.
+- The cross-size/cross-family confirmation host is also pinned in advance, but
+  remains unscheduled: `HuggingFaceTB/SmolLM3-3B` revision
+  `a07cc9a04f16550a088caea529712d1d335b0ac1`, with `3,075,098,624` text
+  parameters, a `6,167,865,576`-byte sealed tree, and tree SHA-256
+  `6badcd593aee3052e3d66afb315b979e2cc62c4a61f9cef31c07203912478a0f`.
+  Sai now reopens its exact external manifest, receipt, and every weight member,
+  and has a one-H100 no-training mechanics entry point. This host will be used
+  only if the 0.8B recurrent factor passes; preparing it is not a result and
+  does not consume the terminal 4B boundary.
 - This is a one-seed, approximately 100M-token, iso-data short screen. It is
   not the frozen three-seed iso-data/iso-FLOP tournament and cannot authorize
   the 4B run. The user has authorized sub-4B training; actual 4B training
