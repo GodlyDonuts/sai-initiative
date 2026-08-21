@@ -8,7 +8,7 @@
 #SBATCH --gres=gpu:nvidia_h100_pcie:1
 #SBATCH --time=00:30:00
 #SBATCH --no-requeue
-#SBATCH --exclude=evc26,evc27,evc28,evc29,evc30,evc31,evc36,evc38,evc43,evc50
+#SBATCH --exclude=evc26,evc27,evc28,evc29,evc30,evc31,evc35,evc36,evc38,evc43,evc50
 #SBATCH --output=logs/sai_model_mechanics_%j.out
 #SBATCH --error=logs/sai_model_mechanics_%j.err
 

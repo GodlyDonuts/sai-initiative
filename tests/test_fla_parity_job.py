@@ -8,7 +8,7 @@ def test_fla_parity_job_is_one_h100_no_requeue_and_never_trains() -> None:
     assert "#SBATCH --gres=gpu:nvidia_h100_pcie:1" in script
     assert "#SBATCH --no-requeue" in script
     assert "#SBATCH --exclude=" in script
-    for node in ("evc26", "evc31", "evc36", "evc38", "evc43", "evc50"):
+    for node in ("evc26", "evc31", "evc35", "evc36", "evc38", "evc43", "evc50"):
         assert node in script
     assert "torch.cuda.device_count() == 1" in script
     assert 'flash-linear-attention") == "0.4.2"' in script
