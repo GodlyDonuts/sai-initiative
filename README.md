@@ -7,9 +7,32 @@ scratchpad and implementation surface for that effort.
 Nothing is called an improvement until it beats the unchanged parent and an
 equal-compute control on real, source-disjoint benchmarks.
 
-**Training hold:** no model training, GPU submission, large-weight restoration,
-or teacher-trace generation begins until the preparation audit is complete and
-the user gives an explicit official training order.
+**Execution status:** the user authorized sub-4B preparation and training on
+2026-08-21. The 4B run remains explicitly prohibited until smaller-scale real
+benchmark evidence selects an architecture.
+
+## Live scratchpad — 2026-08-21
+
+- Exact FLA 0.4.2 Gated DeltaNet and KDA chunk mechanics qualified on one H100
+  in Newton job `768134`: both families passed packed resets, BF16 forward/state
+  comparison, and chunk backward under Sai's explicit q/k normalization. The
+  signed receipt file is SHA-256
+  `778d137224671a44acdcc923270dc7478cded5437780a0ea37e19b764a219f29`.
+- The complete frozen 100M GDN hybrid (`100,019,648` parameters) and KDA/MLA
+  hybrid (`99,594,248` parameters) each completed two real BF16 FLA AdamW
+  updates in job `768137`, with zero restarts and empty logs. Initial/final
+  losses were `10.8802 → 9.1297` and `10.8899 → 9.1386`; every trainable
+  parameter received a finite gradient. The signed mechanics file is SHA-256
+  `43dbc2a64d864e8a0e8bb7b4610d57ce4b3bdbfa51a6a2bbeb8ba1a07c09cbad`.
+- Those are mechanics results, not evidence that either architecture improves
+  intelligence. Architecture selection still requires matched training and
+  source-disjoint real development benchmarks.
+- The exact six-shard FineWeb-Edu mechanics prefix is pinned at revision
+  `87f09149ef4734204d70ed1d046ddc9ca3f2b8f9` (`12,914,392,174` source bytes).
+  CPU acquisition/conversion is active as job `768138`; it consumes no GPU.
+- Current critical path: finish corpus acquisition, replay decontamination,
+  build/qualify 64K/48K/32K tokenizers, freeze the shared stream, then run the
+  matched 100M real-benchmark tournament. No 4B training is authorized.
 
 ## Current target
 
@@ -186,11 +209,15 @@ One serious regression vetoes a favorable average.
   row-level equal-FLOP oracle analyzer without training;
 - [x] make oracle evidence reopen portable checkpoint/run lineage and add a
   mutation-free CPU workspace performance receipt without claiming H100 speed;
+- [x] implement deterministic 64K/48K/32K tokenizer construction, exact stream
+  loading, masked AdamW training, held-out NLL evaluation, and atomic resume;
+- [x] qualify GDN/KDA FLA chunk forward/backward mechanics and complete stable
+  full-model optimizer updates for both frozen 100M delta-family geometries;
+- [x] implement replayable word/code benchmark decontamination and pin the
+  FineWeb-Edu mechanics source prefix;
 - [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
-- [ ] qualify production CUDA kernels against the CPU recurrence oracle;
 - [ ] freeze matched data/FLOP/seed manifests for the 100M tournament;
-- [ ] wait for the user's official training order;
 - [ ] run the 100M mechanics tournament, then evidence-gated 300M/1B stages;
 - [ ] package exactly one winning 4B architecture and matched controls;
 - [ ] run all five complete public boards;
