@@ -70,6 +70,11 @@ Its exact Gate-0 workspace mechanics and oracle evidence boundary are in
 [`docs/SAI_16_SLOT_WORKSPACE_CONTRACT.md`](docs/SAI_16_SLOT_WORKSPACE_CONTRACT.md)
 and
 [`docs/SAI_ORACLE_SLOW_PATH_CONTRACT.md`](docs/SAI_ORACLE_SLOW_PATH_CONTRACT.md).
+Portable checkpoint/run replay and the truthful no-training performance boundary
+are in
+[`docs/SAI_COMPLETED_RUN_LINEAGE_CONTRACT.md`](docs/SAI_COMPLETED_RUN_LINEAGE_CONTRACT.md)
+and
+[`docs/SAI_WORKSPACE_PERFORMANCE_CONTRACT.md`](docs/SAI_WORKSPACE_PERFORMANCE_CONTRACT.md).
 
 ### Sequence-mixer tournament
 
@@ -179,6 +184,8 @@ One serious regression vetoes a favorable average.
   fixed-point recurrence, regret gating, and sparse semantic memory;
 - [x] implement exact 16-slot workspace accounting, a bitwise fast bypass, and a
   row-level equal-FLOP oracle analyzer without training;
+- [x] make oracle evidence reopen portable checkpoint/run lineage and add a
+  mutation-free CPU workspace performance receipt without claiming H100 speed;
 - [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
 - [ ] qualify production CUDA kernels against the CPU recurrence oracle;

@@ -41,10 +41,15 @@ state from silently forgetting the request. Workspace attention is
 bidirectional. The reader changes only the final next-token position.
 
 The reader output matrix is initialized to exact zero. Forced-fast mode calls
-the base model directly and executes no workspace operation. At initialization,
-forced slow executes the complete workspace but its logits are bitwise identical
-to forced fast. This is an initialization invariant—not a claim that later joint
-training cannot alter the fast path.
+the base model directly and executes no workspace operation. Forced slow adds
+the workspace delta to the final hidden state before the same single LM-head
+projection. At initialization, forced slow executes the complete workspace but
+its logits are bitwise identical to forced fast.
+
+For this first factor gate the base backbone remains frozen during workspace
+training. This makes the fast-path projection byte-identical to the selected
+parent checkpoint. Joint backbone/workspace training is not silently included;
+it would require a separate prospective contract and control.
 
 ## Exact parameter ledger
 
@@ -95,7 +100,9 @@ The activation ledger is explicitly limited to analytical incremental tensor
 geometry. At length 2,048 it reports a largest stage of 1,781,760
 elements, or 3,563,520 bytes at BF16, and a persistent 6,144-element slot state.
 It is not a framework allocator peak. Exact CUDA peak, memory traffic, wall time,
-and useful work per GPU-second remain required before training readiness.
+and useful work per GPU-second remain required before training readiness. The
+no-training measurement boundary is specified in
+[`SAI_WORKSPACE_PERFORMANCE_CONTRACT.md`](SAI_WORKSPACE_PERFORMANCE_CONTRACT.md).
 
 ## Mechanics invariants
 
@@ -105,6 +112,8 @@ The test suite proves:
 - forced fast is a bitwise direct-base bypass;
 - zero-initialized forced slow is bitwise fast while internal slots update;
 - enabling the reader can change only the last position;
+- slow integration uses one shared vocabulary projection rather than a second
+  delta-to-vocabulary projection;
 - packed documents cannot exchange workspace information;
 - parameter count is recurrence-invariant and FLOPs rise by the exact per-step
   amount;

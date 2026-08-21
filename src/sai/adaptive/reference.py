@@ -160,7 +160,8 @@ class LatentWorkspace(nn.Module):
         *,
         iterations: int,
         context_mask: torch.Tensor | None = None,
-    ) -> tuple[torch.Tensor, WorkspaceDiagnostics]:
+        return_diagnostics: bool = True,
+    ) -> tuple[torch.Tensor, WorkspaceDiagnostics] | torch.Tensor:
         if context.ndim != 3 or context.shape[-1] != self.config.hidden_size:
             raise WorkspaceReferenceError("context hidden-state geometry differs")
         if context.shape[1] <= 0:
@@ -188,6 +189,8 @@ class LatentWorkspace(nn.Module):
                 slots = block(slots, initial)
         final_hidden = context[:, -1]
         delta = self.reader(final_hidden, slots)
+        if not return_diagnostics:
+            return delta
         diagnostics = WorkspaceDiagnostics(
             iterations=iterations,
             initial_slot_rms=initial.float().square().mean(dim=(1, 2)).sqrt(),
@@ -224,16 +227,22 @@ class AdaptiveSaiCausalLM(nn.Module):
             raise WorkspaceReferenceError("adaptive mode must be fast or slow")
 
         hidden = self.base.hidden_states(input_ids, segment_ids)
-        logits = self.base.project(hidden)
         context_mask = (
             None
             if segment_ids is None
             else segment_ids == segment_ids[:, -1:].expand_as(segment_ids)
         )
-        delta, diagnostics = self.workspace(
-            hidden, iterations=iterations, context_mask=context_mask
+        workspace_result = self.workspace(
+            hidden,
+            iterations=iterations,
+            context_mask=context_mask,
+            return_diagnostics=return_diagnostics,
         )
-        delta_logits = F.linear(delta, self.base.lm_head_weight)
-        result = logits.clone()
-        result[:, -1] = result[:, -1] + delta_logits
+        if return_diagnostics:
+            delta, diagnostics = workspace_result
+        else:
+            delta, diagnostics = workspace_result, None
+        adjusted_hidden = hidden.clone()
+        adjusted_hidden[:, -1] = adjusted_hidden[:, -1] + delta
+        result = self.base.project(adjusted_hidden)
         return (result, diagnostics) if return_diagnostics else result

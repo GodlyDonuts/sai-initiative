@@ -124,6 +124,23 @@ def test_slow_path_can_change_only_last_position_when_reader_is_enabled() -> Non
     assert not torch.equal(slow[:, -1], fast[:, -1])
 
 
+def test_slow_path_uses_one_shared_vocabulary_projection(monkeypatch) -> None:
+    model = adaptive_model()
+    tokens = torch.tensor([[2, 3, 5, 7]], dtype=torch.long)
+    original = model.base.project
+    calls = 0
+
+    def counted(hidden: torch.Tensor) -> torch.Tensor:
+        nonlocal calls
+        calls += 1
+        return original(hidden)
+
+    monkeypatch.setattr(model.base, "project", counted)
+    with torch.no_grad():
+        model(tokens, mode="slow", iterations=2)
+    assert calls == 1
+
+
 def test_workspace_respects_final_packed_segment_boundary() -> None:
     model = adaptive_model()
     torch.nn.init.normal_(model.workspace.reader.o_proj.weight, std=0.1)

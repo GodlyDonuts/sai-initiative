@@ -28,9 +28,10 @@ Exactly one benchmark occupies each failure-domain slot:
 - self-correction.
 
 The actual benchmark names and versions must be frozen before outputs exist.
-Every manifest binds benchmark source, ordered row identities, prompt contract,
-decoding, official scorer, environment, system checkpoint, fast-path checkpoint,
-system configuration, and completed-run receipt by SHA-256.
+Every v2 manifest binds benchmark source, ordered row identities, prompt
+contract, decoding, official scorer, evaluation environment, system checkpoint
+tree, fast-state tensor projection, system configuration, comparison group, and
+completed-run lineage artifact by SHA-256.
 
 Each row binds its identity, visible prompt, output, official score, score weight,
 modeled and executed inference FLOPs, output tokens, and infrastructure status.
@@ -42,9 +43,14 @@ scientific answers.
 ## Pairing and compute equality
 
 Fast and slow must be two modes of the same checkpoint, configuration, completed
-run, and preserved fast path. The equal-FLOP control must be an independent
-checkpoint. Within each benchmark, all three modes must have identical row order,
-prompt bytes, weights, scorer, decoding, and environment.
+run, and preserved parent-fast projection. The analyzer independently reopens
+that adaptive lineage bundle and the control lineage bundle described in
+[`SAI_COMPLETED_RUN_LINEAGE_CONTRACT.md`](SAI_COMPLETED_RUN_LINEAGE_CONTRACT.md).
+The equal-FLOP control must be a distinct checkpoint with role
+`equal_flop_fast_control`, but it must share the adaptive run's comparison group,
+parent, seed/data lineage, and exact training budget. Within each benchmark, all
+three modes must have identical row order, prompt bytes, weights, scorer,
+decoding, and evaluation environment.
 
 For every row, both modeled and executed slow FLOPs must exactly equal the
 control. Fast must cost strictly less. Wall time and hardware counters remain
@@ -83,7 +89,8 @@ run, Sai still needs:
 
 - a winning mixer from the unchanged primary screen;
 - a frozen source-disjoint five-slot development boundary;
-- a completed-run/checkpoint lineage receipt;
+- a frozen 300M adaptive experiment plan plus completed-run/checkpoint lineage
+  receipts for treatment and equal-FLOP control;
 - a trained isolated workspace and equal-FLOP control, after the user's official
   training order; and
 - official row-level outputs for all three modes.

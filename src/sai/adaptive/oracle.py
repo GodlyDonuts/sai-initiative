@@ -11,7 +11,12 @@ import random
 from pathlib import Path
 from typing import Any
 
-MANIFEST_SCHEMA = "sai-slow-path-row-manifest-v1"
+from sai.training.lineage import (
+    CompletedRunLineageError,
+    load_and_validate_receipt,
+)
+
+MANIFEST_SCHEMA = "sai-slow-path-row-manifest-v2"
 SCHEMA = "sai-oracle-slow-path-evaluation-v1"
 MODES = ("forced_fast", "forced_slow", "equal_flop_fast_control")
 GATE_SLOTS = (
@@ -30,10 +35,11 @@ SHARED_HASHES = (
     "environment_sha256",
 )
 LINEAGE_HASHES = (
-    "system_checkpoint_sha256",
-    "fast_path_checkpoint_sha256",
+    "system_checkpoint_tree_sha256",
+    "fast_path_state_sha256",
     "system_config_sha256",
-    "completed_run_receipt_sha256",
+    "completed_run_lineage_sha256",
+    "comparison_group_sha256",
 )
 
 
@@ -255,13 +261,17 @@ def _pair_slot(
         ):
             raise OracleEvaluationError("cross-mode benchmark binding differs")
     if (
-        slow["system_checkpoint_sha256"] != fast["system_checkpoint_sha256"]
-        or slow["fast_path_checkpoint_sha256"] != fast["fast_path_checkpoint_sha256"]
+        slow["system_checkpoint_tree_sha256"] != fast["system_checkpoint_tree_sha256"]
+        or slow["fast_path_state_sha256"] != fast["fast_path_state_sha256"]
         or slow["system_config_sha256"] != fast["system_config_sha256"]
-        or slow["completed_run_receipt_sha256"] != fast["completed_run_receipt_sha256"]
+        or slow["completed_run_lineage_sha256"] != fast["completed_run_lineage_sha256"]
+        or slow["comparison_group_sha256"] != fast["comparison_group_sha256"]
     ):
         raise OracleEvaluationError("fast/slow system lineage differs")
-    if control["system_checkpoint_sha256"] == fast["system_checkpoint_sha256"]:
+    if (
+        control["system_checkpoint_tree_sha256"]
+        == fast["system_checkpoint_tree_sha256"]
+    ):
         raise OracleEvaluationError("equal-FLOP control checkpoint is not independent")
     if len(fast["rows"]) != len(slow["rows"]) or len(fast["rows"]) != len(
         control["rows"]
@@ -428,23 +438,103 @@ def _paired_bootstrap(
     }
 
 
+def _validate_lineages(
+    adaptive_path: Path,
+    adaptive_root: Path,
+    control_path: Path,
+    control_root: Path,
+) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    try:
+        adaptive = load_and_validate_receipt(adaptive_path, adaptive_root)
+        control = load_and_validate_receipt(control_path, control_root)
+    except CompletedRunLineageError as error:
+        raise OracleEvaluationError("completed-run lineage differs") from error
+
+    def planned_run(receipt: dict[str, Any], root: Path) -> dict[str, Any]:
+        path = root / receipt["plan"]["path"]
+        try:
+            plan = json.loads(path.read_text())
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise OracleEvaluationError("completed-run plan is unreadable") from error
+        matches = [
+            row
+            for row in plan.get("runs", [])
+            if row.get("run_identity_sha256") == receipt["run_identity_sha256"]
+        ]
+        if len(matches) != 1:
+            raise OracleEvaluationError("completed-run plan identity differs")
+        return matches[0]
+
+    adaptive_planned = planned_run(adaptive, adaptive_root)
+    control_planned = planned_run(control, control_root)
+    if (
+        adaptive["role"] != "workspace_treatment"
+        or control["role"] != "equal_flop_fast_control"
+        or adaptive["receipt_sha256"] == control["receipt_sha256"]
+        or adaptive["checkpoint_tree"]["tree_sha256"]
+        == control["checkpoint_tree"]["tree_sha256"]
+        or adaptive["comparison_group_sha256"] != control["comparison_group_sha256"]
+        or adaptive["parent"] != control["parent"]
+        or adaptive["execution"]["optimizer_steps"]
+        != control["execution"]["optimizer_steps"]
+        or adaptive["execution"]["sequences"] != control["execution"]["sequences"]
+        or adaptive["execution"]["valid_tokens"] != control["execution"]["valid_tokens"]
+        or adaptive["execution"]["admitted_utf8_bytes"]
+        != control["execution"]["admitted_utf8_bytes"]
+        or adaptive["execution"]["modeled_training_flops"]
+        != control["execution"]["modeled_training_flops"]
+        or adaptive["immutable_inputs"]["tokenizer_sha256"]
+        != control["immutable_inputs"]["tokenizer_sha256"]
+        or adaptive["immutable_inputs"]["ordered_stream_sha256"]
+        != control["immutable_inputs"]["ordered_stream_sha256"]
+        or adaptive_planned["seed"] != control_planned["seed"]
+        or adaptive_planned["mixer_family"] != control_planned["mixer_family"]
+        or adaptive_planned["contrast"] != control_planned["contrast"]
+    ):
+        raise OracleEvaluationError("adaptive/control lineage comparison differs")
+    artifacts = {
+        "adaptive": {
+            "path": str(adaptive_path.resolve()),
+            "bytes": adaptive_path.stat().st_size,
+            "sha256": sha256_file(adaptive_path),
+        },
+        "control": {
+            "path": str(control_path.resolve()),
+            "bytes": control_path.stat().st_size,
+            "sha256": sha256_file(control_path),
+        },
+    }
+    return adaptive, control, artifacts
+
+
 def analyze(
     fast_paths: list[Path],
     slow_paths: list[Path],
     control_paths: list[Path],
     *,
+    adaptive_lineage: Path,
+    adaptive_artifact_root: Path,
+    control_lineage: Path,
+    control_artifact_root: Path,
     bootstrap_replicates: int = 10_000,
 ) -> dict[str, Any]:
+    adaptive_run, control_run, lineage_artifacts = _validate_lineages(
+        adaptive_lineage,
+        adaptive_artifact_root,
+        control_lineage,
+        control_artifact_root,
+    )
     fast = _load_manifests(fast_paths, "forced_fast")
     slow = _load_manifests(slow_paths, "forced_slow")
     control = _load_manifests(control_paths, "equal_flop_fast_control")
     for mode, manifests in (("fast", fast), ("slow", slow), ("control", control)):
         system_contracts = {
             (
-                manifest["system_checkpoint_sha256"],
-                manifest["fast_path_checkpoint_sha256"],
+                manifest["system_checkpoint_tree_sha256"],
+                manifest["fast_path_state_sha256"],
                 manifest["system_config_sha256"],
-                manifest["completed_run_receipt_sha256"],
+                manifest["completed_run_lineage_sha256"],
+                manifest["comparison_group_sha256"],
                 manifest["environment_sha256"],
                 manifest["decoding_contract_sha256"],
             )
@@ -452,6 +542,29 @@ def analyze(
         }
         if len(system_contracts) != 1:
             raise OracleEvaluationError(f"cross-slot {mode} system contract differs")
+    expected_adaptive = (
+        adaptive_run["checkpoint_tree"]["tree_sha256"],
+        adaptive_run["state_projections"]["fast_path_state_sha256"]["state_sha256"],
+        adaptive_run["immutable_inputs"]["system_config_sha256"],
+        lineage_artifacts["adaptive"]["sha256"],
+        adaptive_run["comparison_group_sha256"],
+    )
+    expected_control = (
+        control_run["checkpoint_tree"]["tree_sha256"],
+        control_run["state_projections"]["fast_path_state_sha256"]["state_sha256"],
+        control_run["immutable_inputs"]["system_config_sha256"],
+        lineage_artifacts["control"]["sha256"],
+        control_run["comparison_group_sha256"],
+    )
+    for manifests, expected, mode in (
+        (fast, expected_adaptive, "forced_fast"),
+        (slow, expected_adaptive, "forced_slow"),
+        (control, expected_control, "equal_flop_fast_control"),
+    ):
+        for manifest in manifests.values():
+            observed = tuple(manifest[key] for key in LINEAGE_HASHES)
+            if observed != expected:
+                raise OracleEvaluationError(f"{mode} completed-run lineage differs")
     workspace_contracts = {
         (
             manifest["rows"][0]["workspace_diagnostics"]["iterations"],
@@ -464,6 +577,12 @@ def analyze(
     }
     if len(workspace_contracts) != 1:
         raise OracleEvaluationError("cross-slot slow workspace contract differs")
+    workspace_contract = next(iter(workspace_contracts))
+    if workspace_contract[1:] != (
+        adaptive_run["immutable_inputs"]["workspace_plan_sha256"],
+        adaptive_run["immutable_inputs"]["workspace_candidate_identity_sha256"],
+    ):
+        raise OracleEvaluationError("slow workspace lineage differs")
     benchmarks = {}
     paired_rows = {}
     for slot in GATE_SLOTS:
@@ -571,6 +690,7 @@ def analyze(
         "terminal_public_board_accessed": False,
         "next_falsification_gate_authorized": supported,
         "manifest_artifacts": artifacts,
+        "completed_run_lineage_artifacts": lineage_artifacts,
         "benchmarks": benchmarks,
         "macro": macro,
         "bootstrap": bootstrap,
@@ -586,6 +706,10 @@ def validate_analysis(
     slow_paths: list[Path],
     control_paths: list[Path],
     *,
+    adaptive_lineage: Path,
+    adaptive_artifact_root: Path,
+    control_lineage: Path,
+    control_artifact_root: Path,
     bootstrap_replicates: int = 10_000,
 ) -> dict[str, Any]:
     """Reopen all manifests and replay one oracle analysis exactly."""
@@ -609,6 +733,10 @@ def validate_analysis(
         fast_paths,
         slow_paths,
         control_paths,
+        adaptive_lineage=adaptive_lineage,
+        adaptive_artifact_root=adaptive_artifact_root,
+        control_lineage=control_lineage,
+        control_artifact_root=control_artifact_root,
         bootstrap_replicates=bootstrap_replicates,
     )
     if payload != expected:
@@ -622,6 +750,10 @@ def write_analysis(
     control_paths: list[Path],
     output: Path,
     *,
+    adaptive_lineage: Path,
+    adaptive_artifact_root: Path,
+    control_lineage: Path,
+    control_artifact_root: Path,
     bootstrap_replicates: int = 10_000,
 ) -> dict[str, Any]:
     if output.exists():
@@ -630,6 +762,10 @@ def write_analysis(
         fast_paths,
         slow_paths,
         control_paths,
+        adaptive_lineage=adaptive_lineage,
+        adaptive_artifact_root=adaptive_artifact_root,
+        control_lineage=control_lineage,
+        control_artifact_root=control_artifact_root,
         bootstrap_replicates=bootstrap_replicates,
     )
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -648,6 +784,10 @@ def main() -> int:
     parser.add_argument("--fast", type=Path, action="append", required=True)
     parser.add_argument("--slow", type=Path, action="append", required=True)
     parser.add_argument("--control", type=Path, action="append", required=True)
+    parser.add_argument("--adaptive-lineage", type=Path, required=True)
+    parser.add_argument("--adaptive-artifact-root", type=Path, required=True)
+    parser.add_argument("--control-lineage", type=Path, required=True)
+    parser.add_argument("--control-artifact-root", type=Path, required=True)
     parser.add_argument("--bootstrap-replicates", type=int, default=10_000)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -656,6 +796,10 @@ def main() -> int:
         args.slow,
         args.control,
         args.output,
+        adaptive_lineage=args.adaptive_lineage,
+        adaptive_artifact_root=args.adaptive_artifact_root,
+        control_lineage=args.control_lineage,
+        control_artifact_root=args.control_artifact_root,
         bootstrap_replicates=args.bootstrap_replicates,
     )
     print(
