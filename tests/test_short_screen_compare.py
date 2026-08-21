@@ -31,7 +31,7 @@ def _result(benchmark: str, family: str, correctness: list[bool]) -> dict[str, o
             "answer_index": 0,
             "predicted_index": 0 if correct else 1,
             "correct": correct,
-            "choice_scores": [],
+            "choice_scores": [{}, {}],
         }
         for index, correct in enumerate(correctness)
     ]
@@ -105,6 +105,7 @@ def test_compares_exact_family_matrix_and_writes_once(tmp_path: Path) -> None:
         path.write_text(json.dumps(result, ensure_ascii=False))
     payload = compare(paths)
     musr = payload["benchmarks"]["musr"]
+    assert musr["uniform_choice_baseline_accuracy"] == 0.5
     assert musr["families"]["gated_gqa"]["accuracy"] == 0.5
     pair = musr["pairwise"]["gated_gqa_minus_kda_mla_hybrid"]
     assert pair["left_only_correct"] == 2

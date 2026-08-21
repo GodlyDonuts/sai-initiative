@@ -86,6 +86,21 @@ def _load_result(path: Path, benchmark: str) -> tuple[dict[str, Any], str]:
         raise ShortScreenComparisonError("row identity differs")
     if len(set(identities)) != len(identities):
         raise ShortScreenComparisonError("row identities are duplicated")
+    for row in rows:
+        choice_scores = row.get("choice_scores")
+        answer_index = row.get("answer_index")
+        predicted_index = row.get("predicted_index")
+        if (
+            not isinstance(choice_scores, list)
+            or not 2 <= len(choice_scores) <= 16
+            or isinstance(answer_index, bool)
+            or not isinstance(answer_index, int)
+            or not 0 <= answer_index < len(choice_scores)
+            or isinstance(predicted_index, bool)
+            or not isinstance(predicted_index, int)
+            or not 0 <= predicted_index < len(choice_scores)
+        ):
+            raise ShortScreenComparisonError("row choice geometry differs")
     return result, file_sha256
 
 
@@ -182,6 +197,10 @@ def compare(
                 }
         benchmarks[benchmark] = {
             "rows": len(reference_rows),
+            "uniform_choice_baseline_accuracy": sum(
+                1.0 / len(row["choice_scores"]) for row in reference_rows
+            )
+            / len(reference_rows),
             "families": {
                 family: {
                     "accuracy": loaded[family][benchmark]["aggregate"]["accuracy"],
