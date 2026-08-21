@@ -64,6 +64,8 @@ The tokenizer/data specialization workstream is reconciled with that ladder in
 [`docs/SAI_4B_SPECIALIZATION_RESEARCH_PLAN.md`](docs/SAI_4B_SPECIALIZATION_RESEARCH_PLAN.md).
 The exact lossless 64K/48K/32K measurement boundary is frozen in
 [`docs/SAI_TOKENIZER_QUALIFICATION_CONTRACT.md`](docs/SAI_TOKENIZER_QUALIFICATION_CONTRACT.md).
+The high-upside conditional-compute thesis and its ordered kill tests are in
+[`docs/SAI_ADAPTIVE_COMPUTE_FALSIFICATION_PLAN.md`](docs/SAI_ADAPTIVE_COMPUTE_FALSIFICATION_PLAN.md).
 
 ### Sequence-mixer tournament
 
@@ -169,6 +171,8 @@ One serious regression vetoes a favorable average.
   cross-document boundary receipts;
 - [x] implement the exact 64K/48K/32K tokenizer qualifier and protected Unicode
   suite without building or selecting a candidate;
+- [x] define an oracle-first falsification ladder for latent workspace,
+  fixed-point recurrence, regret gating, and sparse semantic memory;
 - [ ] run that freezer on the exact admitted source populations;
 - [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
 - [ ] qualify production CUDA kernels against the CPU recurrence oracle;
