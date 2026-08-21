@@ -9,5 +9,6 @@ build/
 *.egg-info/
 artifacts/
 checkpoints/
+logs/
 models/
 tmp/
