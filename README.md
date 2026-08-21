@@ -82,6 +82,20 @@ benchmark evidence selects an architecture.
   three independent one-H100 jobs. This tests whether the near-chance 100M
   results reflect data starvation or the mixers themselves; it neither selects
   a mixer in advance nor authorizes 4B.
+- The exact pretrained capable-host control is now restored at
+  `Qwen/Qwen3.5-0.8B@2fc06364715b967f1860aea9cf38778875588b17` without using a
+  GPU. CPU attempts `769141` and `769144` failed before publication on a Bash
+  digit-separator bug and one transposed `README.md` Git-blob pin; both output
+  roots remained absent. Corrected job `769148` completed in 33 seconds with
+  zero restarts. Independent replay verifies all 13 upstream members, including
+  the `1,746,942,600`-byte weight SHA-256
+  `04b1c301231dd422b8860db31311ab2721511346a32cb1e079c4c4e5f1fe4696`.
+  The sealed 15-member local tree contains no links or writable members; its
+  tree identity is
+  `24457a397ecf57057d29636ace857c78f0983cb25647b24f10461bb4943e875d`
+  and its receipt is
+  `3c7d25ab4d4bcf4dec81b594f8919636483bd64607ec1ae506c76e6ba815e00b`.
+  This is host preparation, not a Sai architecture result.
 - This is a one-seed, approximately 100M-token, iso-data short screen. It is
   not the frozen three-seed iso-data/iso-FLOP tournament and cannot authorize
   the 4B run. The user has authorized sub-4B training; actual 4B training
