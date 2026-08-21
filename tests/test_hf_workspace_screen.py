@@ -126,7 +126,7 @@ def test_objective_uses_only_current_document_and_admitted_targets(
     assert observed["targets"] == 1
     assert observed["cross_entropy_sum"] > 0
     assert observed["parent_kl_sum"] >= 0
-    assert system.parent.model.seen_lengths == [2]
+    assert system.parent.model.seen_lengths == [2, screen.INPUT_SEQUENCE_LENGTH - 2]
     objective.backward()
     assert any(
         parameter.grad is not None for parameter in system.workspace.parameters()

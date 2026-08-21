@@ -188,6 +188,42 @@ def selected_target_count(batch: TrainingBatch) -> int:
     return admitted
 
 
+def segmented_parent_hidden(
+    system: FrozenHFWorkspaceSystem,
+    input_ids: torch.Tensor,
+    segment_ids: torch.Tensor,
+) -> torch.Tensor:
+    """Run each packed document once and stitch its causal hidden states."""
+
+    if (
+        input_ids.ndim != 2
+        or input_ids.shape[0] != 1
+        or input_ids.dtype is not torch.long
+        or segment_ids.shape != input_ids.shape
+        or segment_ids.dtype is not torch.long
+        or input_ids.shape[1] <= 0
+    ):
+        raise HFWorkspaceScreenError("segmented parent geometry differs")
+    changes = segment_ids[0, 1:].ne(segment_ids[0, :-1]).nonzero(as_tuple=False)
+    boundaries = [0, *(int(value.item()) + 1 for value in changes.flatten())]
+    boundaries.append(input_ids.shape[1])
+    observed = []
+    hidden = []
+    for start, stop in zip(boundaries[:-1], boundaries[1:], strict=True):
+        identity = int(segment_ids[0, start].item())
+        if identity in observed or not bool(
+            segment_ids[0, start:stop].eq(identity).all().item()
+        ):
+            raise HFWorkspaceScreenError("packed segment identity is not contiguous")
+        observed.append(identity)
+        local_ids = input_ids[:, start:stop]
+        hidden.append(system.parent_hidden(local_ids, torch.ones_like(local_ids)))
+    result = torch.cat(hidden, dim=1)
+    if result.shape[:2] != input_ids.shape:
+        raise HFWorkspaceScreenError("segmented parent hidden geometry differs")
+    return result
+
+
 def matched_objective_sum(
     system: FrozenHFWorkspaceSystem,
     batch: TrainingBatch,
@@ -203,6 +239,9 @@ def matched_objective_sum(
     admitted = selected_target_count(batch)
     if admitted <= 0:
         raise HFWorkspaceScreenError("workspace sequence has no admitted probe target")
+    hidden = segmented_parent_hidden(
+        system, tensor_batch.input_ids, tensor_batch.segment_ids
+    )
 
     objective = torch.zeros((), dtype=torch.float32, device=device)
     cross_entropy_sum = 0.0
@@ -212,15 +251,10 @@ def matched_objective_sum(
         target = tensor_batch.target_ids[0, position]
         if int(target.item()) == IGNORE_TARGET:
             continue
-        start = _segment_start(tensor_batch.segment_ids[0], position)
-        local_ids = tensor_batch.input_ids[:, start : position + 1]
-        local_attention = torch.ones_like(local_ids)
-        local_segments = torch.zeros_like(local_ids)
-        hidden = system.parent_hidden(local_ids, local_attention)
         candidate_logits, parent_logits = system.logits_at(
             hidden,
-            local_segments,
-            position=hidden.shape[1] - 1,
+            tensor_batch.segment_ids,
+            position=position,
             iterations=ITERATIONS,
             state_mode=state_mode,
         )
