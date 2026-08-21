@@ -10,6 +10,16 @@ from sai.data.token_stream import ROW_SCHEMA, sha256_tree
 from sai.tokenizer.build import TokenizerBuildError, build_candidates
 
 
+def test_tokenizer_tournament_job_is_cpu_only_and_replays_decontamination() -> None:
+    root = Path(__file__).resolve().parents[1]
+    job = (root / "jobs" / "sai-tokenizer-tournament-cpu.sbatch").read_text()
+    assert "--no-requeue" in job
+    assert "--gres=" not in job
+    assert "sai.data.decontamination validate" in job
+    assert "sai.tokenizer.build" in job
+    assert "sai.tokenizer.qualification" in job
+
+
 def _row(index: int) -> dict:
     text = (
         f"Document {index}: def f_{index}(x): return x * {index + 1}. "
