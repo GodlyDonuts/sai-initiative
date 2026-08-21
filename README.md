@@ -76,8 +76,17 @@ benchmark evidence selects an architecture.
   was written. Corrected job `768891` then scanned exactly 21,855,000 documents
   and admitted 2,661,644 into a 14,491,695,743-byte source whose SHA-256 is
   `2f908f5f225de109a21f66fb9fb31baa1f35b4a57f1d6d2a3f60fa95a98ea7e6`.
-  Exact decontamination `768892` is running, followed by 499,998,720-token stream
-  freeze `768894`. Dependency-staged launcher `768932` will then run a fresh,
+  Exact decontamination `768892` is running. At 19:30 EDT its live source file
+  descriptor was at `4,442,947,584 / 14,491,695,743` bytes (`30.66%`), its
+  maximum RSS remained flat at `65,195,780 KiB`, and it had zero restarts. A
+  disk-read heuristic initially overstated progress; the process file
+  descriptor is the authoritative scan measurement. Newton rejected a running
+  wall-time extension, so conditional CPU fallback `769225` is held on
+  `afternotok:768892` with compact, byte-equivalent SHA-256 shingle storage at
+  commit `540d1080ebc5b1cd2b463d8c137e9d2c71567e82`. It cannot execute while
+  `768892` remains healthy and will be invalidated if `768892` succeeds.
+  Successful decontamination is followed by 499,998,720-token stream freeze
+  `768894`. Dependency-staged launcher `768932` will then run a fresh,
   matched three-family screen over the exact 249,999,360-token prefix using
   three independent one-H100 jobs. This tests whether the near-chance 100M
   results reflect data starvation or the mixers themselves; it neither selects
