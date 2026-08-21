@@ -200,5 +200,7 @@ def test_launcher_submits_three_canaries_then_three_independent_screens() -> Non
     assert "TRAINING_SEQUENCES=48828" in launcher
     assert "SEQUENCES_PER_UPDATE=256" in launcher
     assert "OPTIMIZER_STEPS=191" in launcher
+    assert "DEVELOPMENT_SEQUENCES=1024" in launcher
+    assert "DEVELOPMENT_SEQUENCES=4096" not in launcher
     assert "--array" not in launcher
     assert "retry" not in launcher.lower()

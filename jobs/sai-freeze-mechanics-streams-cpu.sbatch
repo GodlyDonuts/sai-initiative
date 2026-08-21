@@ -71,4 +71,4 @@ exec "$PYTHON" -P -s -B -m sai.data.token_stream \
   --source "$DEVELOPMENT_CORPUS" \
   --output "$DEVELOPMENT_STREAM" \
   --sequence-length 2048 \
-  --prefix-sequences 4096
+  --prefix-sequences 1024

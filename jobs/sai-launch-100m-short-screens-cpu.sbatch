@@ -54,10 +54,10 @@ from sai.data.token_stream import validate_frozen_stream
 train = validate_frozen_stream(pathlib.Path(sys.argv[1]), verify_sources=True)
 development = validate_frozen_stream(pathlib.Path(sys.argv[2]), verify_sources=True)
 assert train["sequences"] >= 48_828
-assert development["sequences"] >= 4_096
+assert development["sequences"] >= 1_024
 assert train["prefix_utf8_bytes"]["256"] > 0
 assert train["prefix_utf8_bytes"]["48828"] > 0
-assert development["prefix_utf8_bytes"]["4096"] > 0
+assert development["prefix_utf8_bytes"]["1024"] > 0
 assert train["tokenizer_identity_sha256"] == development["tokenizer_identity_sha256"]
 print(
     train["ordered_stream_identity_sha256"],
@@ -110,7 +110,7 @@ for family in gated_gqa gdn_hybrid kda_mla_hybrid; do
       --kill-on-invalid-dep=yes \
       --output="$LOG_ROOT/sai_short_screen_%j.out" \
       --error="$LOG_ROOT/sai_short_screen_%j.err" \
-      --export=SAI_ROOT="$SAI_ROOT",EXPECTED_COMMIT="$EXPECTED_COMMIT",PYTHON="$PYTHON",FLA_ROOT="$FLA_ROOT",GEOMETRY="$GEOMETRY",FAMILY="$family",TRAIN_STREAM="$TRAIN_STREAM",TRAIN_IDENTITY="$train_identity",DEVELOPMENT_STREAM="$DEVELOPMENT_STREAM",DEVELOPMENT_IDENTITY="$development_identity",DEVELOPMENT_SEQUENCES=4096,OPTIMIZER_STEPS=191,TRAINING_SEQUENCES=48828,SEQUENCES_PER_UPDATE=256,BATCH_SIZE=8,DEVELOPMENT_BATCH_SIZE=8,CHECKPOINT_INTERVAL=10,SEED=20260821,ENVIRONMENT_RECEIPT="$ENVIRONMENT_RECEIPT",CHECKPOINT="$checkpoint",OUTPUT="$output" \
+      --export=SAI_ROOT="$SAI_ROOT",EXPECTED_COMMIT="$EXPECTED_COMMIT",PYTHON="$PYTHON",FLA_ROOT="$FLA_ROOT",GEOMETRY="$GEOMETRY",FAMILY="$family",TRAIN_STREAM="$TRAIN_STREAM",TRAIN_IDENTITY="$train_identity",DEVELOPMENT_STREAM="$DEVELOPMENT_STREAM",DEVELOPMENT_IDENTITY="$development_identity",DEVELOPMENT_SEQUENCES=1024,OPTIMIZER_STEPS=191,TRAINING_SEQUENCES=48828,SEQUENCES_PER_UPDATE=256,BATCH_SIZE=8,DEVELOPMENT_BATCH_SIZE=8,CHECKPOINT_INTERVAL=10,SEED=20260821,ENVIRONMENT_RECEIPT="$ENVIRONMENT_RECEIPT",CHECKPOINT="$checkpoint",OUTPUT="$output" \
       "$SAI_ROOT/jobs/sai-short-screen-single-h100.sbatch"
   )"
   [[ "$full_job_id" =~ ^[0-9]+$ ]]
@@ -142,7 +142,7 @@ payload = {
     "training_sequences": 48_828,
     "sequences_per_update": 256,
     "optimizer_steps": 191,
-    "development_sequences": 4_096,
+    "development_sequences": 1_024,
     "comparison_class": "iso_data_short_screen_not_iso_flop",
     "four_b_training_authorized": False,
 }
