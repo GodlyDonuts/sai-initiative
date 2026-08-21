@@ -1,17 +1,23 @@
 # Sai 4B Specialization Research Plan
 
-Status: prospective. This document authorizes no GPU work by itself. The
-training hold in the README remains in force.
+Status: prospective specialization workstream inside the architecture
+tournament. This document authorizes no GPU work by itself. The training hold
+in the README remains in force.
 
 ## Thesis
 
-A 4B model cannot out-general a frontier model, but it can out-specialize one.
-Sai spends its entire parameter, token, and vocabulary budget on English, code,
-math, science, and technical reasoning, and deliberately does not spend it on
-other languages, culture-specific knowledge, or multilingual chat. The bet is
-that at fixed size, reclaimed capacity plus a harder, cleaner, verified data
-mixture beats a general-purpose parent on the target domains without regressing
-on the five-board public gate.
+A 4B model will not beat a frontier model merely by shrinking its vocabulary or
+narrowing its data. Sai tests whether target-domain density, lower tokenizer
+fertility, and evidence-selected architecture can jointly produce a stronger
+small model. English, code, math, science, and technical reasoning receive the
+primary parameter and token budget; arbitrary Unicode remains losslessly
+encodable through byte fallback.
+
+Specialization is one independently measured workstream, not the definition of
+the model and not permission to skip the architecture ladder. The final 4B body
+must first win the gated-GQA versus GDN-hybrid versus KDA/MLA-hybrid tournament
+at 100M, 300M, and 1B. Qwen3.5-4B remains a baseline and fallback control, not an
+assumed Sai architecture.
 
 Every claimed advantage below is stated as a measurable quantity with a control,
 because the Shohin falsification showed that plausible mechanisms lose to
@@ -38,15 +44,13 @@ fertility numbers from the audit, not in advance.
 
 ### 2. Data mixture density
 
-At 4B, data quality dominates data quantity. The strongest small-model results
-(heavily filtered educational web text, textbook-style synthetic data, verified
-reasoning distillation) all share one property: a higher fraction of tokens
-that change model behavior. Sai's admitted-corpus rule makes this explicit —
-every training row is English/code/math/science/technical, verified where
-verification is mechanical (execution for code, answer checking for math,
-rule-based checks for logic), and benchmark-decontaminated before admission.
+Data quality and density matter, but Sai will measure them against data quantity
+and diversity rather than assert that either dominates. Base pretraining uses an
+ordered, deduplicated, benchmark-disjoint stream of English/code/math/science/
+technical documents. Exact UTF-8 prefix bytes and model FLOPs are separately
+matched by the implemented token-stream freezer and experiment planner.
 
-The mixture to freeze (build-status item: prompt banks):
+Post-training populations are frozen separately from base pretraining:
 
 - **skill rows** — verified target-domain instruction/solution pairs;
 - **deliberate rows** — teacher-generated long traces retained only after
@@ -57,16 +61,18 @@ The mixture to freeze (build-status item: prompt banks):
   conversational English, so the KL anchor sees the distribution Sai must not
   drift from.
 
-Replay is the specialization safety valve: the narrower the skill mixture, the
-more the frozen-parent KL matters. The equal-compute control (KL weight zero)
-directly measures whether that is true rather than assuming it.
+Replay is a possible post-training safety valve only after a base architecture
+wins. The equal-compute control (KL weight zero) directly measures whether replay
+helps rather than assuming it. Prompt-bank rows are never mislabeled as the base
+pretraining corpus.
 
 ### 3. What is explicitly not claimed
 
 - No claim that dropping multilingual data speeds up learning per se; the gate
   only tests that reallocation does not hurt and the reallocated tokens help.
-- No architecture changes at 4B. The parent's architecture is assumed adequate;
-  the changed factor stays narrow (adapter + data + optional tokenizer).
+- No architecture component is introduced for the first time at 4B. The final
+  body is the stack selected by the 100M → 300M → 1B tournament; Qwen remains a
+  matched external baseline.
 - No claim of frontier-general capability. "Frontier" for Sai means: best
   public five-board macro among ~4B single-pass checkpoints on the target
   domains, verified against the unchanged parent and equal-compute control.
@@ -82,35 +88,44 @@ directly measures whether that is true rather than assuming it.
    behavior in the mixture; track the verified/unverified ratio as a frozen
    mixture parameter, not an accident.
 3. **Tokenizer surgery silently changing behavior.** The contract already
-   requires lossless round-trip, exact retained rows, and matched continued
-   pretraining. Add one more: the untouched-tokenizer candidate must run the
-   full gate first, so tokenizer effects are never confounded with data
-   effects.
+   requires lossless round-trip, exact retained rows, and matched training.
+   Untouched-body tokenizer comparisons and fixed-total parameter-reallocation
+   comparisons remain separate, so segmentation is never credited for added
+   depth or FFN capacity.
 4. **Decontamination leaks.** Teacher traces can reproduce benchmark items even
    when source corpora are clean. Decontaminate after trace generation, against
    all five boards, on n-gram and near-duplicate matches.
 
 ## Ordered plan (maps to README build status)
 
-1. **Freeze the prompt banks.** Enumerate skill, direct, deliberate, replay,
-   and RL sources with hashes; fix the verified/unverified and
-   deliberate/direct ratios; run decontamination; commit the manifest.
-2. **Qualify tokenizer candidates.** Run the capacity audit on the frozen
-   admitted corpus plus all evaluation prompts; publish fertility numbers for
-   untouched vs. reduced vs. reduced-plus-remerged; decide drop vs. reassign.
-3. **Package the runtime.** Immutable parent hash, adapter geometry, seeds,
-   optimizer, and the matched-control switch already prototyped in
-   `src/sai/training/replay.py`.
-4. **Low-token pilot.** Smallest run that can rank {candidate, control} on a
-   held-out verified slice; go/no-go before any full run.
-5. **Full five-board gate.** Unchanged conjunctive criteria from
-   `docs/SAI_4B_BENCHMARK_FIRST_CONTRACT.md`; one serious regression vetoes.
+1. **Freeze base and post-training data separately.** Build the exact ordered
+   pretraining stream with source hashes, UTF-8 prefix bytes, document-boundary
+   masks, and benchmark-disjoint evidence. Separately freeze skill, direct,
+   deliberate, replay, and RL-prompt banks for later stages.
+2. **Qualify tokenizer candidates.** Publish byte-normalized fertility and
+   round-trip results for untouched 64K, 48K, and 32K candidates. Compare the
+   tokenizer itself at fixed body geometry before testing parameter
+   reallocation.
+3. **Select the base architecture.** Execute the frozen 100M three-family/
+   three-seed iso-data and exact iso-FLOP screen, then evidence-gated 300M and 1B
+   confirmation. No 4B architecture is chosen in advance.
+4. **Train one selected 4B base.** Package only the winning body, tokenizer,
+   ordered stream, optimizer, seeds, runtime, and matched controls. A low-token
+   mechanics run precedes the full budget.
+5. **Post-train only the surviving base.** Test verified instruction data and
+   frozen-parent replay against an equal-compute control; retain direct and
+   deliberate behavior without mandatory revision.
+6. **Run the complete five-board gate.** Apply the unchanged conjunctive
+   criteria from `docs/SAI_4B_BENCHMARK_FIRST_CONTRACT.md`; one serious
+   regression vetoes the claim.
 
-Steps 4 and 5 remain behind the explicit official training order.
+Steps 3 through 6 remain behind the explicit official training order.
 
 ## Success definition
 
-Sai v0 succeeds if, at equal tokens, updates, and inference cost, the
-specialized candidate passes every gate conjunct against both the unchanged
-parent and the equal-compute control. Anything less is a documented negative
-result, kept in this repository the same way the Shohin falsification was.
+Sai v0 succeeds only if the selected 4B stack beats the unchanged 4B baseline
+and every applicable equal-compute control on the declared source-disjoint
+development and public gates, without a serious domain regression. Tokenizer,
+architecture, data, and post-training gains are credited only from their own
+matched contrasts. Anything less is a documented negative result, retained the
+same way the Shohin falsification was.
