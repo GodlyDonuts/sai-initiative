@@ -8,7 +8,8 @@ def test_cpu_population_job_freezes_exact_two_benchmark_graph() -> None:
     ).read_text()
     assert "--no-requeue" in job
     assert "--gres=" not in job
-    assert 'test -z "${CUDA_VISIBLE_DEVICES:-}"' in job
+    assert '""|NoDevFiles' in job
+    assert "CPU population job was exposed to a GPU" in job
     assert "DECONTAMINATION_JOB_ID" in job
     assert 'decontamination_state" = "COMPLETED"' in job
     assert "fineweb_edu_mechanics_admitted_be505b6_r1.receipt.json" in job

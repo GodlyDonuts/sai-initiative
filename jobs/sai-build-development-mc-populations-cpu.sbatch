@@ -46,7 +46,10 @@ for path in \
 done
 
 test -n "${SLURM_JOB_ID:-}"
-test -z "${CUDA_VISIBLE_DEVICES:-}"
+case "${CUDA_VISIBLE_DEVICES:-}" in
+  ""|NoDevFiles) ;;
+  *) echo "CPU population job was exposed to a GPU" >&2; exit 2 ;;
+esac
 test -d "$SAI_ROOT/.git"
 test ! -L "$SAI_ROOT"
 test "$(git -C "$SAI_ROOT" rev-parse HEAD)" = "$EXPECTED_COMMIT"
