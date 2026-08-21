@@ -42,8 +42,10 @@ def test_source_job_is_cpu_only_pinned_and_uses_node_local_scratch() -> None:
     assert "#SBATCH --no-requeue" in job
     assert "#SBATCH --gres=" not in job
     assert "CPU source acquisition was exposed to a GPU" in job
-    assert "${SLURM_TMPDIR:?" in job
-    assert 'SOURCE_ROOT="$SLURM_TMPDIR/sai-fineweb-edu-500m-$SLURM_JOB_ID"' in job
+    assert 'scratch_parent="${SLURM_TMPDIR:-/tmp}"' in job
+    assert "mktemp -d" in job
+    assert 'SOURCE_ROOT="$SCRATCH_ROOT/source"' in job
+    assert 'stat -c %a "$SCRATCH_ROOT")" = "700"' in job
     assert "required_bytes=75100000000" in job
     assert "sample/100BT/{group:03d}_{index:05d}.parquet" in job
     assert "64_562_434_300" in job
@@ -52,10 +54,10 @@ def test_source_job_is_cpu_only_pinned_and_uses_node_local_scratch() -> None:
 
 def test_source_job_cleans_only_the_exact_node_local_tree() -> None:
     job = _job()
-    assert 'case "$SOURCE_ROOT" in' in job
-    assert '"$SLURM_TMPDIR"/sai-fineweb-edu-500m-"$SLURM_JOB_ID"' in job
-    assert 'find "$SOURCE_ROOT" -xdev -depth -delete' in job
-    assert 'test "$(stat -c %u "$SOURCE_ROOT")" = "$(id -u)"' in job
+    assert 'case "$SCRATCH_ROOT" in' in job
+    assert '"$scratch_parent"/sai-fineweb-edu-500m-"$SLURM_JOB_ID".??????' in job
+    assert 'find "$SCRATCH_ROOT" -xdev -depth -delete' in job
+    assert 'test "$(stat -c %u "$SCRATCH_ROOT")" = "$(id -u)"' in job
     assert "rm -rf" not in job
     assert "trap cleanup_source EXIT" in job
 

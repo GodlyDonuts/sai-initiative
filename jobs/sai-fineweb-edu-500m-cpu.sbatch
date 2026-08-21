@@ -19,7 +19,6 @@ set -euo pipefail
 : "${LOG_ROOT:?LOG_ROOT is required}"
 : "${OUTPUT:?OUTPUT is required}"
 : "${RECEIPT:?RECEIPT is required}"
-: "${SLURM_TMPDIR:?SLURM_TMPDIR is required}"
 : "${SLURM_JOB_ID:?SLURM_JOB_ID is required}"
 
 require_absolute() {
@@ -30,7 +29,7 @@ require_absolute() {
 }
 
 for path in "$SAI_ROOT" "$PYTHON" "$MANIFEST" "$LOG_ROOT" "$OUTPUT" \
-  "$RECEIPT" "$SLURM_TMPDIR"; do
+  "$RECEIPT"; do
   require_absolute "$path"
 done
 
@@ -47,9 +46,6 @@ test -f "$MANIFEST"
 test ! -L "$MANIFEST"
 test -d "$LOG_ROOT"
 test ! -L "$LOG_ROOT"
-test -d "$SLURM_TMPDIR"
-test ! -L "$SLURM_TMPDIR"
-test "$(stat -c %u "$SLURM_TMPDIR")" = "$(id -u)"
 test ! -e "$OUTPUT"
 test ! -e "$RECEIPT"
 
@@ -92,25 +88,38 @@ PY
 )"
 test "$manifest_values" = "64562434300"
 
-available_bytes="$(( $(df -Pk "$SLURM_TMPDIR" | awk 'NR==2 {print $4}') * 1024 ))"
+scratch_parent="${SLURM_TMPDIR:-/tmp}"
+require_absolute "$scratch_parent"
+test -d "$scratch_parent"
+test ! -L "$scratch_parent"
+available_bytes="$(( $(df -Pk "$scratch_parent" | awk 'NR==2 {print $4}') * 1024 ))"
 required_bytes=75100000000
 if (( available_bytes < required_bytes )); then
   echo "node-local scratch cannot hold the pinned FineWeb prefix" >&2
   exit 2
 fi
 
-SOURCE_ROOT="$SLURM_TMPDIR/sai-fineweb-edu-500m-$SLURM_JOB_ID"
-test ! -e "$SOURCE_ROOT"
+umask 077
+SCRATCH_ROOT="$(mktemp -d "$scratch_parent/sai-fineweb-edu-500m-$SLURM_JOB_ID.XXXXXX")"
+case "$SCRATCH_ROOT" in
+  "$scratch_parent"/sai-fineweb-edu-500m-"$SLURM_JOB_ID".??????) ;;
+  *) echo "unsafe node-local scratch path" >&2; exit 2 ;;
+esac
+test -d "$SCRATCH_ROOT"
+test ! -L "$SCRATCH_ROOT"
+test "$(stat -c %u "$SCRATCH_ROOT")" = "$(id -u)"
+test "$(stat -c %a "$SCRATCH_ROOT")" = "700"
+SOURCE_ROOT="$SCRATCH_ROOT/source"
 cleanup_source() {
-  case "$SOURCE_ROOT" in
-    "$SLURM_TMPDIR"/sai-fineweb-edu-500m-"$SLURM_JOB_ID") ;;
+  case "$SCRATCH_ROOT" in
+    "$scratch_parent"/sai-fineweb-edu-500m-"$SLURM_JOB_ID".??????) ;;
     *) echo "unsafe node-local cleanup target" >&2; return 2 ;;
   esac
-  if test -e "$SOURCE_ROOT"; then
-    test -d "$SOURCE_ROOT"
-    test ! -L "$SOURCE_ROOT"
-    test "$(stat -c %u "$SOURCE_ROOT")" = "$(id -u)"
-    find "$SOURCE_ROOT" -xdev -depth -delete
+  if test -e "$SCRATCH_ROOT"; then
+    test -d "$SCRATCH_ROOT"
+    test ! -L "$SCRATCH_ROOT"
+    test "$(stat -c %u "$SCRATCH_ROOT")" = "$(id -u)"
+    find "$SCRATCH_ROOT" -xdev -depth -delete
   fi
 }
 trap cleanup_source EXIT
@@ -149,4 +158,3 @@ PY
 
 cleanup_source
 trap - EXIT
-
