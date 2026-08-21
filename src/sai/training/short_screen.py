@@ -113,7 +113,9 @@ def make_bindings(
     code_sha256: str,
     environment_sha256: str,
     optimizer: TrainingRunConfig,
-    batch_size: int,
+    micro_batch_size: int,
+    sequences_per_update: int,
+    training_sequences: int,
     development_sequences: int,
     development_batch_size: int = 1,
     checkpoint_interval: int = 1,
@@ -154,7 +156,15 @@ def make_bindings(
         "code_sha256": code_identity,
         "environment_sha256": environment_identity,
         "optimizer": asdict(optimizer),
-        "batch_size_sequences": batch_size,
+        "precision": {
+            "parameter_storage": "float32",
+            "optimizer_state": "float32",
+            "activation_execution": "bfloat16_autocast",
+            "recurrent_state": "operator_defined_float32",
+        },
+        "micro_batch_size_sequences": micro_batch_size,
+        "sequences_per_update": sequences_per_update,
+        "training_sequences": training_sequences,
         "development_sequences": development_sequences,
         "development_batch_size_sequences": development_batch_size,
         "checkpoint_interval_steps": checkpoint_interval,
@@ -231,6 +241,36 @@ def _prefix_bytes(report: dict[str, Any], sequences: int) -> int:
     return value
 
 
+def update_micro_batch_sizes(
+    *,
+    global_step: int,
+    training_sequences: int,
+    sequences_per_update: int,
+    micro_batch_size: int,
+) -> tuple[int, ...]:
+    """Return the exact micro-batch partition for one possibly partial update."""
+
+    if any(
+        isinstance(value, bool) or not isinstance(value, int) or value <= 0
+        for value in (
+            global_step,
+            training_sequences,
+            sequences_per_update,
+            micro_batch_size,
+        )
+    ):
+        raise ShortScreenError("update sequence geometry differs")
+    first_sequence = (global_step - 1) * sequences_per_update
+    update_sequences = min(
+        sequences_per_update,
+        training_sequences - first_sequence,
+    )
+    if update_sequences <= 0 or micro_batch_size > sequences_per_update:
+        raise ShortScreenError("update sequence geometry differs")
+    full_batches, remainder = divmod(update_sequences, micro_batch_size)
+    return (micro_batch_size,) * full_batches + ((remainder,) if remainder else ())
+
+
 def _development_batches(
     root: Path,
     identity: str,
@@ -265,6 +305,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         isinstance(value, bool) or not isinstance(value, int) or value <= 0
         for value in (
             args.batch_size,
+            args.sequences_per_update,
+            args.training_sequences,
             args.development_batch_size,
             args.optimizer_steps,
             args.checkpoint_interval,
@@ -274,6 +316,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise ShortScreenError("run counts must be positive integers")
     if args.checkpoint_interval > args.optimizer_steps:
         raise ShortScreenError("checkpoint interval exceeds optimizer budget")
+    expected_optimizer_steps = (
+        args.training_sequences + args.sequences_per_update - 1
+    ) // args.sequences_per_update
+    if args.optimizer_steps != expected_optimizer_steps:
+        raise ShortScreenError("optimizer steps do not match the exact sequence budget")
+    if args.batch_size > args.sequences_per_update:
+        raise ShortScreenError("micro-batch exceeds the update sequence budget")
 
     train_report = validate_frozen_stream(args.train_stream, verify_sources=True)
     development_report = validate_frozen_stream(
@@ -316,7 +365,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         code_sha256=args.code_sha256,
         environment_sha256=args.environment_sha256,
         optimizer=optimizer_config,
-        batch_size=args.batch_size,
+        micro_batch_size=args.batch_size,
+        sequences_per_update=args.sequences_per_update,
+        training_sequences=args.training_sequences,
         development_sequences=args.development_sequences,
         development_batch_size=args.development_batch_size,
         checkpoint_interval=args.checkpoint_interval,
@@ -368,8 +419,13 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
 
     if counters.optimizer_steps >= args.optimizer_steps:
         raise ShortScreenError("checkpoint has no remaining optimizer budget")
-    remaining_steps = args.optimizer_steps - counters.optimizer_steps
-    required_sequences = remaining_steps * args.batch_size
+    expected_completed_sequences = min(
+        counters.optimizer_steps * args.sequences_per_update,
+        args.training_sequences,
+    )
+    if counters.sequences != expected_completed_sequences:
+        raise ShortScreenError("checkpoint sequence and update budgets differ")
+    required_sequences = args.training_sequences - counters.sequences
     train_stream = ReceiptBoundTokenStream(
         args.train_stream,
         expected_ordered_stream_identity_sha256=train_identity,
@@ -384,9 +440,22 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     model.train()
     torch.cuda.reset_peak_memory_stats()
     for global_step in range(counters.optimizer_steps + 1, args.optimizer_steps + 1):
-        batch = tensorize_stream_batch(
-            train_stream.next_batch(args.batch_size), device="cuda"
+        update_batch_sizes = update_micro_batch_sizes(
+            global_step=global_step,
+            training_sequences=args.training_sequences,
+            sequences_per_update=args.sequences_per_update,
+            micro_batch_size=args.batch_size,
         )
+        update_sequences = sum(update_batch_sizes)
+        raw_batches = []
+        update_targets = 0
+        for current_batch_size in update_batch_sizes:
+            raw_batch = train_stream.next_batch(current_batch_size)
+            raw_targets = sum(sum(row) for row in raw_batch.loss_mask)
+            if raw_targets <= 0:
+                raise ShortScreenError("training micro-batch has no valid targets")
+            raw_batches.append((raw_batch, raw_targets))
+            update_targets += raw_targets
         multiplier = learning_rate_multiplier(
             global_step,
             total_steps=args.optimizer_steps,
@@ -397,17 +466,23 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         for group in optimizer.param_groups:
             group["lr"] = learning_rate
         optimizer.zero_grad(set_to_none=True)
-        with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-            logits = model(batch.input_ids, batch.segment_ids)
-        targets = int(batch.target_mask.sum().item())
-        loss = F.cross_entropy(
-            logits[batch.target_mask].float(),
-            batch.target_ids[batch.target_mask],
-            reduction="mean",
-        )
-        if not bool(torch.isfinite(loss).item()) or targets <= 0:
-            raise ShortScreenError("training loss or target count differs")
-        loss.backward()
+        update_loss_sum = 0.0
+        for raw_batch, raw_targets in raw_batches:
+            batch = tensorize_stream_batch(raw_batch, device="cuda")
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                logits = model(batch.input_ids, batch.segment_ids)
+            loss_sum = F.cross_entropy(
+                logits[batch.target_mask].float(),
+                batch.target_ids[batch.target_mask],
+                reduction="sum",
+            )
+            if (
+                not bool(torch.isfinite(loss_sum).item())
+                or int(batch.target_mask.sum().item()) != raw_targets
+            ):
+                raise ShortScreenError("training loss or target count differs")
+            (loss_sum / update_targets).backward()
+            update_loss_sum += float(loss_sum.detach())
         gradients = [
             parameter.grad
             for parameter in model.parameters()
@@ -426,10 +501,10 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         optimizer.step()
         counters = TrainingCounters(
             optimizer_steps=global_step,
-            sequences=counters.sequences + args.batch_size,
-            targets=counters.targets + targets,
+            sequences=counters.sequences + update_sequences,
+            targets=counters.targets + update_targets,
         )
-        losses.append(float(loss.detach()))
+        losses.append(update_loss_sum / update_targets)
         gradient_norms.append(float(gradient_norm.detach()))
         if (
             global_step % args.checkpoint_interval == 0
@@ -502,6 +577,8 @@ def main() -> int:
     parser.add_argument("--development-sequences", type=int, required=True)
     parser.add_argument("--development-batch-size", type=int, default=1)
     parser.add_argument("--optimizer-steps", type=int, required=True)
+    parser.add_argument("--training-sequences", type=int, required=True)
+    parser.add_argument("--sequences-per-update", type=int, default=256)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--checkpoint-interval", type=int, default=100)
     parser.add_argument("--learning-rate", type=float, default=6e-4)

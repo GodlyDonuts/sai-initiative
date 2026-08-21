@@ -11,6 +11,7 @@ from sai.training.short_screen import (
     ShortScreenError,
     load_bounded_config,
     make_bindings,
+    update_micro_batch_sizes,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -79,6 +80,31 @@ def test_all_three_checked_in_100m_comparison_rows_are_admitted() -> None:
         assert row["parameter_ledger"]["total"] == parameter_count
 
 
+def test_exact_global_update_partition_preserves_the_partial_final_update() -> None:
+    assert (
+        update_micro_batch_sizes(
+            global_step=1,
+            training_sequences=48_828,
+            sequences_per_update=256,
+            micro_batch_size=8,
+        )
+        == (8,) * 32
+    )
+    assert update_micro_batch_sizes(
+        global_step=191,
+        training_sequences=48_828,
+        sequences_per_update=256,
+        micro_batch_size=8,
+    ) == (8,) * 23 + (4,)
+    with pytest.raises(ShortScreenError, match="update sequence geometry"):
+        update_micro_batch_sizes(
+            global_step=192,
+            training_sequences=48_828,
+            sequences_per_update=256,
+            micro_batch_size=8,
+        )
+
+
 def test_run_binding_changes_with_every_scientific_identity() -> None:
     config = _config()
     optimizer = TrainingRunConfig(optimizer_steps=3)
@@ -91,7 +117,9 @@ def test_run_binding_changes_with_every_scientific_identity() -> None:
         code_sha256="3" * 64,
         environment_sha256="4" * 64,
         optimizer=optimizer,
-        batch_size=1,
+        micro_batch_size=1,
+        sequences_per_update=2,
+        training_sequences=5,
         development_sequences=2,
     )
     changed, _ = make_bindings(
@@ -103,7 +131,9 @@ def test_run_binding_changes_with_every_scientific_identity() -> None:
         code_sha256="3" * 64,
         environment_sha256="4" * 64,
         optimizer=optimizer,
-        batch_size=1,
+        micro_batch_size=1,
+        sequences_per_update=2,
+        training_sequences=5,
         development_sequences=2,
     )
     assert first.run_sha256 != changed.run_sha256
@@ -124,7 +154,9 @@ def test_streams_must_be_source_disjoint_and_hashes_exact() -> None:
             code_sha256="3" * 64,
             environment_sha256="4" * 64,
             optimizer=TrainingRunConfig(optimizer_steps=1),
-            batch_size=1,
+            micro_batch_size=1,
+            sequences_per_update=2,
+            training_sequences=5,
             development_sequences=1,
         )
 
@@ -137,5 +169,7 @@ def test_job_is_one_h100_no_requeue_and_has_no_retry_or_4b() -> None:
     assert "EXPECTED_COMMIT" in job
     assert "TRAIN_IDENTITY" in job
     assert "DEVELOPMENT_IDENTITY" in job
+    assert "TRAINING_SEQUENCES" in job
+    assert "SEQUENCES_PER_UPDATE" in job
     assert "retry" not in job.lower()
     assert "4b" not in job.lower()

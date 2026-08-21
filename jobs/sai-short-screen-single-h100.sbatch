@@ -26,6 +26,7 @@ set -euo pipefail
 : "${DEVELOPMENT_IDENTITY:?DEVELOPMENT_IDENTITY is required}"
 : "${DEVELOPMENT_SEQUENCES:?DEVELOPMENT_SEQUENCES is required}"
 : "${OPTIMIZER_STEPS:?OPTIMIZER_STEPS is required}"
+: "${TRAINING_SEQUENCES:?TRAINING_SEQUENCES is required}"
 : "${CODE_SHA256:?CODE_SHA256 is required}"
 : "${ENVIRONMENT_SHA256:?ENVIRONMENT_SHA256 is required}"
 : "${CHECKPOINT:?CHECKPOINT is required}"
@@ -60,6 +61,7 @@ arguments=(
   --development-identity "$DEVELOPMENT_IDENTITY"
   --development-sequences "$DEVELOPMENT_SEQUENCES"
   --optimizer-steps "$OPTIMIZER_STEPS"
+  --training-sequences "$TRAINING_SEQUENCES"
   --code-sha256 "$CODE_SHA256"
   --environment-sha256 "$ENVIRONMENT_SHA256"
   --checkpoint "$CHECKPOINT"
@@ -71,6 +73,9 @@ if [[ "${RESUME:-0}" = 1 ]]; then
 fi
 if [[ -n "${BATCH_SIZE:-}" ]]; then
   arguments+=(--batch-size "$BATCH_SIZE")
+fi
+if [[ -n "${SEQUENCES_PER_UPDATE:-}" ]]; then
+  arguments+=(--sequences-per-update "$SEQUENCES_PER_UPDATE")
 fi
 if [[ -n "${DEVELOPMENT_BATCH_SIZE:-}" ]]; then
   arguments+=(--development-batch-size "$DEVELOPMENT_BATCH_SIZE")
