@@ -13,35 +13,38 @@ benchmark evidence selects an architecture.
 
 ## Live scratchpad — 2026-08-21
 
-- Exact FLA 0.4.2 Gated DeltaNet and KDA chunk mechanics qualified on one H100
-  in Newton job `768134`: both families passed packed resets, BF16 forward/state
-  comparison, and chunk backward under Sai's explicit q/k normalization. The
-  signed receipt file is SHA-256
+- Exact FLA 0.4.2 Gated DeltaNet and KDA chunk mechanics remain qualified by
+  Newton job `768134`. The environment receipt file is SHA-256
   `778d137224671a44acdcc923270dc7478cded5437780a0ea37e19b764a219f29`.
-- The complete frozen 100M GDN hybrid (`100,019,648` parameters) and KDA/MLA
-  hybrid (`99,594,248` parameters) each completed two real BF16 FLA AdamW
-  updates in job `768137`, with zero restarts and empty logs. Initial/final
-  losses were `10.8802 → 9.1297` and `10.8899 → 9.1386`; every trainable
-  parameter received a finite gradient. The signed mechanics file is SHA-256
-  `43dbc2a64d864e8a0e8bb7b4610d57ce4b3bdbfa51a6a2bbeb8ba1a07c09cbad`.
-- Those are mechanics results, not evidence that either architecture improves
-  intelligence. Architecture selection still requires matched training and
-  source-disjoint real development benchmarks.
-- The exact six-shard FineWeb-Edu mechanics prefix is pinned at revision
-  `87f09149ef4734204d70ed1d046ddc9ca3f2b8f9` (`12,914,392,174` source bytes).
-  CPU job `768138` completed with zero restarts after scanning `4,354,000`
-  rows and admitting `572,973` documents. The resulting `3,103,125,021`-byte
-  JSONL is SHA-256
-  `529ff4526cfef27adfc9cac1ab14f1f36bfcd4b2f6b593ff17ed19f47981882b`;
-  its conversion receipt file is SHA-256
-  `3aee2c518a2eb387a89fd155b5a811592ae778c9133adb9fbe49a0191f87b4fc`.
-- The CPU-only dependency chain is live: `768140` replays decontamination
-  against all ten development-board question and assessor pairs, `768141`
-  builds and qualifies the 64K/48K/32K tokenizers, and `768142` freezes the
-  exact training/development token streams. No GPU is bound to those jobs.
-- Current critical path: finish that data chain, then run matched sub-4B
-  training and source-disjoint real-development benchmark screens. No 4B
-  training is authorized.
+- The benchmark-decontaminated training corpus, lossless 48K tokenizer, and
+  exact binary streams are complete. The selected tokenizer tree is SHA-256
+  `cf4879ee5b3914b4af187abcc93be5678e41ff942e0b0a14f6eeb1a089f6f76d`.
+  The shared 48,828-sequence training stream identity is
+  `b50bb94bc4ada3c5949430222d5551b6dc60423378cacd1f80a57641b1546b22`;
+  the source-disjoint 1,024-sequence development stream identity is
+  `ec533b1faadea0e0974bfce07923f126be5a2dfe3976b5ab3cf10cf0b43c6dd0`.
+- KDA/MLA (`99,594,248` parameters) completed all 191 AdamW updates in job
+  `768546` with zero restarts. It consumed 48,828 sequences and 99,831,130
+  valid targets. Held-out NLL is `5.64448` per target (`282.73` perplexity,
+  `1.20227` NLL/UTF-8 byte). Its immutable result file is SHA-256
+  `7ee0fdc6ae229751976a579187e2d931f9c16a95294612a8bcca1de9e8a7c7e8`.
+- GDN (`100,019,648` parameters) completed the identical work in job `768529`
+  with zero restarts. Held-out NLL is lower at `5.58370` per target (`266.05`
+  perplexity, `1.18932` NLL/UTF-8 byte). Its immutable result file is SHA-256
+  `accba7dc5728ffa6317a08bd0d61271778d04f44a89568b7bc8b0cd4d60a601b`.
+- On the complete 756-row source-disjoint MuSR development population, KDA
+  scored `257/756 = 33.995%` and GDN scored `255/756 = 33.730%`. The paired
+  GDN-minus-KDA delta is `-0.265 pp`, 95% paired normal interval
+  `[-2.726, +2.197] pp`; both are below the `37.099%` uniform-choice baseline.
+  This is evidence of no capability separation, not an architecture win.
+- Full 12,032-row MMLU-Pro jobs `768627` (KDA) and `768702` (GDN) are running.
+  GQA job `768523` is still training; its MMLU-Pro and MuSR fanout is already
+  dependency-staged. The final comparator reports exact paired wins/losses,
+  domains, 95% intervals, and chance baselines.
+- This is a one-seed, approximately 100M-token, iso-data short screen. It is
+  not the frozen three-seed iso-data/iso-FLOP tournament and cannot authorize
+  the 4B run. The user has authorized sub-4B training; actual 4B training
+  remains prohibited pending smaller-scale real-benchmark evidence.
 
 ## Current target
 
@@ -224,8 +227,8 @@ One serious regression vetoes a favorable average.
   full-model optimizer updates for both frozen 100M delta-family geometries;
 - [x] implement replayable word/code benchmark decontamination and pin the
   FineWeb-Edu mechanics source prefix;
-- [ ] run that freezer on the exact admitted source populations;
-- [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
+- [x] run that freezer on the exact admitted source populations;
+- [x] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
 - [ ] freeze matched data/FLOP/seed manifests for the 100M tournament;
 - [ ] run the 100M mechanics tournament, then evidence-gated 300M/1B stages;
 - [ ] package exactly one winning 4B architecture and matched controls;
