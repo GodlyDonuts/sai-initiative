@@ -2,21 +2,25 @@
 
 Status: prospective. This document authorizes no GPU work by itself.
 
-## Parent and changed factor
+## Comparators and changed factors
 
-The provisional parent is
-`Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`. Sai v0 changes
-only a narrow adapter trained on a frozen skill population and a frozen replay
-population. The primary candidate adds frozen-parent token KL on replay. Its
-equal-compute control runs the same adapter geometry, skill rows, replay rows,
-forward passes, tokens, updates, seeds, and optimizer with KL weight zero.
+The external reference is
+`Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`. It is not the
+presumed Sai parent. The primary equal-compute control is the conventional
+architecture from the frozen tournament at the same parameter class, trained
+on the same admitted bytes, data order, model FLOPs, sequence curriculum,
+updates, and seeds. The Sai candidate differs only by the factor set that won
+the 100M, 300M, and 1B promotion ladder.
 
-Both checkpoints remain single-pass causal language models. Neither receives a
-draft, verifier result, benchmark label, or second model call at inference.
+Candidate and control remain single-pass causal language models. Neither
+receives a draft, verifier result, benchmark label, or second model call at
+inference. Qwen uses its frozen native prompt and decoding contract, with any
+cross-model presentation difference declared before results are opened.
 
 ## Reasoning curriculum
 
-The first SFT stage combines verified cold-start reasoning traces with direct
+Only after a base-model architecture wins may an SFT stage combine verified
+cold-start reasoning traces with direct
 answers and broad parent-behavior replay. Long traces are generated in groups
 by a stronger teacher and retained only after rule-based answer or execution
 verification. The model is trained to emit a final answer even after long
@@ -28,16 +32,15 @@ retain the same replay objective and face a matched SFT-only control.
 
 ## Tokenizer candidate
 
-The untouched parent tokenizer is the primary control. A reduced tokenizer may
-remove only pieces that are unused across every admitted training and public
-evaluation prompt and decode entirely to one unsupported script. Special
-tokens, byte fallback, ASCII, English/Latin, code, numbers, Greek and math
-symbols, LaTeX, and mixed-script pieces are protected.
+The architecture tournament compares 64K, 48K, and 32K tokenizers; 16K is a
+diagnostic only. Every candidate preserves byte fallback, special tokens,
+ASCII, English/Latin, code, whitespace/indentation, identifiers, URLs, numbers,
+units, Greek and math symbols, LaTeX, and technical/scientific notation.
 
-This initial rule produces a conservative capacity estimate, not a tokenizer.
-Any built candidate must prove lossless round-trip, exact retained embedding
-rows, initialized replacement rows, corpus fertility, and matched continued
-pretraining before a GPU benchmark comparison.
+Tokenizer-only tests retain body geometry. Parameter-reallocation tests are a
+separate contrast that reinvests saved vocabulary parameters into depth or FFN
+capacity while matching total parameters. Cross-tokenizer budgets use admitted
+UTF-8 bytes and model FLOPs, and validation loss is normalized per source byte.
 
 ## Public decision
 

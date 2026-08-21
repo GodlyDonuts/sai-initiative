@@ -15,16 +15,19 @@ the user gives an explicit official training order.
 
 - **Name:** Sai
 - **Size:** approximately 4B parameters
-- **Provisional parent:**
+- **Architecture:** not selected; it must win the scale-gated tournament
+- **Reference model:**
   `Qwen/Qwen3.5-4B@851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`
+- **Final form:** approximately 4B total parameters, dense, text-only
 - **Deployment:** one checkpoint, one pass, one H100 or smaller inference tier
 - **Focus:** English, code, math, science, technical reasoning
 - **Reasoning:** direct and deliberate behavior in one model; no mandatory
   hidden-draft/revision call
 
-The exact parent source metadata is frozen in
+The exact Qwen reference metadata is frozen in
 [`docs/SAI_PARENT_QWEN35_4B.json`](docs/SAI_PARENT_QWEN35_4B.json). No model
-weights were downloaded or restored while preparing that receipt.
+weights were downloaded or restored while preparing that receipt. Qwen is a
+reference and fallback control, not a decision to inherit its full architecture.
 
 ## Why this repository exists
 
@@ -36,38 +39,93 @@ revision as a route to general intelligence.
 
 Sai starts from those negative results instead of hiding them.
 
-## Candidate stack
+## The SAI shift
+
+The earlier plan was too centered on DeepSeek-R1-era post-training. Reasoning
+distillation and RL with verifiable rewards remain useful later, but they cannot
+repair a weak base architecture or compensate for lost general capability.
+
+Sai now treats the complete model stack as an empirical tournament. No paper,
+company, or fashionable mechanism is promoted directly into the 4B model. Every
+change must first beat an equal-data, equal-FLOP control at smaller scales and
+survive source-disjoint capability and retention tests.
+
+The machine-readable plan is
+[`docs/SAI_FRONTIER_ARCHITECTURE_TOURNAMENT.json`](docs/SAI_FRONTIER_ARCHITECTURE_TOURNAMENT.json),
+and its rationale is documented in
+[`docs/SAI_FRONTIER_ARCHITECTURE_TOURNAMENT.md`](docs/SAI_FRONTIER_ARCHITECTURE_TOURNAMENT.md).
+
+### Sequence-mixer tournament
+
+The core contest is not “Transformer versus one grand invention.” It is:
+
+1. gated GQA as the conventional reference;
+2. a Qwen-inspired `3 Gated DeltaNet : 1 gated full-attention` hybrid; and
+3. a Kimi-inspired `3 KDA : 1 gated MLA` hybrid.
+
+KDA, MLA, gated attention, QK normalization, positional treatment, and kernel
+efficiency are measured separately before they are combined. AttnRes, SiTU-GLU,
+Engram, and multi-token prediction are second-stage ablations, not assumptions.
+
+### Tokenizer and parameter reallocation
+
+The 248,320-token Qwen reference vocabulary contains about 636 million tied
+embedding/output parameters at width 2,560. A 32K vocabulary would use about 82
+million, freeing roughly 554 million parameters; 48K would free roughly 513
+million. Those are hypotheses, not free gains.
+
+Sai will compare 64K, 48K, and 32K English/code/math/science/technical
+tokenizers with byte fallback; 16K remains a stress-test only. The tournament
+separates two questions:
+
+- does the tokenizer itself improve byte-normalized compression and capability
+  with identical body geometry; and
+- does reinvesting the saved parameter budget into depth or FFN capacity improve
+  the fixed-total-parameter system?
+
+Cross-tokenizer training is matched by admitted UTF-8 bytes and model FLOPs, not
+raw token count. Multilingual fluency may be deprioritized, but arbitrary Unicode,
+identifiers, URLs, source code, math, and scientific notation must remain lossless.
+
+### Conditional memory and objectives
+
+DeepSeek Engram's deterministic n-gram lookup is a compelling partner for a
+smaller vocabulary because it could move static phrase memory out of expensive
+neural computation. It remains an isolated post-tokenizer ablation. NTP plus one
+or two MTP heads is likewise tested independently; future-summary prediction is
+exploratory only.
 
 ### Behavior-preserving skill learning
 
-Sai v0 trains a narrow adapter on verified, benchmark-decontaminated math,
-code, logic, science, technical, and instruction data. Every optimizer window
-also replays broad parent behavior. The candidate minimizes task loss plus
-frozen-parent token KL. The equal-compute control executes identical forwards
-with KL weight zero.
+After a base architecture wins, Sai post-training may train a narrow adapter on
+verified, benchmark-decontaminated math, code, logic, science, technical, and
+instruction data. Every optimizer window also replays broad selected-base
+behavior. The candidate minimizes task loss plus frozen-base token KL. The
+equal-compute control executes identical forwards with KL weight zero.
 
-### Deep reasoning without compulsory verbosity
+### Reasoning without compulsory verbosity
 
-Following the strongest lesson from DeepSeek-R1, small-model reasoning starts
-with verified long-form distillation from a stronger teacher, not pure RL from
-scratch. Multiple traces are retained only when rule-based math, code, or logic
-verification succeeds. Direct-response examples remain in the same mixture.
-Only an SFT checkpoint that survives the public gate may enter bounded GRPO.
+After the base architecture wins, post-training may use verified multi-teacher
+distillation and RL with verifiable rewards for math, code, formal logic, and
+tool use. Direct-response examples remain in the same mixture. Only an SFT
+checkpoint that survives the public gate may enter bounded outcome-based RL.
 
-Long reasoning is a capability, not a ritual. Native inference may select a
-direct or deliberate trajectory from the request itself, while fixed-direct
-and fixed-deliberate ablations measure whether the selection helps.
+Long reasoning is a selectable inference mode, not a ritual imposed on every
+prompt. Fixed-direct and fixed-deliberate controls must show that adaptive
+compute actually helps.
 
-### Tokenizer capacity reallocation
+## Scale ladder
 
-The parent tokenizer is the control. A Sai tokenizer candidate preserves all
-special tokens, ASCII/bytes, English, code, numeric forms, math/LaTeX, science,
-and technical notation, while measuring unused multilingual pieces that could
-be removed. Retained rows keep their exact parent embeddings. New merged pieces
-are initialized from their parent segmentations and repaired through continued
-pretraining. Vocabulary surgery advances only if round-trip behavior,
-English/code/math fertility, and public benchmarks pass against the untouched
-tokenizer at equal tokens and updates.
+The generator must instantiate comparable models at approximately 100M, 300M,
+1B, and 4B parameters. After an official training order, the sequence is:
+
+- 100M: mechanics, stability, kernel, memory, and throughput qualification;
+- 300M: three-seed factor screens on frozen development data;
+- 1B: confirmation of only the surviving factors and interaction checks; and
+- 4B: one selected stack, followed by the complete public gate.
+
+The 4B run is prohibited until the smaller-scale evidence exists. This is the
+lesson from Shohin made executable: benchmark evidence chooses the architecture.
 
 ## First public gate
 
@@ -89,10 +147,15 @@ One serious regression vetoes a favorable average.
 - [x] begin a lossless tokenizer-capacity auditor;
 - [x] implement deterministic, benchmark-disjoint freezing for skill, direct,
   deliberate, replay, and RL-prompt banks;
+- [x] replace the R1-centered plan with a verified 2026 architecture tournament;
+- [x] freeze the 100M → 300M → 1B → 4B promotion ladder and factor isolation;
 - [ ] run that freezer on the exact admitted source populations;
-- [ ] qualify untouched and reduced tokenizer candidates;
-- [ ] package the immutable 4B parent and Sai training runtime;
-- [ ] run a low-token SFT/control pilot;
+- [ ] qualify 64K/48K/32K tokenizer candidates on the admitted corpora;
+- [ ] implement and CPU-test the architecture generator and reference kernels;
+- [ ] freeze matched data/FLOP/seed manifests for the 100M tournament;
+- [ ] wait for the user's official training order;
+- [ ] run the 100M mechanics tournament, then evidence-gated 300M/1B stages;
+- [ ] package exactly one winning 4B architecture and matched controls;
 - [ ] run all five complete public boards;
 - [ ] promote only if every gate conjunct passes.
 

@@ -1,0 +1,131 @@
+{
+  "schema": "sai-frontier-architecture-tournament-v1",
+  "status": "prospective",
+  "training_hold": true,
+  "training_authorized": false,
+  "official_training_order_received": false,
+  "gpu_jobs_submitted": 0,
+  "training_updates_completed": 0,
+  "target": {
+    "parameter_class": "approximately_4b_total",
+    "parameterization": "dense",
+    "modality": "text_only",
+    "primary_domains": [
+      "english",
+      "code",
+      "math",
+      "science",
+      "technical"
+    ],
+    "unicode_roundtrip": "lossless_byte_fallback",
+    "tied_embeddings": true
+  },
+  "scales": [
+    {
+      "name": "mechanics",
+      "approximate_parameters": 0,
+      "purpose": "cpu_and_kernel_qualification",
+      "minimum_seeds": 0,
+      "may_promote_to": "100m"
+    },
+    {
+      "name": "100m",
+      "approximate_parameters": 100000000,
+      "purpose": "stability_efficiency_and_convergence_screen",
+      "minimum_seeds": 3,
+      "may_promote_to": "300m"
+    },
+    {
+      "name": "300m",
+      "approximate_parameters": 300000000,
+      "purpose": "single_factor_capability_screen",
+      "minimum_seeds": 3,
+      "may_promote_to": "1b"
+    },
+    {
+      "name": "1b",
+      "approximate_parameters": 1000000000,
+      "purpose": "survivor_confirmation_and_interactions",
+      "minimum_seeds": 3,
+      "may_promote_to": "4b"
+    },
+    {
+      "name": "4b",
+      "approximate_parameters": 4000000000,
+      "purpose": "selected_stack_and_public_confirmation",
+      "minimum_seeds": 1,
+      "may_promote_to": null
+    }
+  ],
+  "matching": {
+    "one_changed_factor_per_primary_contrast": true,
+    "same_admitted_utf8_bytes": true,
+    "same_model_flops": true,
+    "same_data_order": true,
+    "same_sequence_curriculum": true,
+    "same_decoding": true,
+    "cross_tokenizer_loss_unit": "negative_log_likelihood_per_utf8_byte",
+    "promotion_requires_positive_paired_95ci": true,
+    "material_domain_regression_allowed": false
+  },
+  "core_mixer_candidates": [
+    "gated_gqa",
+    "three_gated_deltanet_one_gated_attention",
+    "three_kda_one_gated_mla"
+  ],
+  "tokenizer_candidates": {
+    "primary_vocab_sizes": [64000, 48000, 32000],
+    "diagnostic_only_vocab_sizes": [16000],
+    "protected_capabilities": [
+      "special_tokens",
+      "byte_fallback",
+      "ascii",
+      "english",
+      "code",
+      "whitespace_and_indentation",
+      "identifiers",
+      "urls",
+      "numbers_and_units",
+      "greek",
+      "math",
+      "latex",
+      "science_notation"
+    ],
+    "separate_tokenizer_and_reallocation_effects": true
+  },
+  "ordered_secondary_factors": [
+    "partial_rope_vs_nope_mla",
+    "swiglu_vs_situ_glu",
+    "adamw_vs_muon_hybrid",
+    "ntp_vs_ntp_plus_mtp",
+    "none_vs_engram",
+    "prenorm_vs_block_attnres",
+    "future_summary_prediction_exploratory"
+  ],
+  "four_b_prerequisites": {
+    "mechanics_passed": false,
+    "100m_passed": false,
+    "300m_passed": false,
+    "1b_passed": false,
+    "winning_stack_frozen": false,
+    "official_training_order_received": false
+  },
+  "explicit_exclusions": [
+    "always_revise",
+    "mandatory_long_reasoning",
+    "moe_for_4b_total_target",
+    "attnres_and_mhc_combined_initially",
+    "unverified_deepseek_v4_sparse_attention",
+    "fusedkv_on_kda_mla_branch",
+    "architecture_promotion_from_perplexity_alone"
+  ],
+  "primary_sources": [
+    "https://arxiv.org/abs/2510.26692",
+    "https://github.com/MoonshotAI/Kimi-K3",
+    "https://arxiv.org/abs/2505.06708",
+    "https://arxiv.org/abs/2603.15031",
+    "https://github.com/deepseek-ai/Engram",
+    "https://arxiv.org/abs/2404.19737",
+    "https://arxiv.org/abs/2510.14751"
+  ]
+}
