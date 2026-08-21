@@ -41,7 +41,9 @@ benchmark evidence selects an architecture.
   completed without retries: `1,101/12,032 = 9.1506%`, also below the exact
   `11.0877%` uniform baseline. The merged result file is SHA-256
   `0ba400ec78a89f86fcfd002897a45a8ad6529ff3efab32d1c506aad1544f9001`.
-  MuSR job `768919` remains the final missing real-board input.
+  MuSR job `768919` completed at `256/756 = 33.862%`, also below the exact
+  `37.099%` baseline; its result file is SHA-256
+  `40d5638157f3180f2e06ef61bcbca4a34215138ae498ad942cbdc3541239e8bd`.
 - On the complete 756-row source-disjoint MuSR development population, KDA
   scored `257/756 = 33.995%` and GDN scored `255/756 = 33.730%`. The paired
   GDN-minus-KDA delta is `-0.265 pp`, 95% paired normal interval
@@ -61,7 +63,12 @@ benchmark evidence selects an architecture.
   `06959cdbd5a038870fcc5a9da58e5ce49c8edc63a526f7265b3bd3e30d42b4d6`
   and `830261b871521297412b589d9ef20371449043bf0fa31292445c13babf3ae04e`.
   GQA is worse on the complete MMLU-Pro board; no family has cleared the
-  capability floor at this token budget.
+  capability floor at this token budget. The full comparison file is SHA-256
+  `1558265380edeb701492585477fb16494b280e6c29aa8139d34650123dfef708`.
+  The predeclared decision receipt is SHA-256
+  `87b0a0c13eda2a1ab02ef898a48927af51d1dc7346f3d47791cf05ec889b6ed3`
+  and returns `no_family_capability_qualified_data_extension_only`: no mixer is
+  promoted, and the longer run is strictly a data-starvation diagnostic.
 - A separate architecture-independent 30-file FineWeb-Edu prefix is now pinned
   for the next 300M factor screen. It covers exactly `64,562,434,300` raw
   upstream bytes at revision `87f09149…b8f9`. Attempt `768858` failed before
