@@ -106,3 +106,14 @@ def test_convolution_adapter_reuses_weights_and_exact_offsets() -> None:
     assert call["weight"].data_ptr() == weight[:, 0, :].data_ptr()
     assert call["activation"] == "silu"
     assert call["cu_seqlens"].tolist() == [0, 2, 4, 7, 8]
+
+
+def test_convolution_adapter_casts_fp32_master_weight_to_bf16_execution() -> None:
+    calls = Calls()
+    value = torch.randn(1, 4, 6, dtype=torch.bfloat16)
+    weight = torch.randn(6, 1, 4, dtype=torch.float32, requires_grad=True)
+    fla_causal_conv1d(value, weight, None, operators=operators(calls))
+    execution_weight = calls.conv[0]["weight"]
+    assert execution_weight.dtype is torch.bfloat16
+    assert execution_weight.requires_grad is True
+    assert execution_weight.data_ptr() != weight[:, 0, :].data_ptr()

@@ -106,9 +106,14 @@ def fla_causal_conv1d(
     loaded = operators or load_fla_backend_operators()
     cu_seqlens = None if segment_ids is None else packed_cu_seqlens(segment_ids)
     flattened = _flatten_packed(value, segment_ids)
+    # FP32 master parameters are executed under BF16 autocast by the training
+    # screen.  FLA receives the convolution weight as a raw tensor rather than
+    # through an autocast-aware nn.Linear call, so make the execution cast
+    # explicit while preserving the differentiable path to the master weight.
+    execution_weight = weight[:, 0, :].to(dtype=value.dtype)
     output = loaded.causal_conv1d(
         x=flattened,
-        weight=weight[:, 0, :],
+        weight=execution_weight,
         bias=None,
         activation="silu",
         cu_seqlens=cu_seqlens,
