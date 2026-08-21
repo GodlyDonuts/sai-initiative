@@ -164,8 +164,10 @@ class LatentWorkspace(nn.Module):
     ) -> tuple[torch.Tensor, WorkspaceDiagnostics] | torch.Tensor:
         if context.ndim != 3 or context.shape[-1] != self.config.hidden_size:
             raise WorkspaceReferenceError("context hidden-state geometry differs")
-        if context.shape[1] <= 0:
-            raise WorkspaceReferenceError("workspace context must be nonempty")
+        if context.shape[0] <= 0 or context.shape[1] <= 0:
+            raise WorkspaceReferenceError(
+                "workspace batch and context must be nonempty"
+            )
         if (
             isinstance(iterations, bool)
             or not isinstance(iterations, int)
@@ -177,8 +179,12 @@ class LatentWorkspace(nn.Module):
             or context_mask.dtype != torch.bool
             or context_mask.device != context.device
             or not context_mask.any(dim=1).all()
+            or not context_mask[:, -1].all()
+            or (context_mask[:, :-1] & ~context_mask[:, 1:]).any()
         ):
-            raise WorkspaceReferenceError("workspace context mask differs")
+            raise WorkspaceReferenceError(
+                "workspace context mask must be one nonempty contiguous suffix"
+            )
 
         initial = self.compiler(context, context_mask)
         slots = initial
@@ -209,6 +215,7 @@ class AdaptiveSaiCausalLM(nn.Module):
         if base.config.hidden_size != workspace.config.hidden_size:
             raise WorkspaceReferenceError("base and workspace hidden widths differ")
         self.base = base
+        self.base.requires_grad_(False)
         self.workspace = workspace
 
     def forward(

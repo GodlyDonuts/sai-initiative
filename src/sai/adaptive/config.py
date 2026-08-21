@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass
 from typing import Any
 
@@ -38,7 +39,11 @@ class WorkspaceConfig:
             raise WorkspaceConfigError("workspace dimensions must be positive integers")
         if self.workspace_size % self.num_heads:
             raise WorkspaceConfigError("workspace heads must divide its width exactly")
-        if not isinstance(self.rms_norm_eps, float) or not self.rms_norm_eps > 0:
+        if (
+            not isinstance(self.rms_norm_eps, float)
+            or not math.isfinite(self.rms_norm_eps)
+            or not self.rms_norm_eps > 0
+        ):
             raise WorkspaceConfigError("workspace RMSNorm epsilon must be positive")
 
     @property

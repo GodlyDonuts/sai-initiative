@@ -96,6 +96,12 @@ def test_forced_fast_is_bitwise_direct_base_bypass() -> None:
     assert torch.equal(observed, expected)
 
 
+def test_adaptive_gate_freezes_parent_and_trains_only_workspace() -> None:
+    model = adaptive_model()
+    assert all(not parameter.requires_grad for parameter in model.base.parameters())
+    assert all(parameter.requires_grad for parameter in model.workspace.parameters())
+
+
 def test_zero_initialized_slow_reader_is_bitwise_fast_at_initialization() -> None:
     model = adaptive_model()
     tokens = torch.tensor([[2, 3, 5, 7, 11]], dtype=torch.long)
@@ -211,6 +217,25 @@ def test_invalid_workspace_inputs_and_modes_fail_closed() -> None:
         model(tokens, mode="oracle")
     with pytest.raises(WorkspaceReferenceError, match="iterations"):
         model(tokens, mode="slow", iterations=0)
+    with pytest.raises(WorkspaceReferenceError, match="batch and context"):
+        model.workspace(
+            torch.empty(0, 3, 32),
+            iterations=1,
+        )
+
+
+@pytest.mark.parametrize(
+    "mask",
+    [
+        torch.tensor([[True, True, False]]),
+        torch.tensor([[True, False, True]]),
+        torch.tensor([[False, False, False]]),
+    ],
+)
+def test_workspace_rejects_non_suffix_context_masks(mask: torch.Tensor) -> None:
+    workspace = LatentWorkspace(tiny_workspace_config())
+    with pytest.raises(WorkspaceReferenceError, match="contiguous suffix"):
+        workspace(torch.randn(1, 3, 32), iterations=1, context_mask=mask)
 
 
 def test_workspace_plan_is_deterministic_and_retains_no_training_hold() -> None:
