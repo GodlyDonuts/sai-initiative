@@ -171,5 +171,7 @@ def test_job_is_one_h100_no_requeue_and_has_no_retry_or_4b() -> None:
     assert "DEVELOPMENT_IDENTITY" in job
     assert "TRAINING_SEQUENCES" in job
     assert "SEQUENCES_PER_UPDATE" in job
+    assert "ENVIRONMENT_RECEIPT" in job
+    assert '"production_cuda_qualified"] is True' in job
     assert "retry" not in job.lower()
     assert "4b" not in job.lower()

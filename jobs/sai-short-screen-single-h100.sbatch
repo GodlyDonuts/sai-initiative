@@ -29,6 +29,7 @@ set -euo pipefail
 : "${TRAINING_SEQUENCES:?TRAINING_SEQUENCES is required}"
 : "${CODE_SHA256:?CODE_SHA256 is required}"
 : "${ENVIRONMENT_SHA256:?ENVIRONMENT_SHA256 is required}"
+: "${ENVIRONMENT_RECEIPT:?ENVIRONMENT_RECEIPT is required}"
 : "${CHECKPOINT:?CHECKPOINT is required}"
 : "${OUTPUT:?OUTPUT is required}"
 
@@ -41,9 +42,28 @@ test -d "$FLA_ROOT/fla"
 test -f "$GEOMETRY"
 test -d "$TRAIN_STREAM"
 test -d "$DEVELOPMENT_STREAM"
+test -f "$ENVIRONMENT_RECEIPT"
+test ! -L "$ENVIRONMENT_RECEIPT"
 test -d "$(dirname "$CHECKPOINT")"
 test -d "$(dirname "$OUTPUT")"
 test ! -e "$OUTPUT"
+test "$(sha256sum "$ENVIRONMENT_RECEIPT" | cut -d ' ' -f 1)" = "$ENVIRONMENT_SHA256"
+
+"$PYTHON" -P -s -B - "$ENVIRONMENT_RECEIPT" <<'PY'
+import json
+import pathlib
+import sys
+
+receipt = json.loads(pathlib.Path(sys.argv[1]).read_text())
+assert receipt["schema"] == "sai-fla-parity-receipt-v1"
+assert receipt["status"] == "cuda_fla_parity_qualified"
+assert receipt["parity_qualified"] is True
+assert receipt["production_cuda_qualified"] is True
+assert receipt["environment"]["device_type"] == "cuda"
+assert receipt["environment"]["cuda_bf16_supported"] is True
+assert receipt["operators"]["version"] == "0.4.2"
+assert receipt["operators"]["mock"] is False
+PY
 
 gpu_count="$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l | tr -d ' ')"
 test "$gpu_count" = 1
