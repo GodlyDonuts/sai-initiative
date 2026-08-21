@@ -1,0 +1,40 @@
+{
+  "schema": "sai-4b-provisional-parent-metadata-v1",
+  "status": "source_metadata_verified_no_weights_downloaded",
+  "model_id": "Qwen/Qwen3.5-4B",
+  "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "license": "Apache-2.0",
+  "architecture": "Qwen3_5ForConditionalGeneration",
+  "text": {
+    "hidden_size": 2560,
+    "layers": 32,
+    "intermediate_size": 9216,
+    "vocabulary_size": 248320,
+    "tie_word_embeddings": true,
+    "native_context_length": 262144,
+    "layer_pattern": "three_linear_attention_then_one_full_attention_repeated_eight_times"
+  },
+  "tokenizer": {
+    "class": "Qwen2Tokenizer",
+    "config_sha256": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8",
+    "tokenizer_json_sha256": "4b565170da5bed0e5cd12134ccb41ee9d1c7cab0b752b93a365ff2dd1585edda",
+    "parameters_per_removed_token": 2560,
+    "bf16_bytes_per_removed_token": 5120,
+    "illustrative_10000_token_savings": {
+      "parameters": 25600000,
+      "bf16_bytes": 51200000
+    },
+    "illustrative_100000_token_savings": {
+      "parameters": 256000000,
+      "bf16_bytes": 512000000
+    }
+  },
+  "config_sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+  "sources": {
+    "config": "https://huggingface.co/Qwen/Qwen3.5-4B/blob/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a/config.json",
+    "tokenizer_config": "https://huggingface.co/Qwen/Qwen3.5-4B/blob/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a/tokenizer_config.json",
+    "tokenizer": "https://huggingface.co/Qwen/Qwen3.5-4B/blob/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a/tokenizer.json"
+  },
+  "scientific_training_authorized": false,
+  "official_training_order_received": false
+}

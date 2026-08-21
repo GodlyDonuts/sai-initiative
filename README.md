@@ -22,6 +22,10 @@ the user gives an explicit official training order.
 - **Reasoning:** direct and deliberate behavior in one model; no mandatory
   hidden-draft/revision call
 
+The exact parent source metadata is frozen in
+[`docs/SAI_PARENT_QWEN35_4B.json`](docs/SAI_PARENT_QWEN35_4B.json). No model
+weights were downloaded or restored while preparing that receipt.
+
 ## Why this repository exists
 
 Always-revise Shohin failed its first broad public test. Across HumanEval+,
