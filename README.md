@@ -84,7 +84,11 @@ benchmark evidence selects an architecture.
   wall-time extension, so conditional CPU fallback `769225` is held on
   `afternotok:768892` with compact, byte-equivalent SHA-256 shingle storage at
   commit `540d1080ebc5b1cd2b463d8c137e9d2c71567e82`. It cannot execute while
-  `768892` remains healthy and will be invalidated if `768892` succeeds.
+  `768892` remains healthy and will be invalidated if `768892` succeeds. Its
+  four direct CPU descendants are also dependency-staged but ineligible:
+  shared Sai stream `769226`, refreshed development populations `769227`, Qwen
+  stream `769228`, and SmolLM3 stream `769229`. This prevents a manual recovery
+  gap without requesting a GPU or duplicating healthy work.
   Successful decontamination is followed by 499,998,720-token stream freeze
   `768894`. Dependency-staged launcher `768932` will then run a fresh,
   matched three-family screen over the exact 249,999,360-token prefix using
