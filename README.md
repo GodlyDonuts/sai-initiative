@@ -96,6 +96,28 @@ benchmark evidence selects an architecture.
   and its receipt is
   `3c7d25ab4d4bcf4dec81b594f8919636483bd64607ec1ae506c76e6ba815e00b`.
   This is host preparation, not a Sai architecture result.
+- The first capable-host Sai factor is now fully executable at commit
+  `cc7039d1e5a0653f4581cbe1a7b3ce509fff58e6`: a `19,938,304`-parameter,
+  16-slot recurrent workspace attached to the frozen Qwen3.5-0.8B text parent.
+  Its matched `reset_average` control has identical parameters, initialization,
+  optimizer, data, compiler/reactor/reader calls, and modeled workspace FLOPs;
+  the sole change is whether reactor state carries across the two iterations.
+  Each packed document is passed through the frozen parent exactly once, so no
+  cross-document context leaks into the objective and all eight probe positions
+  reuse the same detached causal hidden states.
+- Exact parent H100 mechanics job `769161` and exact Qwen-tokenized 499,998,720-
+  token stream job `769174` are the only unresolved prerequisites. Dependency
+  launcher `769193` will request two independent one-H100 256-sequence canaries,
+  then two independent one-H100 61,035-sequence full arms only if both canaries
+  pass. No 4B model is involved.
+- Parent development launcher `769171` and workspace evaluation stage `769194`
+  are wired to the same refreshed, 500M-source-disjoint full MMLU-Pro and MuSR
+  populations. Each workspace arm fans out as eight independent one-H100
+  MMLU-Pro shards plus one independent one-H100 MuSR job. Comparison stage
+  `769196` will compute exact paired row deltas and 10,000-replicate stratified
+  intervals against both the unchanged parent and matched reset control. Its
+  pass can authorize only another sub-4B confirmation; it cannot authorize the
+  4B run. These are staged experiments, not positive architecture results.
 - This is a one-seed, approximately 100M-token, iso-data short screen. It is
   not the frozen three-seed iso-data/iso-FLOP tournament and cannot authorize
   the 4B run. The user has authorized sub-4B training; actual 4B training
