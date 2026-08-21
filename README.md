@@ -130,6 +130,12 @@ benchmark evidence selects an architecture.
   no-training mechanics entry point remains unscheduled. This host will be used
   only if the 0.8B recurrent factor passes; preparing it is not a result and
   does not consume the terminal 4B boundary.
+- Thirteen obsolete Q36 score jobs (`759843`, `759860`, `760174`, `760180`,
+  `760185`, `760187`, `760194`, `760201`, `760206`, `760208`, `760215`,
+  `760216`, and `760217`) were terminally cancelled after each was proven held
+  on already-failed August 14–15 dependencies. Every job had zero elapsed time
+  and zero restarts. This released submission slots for Sai's independent
+  benchmark shards without cancelling or changing any live Sai allocation.
 - This is a one-seed, approximately 100M-token, iso-data short screen. It is
   not the frozen three-seed iso-data/iso-FLOP tournament and cannot authorize
   the 4B run. The user has authorized sub-4B training; actual 4B training
