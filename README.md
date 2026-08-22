@@ -379,6 +379,18 @@ benchmark evidence selects an architecture.
   marked `no_license`, and 18,536 more were marked permissive without a detected
   license. The independently replayed complete-language evidence is recorded
   in `docs/SAI_STACK_EDU_PYTHON_LANGUAGE_AUDIT_20260822.md`.
+- The complete Stack-Edu candidate identities are now frozen separately from
+  source content, and current-release alignment is executable. The new
+  `sai-stack-v2-current-python-snapshot-v1` boundary requires the complete
+  Python metadata shard set from `bigcode/the-stack-v2` revision
+  `e565caa3…90e47` (`v2.2.0`, opt-outs enacted through `2026-07-29`) plus the
+  exact dataset card and self-hashed access evidence. Alignment retains an old
+  candidate only when the exact `(repo_name, path, blob_id)` still exists and
+  the current row is permissive, non-vendor, and non-generated. Missing rows
+  are treated as removed. This closes current opt-out drift only; content-byte
+  verification, attribution, secret/PII/malware scanning, global exact and near
+  deduplication, benchmark decontamination, and semantic curriculum review all
+  remain mandatory. See `docs/SAI_STACK_V2_CURRENT_ALIGNMENT_CONTRACT.md`.
 - An authored programming-curriculum candidate now preserves 111 Rust Book
   chapters and 16 CPython tutorial chapters at exact pinned revisions, in
   publisher order with byte-exact code and license evidence. Its 127-row
