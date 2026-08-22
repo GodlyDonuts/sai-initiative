@@ -401,6 +401,14 @@ benchmark evidence selects an architecture.
   gap, overlap, missing row, or trailing byte. A valid byte receipt still keeps
   training and 4B authorization false; quality, secrets, global duplication,
   contamination, and semantic placement remain downstream gates.
+- Verified bytes now feed a separate bounded safety/quality findings pass.
+  High-confidence private-key and credential formats plus invalid control bytes
+  are vetoes; personal-email, high-entropy/JWT-like strings, generated markers,
+  extreme repetition/minification, and Python-version parse failures require
+  review. A row with no bounded finding is still only a candidate because this
+  scanner cannot prove the absence of novel secrets, malware, dependency
+  hazards, or subtle benchmark-derived code. The exact policy and limitations
+  are frozen in `docs/SAI_STACK_EDU_CONTENT_SAFETY_CONTRACT.md`.
 - An authored programming-curriculum candidate now preserves 111 Rust Book
   chapters and 16 CPython tutorial chapters at exact pinned revisions, in
   publisher order with byte-exact code and license evidence. Its 127-row
