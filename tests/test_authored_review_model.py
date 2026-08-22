@@ -368,3 +368,6 @@ def test_model_review_job_is_one_gpu_blind_and_nontraining() -> None:
     assert "candidate-stage" not in script
     assert "optimizer" not in script.lower()
     assert "torchrun" not in script
+    assert 'export PYTHONPATH="$SAI_ROOT/src"' in script
+    assert "export GIT_OPTIONAL_LOCKS=0" in script
+    assert 'status --short)"' in script

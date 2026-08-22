@@ -17,6 +17,7 @@ export PYTHONDONTWRITEBYTECODE=1
 export TOKENIZERS_PARALLELISM=false
 export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
+export GIT_OPTIONAL_LOCKS=0
 
 : "${SAI_ROOT:?}"
 : "${EXPECTED_COMMIT:?}"
@@ -32,6 +33,8 @@ export TRANSFORMERS_OFFLINE=1
 : "${CONCEPT_LIST:?}"
 : "${ANNOTATION_POLICY:?}"
 : "${OUTPUT_ROOT:?}"
+
+export PYTHONPATH="$SAI_ROOT/src"
 
 [[ "$REVIEWER" == qwen35_9b || "$REVIEWER" == smollm3_3b ]]
 [[ "$OUTPUT_ROOT" = /* && "$OUTPUT_ROOT" != / && "$OUTPUT_ROOT" != "$HOME" ]]
