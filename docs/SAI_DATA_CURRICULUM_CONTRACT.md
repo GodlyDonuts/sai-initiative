@@ -174,6 +174,12 @@ MMLU-Pro on CPU, and requires exact clean accounting for all eighteen GPU jobs
 before the terminal CPU comparison. No benchmark job is submitted when the
 held-out phase gate fails, and no benchmark result authorizes 4B training.
 
+Before submitting the canary or either matched arm, the launcher requires at
+least 24 GiB of hard-limit storage headroom and 10,000 free inodes. The exact
+used/hard/headroom snapshot and thresholds are bound into dispatch and replayed
+by the continuation. This is an evidence-preservation admission gate, not a
+scientific criterion.
+
 The implemented primary control permutes the exact packed 2,048-token sequence
 records after the curriculum stream is frozen. Each record includes both token
 IDs and its document-boundary bitset, so this construction preserves the exact

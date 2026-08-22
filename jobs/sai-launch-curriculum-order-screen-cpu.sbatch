@@ -53,6 +53,21 @@ test ! -e "$OUTPUT_ROOT"
 export PYTHONPATH="$SAI_ROOT/src"
 export PYTHONDONTWRITEBYTECODE=1
 
+MIN_QUOTA_HEADROOM_KIB=25165824
+MIN_QUOTA_HEADROOM_FILES=10000
+read -r quota_used_kib quota_hard_kib quota_files quota_hard_files < <(
+  /usr/bin/lfs quota -u "$(id -u)" /lustre/fs1 |
+    awk 'END {print $2, $4, $6, $8}'
+)
+for value in "$quota_used_kib" "$quota_hard_kib" \
+  "$quota_files" "$quota_hard_files"; do
+  [[ "$value" =~ ^[0-9]+$ ]]
+done
+quota_headroom_kib=$((quota_hard_kib - quota_used_kib))
+quota_headroom_files=$((quota_hard_files - quota_files))
+test "$quota_headroom_kib" -ge "$MIN_QUOTA_HEADROOM_KIB"
+test "$quota_headroom_files" -ge "$MIN_QUOTA_HEADROOM_FILES"
+
 read -r curriculum_identity control_identity development_identity < <(
   "$PYTHON" -P -s -B - \
     "$CURRICULUM_STREAM" "$CONTROL_STREAM" "$DEVELOPMENT_STREAM" \
@@ -175,7 +190,10 @@ job_ids+=("$compare_job")
 dispatch="$OUTPUT_ROOT/dispatch.json"
 "$PYTHON" -P -s -B - "$dispatch" "$EXPECTED_COMMIT" \
   "$curriculum_identity" "$control_identity" "$development_identity" \
-  "$canary_job" "$curriculum_job" "$control_job" "$compare_job" <<'PY'
+  "$canary_job" "$curriculum_job" "$control_job" "$compare_job" \
+  "$quota_used_kib" "$quota_hard_kib" "$quota_headroom_kib" \
+  "$quota_files" "$quota_hard_files" "$quota_headroom_files" \
+  "$MIN_QUOTA_HEADROOM_KIB" "$MIN_QUOTA_HEADROOM_FILES" <<'PY'
 import json
 import os
 import pathlib
@@ -202,6 +220,16 @@ payload = {
     "training_tokens_per_arm": 499_998_720,
     "optimizer_steps_per_arm": 954,
     "seed": 20260821,
+    "quota_preflight": {
+        "used_kib": int(sys.argv[10]),
+        "hard_kib": int(sys.argv[11]),
+        "headroom_kib": int(sys.argv[12]),
+        "used_files": int(sys.argv[13]),
+        "hard_files": int(sys.argv[14]),
+        "headroom_files": int(sys.argv[15]),
+        "minimum_headroom_kib": int(sys.argv[16]),
+        "minimum_headroom_files": int(sys.argv[17]),
+    },
     "scientific_promotion_authorized": False,
     "four_b_training_authorized": False,
     "requeue": False,

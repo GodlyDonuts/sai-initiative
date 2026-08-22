@@ -94,7 +94,8 @@ assert set(payload) == {
     "gpu_jobs_submitted", "maximum_concurrent_gpu_jobs", "gpus_per_job",
     "same_sequence_multiset", "only_training_order_changed",
     "training_sequences_per_arm", "training_tokens_per_arm",
-    "optimizer_steps_per_arm", "seed", "scientific_promotion_authorized",
+    "optimizer_steps_per_arm", "seed", "quota_preflight",
+    "scientific_promotion_authorized",
     "four_b_training_authorized", "requeue",
 }
 assert payload["schema"] == "sai-curriculum-order-screen-dispatch-v1"
@@ -106,6 +107,17 @@ assert payload["only_training_order_changed"] is True
 assert payload["training_sequences_per_arm"] == 244_140
 assert payload["training_tokens_per_arm"] == 499_998_720
 assert payload["optimizer_steps_per_arm"] == 954
+quota = payload["quota_preflight"]
+assert set(quota) == {
+    "used_kib", "hard_kib", "headroom_kib", "used_files", "hard_files",
+    "headroom_files", "minimum_headroom_kib", "minimum_headroom_files",
+}
+assert quota["hard_kib"] - quota["used_kib"] == quota["headroom_kib"]
+assert quota["hard_files"] - quota["used_files"] == quota["headroom_files"]
+assert quota["minimum_headroom_kib"] == 25_165_824
+assert quota["minimum_headroom_files"] == 10_000
+assert quota["headroom_kib"] >= quota["minimum_headroom_kib"]
+assert quota["headroom_files"] >= quota["minimum_headroom_files"]
 assert payload["scientific_promotion_authorized"] is False
 assert payload["four_b_training_authorized"] is False
 assert payload["requeue"] is False
