@@ -150,6 +150,17 @@ benchmark evidence selects an architecture.
   admitted-source SHA-256 to equal the sole source SHA-256 recorded by the
   trained checkpoint's token stream. The chain contains no arrays, retries,
   requeues, implicit substitutions, architecture promotion, or 4B authority.
+  A red-team replay caught the prior six-job draft before execution: its
+  monolithic MMLU-Pro arms repeated a known output-free four-hour failure mode,
+  and its comparison stager could race an already-published fast result. Both
+  are fixed at commit `f128faaf507ab35b7782225e8aea273d5b7beea8`; the complete
+  tree passes 383 tests. The sealed Newton runtime
+  `/lustre/fs1/home/sa305415/sai-initiative-runtime-f128faa-r1` contains 213
+  files at tree `ff7fba7473785368c2e5274e37c29edfdd02c343`. Stale pending
+  stager `769619` was cancelled with zero elapsed time and zero restarts.
+  Replacement `769649` binds the parallel recovery population `769627`, the
+  existing screen launcher `769232`, the new immutable runtime, and a fresh
+  collision-free result root. It remains dependency-held and requests no GPU.
 - The exact pretrained capable-host control is now restored at
   `Qwen/Qwen3.5-0.8B@2fc06364715b967f1860aea9cf38778875588b17` without using a
   GPU. CPU attempts `769141` and `769144` failed before publication on a Bash
