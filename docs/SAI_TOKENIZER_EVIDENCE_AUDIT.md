@@ -29,6 +29,16 @@ protected suite contains code, math, science, technical strings, identifiers,
 numbers, and arbitrary Unicode, but it is a losslessness probe rather than a
 representative broad-domain population.
 
+The protected strings also expose an unresolved pre-tokenization factor. The
+48K candidate uses `752.577` tokens/1K bytes for the ASCII stress row,
+`520.000` for code, `736.842` for math, `712.500` for numbers and units, and
+`814.815` for scientific notation. The builder forces
+`Digits(individual_digits=True)`, so all three capacities have exactly the same
+`712.500` number/unit fertility and the 48K and 64K candidates tie on the math
+and scientific-notation rows. These 18 protected rows are too small to decide
+whether individual-digit tokenization improves numeric generalization enough
+to justify its sequence cost.
+
 ## Correct interpretation of the 48K receipt
 
 The 48K tree identity
@@ -58,7 +68,10 @@ Before selecting a production tokenizer, Sai requires:
 5. source-disjoint held-out likelihood measured per domain;
 6. source-disjoint real benchmark capability and retention; and
 7. a paired decision that treats vocabulary parameters and inference tokens as
-   explicit costs.
+   explicit costs; and
+8. a prospectively frozen individual-digit versus number-aware
+   pre-tokenization ablation on representative numeric, mathematical, code, and
+   scientific data.
 
 Losslessness is admission evidence. Fertility is efficiency evidence. Neither
 is capability evidence, and neither authorizes 4B training.

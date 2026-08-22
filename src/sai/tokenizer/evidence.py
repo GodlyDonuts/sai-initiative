@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.token_stream import canonical_sha256, sha256_file
-from sai.tokenizer.qualification import CANDIDATE_SIZES, SCHEMA
+from sai.tokenizer.qualification import CANDIDATE_SIZES, PROTECTED_CATEGORIES, SCHEMA
 
 EVIDENCE_SCHEMA = "sai-tokenizer-evidence-audit-v1"
 REQUIRED_DOMAINS = ("english", "code", "math", "science", "technical")
@@ -159,7 +159,11 @@ def _validate_report(report: object) -> dict[str, Any]:
         if current_special != special_contract:
             raise TokenizerEvidenceError("special-token contracts differ")
         corpus = _metric_block(candidate.get("corpus"), f"{name} corpus")
-        _metric_block(candidate.get("protected_suite"), f"{name} protected suite")
+        protected = _metric_block(
+            candidate.get("protected_suite"), f"{name} protected suite"
+        )
+        if set(protected["by_domain"]) != PROTECTED_CATEGORIES:
+            raise TokenizerEvidenceError("protected categories differ")
         corpus_shape = {
             domain: (row["texts"], row["utf8_bytes"])
             for domain, row in corpus["by_domain"].items()
@@ -205,6 +209,12 @@ def audit_report(
             "protected_tokens_per_1k_utf8_bytes": candidate["protected_suite"][
                 "tokens_per_1k_utf8_bytes"
             ],
+            "protected_tokens_per_1k_utf8_bytes_by_category": {
+                category: row["tokens_per_1k_utf8_bytes"]
+                for category, row in sorted(
+                    candidate["protected_suite"]["by_domain"].items()
+                )
+            },
             "tied_embedding_parameters": {
                 str(width): candidate["vocab_size"] * width for width in model_widths
             },
@@ -269,6 +279,7 @@ def audit_report(
             "source_disjoint_heldout_likelihood": True,
             "source_disjoint_real_benchmarks": True,
             "paired_retention_and_capability_evidence": True,
+            "numeric_pretokenization_ablation": True,
         },
         "checks": {
             "all_candidates_mechanically_qualified": True,

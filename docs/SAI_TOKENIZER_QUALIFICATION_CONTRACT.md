@@ -77,3 +77,5 @@ results and the remaining broad-domain/capability selection requirements are
 recorded in
 [`SAI_TOKENIZER_EVIDENCE_AUDIT.md`](SAI_TOKENIZER_EVIDENCE_AUDIT.md). The 48K
 receipt must not be described as an empirical winner receipt.
+The current individual-digit pre-tokenization policy is likewise a hypothesis,
+not a selected numeric-capability result.

@@ -11,6 +11,7 @@ from sai.tokenizer.evidence import (
     audit_file,
     audit_report,
 )
+from sai.tokenizer.qualification import PROTECTED_CATEGORIES
 
 
 def metric(domains: dict[str, tuple[int, int, int]]) -> dict:
@@ -65,7 +66,12 @@ def report(*, broad: bool = False) -> dict:
             "vocab_size": size,
             "tokenizer_identity_sha256": f"{index + 1:064x}",
             "corpus": metric(domains),
-            "protected_suite": metric({"ascii": (5, 1_000, 300 + 20 * index)}),
+            "protected_suite": metric(
+                {
+                    category: (1, 1_000, 300 + 20 * index)
+                    for category in sorted(PROTECTED_CATEGORIES)
+                }
+            ),
             "byte_fallback": True,
             "special_tokens_preserved": True,
             "special_token_contract_sha256": "a" * 64,
