@@ -167,10 +167,12 @@ benchmark evidence selects an architecture.
   `d2cdf5f1fc314fd424c0316df278496a8675c157` is sealed on Newton with zero
   writable members. Fresh mechanics `769422` is an independent one-H100,
   no-requeue request with a measured-safe eight-minute limit. Its corrected
-  graph is dependency-staged without occupying GPUs: Qwen stream `769411`,
-  primary/recovery parent launchers `769425`/`769426`, workspace launcher
-  `769427`, primary/recovery workspace evaluation stages `769428`/`769429`,
-  and terminal comparisons `769431`/`769432`. Every target was absent at
+  graph is dependency-staged without occupying GPUs: primary/recovery parent
+  launchers `769425`/`769426`, accelerated Qwen stream `769437`, workspace
+  launcher `769439`, primary/recovery workspace evaluation stages
+  `769440`/`769441`, and terminal comparisons `769442`/`769443`. Superseded
+  generic-stream jobs `769411`, `769427`–`769429`, and `769431`–`769432` were
+  cancelled with zero elapsed time and zero restarts. Every target was absent at
   submission; a mechanics failure cancels all scientific descendants before
   allocation.
 - The Qwen factor consumes exactly `61,035 × 2,048 = 124,999,680` ordered
@@ -181,7 +183,9 @@ benchmark evidence selects an architecture.
   byte consumed by training; its receipt explicitly rejects any extra prefix
   or wrong total. Corpus hashing is streaming rather than a 14.49-GB
   `read_bytes()` allocation. Full regression after this acceleration is 355
-  passed.
+  passed. Exact acceleration commit
+  `88275bd9550bd1789f783389c218da188369805b` is sealed on Newton with zero
+  writable members.
 - The first capable-host Sai factor is now fully executable at commit
   `cc7039d1e5a0653f4581cbe1a7b3ce509fff58e6`: a `19,938,304`-parameter,
   16-slot recurrent workspace attached to the frozen Qwen3.5-0.8B text parent.
