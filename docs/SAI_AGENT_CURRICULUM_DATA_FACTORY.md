@@ -86,6 +86,20 @@ Initial execution ladder:
 - 10,000 documents x three judgments: blinded calibration and throughput estimate.
 - 1,000 logical shards across a measured physical concurrency: full source inventory.
 
+The free teacher endpoint is not the final bulk classifier. After the stratified
+10,000-document calibration, train a small local multi-head student on the frozen
+teacher/human labels (quality, English suitability, domain, risks, prerequisites, and
+phase). Use it to score the full corpus cheaply, then send its uncertainty tail,
+distribution-edge samples, and every prospective high-value inclusion back through
+the three-perspective teacher. This active-learning loop turns tens of thousands of
+expensive judgments into coverage over millions of documents without pretending that
+one weak local score is final evidence.
+
+The student is admitted only if a held-out, source-stratified human/teacher partition
+shows the predeclared precision and calibration targets. Teacher and human labels stay
+authoritative; the student may triage or prioritize, never override a blocking risk or
+license/decontamination failure.
+
 Physical worker count is increased only while completed-row throughput rises and 429,
 timeout, malformed-JSON, and provider-error rates remain within the frozen operational
 budget. Retries preserve the same request identity and never become extra votes.
