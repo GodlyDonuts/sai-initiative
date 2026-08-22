@@ -374,6 +374,11 @@ benchmark evidence selects an architecture.
   only nominate blobs for a later content audit; missing current opt-out replay,
   secret scanning, legal review, deduplication, or benchmark decontamination
   keeps training authorization false.
+  The first pinned Python shard measured 5,057,204 rows, but only 102,579
+  (2.0283%) survived this preliminary filter; 4,143,566 were marked
+  `no_license`, and 3,698 more were marked permissive without a detected
+  license. The durable replay is recorded in
+  `docs/SAI_STACK_EDU_PYTHON_SHARD_AUDIT_20260822.md`.
 - An authored programming-curriculum candidate now preserves 111 Rust Book
   chapters and 16 CPython tutorial chapters at exact pinned revisions, in
   publisher order with byte-exact code and license evidence. Its 127-row
