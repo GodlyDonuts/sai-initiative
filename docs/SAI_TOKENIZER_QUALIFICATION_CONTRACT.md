@@ -1,7 +1,8 @@
 # Sai Tokenizer Qualification Contract
 
-Status: implemented prospective qualifier. No tokenizer has been selected and
-training remains unauthorized.
+Status: implemented qualifier. The exact 48K fixed-geometry default is
+mechanically qualified, but no tokenizer capacity has won a capability
+comparison and training remains unauthorized.
 
 ## Decision being measured
 
@@ -65,8 +66,14 @@ winner claim. The receipt binds the candidate tree identity, corpus identity,
 tournament report, fallback behavior, round-trip result, protected fertility,
 and special-token preservation.
 
-Both the tournament report and the selection receipt explicitly set
+Both the tournament report and the fixed-default receipt explicitly set
 `training_authorized=false`. Building actual candidates, selecting a different
 capacity from evidence, freezing the production token stream, and starting any
 optimizer remain separate actions. The user's official training order is still
 required.
+
+The completed tournament measured an English-labeled corpus only. Its exact
+results and the remaining broad-domain/capability selection requirements are
+recorded in
+[`SAI_TOKENIZER_EVIDENCE_AUDIT.md`](SAI_TOKENIZER_EVIDENCE_AUDIT.md). The 48K
+receipt must not be described as an empirical winner receipt.

@@ -584,9 +584,15 @@ benchmark evidence selects an architecture.
 - Exact FLA 0.4.2 Gated DeltaNet and KDA chunk mechanics remain qualified by
   Newton job `768134`. The environment receipt file is SHA-256
   `778d137224671a44acdcc923270dc7478cded5437780a0ea37e19b764a219f29`.
-- The benchmark-decontaminated training corpus, lossless 48K tokenizer, and
-  exact binary streams are complete. The selected tokenizer tree is SHA-256
+- The benchmark-decontaminated training corpus, mechanically qualified lossless
+  48K fixed-geometry tokenizer, and exact binary streams are complete. The
+  qualified default tokenizer tree is SHA-256
   `cf4879ee5b3914b4af187abcc93be5678e41ff942e0b0a14f6eeb1a089f6f76d`.
+  It is not an empirical tokenizer-capacity winner: the completed tournament
+  measured `459,376` English-labeled documents but no representative code,
+  math, science, or technical corpus strata. The exact compression tradeoffs
+  and the required capability selection boundary are documented in
+  [`docs/SAI_TOKENIZER_EVIDENCE_AUDIT.md`](docs/SAI_TOKENIZER_EVIDENCE_AUDIT.md).
   The shared 48,828-sequence training stream identity is
   `b50bb94bc4ada3c5949430222d5551b6dc60423378cacd1f80a57641b1546b22`;
   the source-disjoint 1,024-sequence development stream identity is
