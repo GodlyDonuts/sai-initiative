@@ -281,6 +281,42 @@ def _prefix_bytes(report: dict[str, Any], sequences: int) -> int:
     return value
 
 
+def _development_strata(
+    report: dict[str, Any], sequences: int
+) -> list[tuple[str, int, int]] | None:
+    curriculum = report.get("curriculum")
+    if curriculum is None:
+        return None
+    phase_order = curriculum.get("phase_order")
+    phase_sequences = curriculum.get("phase_sequences_emitted")
+    phase_bytes = curriculum.get("consumed_phase_utf8_bytes")
+    if (
+        curriculum.get("phase_token_budget_enforced") is not True
+        or not isinstance(phase_order, list)
+        or not phase_order
+        or len(phase_order) != len(set(phase_order))
+        or not isinstance(phase_sequences, dict)
+        or set(phase_sequences) != set(phase_order)
+        or not isinstance(phase_bytes, dict)
+        or set(phase_bytes) != set(phase_order)
+    ):
+        raise ShortScreenError("development curriculum strata differ")
+    strata = [
+        (phase, phase_sequences[phase], phase_bytes[phase]) for phase in phase_order
+    ]
+    if (
+        any(
+            isinstance(value, bool) or not isinstance(value, int) or value <= 0
+            for _, stratum_sequences, stratum_bytes in strata
+            for value in (stratum_sequences, stratum_bytes)
+        )
+        or sum(row[1] for row in strata) != sequences
+        or sum(row[2] for row in strata) != _prefix_bytes(report, sequences)
+    ):
+        raise ShortScreenError("development curriculum strata differ")
+    return strata
+
+
 def update_micro_batch_sizes(
     *,
     global_step: int,
@@ -592,6 +628,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             admitted_utf8_bytes=development_bytes,
             benchmark_disjoint=True,
             autocast_dtype=torch.bfloat16,
+            sequence_strata=_development_strata(
+                development_report, args.development_sequences
+            ),
         )
     torch.cuda.synchronize()
     checkpoint_manifest = json.loads(

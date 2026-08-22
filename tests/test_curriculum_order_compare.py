@@ -21,7 +21,7 @@ TOKENIZER_ID = "5" * 64
 
 
 def _stream(identity: str, *, sequences: int, source: str) -> dict:
-    return {
+    payload = {
         "source_qualification_sha256": None,
         "tokenizer_identity_sha256": TOKENIZER_ID,
         "ordered_stream_identity_sha256": identity,
@@ -30,6 +30,15 @@ def _stream(identity: str, *, sequences: int, source: str) -> dict:
         "admitted_utf8_bytes": 10_000 if sequences == 244_140 else 2_000,
         "source_receipts": [{"path": source}],
     }
+    if sequences == 1_024:
+        phases = ("grounding", "integration", "reasoning", "specialization")
+        payload["curriculum"] = {
+            "phase_order": list(phases),
+            "phase_token_budget_enforced": True,
+            "phase_sequences_emitted": {phase: 256 for phase in phases},
+            "consumed_phase_utf8_bytes": {phase: 500 for phase in phases},
+        }
+    return payload
 
 
 def _result(training_identity: str, checkpoint: str, nll: float) -> dict:
@@ -82,6 +91,23 @@ def _result(training_identity: str, checkpoint: str, nll: float) -> dict:
                 "nll_per_target": nll,
                 "perplexity": 2.718281828**nll,
                 "nll_per_utf8_byte": nll * 1_000,
+                "strata": {
+                    phase: {
+                        "sequences": 256,
+                        "targets": 500_000,
+                        "admitted_utf8_bytes": 500,
+                        "negative_log_likelihood": nll * 500_000,
+                        "nll_per_target": nll,
+                        "perplexity": 2.718281828**nll,
+                        "nll_per_utf8_byte": nll * 1_000,
+                    }
+                    for phase in (
+                        "grounding",
+                        "integration",
+                        "reasoning",
+                        "specialization",
+                    )
+                },
             },
             "checkpoint": {"sha256": checkpoint},
         }
@@ -147,6 +173,10 @@ def test_compares_only_order_and_writes_once(
     )
     assert payload["curriculum_order_supported_by_heldout_nll"] is True
     assert payload["curriculum_minus_control"]["nll_per_target"] == pytest.approx(-0.2)
+    assert payload["heldout_phase_no_regression"] is True
+    assert payload["phase_minus_control"]["specialization"][
+        "nll_per_target"
+    ] == pytest.approx(-0.2)
     assert payload["only_training_sequence_order_changed"] is True
     assert payload["replication_required_for_architecture_claim"] is True
     assert payload["four_b_training_authorized"] is False
@@ -182,6 +212,52 @@ def test_rejects_resigned_mismatched_optimizer(
             development_stream=Path("development"),
             split_receipt=split,
         )
+
+
+def test_one_phase_regression_vetoes_an_aggregate_win(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    split, curriculum_result, control_result = _fixture(tmp_path, monkeypatch)
+    curriculum = json.loads(curriculum_result.read_text())
+    specialization = curriculum["development_nll"]["strata"]["specialization"]
+    old_nll = specialization["negative_log_likelihood"]
+    specialization.update(
+        {
+            "negative_log_likelihood": 5.3 * 500_000,
+            "nll_per_target": 5.3,
+            "perplexity": 2.718281828**5.3,
+            "nll_per_utf8_byte": 5_300.0,
+        }
+    )
+    curriculum["development_nll"]["negative_log_likelihood"] += (
+        specialization["negative_log_likelihood"] - old_nll
+    )
+    curriculum["development_nll"]["nll_per_target"] = (
+        curriculum["development_nll"]["negative_log_likelihood"] / 2_000_000
+    )
+    curriculum["development_nll"]["perplexity"] = (
+        2.718281828 ** curriculum["development_nll"]["nll_per_target"]
+    )
+    curriculum["development_nll"]["nll_per_utf8_byte"] = (
+        curriculum["development_nll"]["negative_log_likelihood"] / 2_000
+    )
+    unsigned = dict(curriculum)
+    unsigned.pop("receipt_sha256")
+    curriculum["receipt_sha256"] = canonical_sha256(unsigned)
+    curriculum_result.write_text(json.dumps(curriculum))
+
+    payload = compare_curriculum_order(
+        curriculum_result,
+        control_result,
+        curriculum_stream=Path("curriculum"),
+        control_stream=Path("control"),
+        development_stream=Path("development"),
+        split_receipt=split,
+    )
+    assert payload["curriculum_minus_control"]["nll_per_target"] < 0
+    assert payload["phase_minus_control"]["specialization"]["nll_per_target"] > 0
+    assert payload["heldout_phase_no_regression"] is False
+    assert payload["curriculum_order_supported_by_heldout_nll"] is False
 
 
 def test_launcher_is_matched_independent_single_h100_and_nonretrying() -> None:

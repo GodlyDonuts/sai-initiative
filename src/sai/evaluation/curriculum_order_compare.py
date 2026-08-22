@@ -141,6 +141,79 @@ def _load_result(path: Path) -> tuple[dict[str, Any], str]:
     return payload, file_sha256
 
 
+def _validate_phase_strata(
+    result: dict[str, Any], development: dict[str, Any]
+) -> dict[str, dict[str, Any]]:
+    curriculum = development.get("curriculum")
+    if not isinstance(curriculum, dict):
+        raise CurriculumOrderComparisonError("development curriculum strata are absent")
+    phase_order = curriculum.get("phase_order")
+    phase_sequences = curriculum.get("phase_sequences_emitted")
+    phase_bytes = curriculum.get("consumed_phase_utf8_bytes")
+    if (
+        curriculum.get("phase_token_budget_enforced") is not True
+        or not isinstance(phase_order, list)
+        or not phase_order
+        or len(phase_order) != len(set(phase_order))
+        or not isinstance(phase_sequences, dict)
+        or set(phase_sequences) != set(phase_order)
+        or not isinstance(phase_bytes, dict)
+        or set(phase_bytes) != set(phase_order)
+    ):
+        raise CurriculumOrderComparisonError("development curriculum strata differ")
+    validation = result["development_nll"]
+    strata = validation.get("strata")
+    expected_fields = {
+        "sequences",
+        "targets",
+        "admitted_utf8_bytes",
+        "negative_log_likelihood",
+        "nll_per_target",
+        "perplexity",
+        "nll_per_utf8_byte",
+    }
+    if not isinstance(strata, dict) or set(strata) != set(phase_order):
+        raise CurriculumOrderComparisonError("development phase evidence differs")
+    for phase in phase_order:
+        row = strata[phase]
+        if (
+            not isinstance(row, dict)
+            or set(row) != expected_fields
+            or row.get("sequences") != phase_sequences[phase]
+            or row.get("admitted_utf8_bytes") != phase_bytes[phase]
+            or isinstance(row.get("targets"), bool)
+            or not isinstance(row.get("targets"), int)
+            or row["targets"] <= 0
+            or any(
+                isinstance(row.get(field), bool)
+                or not isinstance(row.get(field), (int, float))
+                or not math.isfinite(row[field])
+                or row[field] <= 0
+                for field in (
+                    "negative_log_likelihood",
+                    "nll_per_target",
+                    "perplexity",
+                    "nll_per_utf8_byte",
+                )
+            )
+        ):
+            raise CurriculumOrderComparisonError("development phase evidence differs")
+    if (
+        sum(row["sequences"] for row in strata.values()) != validation["sequences"]
+        or sum(row["targets"] for row in strata.values()) != validation["targets"]
+        or sum(row["admitted_utf8_bytes"] for row in strata.values())
+        != validation["admitted_utf8_bytes"]
+        or not math.isclose(
+            sum(row["negative_log_likelihood"] for row in strata.values()),
+            validation["negative_log_likelihood"],
+            rel_tol=1e-9,
+            abs_tol=1e-4,
+        )
+    ):
+        raise CurriculumOrderComparisonError("development phase totals differ")
+    return strata
+
+
 def compare_curriculum_order(
     curriculum_result: Path,
     control_result: Path,
@@ -192,6 +265,8 @@ def compare_curriculum_order(
         curriculum_result
     )
     control_result_payload, control_result_sha256 = _load_result(control_result)
+    curriculum_strata = _validate_phase_strata(curriculum_result_payload, development)
+    control_strata = _validate_phase_strata(control_result_payload, development)
     if any(
         curriculum_result_payload.get(field) != control_result_payload.get(field)
         for field in SHARED_SPECIFICATION_FIELDS
@@ -223,6 +298,11 @@ def compare_curriculum_order(
         != control_result_payload["development_nll"]["admitted_utf8_bytes"]
         or curriculum_result_payload["checkpoint"].get("sha256")
         == control_result_payload["checkpoint"].get("sha256")
+        or any(
+            curriculum_strata[phase][field] != control_strata[phase][field]
+            for phase in curriculum_strata
+            for field in ("sequences", "targets", "admitted_utf8_bytes")
+        )
     ):
         raise CurriculumOrderComparisonError("training result lineage differs")
     curriculum_nll = curriculum_result_payload["development_nll"]["nll_per_target"]
@@ -231,7 +311,26 @@ def compare_curriculum_order(
         "nll_per_utf8_byte"
     ]
     control_byte_nll = control_result_payload["development_nll"]["nll_per_utf8_byte"]
-    supported = curriculum_nll < control_nll and curriculum_byte_nll < control_byte_nll
+    phase_deltas = {
+        phase: {
+            "nll_per_target": curriculum_strata[phase]["nll_per_target"]
+            - control_strata[phase]["nll_per_target"],
+            "perplexity": curriculum_strata[phase]["perplexity"]
+            - control_strata[phase]["perplexity"],
+            "nll_per_utf8_byte": curriculum_strata[phase]["nll_per_utf8_byte"]
+            - control_strata[phase]["nll_per_utf8_byte"],
+        }
+        for phase in curriculum_strata
+    }
+    phase_no_regression = all(
+        row["nll_per_target"] <= 0 and row["nll_per_utf8_byte"] <= 0
+        for row in phase_deltas.values()
+    )
+    supported = bool(
+        curriculum_nll < control_nll
+        and curriculum_byte_nll < control_byte_nll
+        and phase_no_regression
+    )
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "status": "complete",
@@ -244,12 +343,14 @@ def compare_curriculum_order(
         "optimizer_steps_per_arm": 954,
         "development_sequences": 1_024,
         "curriculum_order_supported_by_heldout_nll": supported,
+        "heldout_phase_no_regression": phase_no_regression,
         "curriculum_minus_control": {
             "nll_per_target": curriculum_nll - control_nll,
             "perplexity": curriculum_result_payload["development_nll"]["perplexity"]
             - control_result_payload["development_nll"]["perplexity"],
             "nll_per_utf8_byte": curriculum_byte_nll - control_byte_nll,
         },
+        "phase_minus_control": phase_deltas,
         "arms": {
             "curriculum": {
                 "stream_identity_sha256": curriculum_identity,

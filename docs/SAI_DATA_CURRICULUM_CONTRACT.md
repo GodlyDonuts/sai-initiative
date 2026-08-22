@@ -135,7 +135,11 @@ reasoning, and specialization, for 1,024 sequences total. Taking the first
 that would measure almost exclusively grounding material and could make a
 curriculum appear successful while concealing regressions on later reasoning or
 specialization. The stream receipt binds each phase's exact sequence, token,
-and UTF-8-byte contribution.
+and UTF-8-byte contribution. Evaluation reports aggregate and per-phase target
+NLL, perplexity, and NLL per admitted UTF-8 byte from the same forward passes.
+An aggregate improvement is vetoed if any phase's target-normalized or
+byte-normalized NLL regresses against the exact-order control; easier grounding
+examples cannot conceal damage to reasoning or specialization.
 
 The implemented primary control permutes the exact packed 2,048-token sequence
 records after the curriculum stream is frozen. Each record includes both token

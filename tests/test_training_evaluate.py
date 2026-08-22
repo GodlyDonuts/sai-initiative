@@ -103,3 +103,47 @@ def test_validation_requires_complete_disjoint_coverage() -> None:
             benchmark_disjoint=True,
             autocast_dtype=torch.bfloat16,
         )
+
+
+def test_validation_reports_exact_sequence_strata() -> None:
+    model = _model()
+    first = _batch()
+    second = _batch()
+    result = evaluate_nll(
+        model,
+        [
+            CausalTrainingBatch(
+                input_ids=torch.cat((first.input_ids, second.input_ids)),
+                target_ids=torch.cat((first.target_ids, second.target_ids)),
+                target_mask=torch.cat((first.target_mask, second.target_mask)),
+                segment_ids=torch.cat((first.segment_ids, second.segment_ids)),
+            )
+        ],
+        stream_identity_sha256="b" * 64,
+        expected_sequences=2,
+        admitted_utf8_bytes=22,
+        benchmark_disjoint=True,
+        sequence_strata=[("grounding", 1, 10), ("reasoning", 1, 12)],
+    )
+    assert result.strata is not None
+    assert list(result.strata) == ["grounding", "reasoning"]
+    assert result.strata["grounding"].sequences == 1
+    assert result.strata["grounding"].targets == 3
+    assert result.strata["grounding"].admitted_utf8_bytes == 10
+    assert result.strata["reasoning"].sequences == 1
+    assert result.strata["reasoning"].targets == 3
+    assert result.strata["reasoning"].admitted_utf8_bytes == 12
+    assert sum(row.negative_log_likelihood for row in result.strata.values()) == (
+        pytest.approx(result.negative_log_likelihood)
+    )
+
+    with pytest.raises(TrainingEvaluationError, match="strata"):
+        evaluate_nll(
+            model,
+            [first],
+            stream_identity_sha256="b" * 64,
+            expected_sequences=1,
+            admitted_utf8_bytes=11,
+            benchmark_disjoint=True,
+            sequence_strata=[("grounding", 1, 10)],
+        )
