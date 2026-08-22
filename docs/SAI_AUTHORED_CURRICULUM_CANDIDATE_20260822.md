@@ -52,6 +52,16 @@ reviewer identities, exact evidence spans, at most five-percent concept-set
 disagreement, and preservation of the measured disagreement before
 adjudication. It contains no completed labels and authorizes no training.
 
+`sai-adjudicate-authored-review` now makes that boundary executable. It reopens
+the candidate, blind packet, hidden key, concept list, and semantic policy;
+requires all 127 completed rows from two distinct identity artifacts; verifies
+every taught-concept and defect span against exact chapter text; and measures
+taught-concept, assumed-prerequisite, instructional-quality, admission, and
+defect-category disagreement separately. A failed dimension cannot be averaged
+away by agreement elsewhere. Even a pass authorizes only taxonomy/progression
+analysis, not training. No completed human labels or pass receipt currently
+exist.
+
 ## Progression semantics
 
 The Rust Book begins with installation, hello-world programs, a guessing-game

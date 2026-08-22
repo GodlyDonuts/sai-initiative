@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import io
 import json
 import tarfile
@@ -12,11 +13,13 @@ from sai.data.authored_curriculum import (
     build,
     validate,
 )
+from sai.data.authored_review_adjudication import adjudicate
 from sai.data.authored_review_packet import (
     AuthoredReviewPacketError,
     validate_packet,
 )
 from sai.data.authored_review_packet import build as build_review_packet
+from sai.data.token_stream import canonical_sha256
 
 RUST_REVISION = "1" * 40
 PYTHON_REVISION = "2" * 40
@@ -239,3 +242,142 @@ def test_blind_review_packet_hides_progression_key(tmp_path: Path) -> None:
             key_output=key,
             receipt_output=receipt,
         )
+
+
+def _review_inputs(tmp_path: Path) -> dict[str, Path]:
+    rust, python = _sources(tmp_path)
+    paths = {
+        "candidate": tmp_path / "candidate.jsonl",
+        "candidate_receipt": tmp_path / "candidate-receipt.json",
+        "review_packet": tmp_path / "review.jsonl",
+        "review_key": tmp_path / "key.jsonl",
+        "review_packet_receipt": tmp_path / "review-receipt.json",
+        "concept_list": tmp_path / "concepts.json",
+        "annotation_policy": tmp_path / "policy.json",
+        "annotator_identity": tmp_path / "annotator.txt",
+        "reviewer_identity": tmp_path / "reviewer.txt",
+        "annotator_reviews": tmp_path / "annotator.jsonl",
+        "reviewer_reviews": tmp_path / "reviewer.jsonl",
+    }
+    build(
+        rust_archive=rust,
+        rust_revision=RUST_REVISION,
+        python_archive=python,
+        python_revision=PYTHON_REVISION,
+        output=paths["candidate"],
+        receipt_output=paths["candidate_receipt"],
+    )
+    build_review_packet(
+        candidate=paths["candidate"],
+        candidate_receipt=paths["candidate_receipt"],
+        review_output=paths["review_packet"],
+        key_output=paths["review_key"],
+        receipt_output=paths["review_packet_receipt"],
+    )
+    concepts = {
+        "schema": "sai-semantic-prerequisite-concept-list-v1",
+        "status": "candidate",
+        "concepts": [{"concept_id": "code.symbols"}],
+    }
+    concept_encoded = json.dumps(concepts, sort_keys=True).encode() + b"\n"
+    paths["concept_list"].write_bytes(concept_encoded)
+    positive_rule = (
+        "explicit_instruction_or_demonstrated_use_with_verifiable_source_span"
+    )
+    negative_rule = "omit_when_direct_source_evidence_is_absent_or_ambiguous"
+    policy = {
+        "schema": "sai-semantic-annotation-policy-v1",
+        "status": "prospective",
+        "training_authorized": False,
+        "four_b_training_authorized": False,
+        "concept_list_sha256": hashlib.sha256(concept_encoded).hexdigest(),
+        "annotation_unit": "document_concept_presence",
+        "positive_label_rule": positive_rule,
+        "negative_label_rule": negative_rule,
+        "evidence_span_contract": {
+            "coordinate_system": "unicode_codepoint_half_open",
+            "minimum_spans_per_positive_label": 1,
+            "source_hash_required": True,
+            "exact_text_match_required": True,
+        },
+        "confidence_contract": {
+            "minimum_confidence_ppm": 800_000,
+            "confidence_is_probability_of_policy_compliance": True,
+            "below_threshold_action": "omit_and_flag_for_review",
+        },
+        "prerequisite_contract": {
+            "same_document_exposure_counts_as_prior": False,
+            "phase_source": "bound_curriculum_receipt_only",
+            "unmet_prerequisite_action": "record_violation_and_reject_progression",
+        },
+        "review_contract": {
+            "blind_independent_review": True,
+            "disagreement_unit": "unordered_unique_concept_identity_set_per_document",
+            "minimum_reviewed_documents": 100,
+            "maximum_disagreement_ppm": 50_000,
+            "adjudication_may_not_change_measured_disagreement": True,
+        },
+    }
+    policy["receipt_sha256"] = canonical_sha256(policy)
+    paths["annotation_policy"].write_text(json.dumps(policy, sort_keys=True))
+    paths["annotator_identity"].write_text("annotator-one")
+    paths["reviewer_identity"].write_text("reviewer-two")
+    packet = [
+        json.loads(line) for line in paths["review_packet"].read_text().splitlines()
+    ]
+    rows = []
+    for source in packet:
+        span = source["text"][0]
+        rows.append(
+            {
+                "schema": "sai-authored-curriculum-completed-review-row-v1",
+                "review_identity_sha256": source["review_identity_sha256"],
+                "instructional_quality_ppm": 900_000,
+                "assumed_prior_concepts": [],
+                "taught_concepts": [
+                    {
+                        "concept_id": "code.symbols",
+                        "confidence_ppm": 900_000,
+                        "evidence_spans": [
+                            {
+                                "start": 0,
+                                "end": 1,
+                                "text_sha256": hashlib.sha256(
+                                    span.encode()
+                                ).hexdigest(),
+                            }
+                        ],
+                    }
+                ],
+                "defects": [],
+                "admission_recommendation": "admit",
+            }
+        )
+    encoded = "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
+    paths["annotator_reviews"].write_text(encoded)
+    paths["reviewer_reviews"].write_text(encoded)
+    return paths
+
+
+def test_semantic_review_adjudication_preserves_measured_disagreement(
+    tmp_path: Path,
+) -> None:
+    paths = _review_inputs(tmp_path)
+    passed = adjudicate(**paths, output=tmp_path / "passed.json")
+    assert passed["status"] == "passed"
+    assert passed["audit_qualified"] is True
+    assert passed["training_authorized"] is False
+    assert set(passed["observed_disagreement_ppm"].values()) == {0}
+
+    reviewer_rows = [
+        json.loads(line) for line in paths["reviewer_reviews"].read_text().splitlines()
+    ]
+    for row in reviewer_rows[:7]:
+        row["taught_concepts"] = []
+    paths["reviewer_reviews"].write_text(
+        "".join(json.dumps(row, sort_keys=True) + "\n" for row in reviewer_rows)
+    )
+    failed = adjudicate(**paths, output=tmp_path / "failed.json")
+    assert failed["status"] == "failed"
+    assert failed["audit_qualified"] is False
+    assert failed["observed_disagreement_ppm"]["taught_concepts"] > 50_000

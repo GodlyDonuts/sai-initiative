@@ -38,6 +38,11 @@ specialization rather than disappearing after first exposure.
   identity, completed calibration population, or human audit has yet been
   accepted for this list.
 - Surface curriculum job results cannot validate or waive this semantic gate.
+- The authored Rust/Python lane now has a complete 127-row blind-review packet
+  and fail-closed two-reviewer adjudicator. It verifies exact evidence spans and
+  preserves five separate disagreement dimensions. This is review machinery,
+  not a result: neither independently completed label file nor an adjudication
+  PASS currently exists.
 
 Before the list becomes a prospective taxonomy, it must be expanded and audited
 against authored instructional sequences and diverse source samples. At a
