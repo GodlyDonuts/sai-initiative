@@ -88,8 +88,9 @@ benchmark evidence selects an architecture.
   `56ebbf200bae4ce21c454bd80e91328ab9a486798c83a0b729477f57e0122289`).
   Its qualified receipt self-hash is
   `0580b683427ecae5943cc0a706e9fb31686c46051283b154e1aebc09b78eb0aa`;
-  job `770039` is still performing the
-  independent full replay, so dependent work remains held.
+  job `770039` completed the independent full replay at `0:0` with zero
+  restarts. Its stdout contains the same qualified receipt identity for build
+  and replay, and stderr is empty.
 - A downstream audit caught a validation confound before allocation: freezing
   the first 1,024 sequences of the phase-ordered development file would test
   almost only grounding data. The development freezer now requires exactly 256
@@ -98,15 +99,21 @@ benchmark evidence selects an architecture.
   `770040` and `770050` were canceled at zero elapsed with no node, logs, or
   outputs. Corrected immutable runtime `6825dd8` is staged in development job
   `770086`; the independent training-stream and exact-order-control jobs
-  `770041` and `770042` remain reusable.
+  `770041` is now freezing the update-aligned training stream, and dependent
+  job `770042` will build the exact sequence-multiset order control.
 - The likelihood evaluator and terminal order comparator now retain all four
   development strata separately. A lower aggregate NLL cannot pass if
   grounding, integration, reasoning, or specialization regresses against the
   exact-order control. This closes the remaining possibility that easier rows
   could hide curriculum damage to advanced material. Zero-runtime launcher
-  `770087` was replaced by `770088`, which binds immutable runtime `a532f49`
-  and waits on both stratified development job `770086` and control job
-  `770042`.
+  Development job `770086` exposed a zero-work runtime packaging defect: eight
+  historical executable bits had been stripped, so the runtime correctly
+  failed its clean-tree check before Python or data access. Its dependent
+  launcher `770088` canceled without allocation. Both output roots remained
+  absent. Replacement job `770105` is running against clean immutable runtime
+  `78f9d7b`; replacement launcher `770106` waits on it and the order-control
+  job `770042`. The trainer, evaluator, comparator, and development-freezer
+  bytes are unchanged from their previously reviewed versions.
 - Source-disjoint MMLU-Pro and MuSR evaluation now admits curriculum-derived
   streams only through the exact completed lineage from the benchmark-audited
   decontaminated source, through the qualified curriculum and split receipts,
