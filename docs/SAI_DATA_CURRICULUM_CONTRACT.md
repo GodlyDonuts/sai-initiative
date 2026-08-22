@@ -150,6 +150,23 @@ hash, parent curriculum receipt, train output identity, and stream source
 identity must all agree. A derived training subset is never treated as an
 unrelated source merely because its file hash differs from its parent.
 
+If held-out NLL and all four phase vetoes pass, retention still requires the
+full source-disjoint MMLU-Pro (12,032 rows) and MuSR (756 rows) development
+populations for both matched checkpoints. `sai-compare-curriculum-benchmarks`
+pairs every row, requires identical scoring, decoding, source, runtime, and
+configuration bindings except checkpoint identity, and freezes the decision
+before results:
+
+- neither benchmark accuracy may regress;
+- at least one benchmark and the unweighted macro must improve;
+- the 95% lower bound from 10,000 deterministic paired, domain-stratified
+  bootstrap replicates must be strictly positive;
+- no reported domain may regress by more than one percentage point.
+
+A favorable aggregate cannot override a benchmark, confidence, or domain
+veto. Passing retains the data order for the next scale; it does not authorize
+an architecture claim or 4B training.
+
 The implemented primary control permutes the exact packed 2,048-token sequence
 records after the curriculum stream is frozen. Each record includes both token
 IDs and its document-boundary bitset, so this construction preserves the exact

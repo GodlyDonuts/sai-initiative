@@ -97,16 +97,15 @@ benchmark evidence selects an architecture.
   sequences from each of grounding, integration, reasoning, and specialization
   and binds those four token/byte strata in the stream receipt. Original jobs
   `770040` and `770050` were canceled at zero elapsed with no node, logs, or
-  outputs. Corrected immutable runtime `6825dd8` is staged in development job
-  `770086`; the independent training-stream and exact-order-control jobs
-  `770041` is now freezing the update-aligned training stream, and dependent
-  job `770042` will build the exact sequence-multiset order control.
+  outputs. Training-stream job `770041` is now freezing the update-aligned
+  training stream, and dependent job `770042` will build the exact
+  sequence-multiset order control.
 - The likelihood evaluator and terminal order comparator now retain all four
   development strata separately. A lower aggregate NLL cannot pass if
   grounding, integration, reasoning, or specialization regresses against the
   exact-order control. This closes the remaining possibility that easier rows
-  could hide curriculum damage to advanced material. Zero-runtime launcher
-  Development job `770086` exposed a zero-work runtime packaging defect: eight
+  could hide curriculum damage to advanced material. Development job `770086`
+  exposed a zero-work runtime packaging defect: eight
   historical executable bits had been stripped, so the runtime correctly
   failed its clean-tree check before Python or data access. Its dependent
   launcher `770088` canceled without allocation. Both output roots remained
@@ -120,6 +119,12 @@ benchmark evidence selects an architecture.
   to the frozen train stream. Direct-source evaluation remains unchanged;
   missing, partial, parent-drifted, or train-drifted lineage fails before
   benchmark GPU submission.
+- The real-development decision is frozen before scores exist. Both matched
+  checkpoints must complete all 12,032 MMLU-Pro rows and all 756 MuSR rows.
+  Curriculum order is retained only with nonnegative deltas on both boards, a
+  positive unweighted macro, a strictly positive paired 95% bootstrap lower
+  bound, and no domain regression worse than one percentage point. This
+  development-only receipt cannot authorize architecture promotion or 4B.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
 
