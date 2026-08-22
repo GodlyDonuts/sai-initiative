@@ -93,11 +93,15 @@ OpenStax is not admitted as one source class merely because it is called open.
 Current official licensing information describes its textbooks as
 CC BY-NC-SA, while some individual catalog records describe earlier titles as
 CC BY. Sai therefore resolves the license of every exact edition at its original
-publisher and treats any NC title as research-only. Project Gutenberg is also
-title-specific: acquire only through its approved bulk mechanisms, verify each
-work's U.S. status and embedded terms, preserve provenance, and separate the
-underlying unrestricted text from Project Gutenberg trademark/license material
-when the exact terms permit it.
+publisher. Current OpenStax book pages also explicitly prohibit using the text
+to train or ingest into large language models without OpenStax permission.
+OpenStax content is therefore excluded from Sai training unless exact written
+permission is obtained; its published scope and sequence may be studied only as
+external taxonomy-design evidence. Project Gutenberg is also title-specific:
+acquire only through its approved bulk mechanisms, verify each work's U.S.
+status and embedded terms, preserve provenance, and separate the underlying
+unrestricted text from Project Gutenberg trademark/license material when the
+exact terms permit it.
 
 Sai will not ingest an opaque pre-blended corpus and then claim source-level
 control. When a candidate distribution contains multiple source components,
