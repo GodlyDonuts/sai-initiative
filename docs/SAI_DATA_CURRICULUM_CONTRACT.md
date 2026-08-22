@@ -137,3 +137,51 @@ permutation, fixed-point count, and a sorted sequence-record multiset digest;
 validation replays every output record against its declared parent index. This
 is stronger than independently shuffling documents, which could change which
 tail tokens survive a fixed-token cutoff.
+
+## Do not conflate three curriculum hypotheses
+
+The current experiment tests only a **surface-complexity curriculum**. Its
+signals are reproducible and model independent, which makes the contrast clean,
+but a document with short sentences can still presuppose concepts that have not
+been introduced. Conversely, technical vocabulary does not prove that a
+document is pedagogically advanced. A positive or negative result for this
+schedule therefore cannot settle the broader data-order question.
+
+Two later hypotheses must remain separate factors:
+
+1. A **semantic-prerequisite curriculum** binds a frozen concept taxonomy and
+   directed acyclic prerequisite graph. Every admitted document must record
+   concept identities, evidence spans, annotation method and confidence. The
+   receipt must measure first exposure, prerequisite coverage before dependent
+   exposure, later rehearsal, domain balance, and unresolved prerequisite
+   violations. A concept such as color composition cannot be credited as
+   ordered merely because its prose is readable; the primitive colors and their
+   representations must have measurable prior coverage. No model-generated
+   label may be accepted without a prospectively frozen annotator identity and
+   an independently audited human or deterministic validation sample.
+2. A **model-centric learnability curriculum** uses a separately frozen small
+   checkpoint to estimate example learnability, influence, loss, or gradient
+   noise. It may be more faithful to the learner than human readability, but it
+   risks checkpoint-specific selection and must never use terminal benchmark
+   answers or the treatment model's later state. Its scorer, checkpoint, sample
+   identities, and score-to-order policy must be frozen before the comparison.
+
+Each lane must be compared against an exact same-sequence-multiset order control
+and against the surviving surface schedule. Token identities, masks,
+initialization, optimizer, training budget, evaluation rows, and modeled compute
+remain fixed. The lanes cannot be bundled with a tokenizer or architecture
+change. Promotion requires improvement on held-out likelihood and broad,
+source-disjoint capability with no declared domain regression. A result at
+100M parameters authorizes only the next data experiment; it never authorizes
+4B training directly.
+
+This separation is consistent with recent primary evidence: conventional
+difficulty curricula can improve early and mid-training but their lasting gains
+depend on the signal and pacing ([Zhang et al., 2025](https://arxiv.org/abs/2506.11300));
+model-centric influence ordering can outperform human-centered difficulty on
+limited-data pretraining ([Schoenegger et al., 2025](https://arxiv.org/abs/2508.15475));
+and 2026 learning-dynamics experiments suggest that curricula may primarily
+reduce within-phase gradient noise rather than create entirely new acquisition
+phases ([Elgaar and Amiri, 2026](https://arxiv.org/abs/2601.21698)). These are
+hypotheses to reproduce under Sai's exact data and compute controls, not borrowed
+performance claims.
