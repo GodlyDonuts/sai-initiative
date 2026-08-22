@@ -74,3 +74,23 @@ the exact observed bytes.
 
 The modern corpus remains useful as a source pool. It is not a ready-made Sai
 mixture.
+
+## Prospective stratified follow-up
+
+The next content audit is now selected before content inspection by
+`SAI_DOLMA3_STRATIFIED_AUDIT_SPEC.json`. Its canonical specification SHA-256 is
+`bbc2fb37c2caf90f599231802d0762038330f05641dc6d9ba37bb52703a69299`.
+`sai-plan-hf-stratified-audit` replayed the exact parent inventory and selected
+110 unique shards by SHA-256 rank, never by compressed size or observed
+content. The plan receipt is
+`37818ae0d46a1989798945ea5c70679dcaffb898df13a69d58e51bcf7c084319`;
+the local plan-file SHA-256 is
+`9665d2792611e27baa96b909d9313ffa213fb35fd42948cb65335e6ee4ca9a63`.
+
+The 110 members cover 21 low-band, 24 middle-band, and 24 high-band Common
+Crawl topics; 23 science-PDF topics; 15 Stack-Edu languages; and one member
+each from FineMath, the arXiv partition, and the English encyclopedia
+partition. Their total compressed size is 2,583,644,891 bytes. This is a
+selection plan only: no member was downloaded, no content was admitted, and
+no training was authorized. Content inspection will be streamed or performed
+only after current run artifacts release enough storage headroom.

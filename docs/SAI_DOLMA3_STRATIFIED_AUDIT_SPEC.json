@@ -1,0 +1,62 @@
+{
+  "schema": "sai-hf-stratified-audit-spec-v1",
+  "status": "prospective_no_download",
+  "training_authorized": false,
+  "source_admitted": false,
+  "content_download_authorized": false,
+  "dataset": "allenai/dolma3_mix-150B-1025",
+  "revision": "afa92bfb22366821c5e6cd427cdd036b34b713ef",
+  "inventory_receipt_sha256": "47611d6d92341aa8f1cc5c60e322499f3500a37c4a419d93d62073a6075d62d3",
+  "selection_seed": "sai-dolma3-content-audit-20260822-r1",
+  "rules": [
+    {
+      "name": "common_crawl_low_band",
+      "component_regex": "^common_crawl-(?P<topic>[a-z_]+)-(?:0011|0012|0013)$",
+      "group_keys": ["topic"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "common_crawl_middle_band",
+      "component_regex": "^common_crawl-(?P<topic>[a-z_]+)-(?:0014|0015|0016)$",
+      "group_keys": ["topic"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "common_crawl_high_band",
+      "component_regex": "^common_crawl-(?P<topic>[a-z_]+)-(?:0017|0018|0019)$",
+      "group_keys": ["topic"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "science_pdf_topics",
+      "component_regex": "^olmocr_science_pdfs-(?P<topic>[a-z_]+)$",
+      "group_keys": ["topic"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "stack_edu_languages",
+      "component_regex": "^stack_edu-(?P<language>[A-Za-z0-9_+]+)$",
+      "group_keys": ["language"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "finemath_subsets",
+      "component_regex": "^finemath-(?P<subset>[a-z0-9_]+)$",
+      "group_keys": ["subset"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "arxiv_subsets",
+      "component_regex": "^rpj-proofpile-(?P<subset>[a-z0-9_]+)$",
+      "group_keys": ["subset"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "encyclopedic_subsets",
+      "component_regex": "^dolma1_7-(?P<subset>[a-z0-9_-]+)$",
+      "group_keys": ["subset"],
+      "samples_per_group": 1
+    }
+  ],
+  "spec_sha256": "bbc2fb37c2caf90f599231802d0762038330f05641dc6d9ba37bb52703a69299"
+}
