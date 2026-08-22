@@ -4,6 +4,7 @@ import hashlib
 from pathlib import Path
 
 import pytest
+import torch
 
 import sai.data.authored_review_context as context
 from sai.data.authored_review_context import AuthoredReviewContextError, run, validate
@@ -21,9 +22,10 @@ class _Tokenizer:
         assert kwargs == {
             "tokenize": True,
             "add_generation_prompt": True,
+            "return_tensors": "pt",
             "enable_thinking": False,
         }
-        return list(range(100 + len(messages[1]["content"]) // 16))
+        return torch.arange(100 + len(messages[1]["content"]) // 16).unsqueeze(0)
 
 
 def _kwargs(tmp_path: Path) -> dict:
@@ -82,7 +84,7 @@ def test_context_rejects_over_budget_prompt(
 ) -> None:
     class _TooLong(_Tokenizer):
         def apply_chat_template(self, messages, **kwargs):
-            return list(range(context.MAX_INPUT_TOKENS + 1))
+            return torch.arange(context.MAX_INPUT_TOKENS + 1).unsqueeze(0)
 
     monkeypatch.setattr(
         context, "validate_external_snapshot", lambda *a, **k: {"tree": "exact"}

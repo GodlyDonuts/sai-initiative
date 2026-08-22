@@ -76,6 +76,10 @@ def _payload(
     except Exception as error:
         raise AuthoredReviewContextError("reviewer inputs differ") from error
     tokenizer, transformers_version = _tokenizer(model_root)
+    try:
+        import torch
+    except ImportError as error:
+        raise AuthoredReviewContextError("review tokenizer runtime differs") from error
     concept_prompt = _concept_prompt(inputs.concept_payload)
     rows = []
     for index, source in enumerate(inputs.packet):
@@ -85,6 +89,7 @@ def _payload(
                 _messages(prompt),
                 tokenize=True,
                 add_generation_prompt=True,
+                return_tensors="pt",
                 enable_thinking=False,
             )
         except Exception as error:
@@ -92,19 +97,17 @@ def _payload(
                 "review prompt tokenization differs"
             ) from error
         if (
-            not isinstance(encoded, list)
-            or not encoded
-            or any(
-                isinstance(token, bool) or not isinstance(token, int)
-                for token in encoded
-            )
+            not isinstance(encoded, torch.Tensor)
+            or encoded.ndim != 2
+            or encoded.shape[0] != 1
+            or encoded.shape[1] <= 0
         ):
             raise AuthoredReviewContextError("review prompt tokenization differs")
         rows.append(
             {
                 "index": index,
                 "review_identity_sha256": source["review_identity_sha256"],
-                "input_tokens": len(encoded),
+                "input_tokens": int(encoded.shape[1]),
                 "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
             }
         )
