@@ -24,8 +24,10 @@ all fail. A generic successful-looking status is insufficient: license,
 quality, decontamination, and pedagogical receipts must respectively assert the
 exact boolean decisions `license_approved`, `quality_qualified`,
 `decontamination_qualified`, and `progression_qualified`. Shared global evidence
-is permitted only when every source declares
-the identical descriptor. No v3 mixture currently passes because the source
+is permitted only when every source declares the identical descriptor and the
+receipt's canonical `covered_source_manifest_sha256s` explicitly contains each
+source manifest. This prevents a valid decision for one corpus from being
+reattached to another. No v3 mixture currently passes because the source
 selection work is intentionally incomplete.
 
 ## Principle

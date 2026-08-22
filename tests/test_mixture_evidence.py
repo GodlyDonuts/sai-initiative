@@ -17,7 +17,14 @@ from sai.data.mixture_evidence import (
 from sai.data.token_stream import canonical_sha256
 
 
-def _receipt(path: Path, *, schema: str, status: str, source_id: str) -> dict:
+def _receipt(
+    path: Path,
+    *,
+    schema: str,
+    status: str,
+    source_id: str,
+    source_manifest_sha256: str,
+) -> dict:
     qualification_fields = {
         "test-license_review-v1": "license_approved",
         "test-quality_audit-v1": "quality_qualified",
@@ -30,6 +37,7 @@ def _receipt(path: Path, *, schema: str, status: str, source_id: str) -> dict:
         "training_authorized": False,
         "four_b_training_authorized": False,
         "source_id": source_id,
+        "covered_source_manifest_sha256s": [source_manifest_sha256],
         qualification_fields[schema]: True,
     }
     payload["receipt_sha256"] = canonical_sha256(payload)
@@ -69,6 +77,7 @@ def _source(
     source_root.mkdir()
     manifest = source_root / "manifest.txt"
     manifest.write_text(f"{source_id} exact source member\n")
+    manifest_sha256 = hashlib.sha256(manifest.read_bytes()).hexdigest()
     policy = source_root / "selection-policy.json"
     policy.write_text(json.dumps({"source_id": source_id, "rule": "frozen"}) + "\n")
     evidence = {
@@ -87,6 +96,7 @@ def _source(
             schema=f"test-{role}-v1",
             status=status,
             source_id=source_id,
+            source_manifest_sha256=manifest_sha256,
         )
         evidence[role] = _descriptor(path, root, role=role, payload=payload)
     return {
@@ -223,6 +233,9 @@ def test_rejects_tamper_missing_and_re_signed_bare_hash(tmp_path: Path) -> None:
         schema=descriptor["schema"],
         status=descriptor["status"],
         source_id="source-0",
+        source_manifest_sha256=payload["sources"][0]["evidence"]["source_manifest"][
+            "file_sha256"
+        ],
     )
 
     missing = deepcopy(payload)
@@ -278,6 +291,56 @@ def test_rejects_re_signed_receipt_without_role_qualification(tmp_path: Path) ->
 
     with pytest.raises(DataMixtureEvidenceError, match="quality_audit receipt differs"):
         validate_payload(payload, evidence_root=root)
+
+
+def test_rejects_positive_receipt_bound_to_a_different_source(tmp_path: Path) -> None:
+    root = tmp_path / "evidence"
+    root.mkdir()
+    payload = _plan(root)
+    descriptor = payload["sources"][4]["evidence"]["license_review"]
+    path = root / descriptor["relative_path"]
+    receipt = json.loads(path.read_text())
+    receipt["covered_source_manifest_sha256s"] = [
+        payload["sources"][0]["evidence"]["source_manifest"]["file_sha256"]
+    ]
+    receipt["receipt_sha256"] = canonical_sha256(
+        {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    )
+    path.write_text(json.dumps(receipt, sort_keys=True) + "\n")
+    descriptor["file_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    descriptor["receipt_sha256"] = receipt["receipt_sha256"]
+    _resign(payload)
+
+    with pytest.raises(
+        DataMixtureEvidenceError, match="license_review receipt differs"
+    ):
+        validate_payload(payload, evidence_root=root)
+
+
+def test_accepts_shared_receipt_only_when_it_covers_both_sources(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path / "evidence"
+    root.mkdir()
+    payload = _plan(root)
+    descriptor = payload["sources"][0]["evidence"]["license_review"]
+    path = root / descriptor["relative_path"]
+    receipt = json.loads(path.read_text())
+    receipt["source_id"] = "shared-license-review"
+    receipt["covered_source_manifest_sha256s"] = sorted(
+        source["evidence"]["source_manifest"]["file_sha256"]
+        for source in payload["sources"][:2]
+    )
+    receipt["receipt_sha256"] = canonical_sha256(
+        {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    )
+    path.write_text(json.dumps(receipt, sort_keys=True) + "\n")
+    descriptor["file_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    descriptor["receipt_sha256"] = receipt["receipt_sha256"]
+    payload["sources"][1]["evidence"]["license_review"] = deepcopy(descriptor)
+    _resign(payload)
+
+    assert validate_payload(payload, evidence_root=root) == payload
 
 
 def test_rejects_symlinked_intermediate_evidence_directory(tmp_path: Path) -> None:

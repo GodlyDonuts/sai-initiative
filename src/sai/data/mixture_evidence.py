@@ -188,7 +188,13 @@ def _read_regular(root: Path, relative: PurePosixPath) -> bytes:
     return encoded
 
 
-def _receipt(encoded: bytes, descriptor: dict[str, Any], role: str) -> None:
+def _receipt(
+    encoded: bytes,
+    descriptor: dict[str, Any],
+    role: str,
+    *,
+    source_manifest_sha256: str,
+) -> None:
     try:
         payload = json.loads(encoded)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -196,6 +202,7 @@ def _receipt(encoded: bytes, descriptor: dict[str, Any], role: str) -> None:
     if not isinstance(payload, dict):
         raise DataMixtureEvidenceError(f"{role} receipt differs")
     unsigned = {key: value for key, value in payload.items() if key != "receipt_sha256"}
+    covered = payload.get("covered_source_manifest_sha256s")
     if (
         payload.get("schema") != descriptor["schema"]
         or payload.get("status") != descriptor["status"]
@@ -203,6 +210,14 @@ def _receipt(encoded: bytes, descriptor: dict[str, Any], role: str) -> None:
         or payload.get("receipt_sha256") != canonical_sha256(unsigned)
         or descriptor["status"] not in _ALLOWED_STATUSES[role]
         or payload.get(_QUALIFICATION_FIELDS[role]) is not True
+        or not isinstance(covered, list)
+        or not covered
+        or any(
+            not isinstance(item, str) or _SHA256.fullmatch(item) is None
+            for item in covered
+        )
+        or covered != sorted(set(covered))
+        or source_manifest_sha256 not in covered
         or payload.get("training_authorized") not in {None, False}
         or payload.get("four_b_training_authorized") not in {None, False}
     ):
@@ -215,6 +230,7 @@ def _descriptor(
     role: str,
     evidence_root: Path | None,
     seen_paths: dict[str, dict[str, Any]],
+    source_manifest_sha256: str | None = None,
 ) -> tuple[dict[str, Any], str]:
     descriptor = _exact(raw, _EVIDENCE_KEYS, f"{role} evidence")
     if descriptor["role"] != role:
@@ -246,7 +262,14 @@ def _descriptor(
         if hashlib.sha256(encoded).hexdigest() != file_sha256:
             raise DataMixtureEvidenceError(f"{role} file hash differs")
         if role in _RECEIPT_ROLES:
-            _receipt(encoded, descriptor, role)
+            if source_manifest_sha256 is None:
+                raise DataMixtureEvidenceError("source evidence lineage differs")
+            _receipt(
+                encoded,
+                descriptor,
+                role,
+                source_manifest_sha256=source_manifest_sha256,
+            )
     return descriptor, shadow_hash
 
 
@@ -280,6 +303,7 @@ def validate_payload(
                 role=role,
                 evidence_root=evidence_root,
                 seen_paths=seen_paths,
+                source_manifest_sha256=hashes.get("source_manifest"),
             )
         shadow_sources.append(
             {

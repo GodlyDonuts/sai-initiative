@@ -278,7 +278,8 @@ benchmark evidence selects an architecture.
   file bytes plus canonical receipt schema/status/self-hash; and rejects links,
   missing evidence, and re-signed drift. Each receipt must also carry its exact
   role-specific positive decision; a generic `status: qualified` cannot admit a
-  source. No v3 mixture passes yet.
+  source. Each decision must also name the exact source-manifest hash it covers,
+  preventing cross-source receipt reuse. No v3 mixture passes yet.
 
 ## Live scratchpad — 2026-08-21
 
