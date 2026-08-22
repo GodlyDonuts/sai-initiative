@@ -202,6 +202,13 @@ benchmark evidence selects an architecture.
   passed. Exact acceleration commit
   `88275bd9550bd1789f783389c218da188369805b` is sealed on Newton with zero
   writable members.
+- The conditional SmolLM3-3B cross-family confirmation consumes the same exact
+  `124,999,680`-token prefix. It now has its own 125M-token freezer with the
+  identical no-unused-tail rule, streaming corpus hashing, restored-model
+  manifest/receipt replay, exact Smol tokenizer identity (`128,256` vocabulary,
+  EOS `128,012`), and no GPU exposure. This removes another 375M tokens of
+  unnecessary preparation if Qwen earns promotion. Full regression is 356
+  passed.
 - The first capable-host Sai factor is now fully executable at commit
   `cc7039d1e5a0653f4581cbe1a7b3ce509fff58e6`: a `19,938,304`-parameter,
   16-slot recurrent workspace attached to the frozen Qwen3.5-0.8B text parent.
