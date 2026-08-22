@@ -120,6 +120,15 @@ def test_split_is_exact_disjoint_progressive_and_replayable(
         [Path(payload["train"]["path"])],
         sha256_file(receipt),
     ) == [(phase, payload["train"]["phases"][phase]["documents"]) for phase in PHASES]
+    assert load_curriculum_phase_contract(
+        receipt,
+        [Path(payload["development"]["path"])],
+        sha256_file(receipt),
+        population="development",
+    ) == [
+        (phase, payload["development"]["phases"][phase]["documents"])
+        for phase in PHASES
+    ]
 
 
 def test_split_tamper_fails_closed(
@@ -180,4 +189,11 @@ def test_split_and_development_stream_jobs_are_cpu_only_and_create_only() -> Non
     assert "validate_curriculum_split" in development
     assert 'test ! -e "$DEVELOPMENT_STREAM"' in development
     assert "--prefix-sequences 1024" in development
+    assert '--curriculum-receipt "$SPLIT_RECEIPT"' in development
+    assert "--curriculum-population development" in development
+    assert '--curriculum-validation-workers "$SLURM_CPUS_PER_TASK"' in development
+    for phase in PHASES:
+        assert f"--curriculum-phase-sequences {phase}=256" in development
+    assert "--require-all-curriculum-phases-at-prefix 1024" in development
+    assert 'curriculum["phase_sequence_targets"] == expected_phases' in development
     assert 'stream["sequences"] == 1_024' in development

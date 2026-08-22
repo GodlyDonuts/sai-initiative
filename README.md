@@ -80,6 +80,13 @@ benchmark evidence selects an architecture.
   The first three
   curriculum boundaries occur exactly after optimizer updates 191, 429, and
   715, so no gradient accumulation window mixes adjacent difficulty phases.
+- A downstream audit caught a validation confound before allocation: freezing
+  the first 1,024 sequences of the phase-ordered development file would test
+  almost only grounding data. The development freezer now requires exactly 256
+  sequences from each of grounding, integration, reasoning, and specialization
+  and binds those four token/byte strata in the stream receipt. The original
+  pending development/launcher jobs will be replaced before they can run; the
+  independent training-stream and exact-order-control work remains reusable.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
 

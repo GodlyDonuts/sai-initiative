@@ -128,6 +128,15 @@ capability, and introduces no declared domain regression. Tokenizer choice,
 content filtering, and ordering must be tested as separate factors instead of
 being bundled into an uninterpretable win or loss.
 
+The held-out likelihood stream is itself phase-stratified. It contains exactly
+256 packed 2,048-token sequences from each of grounding, integration,
+reasoning, and specialization, for 1,024 sequences total. Taking the first
+1,024 sequences from the phase-ordered development corpus is forbidden because
+that would measure almost exclusively grounding material and could make a
+curriculum appear successful while concealing regressions on later reasoning or
+specialization. The stream receipt binds each phase's exact sequence, token,
+and UTF-8-byte contribution.
+
 The implemented primary control permutes the exact packed 2,048-token sequence
 records after the curriculum stream is frozen. Each record includes both token
 IDs and its document-boundary bitset, so this construction preserves the exact

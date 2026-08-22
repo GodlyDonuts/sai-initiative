@@ -1128,8 +1128,9 @@ def load_curriculum_phase_contract(
     source_qualification_sha256: str | None,
     *,
     curriculum_workers: int = 1,
+    population: str = "train",
 ) -> list[tuple[str, int]]:
-    """Validate either a full curriculum or its qualified training split."""
+    """Validate a full curriculum or one qualified split population."""
 
     if not receipt_path.is_file() or receipt_path.is_symlink():
         raise TokenStreamError("curriculum receipt is missing or unsafe")
@@ -1141,6 +1142,8 @@ def load_curriculum_phase_contract(
         raise TokenStreamError("curriculum receipt differs")
     schema = payload.get("schema")
     if schema == "sai-curriculum-order-receipt-v1":
+        if population != "train":
+            raise TokenStreamError("curriculum population differs")
         from sai.data.curriculum import validate_curriculum
 
         validated = validate_curriculum(receipt_path, workers=curriculum_workers)
@@ -1148,16 +1151,30 @@ def load_curriculum_phase_contract(
         phases = validated.get("phases")
         qualified = validated.get("curriculum_qualified") is True
     elif schema == "sai-curriculum-train-development-split-v1":
+        if population not in {"train", "development"}:
+            raise TokenStreamError("curriculum population differs")
         from sai.data.curriculum_split import validate_curriculum_split
 
         validated = validate_curriculum_split(
             receipt_path, curriculum_workers=curriculum_workers
         )
-        source_row = validated.get("train", {})
+        source_row = validated.get(population, {})
         phases = source_row.get("phases")
+        population_qualified = (
+            source_row.get("curriculum_qualified") is True
+            if population == "train"
+            else isinstance(phases, dict)
+            and bool(phases)
+            and all(
+                isinstance(row, dict)
+                and isinstance(row.get("documents"), int)
+                and not isinstance(row.get("documents"), bool)
+                and row["documents"] > 0
+                for row in phases.values()
+            )
+        )
         qualified = bool(
-            validated.get("split_qualified") is True
-            and source_row.get("curriculum_qualified") is True
+            validated.get("split_qualified") is True and population_qualified
         )
     else:
         raise TokenStreamError("curriculum receipt schema differs")
@@ -1198,6 +1215,11 @@ def main() -> int:
     parser.add_argument("--source-qualification-sha256")
     parser.add_argument("--curriculum-receipt", type=Path)
     parser.add_argument("--curriculum-validation-workers", type=int, default=1)
+    parser.add_argument(
+        "--curriculum-population",
+        choices=("train", "development"),
+        default="train",
+    )
     parser.add_argument("--curriculum-phase-sequences", action="append")
     parser.add_argument(
         "--require-all-curriculum-phases-at-prefix", type=int, action="append"
@@ -1229,6 +1251,7 @@ def main() -> int:
             args.source,
             args.source_qualification_sha256,
             curriculum_workers=args.curriculum_validation_workers,
+            population=args.curriculum_population,
         )
     curriculum_phase_sequence_targets = None
     if args.curriculum_phase_sequences is not None:

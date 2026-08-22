@@ -93,9 +93,17 @@ test "${#split_sha256}" = 64
   --expected-tokenizer-sha256 "$tokenizer_sha256" \
   --source "$DEVELOPMENT_CORPUS" \
   --source-qualification-sha256 "$split_sha256" \
+  --curriculum-receipt "$SPLIT_RECEIPT" \
+  --curriculum-validation-workers "$SLURM_CPUS_PER_TASK" \
+  --curriculum-population development \
   --output "$DEVELOPMENT_STREAM" \
   --sequence-length 2048 \
-  --prefix-sequences 1024
+  --prefix-sequences 1024 \
+  --curriculum-phase-sequences grounding=256 \
+  --curriculum-phase-sequences integration=256 \
+  --curriculum-phase-sequences reasoning=256 \
+  --curriculum-phase-sequences specialization=256 \
+  --require-all-curriculum-phases-at-prefix 1024
 
 "$PYTHON" -P -s -B - "$DEVELOPMENT_STREAM" "$tokenizer_sha256" "$split_sha256" <<'PY'
 import pathlib
@@ -110,4 +118,23 @@ assert stream["sequence_length"] == 2_048
 assert stream["sequences"] == 1_024
 assert stream["benchmark_disjoint"] is True
 assert stream["cross_document_targets_masked"] is True
+curriculum = stream["curriculum"]
+expected_phases = {
+    "grounding": 256,
+    "integration": 256,
+    "reasoning": 256,
+    "specialization": 256,
+}
+assert curriculum["phase_order"] == list(expected_phases)
+assert curriculum["phase_token_budget_enforced"] is True
+assert curriculum["phase_sequence_targets"] == expected_phases
+assert curriculum["phase_sequences_emitted"] == expected_phases
+assert curriculum["required_all_phase_prefixes"] == [1_024]
+assert curriculum["all_required_prefixes_cover_every_phase"] is True
+assert curriculum["phase_order_contiguous_at_every_prefix"] is True
+assert all(
+    curriculum["prefixes"]["1024"][phase]["tokens"] == 256 * 2_048
+    and curriculum["prefixes"]["1024"][phase]["utf8_bytes"] > 0
+    for phase in expected_phases
+)
 PY
