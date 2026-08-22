@@ -5,10 +5,11 @@ SNAPSHOT = ROOT / "jobs" / "sai-freeze-stack-v2-current-python-snapshot-cpu.sbat
 ALIGN = ROOT / "jobs" / "sai-align-stack-edu-current-cpu.sbatch"
 CONTENT = ROOT / "jobs" / "sai-verify-stack-edu-content-cpu.sbatch"
 SAFETY = ROOT / "jobs" / "sai-scan-stack-edu-content-safety-cpu.sbatch"
+SAFETY_SELECT = ROOT / "jobs" / "sai-select-stack-edu-safety-candidates-cpu.sbatch"
 
 
 def test_stack_v2_alignment_jobs_are_cpu_only_create_only_and_replay() -> None:
-    for path in (SNAPSHOT, ALIGN, CONTENT, SAFETY):
+    for path in (SNAPSHOT, ALIGN, CONTENT, SAFETY, SAFETY_SELECT):
         script = path.read_text()
         assert "#SBATCH --no-requeue" in script
         assert "#SBATCH --gres" not in script
@@ -37,3 +38,8 @@ def test_stack_v2_alignment_jobs_are_cpu_only_create_only_and_replay() -> None:
     assert "stack_edu_safety validate" in safety
     assert 'test ! -e "$FINDINGS_OUTPUT"' in safety
     assert 'test ! -e "$RECEIPT_OUTPUT"' in safety
+    selection = SAFETY_SELECT.read_text()
+    assert "stack_edu_safety_select select" in selection
+    assert "stack_edu_safety_select validate" in selection
+    assert 'test ! -e "$SELECTED_OUTPUT"' in selection
+    assert 'test ! -e "$RECEIPT_OUTPUT"' in selection

@@ -380,7 +380,14 @@ benchmark evidence selects an architecture.
   license. The independently replayed complete-language evidence is recorded
   in `docs/SAI_STACK_EDU_PYTHON_LANGUAGE_AUDIT_20260822.md`.
 - The complete Stack-Edu candidate identities are now frozen separately from
-  source content, and current-release alignment is executable. The new
+  source content. CPU job `770639` completed in `3,100` seconds with exit
+  `0:0`, zero restarts, and empty stderr. It froze 514,566 unique blob
+  identities spanning 127,672 repositories and 514,559 unique repository/path
+  pairs; the candidate JSONL SHA-256 is `7429c9d4…07c5` and canonical receipt
+  identity is `ec6b0aa9…0762`. Exact execution, hash, and population evidence is
+  in `docs/SAI_STACK_EDU_CANDIDATE_IDENTITY_AGGREGATE_20260822.md`. This remains
+  metadata-only and authorizes no content retention or training.
+  Current-release alignment is executable. The new
   `sai-stack-v2-current-python-snapshot-v1` boundary requires the complete
   Python metadata shard set from `bigcode/the-stack-v2` revision
   `e565caa3…90e47` (`v2.2.0`, opt-outs enacted through `2026-07-29`) plus the
@@ -409,6 +416,14 @@ benchmark evidence selects an architecture.
   scanner cannot prove the absence of novel secrets, malware, dependency
   hazards, or subtle benchmark-derived code. The exact policy and limitations
   are frozen in `docs/SAI_STACK_EDU_CONTENT_SAFETY_CONTRACT.md`.
+- A separate create-only selector now resolves those bounded findings without
+  pretending they constitute source admission. High-confidence rejects cannot
+  be overridden; every manual-review row requires one exact hashed
+  adjudication; bounded-clean rows remain candidates. The selected population
+  retains training and 4B authorization false until accuracy, usefulness,
+  duplication, contamination, semantic placement, and matched source-addition
+  evidence pass. Its contract is
+  `docs/SAI_STACK_EDU_SAFETY_SELECTION_CONTRACT.md`.
 - An authored programming-curriculum candidate now preserves 111 Rust Book
   chapters and 16 CPython tutorial chapters at exact pinned revisions, in
   publisher order with byte-exact code and license evidence. Its 127-row
