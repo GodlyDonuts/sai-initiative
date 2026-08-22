@@ -175,6 +175,22 @@ benchmark evidence selects an architecture.
   cannot be built unless at least 100 documents were reviewed and disagreement
   is at most the prospectively frozen five-percent ceiling; callers can no
   longer satisfy this gate with an unattached arithmetic-only receipt.
+- The first held-out selector attempt, CPU job `770519`, correctly failed before
+  publishing an artifact because its legacy 16-cell geometry demanded examples
+  from `grounding:specialization`, a stratum that the qualified curriculum
+  requires to be empty. The corrected selector was pushed at commit
+  `89fda9b76d3898e10a150b25557d7b14768be7d3` and executed as CPU job `770526`.
+  It completed in 151 seconds on `evc21`, with zero restarts and empty stderr.
+  Independent replay verified exactly 120 immutable rows, eight in every one of
+  the 15 valid phase/band strata, and no grounding-specialization row. The
+  population file SHA-256 is
+  `85a7e804b0622f85b2f45c3edf5a37a1a200fdd3e9c833a8c65edf09a804cce8`;
+  its canonical receipt SHA-256 is
+  `34ca4ca64acccaf3bc1ae04152156ea879efed47d85dcfdac3242ef5ee8b171a`.
+  The population is selected but deliberately unreviewed, and its receipt keeps
+  both training and 4B authorization false. Independent blinded annotation and
+  disagreement review remain mandatory before this sample can qualify the
+  semantic taxonomy or any training curriculum.
 - Source-disjoint split `770039` is now running from that independently
   qualified receipt with four ordered workers across both receipt validation
   and exact split reconstruction, plus a four-hour fail-closed wall limit.
