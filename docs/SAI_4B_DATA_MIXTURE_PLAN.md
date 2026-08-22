@@ -84,6 +84,18 @@ Initial source-factor priority is therefore: FineWeb-Edu as the existing web
 control; a newly filtered and audited FineMath-derived pool as the first public
 math candidate; a license-allowlisted, provenance-preserving Stack-Edu slice as
 the first code candidate; and selected Dolma components for non-web diversity.
+`sai-audit-stack-edu` now makes the first code-source step executable without
+downloading code content. It accepts only the exact Stack-Edu revision above and
+an exact Parquet shard hash, replays all metadata rows, and measures detected
+license, integer quality score, encoding, declared content bytes, duplicate blob
+identities, and duplicate repository paths. Its prospectively frozen metadata
+candidate requires `license_type=permissive`, a nonempty set drawn entirely from
+Sai's narrow permissive SPDX allowlist, integer score 4 or 5, UTF-8, and 128 to
+1,000,000 declared bytes. A balanced salted sample publishes only blob and
+provenance metadata. The audit deliberately cannot admit code: Software
+Heritage content has not been acquired, current opt-outs have not been replayed,
+license detection is not legal approval, and secret scanning, global
+deduplication, and benchmark decontamination remain absent.
 The bounded FineMath evidence is recorded in
 `docs/SAI_FINEMATH_SHARD_AUDIT_20260822.md`; upstream `4plus` scores cannot admit
 rows. Cosmopedia and NVIDIA corpora remain separate declared ablations.

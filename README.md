@@ -367,6 +367,13 @@ benchmark evidence selects an architecture.
   `0.90–0.95`, and `>=0.95`. The packet hides score and stratum; its separate
   key remains closed until labels are complete. Receipt
   `a17dcf57…d6d0` authorizes no training.
+- Bulk code admission now begins with an executable Stack-Edu metadata audit,
+  not a download. It pins revision `eeec5caa…814c`, rejects every unlicensed or
+  mixed-unallowlisted row, and measures quality score, encoding, length,
+  provenance, and duplicate identities before content retrieval. Metadata can
+  only nominate blobs for a later content audit; missing current opt-out replay,
+  secret scanning, legal review, deduplication, or benchmark decontamination
+  keeps training authorization false.
 - An authored programming-curriculum candidate now preserves 111 Rust Book
   chapters and 16 CPython tutorial chapters at exact pinned revisions, in
   publisher order with byte-exact code and license evidence. Its 127-row
