@@ -33,6 +33,9 @@ benchmark-disjoint receipt pass Sai validation.
 | Code | [The Stack v2](https://github.com/bigcode-project/the-stack-v2) | Permissively licensed code with persistent provenance | License obligations, opt-outs, generated/vendor files, secrets, tests copied into benchmarks |
 | Foundational references | exact sources to be frozen | Public-domain books, encyclopedic articles, and introductory educational sequences | Edition drift, OCR damage, duplicated editions, weak document identity |
 | Science and technical literature | exact sources to be frozen | Definitions, mechanisms, experiments, engineering, and evidence | Copyright boundaries, PDF extraction damage, citation boilerplate, specialization too early |
+| Authored open textbooks | [Open Textbook Library](https://open.umn.edu/opentextbooks) title-level candidates | Human-authored chapter progression, definitions, worked examples, exercises, and prerequisite order | The catalog is a referatory with mixed licenses; every title, edition, file, and original publisher license must be verified separately |
+| Programming pedagogy | exact tagged [Python documentation](https://docs.python.org/3/license.html) and exact-commit [Rust Book](https://github.com/rust-lang/book) candidates | Ordered language concepts, executable examples, API semantics, and progressively composed projects | Documentation assumes different prior knowledge; version drift and code/example duplication require explicit handling |
+| Public-domain books | selected [Project Gutenberg](https://www.gutenberg.org/policy/license) works acquired through approved bulk channels | Long-form English, historical technical exposition, and selected foundational texts | U.S.-specific copyright determinations, trademark/license wrappers, old errors and pedagogy, OCR/edition variance, and unsuitable material |
 
 ## Candidate revision inventory — 2026-08-22
 
@@ -65,6 +68,34 @@ rows. Cosmopedia and NVIDIA corpora remain separate declared ablations.
 OpenWebMath remains blocked on license evidence. No source ratio is frozen
 before small matched source-addition screens establish that the source helps
 rather than merely looking sophisticated.
+
+Authored sequence is now a first-class source signal. The Open Textbook Library
+currently exposes a public JSON API and identifies hundreds of English CC BY or
+CC0 records, but it does not host or license every underlying textbook itself.
+Sai may use the catalog only to discover candidates. Admission requires the
+exact book file, chapter order, original publisher page, title-specific license,
+attribution terms, extraction audit, and content review. The initial lane is
+limited to CC BY or CC0 works; NC, ND, ambiguous, and title-level license
+conflicts remain out of training until separately resolved.
+
+Programming documentation is also kept title-specific. Python's documentation
+is under the PSF License v2, with examples and recipes from Python 3.8.6 onward
+also available under 0BSD. The Rust Book repository is dual MIT/Apache-2.0 and
+explicitly describes later chapters as building on earlier ones while project
+chapters rehearse prior concepts. These properties make exact tagged versions
+strong candidates for a code prerequisite lane, but neither is treated as a
+complete beginner curriculum or blended with scraped code before a matched
+source-addition test.
+
+OpenStax is not admitted as one source class merely because it is called open.
+Current official licensing information describes its textbooks as
+CC BY-NC-SA, while some individual catalog records describe earlier titles as
+CC BY. Sai therefore resolves the license of every exact edition at its original
+publisher and treats any NC title as research-only. Project Gutenberg is also
+title-specific: acquire only through its approved bulk mechanisms, verify each
+work's U.S. status and embedded terms, preserve provenance, and separate the
+underlying unrestricted text from Project Gutenberg trademark/license material
+when the exact terms permit it.
 
 Sai will not ingest an opaque pre-blended corpus and then claim source-level
 control. When a candidate distribution contains multiple source components,
