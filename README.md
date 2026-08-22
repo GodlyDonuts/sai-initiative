@@ -125,6 +125,13 @@ benchmark evidence selects an architecture.
   positive unweighted macro, a strictly positive paired 95% bootstrap lower
   bound, and no domain regression worse than one percentage point. This
   development-only receipt cannot authorize architecture promotion or 4B.
+- The positive-NLL handoff is now executable rather than manual. A CPU-only
+  stager reopens the exact order receipt and both checkpoints, then submits two
+  matched fan-outs: eight independent one-H100 MMLU-Pro shards plus one MuSR
+  job for each arm. Two CPU merges and a terminal CPU comparator bind all 18
+  H100 jobs to `COMPLETED|0:0|0` with zero restarts before applying the frozen
+  benchmark decision. Partial submission is cancelled, while a negative NLL
+  decision submits no benchmark work.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
 

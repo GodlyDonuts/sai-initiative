@@ -45,4 +45,4 @@ def test_git_bound_job_count_includes_workspace_launcher() -> None:
         for path in scripts
         if "SAI_ROOT" in path.read_text() and "EXPECTED_COMMIT" in path.read_text()
     ]
-    assert len(bound) == 61
+    assert len(bound) == 63

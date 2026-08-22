@@ -167,6 +167,13 @@ A favorable aggregate cannot override a benchmark, confidence, or domain
 veto. Passing retains the data order for the next scale; it does not authorize
 an architecture claim or 4B training.
 
+The benchmark continuation is dependency-staged only after the held-out NLL
+receipt passes. It evaluates each matched checkpoint with eight independent
+single-H100 MMLU-Pro shards and one independent single-H100 MuSR job, merges
+MMLU-Pro on CPU, and requires exact clean accounting for all eighteen GPU jobs
+before the terminal CPU comparison. No benchmark job is submitted when the
+held-out phase gate fails, and no benchmark result authorizes 4B training.
+
 The implemented primary control permutes the exact packed 2,048-token sequence
 records after the curriculum stream is frozen. Each record includes both token
 IDs and its document-boundary bitset, so this construction preserves the exact

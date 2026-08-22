@@ -26,6 +26,7 @@ set -euo pipefail
 : "${CONTROL_MMLU:?CONTROL_MMLU is required}"
 : "${CONTROL_MUSR_JOB_ID:?CONTROL_MUSR_JOB_ID is required}"
 : "${CONTROL_MUSR:?CONTROL_MUSR is required}"
+: "${H100_EVALUATION_JOB_IDS:?H100_EVALUATION_JOB_IDS is required}"
 : "${OUTPUT:?OUTPUT is required}"
 : "${SLURM_JOB_ID:?SLURM_JOB_ID is required}"
 
@@ -33,6 +34,9 @@ for value in "$ORDER_COMPARISON_JOB_ID" "$CURRICULUM_MMLU_JOB_ID" \
   "$CURRICULUM_MUSR_JOB_ID" "$CONTROL_MMLU_JOB_ID" "$CONTROL_MUSR_JOB_ID"; do
   [[ "$value" =~ ^[0-9]+$ ]]
 done
+read -r -a h100_job_ids <<< "$H100_EVALUATION_JOB_IDS"
+test "${#h100_job_ids[@]}" = 18
+test "$(printf '%s\n' "${h100_job_ids[@]}" | sort -u | wc -l | tr -d ' ')" = 18
 for path in "$SAI_ROOT" "$PYTHON" "$LOG_ROOT" "$ORDER_COMPARISON" \
   "$CURRICULUM_MMLU" "$CURRICULUM_MUSR" "$CONTROL_MMLU" \
   "$CONTROL_MUSR" "$OUTPUT"; do
@@ -67,6 +71,10 @@ case "$stderr_path" in "$LOG_ROOT"/*) ;; *) exit 2 ;; esac
 
 for job_id in "$ORDER_COMPARISON_JOB_ID" "$CURRICULUM_MMLU_JOB_ID" \
   "$CURRICULUM_MUSR_JOB_ID" "$CONTROL_MMLU_JOB_ID" "$CONTROL_MUSR_JOB_ID"; do
+  row="$(sacct -X -j "$job_id" -n -P -o State,ExitCode,Restarts | sed -n '1p')"
+  test "$row" = "COMPLETED|0:0|0"
+done
+for job_id in "${h100_job_ids[@]}"; do
   row="$(sacct -X -j "$job_id" -n -P -o State,ExitCode,Restarts | sed -n '1p')"
   test "$row" = "COMPLETED|0:0|0"
 done
