@@ -177,6 +177,12 @@ dependent operation in the same document does not masquerade as prior coverage.
 Its self-hashed report binds the taxonomy, ordered document identities, entire
 annotation population, first exposure, per-phase coverage, missing concepts,
 and every violation. It remains prospective and cannot authorize training.
+`sai-validate-prerequisites audit-curriculum` performs this audit as a streaming
+replay: it first revalidates the curriculum receipt, then rereads the exact
+curriculum and annotation files in lockstep, derives phase membership from the
+receipt rather than annotation claims, verifies both byte streams and canonical
+population hashes, and publishes the report atomically without overwriting an
+existing result.
 
 Each lane must be compared against an exact same-sequence-multiset order control
 and against the surviving surface schedule. Token identities, masks,

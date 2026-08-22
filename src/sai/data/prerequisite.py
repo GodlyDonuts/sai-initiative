@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import stat
+import uuid
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
-from sai.data.curriculum import PHASES
-from sai.data.token_stream import ALLOWED_DOMAINS, canonical_sha256
+from sai.data.curriculum import PHASES, validate_curriculum
+from sai.data.token_stream import ALLOWED_DOMAINS, canonical_sha256, normalize_document
 
 TAXONOMY_SCHEMA = "sai-semantic-prerequisite-taxonomy-v1"
 ANNOTATION_SCHEMA = "sai-prerequisite-document-annotation-v1"
@@ -247,18 +249,38 @@ def analyze_progression(
     if len(expected) != len(set(expected)):
         raise PrerequisiteError("expected document identity is duplicated")
 
-    concepts = {item["concept_id"]: item for item in taxonomy["concepts"]}
-    minimum_confidence = taxonomy["minimum_annotation_confidence_ppm"]
-    prior_counts: Counter[str] = Counter()
-    phase_counts: Counter[str] = Counter()
-    concept_counts: Counter[str] = Counter()
-    first_exposure: dict[str, int] = {}
-    violations: list[dict[str, Any]] = []
-    previous_phase = -1
-
+    state = _ProgressionState(taxonomy)
     for index, (raw_annotation, expected_identity) in enumerate(
         zip(annotations, expected, strict=True)
     ):
+        state.add(index, raw_annotation, expected_identity)
+    return state.report(
+        documents=len(annotations),
+        ordered_document_identity_sha256=canonical_sha256(expected),
+        annotations_sha256=canonical_sha256(annotations),
+    )
+
+
+class _ProgressionState:
+    def __init__(self, taxonomy: dict[str, Any]) -> None:
+        self.taxonomy = taxonomy
+        self.concepts = {item["concept_id"]: item for item in taxonomy["concepts"]}
+        self.minimum_confidence = taxonomy["minimum_annotation_confidence_ppm"]
+        self.prior_counts: Counter[str] = Counter()
+        self.phase_counts: Counter[str] = Counter()
+        self.concept_counts: Counter[str] = Counter()
+        self.first_exposure: dict[str, int] = {}
+        self.violations: list[dict[str, Any]] = []
+        self.previous_phase = -1
+
+    def add(
+        self,
+        index: int,
+        raw_annotation: Any,
+        expected_identity: str,
+        *,
+        expected_phase: str | None = None,
+    ) -> None:
         annotation = _exact_keys(raw_annotation, _ANNOTATION_KEYS, "annotation row")
         if annotation["schema"] != ANNOTATION_SCHEMA:
             raise PrerequisiteError("annotation row schema differs")
@@ -268,13 +290,15 @@ def analyze_progression(
         if identity != expected_identity:
             raise PrerequisiteError("annotation document order differs")
         phase = annotation["phase"]
-        if phase not in PHASES:
+        if phase not in PHASES or (
+            expected_phase is not None and phase != expected_phase
+        ):
             raise PrerequisiteError("annotation phase differs")
         phase_index = PHASES.index(phase)
-        if phase_index < previous_phase:
+        if phase_index < self.previous_phase:
             raise PrerequisiteError("annotation phases are not monotonic")
-        previous_phase = phase_index
-        phase_counts[phase] += 1
+        self.previous_phase = phase_index
+        self.phase_counts[phase] += 1
         raw_evidence = annotation["concepts"]
         if not isinstance(raw_evidence, list):
             raise PrerequisiteError("annotation concepts differ")
@@ -283,22 +307,22 @@ def analyze_progression(
         for raw_item in raw_evidence:
             item = _exact_keys(raw_item, _EVIDENCE_KEYS, "concept evidence")
             concept_id = item["concept_id"]
-            if concept_id not in concepts or concept_id in seen:
+            if concept_id not in self.concepts or concept_id in seen:
                 raise PrerequisiteError("annotation concept differs or is duplicated")
             seen.add(concept_id)
             confidence = _ppm(item["confidence_ppm"], "annotation confidence")
             _sha256(item["evidence_sha256"], "annotation evidence")
-            if confidence < minimum_confidence:
+            if confidence < self.minimum_confidence:
                 continue
             confident.append(concept_id)
-            concept_counts[concept_id] += 1
-            first_exposure.setdefault(concept_id, index)
-            concept = concepts[concept_id]
+            self.concept_counts[concept_id] += 1
+            self.first_exposure.setdefault(concept_id, index)
+            concept = self.concepts[concept_id]
             minimum = concept["minimum_prior_documents"]
             for prerequisite in concept["prerequisites"]:
-                observed = prior_counts[prerequisite]
+                observed = self.prior_counts[prerequisite]
                 if observed < minimum:
-                    violations.append(
+                    self.violations.append(
                         {
                             "document_index": index,
                             "document_identity_sha256": identity,
@@ -309,51 +333,294 @@ def analyze_progression(
                             "observed_prior_documents": observed,
                         }
                     )
-        prior_counts.update(confident)
+        self.prior_counts.update(confident)
 
-    if set(phase_counts) != set(PHASES):
-        raise PrerequisiteError("annotation population does not cover every phase")
-    missing_concepts = sorted(set(concepts) - set(concept_counts))
-    progression_qualified = not violations and not missing_concepts
-    report: dict[str, Any] = {
-        "schema": REPORT_SCHEMA,
-        "status": "qualified" if progression_qualified else "not_qualified",
-        "taxonomy_receipt_sha256": taxonomy["receipt_sha256"],
-        "documents": len(annotations),
-        "ordered_document_identity_sha256": canonical_sha256(expected),
-        "annotations_sha256": canonical_sha256(annotations),
-        "phase_documents": {phase: phase_counts[phase] for phase in PHASES},
-        "concepts": {
-            concept_id: {
-                "confident_documents": concept_counts[concept_id],
-                "first_document_index": first_exposure.get(concept_id),
-            }
-            for concept_id in sorted(concepts)
+    def report(
+        self,
+        *,
+        documents: int,
+        ordered_document_identity_sha256: str,
+        annotations_sha256: str,
+        lineage: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        if set(self.phase_counts) != set(PHASES):
+            raise PrerequisiteError("annotation population does not cover every phase")
+        missing_concepts = sorted(set(self.concepts) - set(self.concept_counts))
+        progression_qualified = not self.violations and not missing_concepts
+        report: dict[str, Any] = {
+            "schema": REPORT_SCHEMA,
+            "status": "qualified" if progression_qualified else "not_qualified",
+            "taxonomy_receipt_sha256": self.taxonomy["receipt_sha256"],
+            "documents": documents,
+            "ordered_document_identity_sha256": ordered_document_identity_sha256,
+            "annotations_sha256": annotations_sha256,
+            "phase_documents": {phase: self.phase_counts[phase] for phase in PHASES},
+            "concepts": {
+                concept_id: {
+                    "confident_documents": self.concept_counts[concept_id],
+                    "first_document_index": self.first_exposure.get(concept_id),
+                }
+                for concept_id in sorted(self.concepts)
+            },
+            "missing_concepts": missing_concepts,
+            "violations": self.violations,
+            "progression_qualified": progression_qualified,
+            "training_authorized": False,
+            "four_b_training_authorized": False,
+        }
+        if lineage is not None:
+            report["curriculum_lineage"] = lineage
+        report["receipt_sha256"] = canonical_sha256(report)
+        return report
+
+
+class _CanonicalListHasher:
+    def __init__(self) -> None:
+        self.digest = hashlib.sha256()
+        self.digest.update(b"[")
+        self.count = 0
+
+    def add(self, value: Any) -> None:
+        if self.count:
+            self.digest.update(b",")
+        self.digest.update(
+            json.dumps(
+                value,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        )
+        self.count += 1
+
+    def hexdigest(self) -> str:
+        copy = self.digest.copy()
+        copy.update(b"]")
+        return copy.hexdigest()
+
+
+def _open_regular(path: Path, label: str) -> tuple[int, os.stat_result]:
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    except OSError as error:
+        raise PrerequisiteError(f"{label} is missing or unsafe") from error
+    metadata = os.fstat(descriptor)
+    if not stat.S_ISREG(metadata.st_mode) or metadata.st_nlink != 1:
+        os.close(descriptor)
+        raise PrerequisiteError(f"{label} is missing or unsafe")
+    return descriptor, metadata
+
+
+def _atomic_write_report(path: Path, report: dict[str, Any]) -> None:
+    if not path.is_absolute() or path.exists() or path.is_symlink():
+        raise PrerequisiteError("progression output path is unsafe or already exists")
+    if not path.parent.is_dir() or path.parent.is_symlink():
+        raise PrerequisiteError("progression output parent is missing or unsafe")
+    encoded = (json.dumps(report, sort_keys=True) + "\n").encode()
+    temporary = path.parent / f".{path.name}.{uuid.uuid4().hex}.tmp"
+    descriptor = None
+    try:
+        descriptor = os.open(
+            temporary,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC,
+            0o600,
+        )
+        with os.fdopen(descriptor, "wb", closefd=False) as handle:
+            handle.write(encoded)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.fchmod(descriptor, 0o444)
+        os.close(descriptor)
+        descriptor = None
+        os.link(temporary, path)
+        temporary.unlink()
+        directory = os.open(path.parent, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except FileExistsError as error:
+        raise PrerequisiteError("progression output already exists") from error
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+        temporary.unlink(missing_ok=True)
+
+
+def analyze_curriculum_annotation_files(
+    taxonomy_path: Path,
+    curriculum_receipt_path: Path,
+    annotations_path: Path,
+    output_path: Path,
+    *,
+    workers: int = 1,
+) -> dict[str, Any]:
+    """Replay a qualified curriculum and its semantic annotations in lockstep."""
+
+    if (
+        not output_path.is_absolute()
+        or output_path.exists()
+        or output_path.is_symlink()
+    ):
+        raise PrerequisiteError("progression output path is unsafe or already exists")
+    taxonomy = _read_taxonomy(taxonomy_path)
+    curriculum = validate_curriculum(curriculum_receipt_path, workers=workers)
+    curriculum_output = Path(curriculum["output"]["path"])
+    curriculum_descriptor, curriculum_before = _open_regular(
+        curriculum_output, "curriculum output"
+    )
+    annotations_descriptor, annotations_before = _open_regular(
+        annotations_path, "curriculum annotations"
+    )
+    state = _ProgressionState(taxonomy)
+    identities = _CanonicalListHasher()
+    annotation_population = _CanonicalListHasher()
+    curriculum_file_hash = hashlib.sha256()
+    annotation_file_hash = hashlib.sha256()
+    curriculum_bytes = 0
+    annotation_bytes = 0
+    document_index = 0
+    try:
+        with (
+            os.fdopen(curriculum_descriptor, "rb", closefd=False) as curriculum_handle,
+            os.fdopen(annotations_descriptor, "rb", closefd=False) as annotation_handle,
+        ):
+            for phase in PHASES:
+                expected_documents = curriculum["phases"][phase]["documents"]
+                for _ in range(expected_documents):
+                    curriculum_line = curriculum_handle.readline()
+                    annotation_line = annotation_handle.readline()
+                    if not curriculum_line or not annotation_line:
+                        raise PrerequisiteError(
+                            "curriculum or annotation population ended early"
+                        )
+                    curriculum_bytes += len(curriculum_line)
+                    annotation_bytes += len(annotation_line)
+                    curriculum_file_hash.update(curriculum_line)
+                    annotation_file_hash.update(annotation_line)
+                    try:
+                        row = normalize_document(json.loads(curriculum_line))
+                        annotation = json.loads(annotation_line)
+                    except (
+                        UnicodeDecodeError,
+                        json.JSONDecodeError,
+                        RuntimeError,
+                    ) as error:
+                        raise PrerequisiteError(
+                            "curriculum or annotation row differs"
+                        ) from error
+                    identity = row["identity_sha256"]
+                    state.add(
+                        document_index,
+                        annotation,
+                        identity,
+                        expected_phase=phase,
+                    )
+                    identities.add(identity)
+                    annotation_population.add(annotation)
+                    document_index += 1
+            if curriculum_handle.readline() or annotation_handle.readline():
+                raise PrerequisiteError(
+                    "curriculum or annotation population has undeclared rows"
+                )
+        curriculum_after = os.fstat(curriculum_descriptor)
+        annotations_after = os.fstat(annotations_descriptor)
+    finally:
+        os.close(curriculum_descriptor)
+        os.close(annotations_descriptor)
+
+    if (
+        curriculum_before.st_dev,
+        curriculum_before.st_ino,
+        curriculum_before.st_nlink,
+        curriculum_before.st_size,
+        curriculum_before.st_mtime_ns,
+    ) != (
+        curriculum_after.st_dev,
+        curriculum_after.st_ino,
+        curriculum_after.st_nlink,
+        curriculum_after.st_size,
+        curriculum_after.st_mtime_ns,
+    ):
+        raise PrerequisiteError("curriculum output changed while reading")
+    if (
+        annotations_before.st_dev,
+        annotations_before.st_ino,
+        annotations_before.st_nlink,
+        annotations_before.st_size,
+        annotations_before.st_mtime_ns,
+    ) != (
+        annotations_after.st_dev,
+        annotations_after.st_ino,
+        annotations_after.st_nlink,
+        annotations_after.st_size,
+        annotations_after.st_mtime_ns,
+    ):
+        raise PrerequisiteError("curriculum annotations changed while reading")
+    if annotation_bytes != annotations_before.st_size:
+        raise PrerequisiteError("curriculum annotation size differs")
+    if (
+        curriculum_bytes != curriculum["output"]["bytes"]
+        or curriculum_file_hash.hexdigest() != curriculum["output"]["sha256"]
+    ):
+        raise PrerequisiteError("curriculum output lineage differs")
+    report = state.report(
+        documents=document_index,
+        ordered_document_identity_sha256=identities.hexdigest(),
+        annotations_sha256=annotation_population.hexdigest(),
+        lineage={
+            "curriculum_receipt_sha256": curriculum["receipt_sha256"],
+            "curriculum_output_bytes": curriculum_bytes,
+            "curriculum_output_sha256": curriculum_file_hash.hexdigest(),
+            "annotations_path": str(annotations_path.resolve()),
+            "annotations_bytes": annotation_bytes,
+            "annotations_file_sha256": annotation_file_hash.hexdigest(),
         },
-        "missing_concepts": missing_concepts,
-        "violations": violations,
-        "progression_qualified": progression_qualified,
-        "training_authorized": False,
-        "four_b_training_authorized": False,
-    }
-    report["receipt_sha256"] = canonical_sha256(report)
+    )
+    _atomic_write_report(output_path, report)
     return report
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("taxonomy", type=Path)
+    subparsers = parser.add_subparsers(dest="command", required=True)
+    validate = subparsers.add_parser("validate-taxonomy")
+    validate.add_argument("--taxonomy", type=Path, required=True)
+    audit = subparsers.add_parser("audit-curriculum")
+    audit.add_argument("--taxonomy", type=Path, required=True)
+    audit.add_argument("--curriculum-receipt", type=Path, required=True)
+    audit.add_argument("--annotations", type=Path, required=True)
+    audit.add_argument("--output", type=Path, required=True)
+    audit.add_argument("--workers", type=int, default=1)
     args = parser.parse_args()
-    payload = _read_taxonomy(args.taxonomy)
+    if args.command == "validate-taxonomy":
+        payload = _read_taxonomy(args.taxonomy)
+        result = {
+            "schema": payload["schema"],
+            "status": "validated_prospective",
+            "receipt_sha256": payload["receipt_sha256"],
+            "training_authorized": False,
+            "four_b_training_authorized": False,
+        }
+    else:
+        payload = analyze_curriculum_annotation_files(
+            args.taxonomy,
+            args.curriculum_receipt,
+            args.annotations,
+            args.output,
+            workers=args.workers,
+        )
+        result = {
+            "schema": payload["schema"],
+            "status": payload["status"],
+            "receipt_sha256": payload["receipt_sha256"],
+            "progression_qualified": payload["progression_qualified"],
+            "training_authorized": False,
+            "four_b_training_authorized": False,
+        }
     print(
         json.dumps(
-            {
-                "schema": payload["schema"],
-                "status": "validated_prospective",
-                "receipt_sha256": payload["receipt_sha256"],
-                "training_authorized": False,
-                "four_b_training_authorized": False,
-            },
+            result,
             sort_keys=True,
         )
     )

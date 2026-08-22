@@ -6,15 +6,22 @@ from pathlib import Path
 
 import pytest
 
+import sai.data.prerequisite as prerequisite
 from sai.data.prerequisite import (
     ANNOTATION_SCHEMA,
     TAXONOMY_SCHEMA,
     PrerequisiteError,
     _read_taxonomy,
+    analyze_curriculum_annotation_files,
     analyze_progression,
     validate_taxonomy_payload,
 )
-from sai.data.token_stream import canonical_sha256
+from sai.data.token_stream import (
+    ROW_SCHEMA,
+    canonical_sha256,
+    normalize_document,
+    sha256_file,
+)
 
 
 def _taxonomy() -> dict:
@@ -196,3 +203,86 @@ def test_taxonomy_file_rejects_symlink_and_hardlink(tmp_path: Path) -> None:
     hardlink.hardlink_to(target)
     with pytest.raises(PrerequisiteError, match="unsafe"):
         _read_taxonomy(hardlink)
+
+
+def test_streaming_audit_reopens_exact_curriculum_and_publishes_atomically(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxonomy_path = tmp_path / "taxonomy.json"
+    taxonomy_path.write_text(json.dumps(_taxonomy()) + "\n")
+    curriculum_path = tmp_path / "curriculum.jsonl"
+    rows = []
+    for index, domain in enumerate(("english", "code", "math", "science")):
+        rows.append(
+            normalize_document(
+                {
+                    "schema": ROW_SCHEMA,
+                    "text": f"curriculum document {index} " + "clear words " * 80,
+                    "source": {
+                        "dataset": "prerequisite-test",
+                        "row_id": str(index),
+                        "license": "CC0",
+                        "domain": domain,
+                    },
+                    "verification": {
+                        "benchmark_disjoint": True,
+                        "evidence_sha256": f"{index + 200:064x}",
+                    },
+                }
+            )
+        )
+    curriculum_path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    annotations, _ = _annotations()
+    for annotation, row in zip(annotations, rows, strict=True):
+        annotation["document_identity_sha256"] = row["identity_sha256"]
+    annotations_path = tmp_path / "annotations.jsonl"
+    annotations_path.write_text(
+        "".join(json.dumps(annotation) + "\n" for annotation in annotations)
+    )
+    curriculum_payload = {
+        "receipt_sha256": "a" * 64,
+        "output": {
+            "path": str(curriculum_path),
+            "bytes": curriculum_path.stat().st_size,
+            "sha256": sha256_file(curriculum_path),
+        },
+        "phases": {
+            phase: {"documents": 1}
+            for phase in ("grounding", "integration", "reasoning", "specialization")
+        },
+    }
+    monkeypatch.setattr(
+        prerequisite,
+        "validate_curriculum",
+        lambda receipt, workers=1: curriculum_payload,
+    )
+    output = tmp_path / "progression.json"
+    report = analyze_curriculum_annotation_files(
+        taxonomy_path,
+        tmp_path / "curriculum.receipt.json",
+        annotations_path,
+        output,
+        workers=2,
+    )
+    assert report["status"] == "qualified"
+    assert json.loads(output.read_text()) == report
+    assert output.stat().st_mode & 0o777 == 0o444
+    assert report["ordered_document_identity_sha256"] == canonical_sha256(
+        [row["identity_sha256"] for row in rows]
+    )
+    assert report["annotations_sha256"] == canonical_sha256(annotations)
+    assert report["curriculum_lineage"] == {
+        "curriculum_receipt_sha256": "a" * 64,
+        "curriculum_output_bytes": curriculum_path.stat().st_size,
+        "curriculum_output_sha256": sha256_file(curriculum_path),
+        "annotations_path": str(annotations_path.resolve()),
+        "annotations_bytes": annotations_path.stat().st_size,
+        "annotations_file_sha256": sha256_file(annotations_path),
+    }
+    with pytest.raises(PrerequisiteError, match="already exists"):
+        analyze_curriculum_annotation_files(
+            taxonomy_path,
+            tmp_path / "curriculum.receipt.json",
+            annotations_path,
+            output,
+        )
