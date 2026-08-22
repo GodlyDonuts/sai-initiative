@@ -88,7 +88,7 @@ def _metric(
     actual: torch.Tensor,
     expected: torch.Tensor,
     threshold: dict[str, float],
-) -> dict[str, float | bool]:
+) -> dict[str, Any]:
     if actual.shape != expected.shape or not actual.numel():
         raise FullModelFlaParityError("parity tensor geometry differs")
     actual_float = actual.detach().float()
@@ -97,6 +97,21 @@ def _metric(
     allowance = threshold["absolute"] + threshold["relative"] * expected_float.abs()
     max_absolute = float(difference.max().item())
     max_normalized = float((difference / allowance).max().item())
+    flattened_difference = difference.reshape(-1)
+    flattened_actual = actual_float.reshape(-1)
+    flattened_expected = expected_float.reshape(-1)
+    worst_flat_index = int(flattened_difference.argmax().item())
+    worst_index = list(
+        torch.unravel_index(
+            torch.tensor(worst_flat_index, device=difference.device),
+            difference.shape,
+        )
+    )
+    quantiles = torch.quantile(
+        flattened_difference,
+        torch.tensor((0.5, 0.95, 0.99), device=difference.device),
+    )
+    outside = difference > allowance
     finite = bool(torch.isfinite(actual_float).all().item()) and bool(
         torch.isfinite(expected_float).all().item()
     )
@@ -106,6 +121,18 @@ def _metric(
         "relative_tolerance": threshold["relative"],
         "max_absolute_error": max_absolute,
         "max_normalized_error": max_normalized,
+        "mean_absolute_error": float(difference.mean().item()),
+        "root_mean_square_error": float(difference.square().mean().sqrt().item()),
+        "absolute_error_quantiles": {
+            "p50": float(quantiles[0].item()),
+            "p95": float(quantiles[1].item()),
+            "p99": float(quantiles[2].item()),
+        },
+        "elements_compared": difference.numel(),
+        "elements_outside_tolerance": int(outside.sum().item()),
+        "worst_index": [int(index.item()) for index in worst_index],
+        "worst_actual": float(flattened_actual[worst_flat_index].item()),
+        "worst_expected": float(flattened_expected[worst_flat_index].item()),
         "passed": finite and max_normalized <= 1.0,
     }
 
