@@ -439,12 +439,14 @@ def _draft_from_response(
         isinstance(value, dict) and isinstance(value.get("concept_id"), str)
         for value in taught
     ):
-        overlap = sorted(set(assumed) & {value["concept_id"] for value in taught})
-        if overlap:
-            raise AuthoredModelReviewError(
-                "concept roles differ; remove taught concepts from "
-                "assumed_prior_concepts: " + ",".join(overlap)
-            )
+        taught_ids = {value["concept_id"] for value in taught}
+        payload["assumed_prior_concepts"] = [
+            concept_id
+            for concept_id in payload["assumed_prior_concepts"]
+            if concept_id not in taught_ids
+        ]
+        if not taught_ids and payload.get("admission_recommendation") == "admit":
+            payload["admission_recommendation"] = "revise"
     draft = {
         "schema": DRAFT_SCHEMA,
         "review_identity_sha256": source["review_identity_sha256"],

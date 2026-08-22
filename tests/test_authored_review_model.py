@@ -164,7 +164,7 @@ def test_response_maps_only_unique_whitespace_quote_to_exact_source() -> None:
         _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
 
 
-def test_response_reports_exact_taught_assumed_overlap() -> None:
+def test_response_resolves_taught_assumed_overlap_in_favor_of_evidence() -> None:
     inputs = _inputs()
     source = inputs.packet[0]
     concepts = {item["concept_id"] for item in inputs.concept_payload["concepts"]}
@@ -185,8 +185,27 @@ def test_response_reports_exact_taught_assumed_overlap() -> None:
         "defects": [],
         "admission_recommendation": "admit",
     }
-    with pytest.raises(AuthoredModelReviewError, match="code.collection"):
-        _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+    draft = _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+    assert draft["assumed_prior_concepts"] == []
+    assert [item["concept_id"] for item in draft["taught_concepts"]] == [
+        "code.collection"
+    ]
+
+
+def test_response_conservatively_revises_empty_taught_admission() -> None:
+    inputs = _inputs()
+    source = inputs.packet[0]
+    concepts = {item["concept_id"] for item in inputs.concept_payload["concepts"]}
+    payload = {
+        "instructional_quality_ppm": 1_000_000,
+        "assumed_prior_concepts": [],
+        "taught_concepts": [],
+        "defects": [],
+        "admission_recommendation": "admit",
+    }
+    draft = _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+    assert draft["admission_recommendation"] == "revise"
+    assert draft["taught_concepts"] == []
 
 
 def test_input_ids_accepts_exact_tensor_or_input_only_mapping() -> None:
