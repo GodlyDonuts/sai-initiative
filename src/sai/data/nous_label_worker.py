@@ -90,7 +90,6 @@ def _request_body(candidate: dict[str, Any], slot: int, model: str) -> dict[str,
         "temperature": 0,
         "max_tokens": 1200,
         "stream": False,
-        "response_format": {"type": "json_object"},
     }
 
 

@@ -89,6 +89,10 @@ Initial execution ladder:
 Physical worker count is increased only while completed-row throughput rises and 429,
 timeout, malformed-JSON, and provider-error rates remain within the frozen operational
 budget. Retries preserve the same request identity and never become extra votes.
+The live `stealth/ox-alpha` calibration showed that the Portal route must not receive
+the optional OpenAI `response_format` extension: it returned empty content under
+concurrency. JSON conformance is therefore enforced by the explicit prompt template
+and the local strict validator, with malformed output retried as the same vote.
 
 ## Evidence and failure behavior
 
