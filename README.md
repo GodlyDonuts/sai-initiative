@@ -80,13 +80,25 @@ benchmark evidence selects an architecture.
   The first three
   curriculum boundaries occur exactly after optimizer updates 191, 429, and
   715, so no gradient accumulation window mixes adjacent difficulty phases.
+- Split construction has atomically published all `2,125,835` admitted
+  identities exactly once: `2,104,726` training documents in
+  `9,375,399,692` bytes (SHA-256
+  `6a43417411f886336632f2ad1abbf539504043f28180cdc4a6fa792e7de6241b`)
+  and `21,109` development documents in `94,204,028` bytes (SHA-256
+  `56ebbf200bae4ce21c454bd80e91328ab9a486798c83a0b729477f57e0122289`).
+  Its qualified receipt self-hash is
+  `0580b683427ecae5943cc0a706e9fb31686c46051283b154e1aebc09b78eb0aa`;
+  job `770039` is still performing the
+  independent full replay, so dependent work remains held.
 - A downstream audit caught a validation confound before allocation: freezing
   the first 1,024 sequences of the phase-ordered development file would test
   almost only grounding data. The development freezer now requires exactly 256
   sequences from each of grounding, integration, reasoning, and specialization
-  and binds those four token/byte strata in the stream receipt. The original
-  pending development/launcher jobs will be replaced before they can run; the
-  independent training-stream and exact-order-control work remains reusable.
+  and binds those four token/byte strata in the stream receipt. Original jobs
+  `770040` and `770050` were canceled at zero elapsed with no node, logs, or
+  outputs. Corrected immutable runtime `6825dd8` is staged in jobs `770086`
+  (development) and `770087` (launcher); the independent training-stream and
+  exact-order-control jobs `770041` and `770042` remain reusable.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
 
