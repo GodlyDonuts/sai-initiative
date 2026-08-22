@@ -118,7 +118,8 @@ tokenizer_root = pathlib.Path(sys.argv[6])
 dispatch = json.loads(dispatch_path.read_text())
 assert set(dispatch) == {
     "schema", "status", "source_commit", "training_stream_identity_sha256",
-    "development_stream_identity_sha256", "log_root", "families", "job_ids",
+    "development_stream_identity_sha256", "log_root", "families",
+    "canary_job_ids", "full_job_ids", "job_ids",
     "gpu_jobs_submitted", "maximum_concurrent_gpu_jobs", "gpus_per_job",
     "requeue", "training_sequences", "sequence_length", "training_tokens",
     "sequences_per_update", "optimizer_steps", "development_sequences",
@@ -130,7 +131,8 @@ assert dispatch["schema"] == "sai-100m-250m-token-screen-dispatch-v1"
 assert dispatch["status"] == "submitted"
 assert dispatch["source_commit"] == expected_commit
 assert dispatch["families"] == families
-assert dispatch["gpu_jobs_submitted"] == 3
+assert dispatch["gpu_jobs_submitted"] == 6
+assert dispatch["maximum_concurrent_gpu_jobs"] == 3
 assert dispatch["gpus_per_job"] == 1
 assert dispatch["requeue"] is False
 assert dispatch["training_sequences"] == 122_070
@@ -141,6 +143,12 @@ assert dispatch["four_b_training_authorized"] is False
 job_ids = dispatch["job_ids"]
 assert len(job_ids) == 3 and len(set(job_ids)) == 3
 assert all(isinstance(job_id, int) and job_id > 0 for job_id in job_ids)
+canary_job_ids = dispatch["canary_job_ids"]
+full_job_ids = dispatch["full_job_ids"]
+assert full_job_ids == job_ids
+assert len(canary_job_ids) == 3 and len(set(canary_job_ids)) == 3
+assert all(isinstance(job_id, int) and job_id > 0 for job_id in canary_job_ids)
+assert set(canary_job_ids).isdisjoint(full_job_ids)
 
 stream = validate_frozen_stream(training_stream_path, verify_sources=True)
 tokenizer_sha256 = sha256_tree(tokenizer_root)
@@ -165,11 +173,15 @@ print(sha256_file(dispatch_path))
 print(stream["ordered_stream_identity_sha256"])
 print(tokenizer_sha256)
 print(sha256_file(population_path))
-for family, job_id in zip(families, job_ids, strict=True):
+for family, canary_job_id, job_id in zip(
+    families, canary_job_ids, job_ids, strict=True
+):
     result = screen_root / f"{family}.result.json"
     checkpoint = screen_root / f"{family}.checkpoint.pt"
     manifest = pathlib.Path(f"{checkpoint}.manifest.json")
-    print(f"{family}\t{job_id}\t{result}\t{checkpoint}\t{manifest}")
+    print(
+        f"{family}\t{canary_job_id}\t{job_id}\t{result}\t{checkpoint}\t{manifest}"
+    )
 PY
 )"
 
@@ -188,6 +200,7 @@ mkdir "$OUTPUT_ROOT"
 submitted=()
 families=()
 training_jobs=()
+canary_jobs=()
 family_launchers=()
 
 cancel_partial_graph() {
@@ -201,8 +214,9 @@ cancel_partial_graph() {
 trap cancel_partial_graph EXIT
 
 for row in "${validated[@]:4}"; do
-  IFS=$'\t' read -r family training_job result checkpoint manifest <<< "$row"
+  IFS=$'\t' read -r family canary_job training_job result checkpoint manifest <<< "$row"
   case "$family" in gated_gqa|gdn_hybrid|kda_mla_hybrid) ;; *) exit 2 ;; esac
+  [[ "$canary_job" =~ ^[0-9]+$ ]]
   [[ "$training_job" =~ ^[0-9]+$ ]]
   family_root="$OUTPUT_ROOT/$family"
   mkdir "$family_root"
@@ -219,6 +233,7 @@ for row in "${validated[@]:4}"; do
   [[ "$launcher_id" =~ ^[0-9]+$ ]]
   submitted+=("$launcher_id")
   families+=("$family")
+  canary_jobs+=("$canary_job")
   training_jobs+=("$training_job")
   family_launchers+=("$launcher_id")
 done
@@ -243,7 +258,8 @@ submitted+=("$comparison_stage_id")
   "$POPULATION_AGGREGATE" "$POPULATION_AGGREGATE_SHA256" \
   "$TRAINING_STREAM" "$TRAINING_STREAM_IDENTITY" "$TOKENIZER_ROOT" \
   "$TOKENIZER_SHA256" "$OUTPUT_ROOT" "$comparison_stage_id" \
-  "${families[*]}" "${training_jobs[*]}" "${family_launchers[*]}" <<'PY'
+  "${families[*]}" "${canary_jobs[*]}" "${training_jobs[*]}" \
+  "${family_launchers[*]}" <<'PY'
 import hashlib
 import json
 import os
@@ -261,10 +277,11 @@ def canonical_sha256(value):
 values = sys.argv[1:]
 output = pathlib.Path(values[0])
 families = values[15].split()
-training_jobs = [int(value) for value in values[16].split()]
-launchers = [int(value) for value in values[17].split()]
+canary_jobs = [int(value) for value in values[16].split()]
+training_jobs = [int(value) for value in values[17].split()]
+launchers = [int(value) for value in values[18].split()]
 assert families == ["gated_gqa", "gdn_hybrid", "kda_mla_hybrid"]
-assert len(training_jobs) == len(launchers) == 3
+assert len(canary_jobs) == len(training_jobs) == len(launchers) == 3
 payload = {
     "schema": "sai-100m-250m-development-mc-stage-v1",
     "status": "submitted",
@@ -284,12 +301,13 @@ payload = {
     "families": [
         {
             "family": family,
+            "canary_job_id": canary_job,
             "training_job_id": training_job,
             "evaluation_launcher_job_id": launcher,
             "benchmarks": ["mmlu_pro", "musr"],
         }
-        for family, training_job, launcher in zip(
-            families, training_jobs, launchers, strict=True
+        for family, canary_job, training_job, launcher in zip(
+            families, canary_jobs, training_jobs, launchers, strict=True
         )
     ],
     "comparison_stage_job_id": int(values[14]),

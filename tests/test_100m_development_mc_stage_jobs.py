@@ -16,6 +16,10 @@ def test_100m_stage_submits_three_family_launchers_and_one_comparison_stage() ->
     assert "SCREEN_SOURCE_COMMIT" in job
     assert 'families = ["gated_gqa", "gdn_hybrid", "kda_mla_hybrid"]' in job
     assert 'dispatch["training_tokens"] == 249_999_360' in job
+    assert 'dispatch["gpu_jobs_submitted"] == 6' in job
+    assert 'dispatch["maximum_concurrent_gpu_jobs"] == 3' in job
+    assert "assert full_job_ids == job_ids" in job
+    assert '"canary_job_id": canary_job' in job
     assert job.count("sbatch --parsable") == 2
     assert 'for row in "${validated[@]:4}"' in job
     assert '--dependency="afterok:$training_job"' in job

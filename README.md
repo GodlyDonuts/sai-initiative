@@ -141,8 +141,11 @@ benchmark evidence selects an architecture.
   reference GQA baseline over the same 249,999,360-token prefix and labels it
   non-tournament; `three_family` fails before output creation or submission
   unless an exact full-DeltaMixer receipt is hash-pinned and independently
-  revalidated by both launcher and GPU job. This neither selects a mixer in
-  advance nor authorizes 4B. Once a three-family screen is qualified, the
+  revalidated by both launcher and GPU job. Every selected family now first
+  executes an exact B=8, T=2,048, one-update H100 canary; its longer screen is
+  released only by that canary's successful completion, and both job identities
+  are bound downstream. This neither selects a mixer in advance nor authorizes
+  4B. Once a three-family screen is qualified, the
   real-benchmark continuation is
   executable rather than aspirational: after those three checkpoint jobs and
   the refreshed decontamination population close, a CPU-only stager submits
@@ -180,9 +183,12 @@ benchmark evidence selects an architecture.
   sparse maximum-element outliers, so neither threshold relaxation nor a
   mapping-bug claim is justified. Commit `e27a8d723a19cea3c0790568667dee06e5e67b15`
   preserves the failed evidence and gates hybrid screens on a future qualified
-  receipt. A family-separated v2 primitive gate is being prepared with the
-  upstream FLA forward/backward ratio limits and fresh held-out seeds; GQA-only
-  reference training remains independently admissible.
+  receipt. The family-separated v2 primitive gate is now implemented with the
+  upstream FLA forward/backward ratio limits and prospectively frozen seeds
+  `20260824–20260826`; calibration seeds cannot be reused, every tensor/case is
+  a veto, and GDN/KDA receive separate statuses. It runs no optimizer and does
+  not authorize training. GQA-only reference training remains independently
+  admissible behind its exact-geometry canary.
 - The exact pretrained capable-host control is now restored at
   `Qwen/Qwen3.5-0.8B@2fc06364715b967f1860aea9cf38778875588b17` without using a
   GPU. CPU attempts `769141` and `769144` failed before publication on a Bash

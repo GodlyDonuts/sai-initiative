@@ -224,19 +224,29 @@ def test_250m_token_launcher_is_matched_independent_and_fail_closed() -> None:
     assert "FULL_MODEL_PARITY_SHA256" in launcher
     assert 'receipt["status"] == "production_cuda_qualified"' in launcher
     assert 'for family in "${families[@]}"' in launcher
-    assert '"gpu_jobs_submitted": len(sys.argv[10].split())' in launcher
-    assert '"maximum_concurrent_gpu_jobs": len(sys.argv[10].split())' in launcher
+    assert (
+        '"canary_job_ids": [int(value) for value in sys.argv[10].split()]' in launcher
+    )
+    assert '"full_job_ids": [int(value) for value in sys.argv[11].split()]' in launcher
+    assert (
+        '"gpu_jobs_submitted": len(sys.argv[10].split()) + len(sys.argv[11].split())'
+        in launcher
+    )
+    assert '"maximum_concurrent_gpu_jobs": len(sys.argv[11].split())' in launcher
     assert '"training_tokens": 249_999_360' in launcher
     assert '"training_sequences": 122_070' in launcher
     assert '"optimizer_steps": 477' in launcher
     assert 'train["prefix_utf8_bytes"]["122070"] > 0' in launcher
+    assert 'train["prefix_utf8_bytes"]["256"] > 0' in launcher
     assert "TRAINING_SEQUENCES=122070" in launcher
     assert "OPTIMIZER_STEPS=477" in launcher
     assert "DEVELOPMENT_SEQUENCES=1024" in launcher
     assert "SEED=20260821" in launcher
+    assert "MECHANICS_ONLY=1" in launcher
+    assert "TRAINING_SEQUENCES=256" in launcher
+    assert '--dependency="afterok:$canary_job_id"' in launcher
     assert "trap cancel_partial_graph ERR" in launcher
     assert "scancel" in launcher
     assert "--array" not in launcher
-    assert "MECHANICS_ONLY" not in launcher
     assert "4B" not in launcher
     assert "retry" not in launcher.lower()

@@ -108,6 +108,7 @@ assert train["sequence_length"] == 2_048
 assert development["sequence_length"] == 2_048
 assert train["sequences"] >= 122_070
 assert development["sequences"] >= 1_024
+assert train["prefix_utf8_bytes"]["256"] > 0
 assert train["prefix_utf8_bytes"]["122070"] > 0
 assert development["prefix_utf8_bytes"]["1024"] > 0
 assert train["tokenizer_identity_sha256"] == development["tokenizer_identity_sha256"]
@@ -122,11 +123,12 @@ test "${#development_identity}" = 64
 test "$train_identity" != "$development_identity"
 
 mkdir "$OUTPUT_ROOT"
-job_ids=()
+canary_job_ids=()
+full_job_ids=()
 
 cancel_partial_graph() {
   local job_id
-  for job_id in "${job_ids[@]}"; do
+  for job_id in "${canary_job_ids[@]}" "${full_job_ids[@]}"; do
     if [[ "$job_id" =~ ^[0-9]+$ ]]; then
       scancel "$job_id" || true
     fi
@@ -135,28 +137,45 @@ cancel_partial_graph() {
 trap cancel_partial_graph ERR
 
 for family in "${families[@]}"; do
+  canary_checkpoint="$OUTPUT_ROOT/$family.canary.checkpoint.pt"
+  canary_output="$OUTPUT_ROOT/$family.canary.result.json"
   checkpoint="$OUTPUT_ROOT/$family.checkpoint.pt"
   output="$OUTPUT_ROOT/$family.result.json"
+  test ! -e "$canary_checkpoint"
+  test ! -e "$canary_output"
   test ! -e "$checkpoint"
   test ! -e "$output"
-  job_export="SAI_ROOT=$SAI_ROOT,EXPECTED_COMMIT=$EXPECTED_COMMIT,PYTHON=$PYTHON,FLA_ROOT=$FLA_ROOT,GEOMETRY=$GEOMETRY,FAMILY=$family,TRAIN_STREAM=$TRAIN_STREAM,TRAIN_IDENTITY=$train_identity,DEVELOPMENT_STREAM=$DEVELOPMENT_STREAM,DEVELOPMENT_IDENTITY=$development_identity,DEVELOPMENT_SEQUENCES=1024,OPTIMIZER_STEPS=477,TRAINING_SEQUENCES=122070,SEQUENCES_PER_UPDATE=256,BATCH_SIZE=8,DEVELOPMENT_BATCH_SIZE=8,CHECKPOINT_INTERVAL=10,SEED=20260821,ENVIRONMENT_RECEIPT=$ENVIRONMENT_RECEIPT,CHECKPOINT=$checkpoint,OUTPUT=$output"
+  base_export="SAI_ROOT=$SAI_ROOT,EXPECTED_COMMIT=$EXPECTED_COMMIT,PYTHON=$PYTHON,FLA_ROOT=$FLA_ROOT,GEOMETRY=$GEOMETRY,FAMILY=$family,TRAIN_STREAM=$TRAIN_STREAM,TRAIN_IDENTITY=$train_identity,DEVELOPMENT_STREAM=$DEVELOPMENT_STREAM,DEVELOPMENT_IDENTITY=$development_identity,SEQUENCES_PER_UPDATE=256,BATCH_SIZE=8,SEED=20260821,ENVIRONMENT_RECEIPT=$ENVIRONMENT_RECEIPT"
   if [[ "$family" != gated_gqa ]]; then
-    job_export+=",FULL_MODEL_PARITY_RECEIPT=$FULL_MODEL_PARITY_RECEIPT,FULL_MODEL_PARITY_SHA256=$FULL_MODEL_PARITY_SHA256"
+    base_export+=",FULL_MODEL_PARITY_RECEIPT=$FULL_MODEL_PARITY_RECEIPT,FULL_MODEL_PARITY_SHA256=$FULL_MODEL_PARITY_SHA256"
   fi
-  job_id="$(
+  canary_job_id="$(
     env -u SLURM_OVERLAP -u SLURM_WHOLE sbatch --parsable \
       --chdir="$SAI_ROOT" \
-      --output="$LOG_ROOT/sai_100m_250m_%j.out" \
-      --error="$LOG_ROOT/sai_100m_250m_%j.err" \
-      --export="$job_export" \
+      --time=00:45:00 \
+      --output="$LOG_ROOT/sai_100m_250m_canary_%j.out" \
+      --error="$LOG_ROOT/sai_100m_250m_canary_%j.err" \
+      --export="$base_export,DEVELOPMENT_SEQUENCES=1,OPTIMIZER_STEPS=1,TRAINING_SEQUENCES=256,DEVELOPMENT_BATCH_SIZE=1,CHECKPOINT_INTERVAL=1,MECHANICS_ONLY=1,CHECKPOINT=$canary_checkpoint,OUTPUT=$canary_output" \
       "$SAI_ROOT/jobs/sai-short-screen-single-h100.sbatch"
   )"
-  [[ "$job_id" =~ ^[0-9]+$ ]]
-  job_ids+=("$job_id")
+  [[ "$canary_job_id" =~ ^[0-9]+$ ]]
+  canary_job_ids+=("$canary_job_id")
+  full_job_id="$(
+    env -u SLURM_OVERLAP -u SLURM_WHOLE sbatch --parsable \
+      --chdir="$SAI_ROOT" \
+      --dependency="afterok:$canary_job_id" \
+      --kill-on-invalid-dep=yes \
+      --output="$LOG_ROOT/sai_100m_250m_%j.out" \
+      --error="$LOG_ROOT/sai_100m_250m_%j.err" \
+      --export="$base_export,DEVELOPMENT_SEQUENCES=1024,OPTIMIZER_STEPS=477,TRAINING_SEQUENCES=122070,DEVELOPMENT_BATCH_SIZE=8,CHECKPOINT_INTERVAL=10,CHECKPOINT=$checkpoint,OUTPUT=$output" \
+      "$SAI_ROOT/jobs/sai-short-screen-single-h100.sbatch"
+  )"
+  [[ "$full_job_id" =~ ^[0-9]+$ ]]
+  full_job_ids+=("$full_job_id")
 done
 
 dispatch="$OUTPUT_ROOT/dispatch.json"
-"$PYTHON" -P -s -B - "$dispatch" "$EXPECTED_COMMIT" "$train_identity" "$development_identity" "$LOG_ROOT" "$SCREEN_SCOPE" "$comparison_class" "$purpose" "${families[*]}" "${job_ids[*]}" <<'PY'
+"$PYTHON" -P -s -B - "$dispatch" "$EXPECTED_COMMIT" "$train_identity" "$development_identity" "$LOG_ROOT" "$SCREEN_SCOPE" "$comparison_class" "$purpose" "${families[*]}" "${canary_job_ids[*]}" "${full_job_ids[*]}" <<'PY'
 import json
 import os
 import pathlib
@@ -174,9 +193,11 @@ payload = {
     "comparison_class": sys.argv[7],
     "purpose": sys.argv[8],
     "families": sys.argv[9].split(),
-    "job_ids": [int(value) for value in sys.argv[10].split()],
-    "gpu_jobs_submitted": len(sys.argv[10].split()),
-    "maximum_concurrent_gpu_jobs": len(sys.argv[10].split()),
+    "canary_job_ids": [int(value) for value in sys.argv[10].split()],
+    "full_job_ids": [int(value) for value in sys.argv[11].split()],
+    "job_ids": [int(value) for value in sys.argv[11].split()],
+    "gpu_jobs_submitted": len(sys.argv[10].split()) + len(sys.argv[11].split()),
+    "maximum_concurrent_gpu_jobs": len(sys.argv[11].split()),
     "gpus_per_job": 1,
     "requeue": False,
     "training_sequences": 122_070,
@@ -197,4 +218,4 @@ with os.fdopen(descriptor, "wb") as handle:
 PY
 
 trap - ERR
-printf '%s\n' "jobs=${job_ids[*]}"
+printf '%s\n' "canary=${canary_job_ids[*]} full=${full_job_ids[*]}"
