@@ -191,6 +191,13 @@ benchmark evidence selects an architecture.
   both training and 4B authorization false. Independent blinded annotation and
   disagreement review remain mandatory before this sample can qualify the
   semantic taxonomy or any training curriculum.
+- `sai-build-prerequisite-blind-review` closes the remaining label-leakage
+  boundary before that annotation begins. It shuffles the 120 rows by a salted
+  review identity and exposes only immutable text and the requested evidence
+  format. Curriculum phase, surface band, source identity, and original order
+  are held in a separately sealed key. Reviewers therefore cannot infer the
+  answer from the schedule they are auditing, and no packet can authorize
+  training or 4B scaling.
 - Source-disjoint split `770039` is now running from that independently
   qualified receipt with four ordered workers across both receipt validation
   and exact split reconstruction, plus a four-hour fail-closed wall limit.

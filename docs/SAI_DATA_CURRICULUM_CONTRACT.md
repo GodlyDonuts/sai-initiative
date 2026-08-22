@@ -386,6 +386,16 @@ the 120-row selection from only the development artifact. This avoids replaying
 the 9.5 GB training curriculum several times merely to form a review packet and
 prevents the reviewed sample from being part of optimizer training. The output
 remains unreviewed and authorizes no training.
+`sai-build-prerequisite-blind-review` then converts that frozen population into
+a deterministic review packet ordered by salted review identity. The packet
+contains only the review identity, exact text, text hash, and requested evidence
+format. It does not reveal curriculum phase, surface band, source identity, or
+original document order. Those fields remain in a separately hashed hidden key
+that is not distributed until both annotation files are frozen. This prevents
+reviewers from using the curriculum's proposed label as evidence for the very
+semantic progression they are supposed to audit. The builder reopens the full
+population receipt, publishes all three outputs create-only, and keeps training
+and 4B authorization false.
 `sai-review-prerequisite-audit` then compares the prospective annotator against
 an independently identified reviewer on those exact 120 documents. Both sides
 must provide canonical concept sets with nonempty evidence spans whose hashes
