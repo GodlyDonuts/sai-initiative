@@ -41,6 +41,12 @@ decontamination, quality filtering, and mixture control than its predecessor.
 Primary source:
 [Ai2, “Olmo 3: Charting a path through the model flow”](https://allenai.org/blog/olmo3).
 
+The current public identities resolved on 2026-08-22 are Dolma 3 150B Mix
+revision `afa92bfb22366821c5e6cd427cdd036b34b713ef`, Dolmino 100B Mix revision
+`f23942ae8a8114af6e992efe8188ce8c531acd16`, and reconstruction-code revision
+`1a9daced81670e0fa768e47fbed32af6694a1865`. These freeze candidates for
+inspection; they do not admit their bytes.
+
 ### DataComp-LM
 
 DataComp-LM ran controlled dataset experiments from roughly 400M through 7B
