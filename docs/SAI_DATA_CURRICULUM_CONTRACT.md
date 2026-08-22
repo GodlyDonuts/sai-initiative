@@ -89,3 +89,13 @@ and UTF-8-byte-normalized NLL, shows nonnegative source-disjoint aggregate
 capability, and introduces no declared domain regression. Tokenizer choice,
 content filtering, and ordering must be tested as separate factors instead of
 being bundled into an uninterpretable win or loss.
+
+The implemented primary control permutes the exact packed 2,048-token sequence
+records after the curriculum stream is frozen. Each record includes both token
+IDs and its document-boundary bitset, so this construction preserves the exact
+token/target/mask multiset and changes only sequence presentation order. The
+control receipt binds the parent stream, frozen seed `2026082201`, exact
+permutation, fixed-point count, and a sorted sequence-record multiset digest;
+validation replays every output record against its declared parent index. This
+is stronger than independently shuffling documents, which could change which
+tail tokens survive a fixed-token cutoff.
