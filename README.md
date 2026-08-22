@@ -189,6 +189,20 @@ benchmark evidence selects an architecture.
   a veto, and GDN/KDA receive separate statuses. It runs no optimizer and does
   not authorize training. GQA-only reference training remains independently
   admissible behind its exact-geometry canary.
+  The three immutable v2 executions `769716`, `769718`, and `769720` then closed
+  on those exact held-out seeds. Every direct GDN/KDA recurrence forward and
+  backward metric passed, but every seed failed the shared BF16 causal-
+  convolution gate: observed ratios ranged from `0.00137` to `0.00560` against
+  the declared `0.001` limit. Receipt file hashes are respectively
+  `2d022fe508d68327a94f62f79bdf1be0b1eda4957fc14dac8a3822e81b65992e`,
+  `005f6c880d44dc23cb018d794d266bf86d7c75ada344a1e5169a247468a1284b`,
+  and `fa915883f6009fdef430967470626d9b084b365ee49ea45327004e77fed861eb`.
+  These receipts remain permanent FAILs. A source audit also established that
+  upstream FLA's Torch-reference `0.001` convolution tests cover FP32/FP16, not
+  BF16, while its relevant varlen check compares two executions of the same FLA
+  operator. Therefore v2 does not establish a Sai mapping failure either: its
+  claimed BF16 threshold grounding is invalid and must be replaced
+  prospectively with fresh seeds, never relaxed or re-signed post hoc.
 - The exact pretrained capable-host control is now restored at
   `Qwen/Qwen3.5-0.8B@2fc06364715b967f1860aea9cf38778875588b17` without using a
   GPU. CPU attempts `769141` and `769144` failed before publication on a Bash
