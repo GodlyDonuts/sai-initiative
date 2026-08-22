@@ -544,6 +544,14 @@ benchmark evidence selects an architecture.
   `770787` never ran. This ends parser iteration rather than weakening the
   evidence contract; the packet now proceeds only through the frozen two-human
   review path.
+  `sai-build-authored-review-workspace` now makes that path operational through
+  a self-contained offline form. It exposes only salted review identities,
+  exact chapter text, the candidate vocabulary, and frozen evidence rules;
+  requires every row to be explicitly reviewed; supports packet-bound local
+  progress export/import; and emits exactly the existing compiler's JSONL
+  schema. It performs no network request and includes neither the hidden key nor
+  provisional phase labels. Its receipt still records human review, training,
+  and 4B authorization as false.
   Exact failure and recovery evidence is in
   `docs/SAI_AUTHORED_MODEL_REVIEW_RECOVERY_20260822.md`. The final adjudicator now
   accepts neither arbitrary identity strings nor model-review identities: each
