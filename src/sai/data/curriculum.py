@@ -598,7 +598,13 @@ def build_curriculum(
         shutil.rmtree(work, ignore_errors=True)
 
 
-def validate_curriculum(receipt: Path) -> dict[str, Any]:
+def validate_curriculum(receipt: Path, *, workers: int = 1) -> dict[str, Any]:
+    if (
+        isinstance(workers, bool)
+        or not isinstance(workers, int)
+        or not 1 <= workers <= 64
+    ):
+        raise CurriculumError("curriculum validation worker geometry differs")
     if not receipt.is_file() or receipt.is_symlink():
         raise CurriculumError("curriculum receipt is missing or unsafe")
     payload = json.loads(receipt.read_text())
@@ -687,61 +693,86 @@ def validate_curriculum(receipt: Path) -> dict[str, Any]:
     total_sum = 0
     total_count = 0
     replayed_phases: dict[str, dict[str, Any]] = {}
-    with output.open() as handle:
-        for phase_index, phase in enumerate(PHASES):
-            declared = payload.get("phases", {}).get(phase)
-            if (
-                not isinstance(declared, dict)
-                or declared.get("index") != phase_index
-                or isinstance(declared.get("documents"), bool)
-                or not isinstance(declared.get("documents"), int)
-                or declared["documents"] <= 0
-            ):
-                raise CurriculumError("curriculum phase evidence differs")
-            by_band: Counter[str] = Counter()
-            difficulty_sum = 0.0
-            phase_identity = hashlib.sha256()
-            for _ in range(declared["documents"]):
-                line = handle.readline()
-                if not line:
-                    raise CurriculumError("curriculum output ended early")
-                try:
-                    row = normalize_document(json.loads(line))
-                except (json.JSONDecodeError, RuntimeError) as error:
-                    raise CurriculumError("curriculum output row differs") from error
-                identity = row["identity_sha256"]
-                if identity in seen_identities:
-                    raise CurriculumError("curriculum identity is duplicated")
-                seen_identities.add(identity)
-                signals = document_signals(row["text"])
-                if not signals["quality_accepted"]:
-                    raise CurriculumError("curriculum output failed quality replay")
-                sketch = _near_duplicate_sketch(row["text"])
-                if _is_near_duplicate(sketch, sketches, sketch_index):
-                    raise CurriculumError("curriculum near duplicate replay differs")
-                _add_sketch(sketch, sketches, sketch_index)
-                band = signals["band"]
-                by_band[band] += 1
-                total_by_band[band] += 1
-                difficulty_sum += float(signals["difficulty"])
-                identity_bytes = bytes.fromhex(identity)
-                phase_identity.update(identity_bytes)
-                identity_integer = int.from_bytes(identity_bytes, "big")
-                total_xor ^= identity_integer
-                total_sum = (total_sum + identity_integer) % _U256_MODULUS
-                total_count += 1
-            replayed = {
-                "index": phase_index,
-                "documents": declared["documents"],
-                "by_band": {band: by_band[band] for band in BANDS},
-                "mean_difficulty": difficulty_sum / declared["documents"],
-                "identity_sha256": phase_identity.hexdigest(),
-            }
-            if replayed != declared:
-                raise CurriculumError("curriculum phase replay differs")
-            replayed_phases[phase] = replayed
-        if handle.read(1):
-            raise CurriculumError("curriculum output has undeclared rows")
+    pool = None
+    try:
+        with output.open() as handle:
+            if workers == 1:
+                candidates = map(_score_candidate, handle)
+            else:
+                if os.name != "posix":
+                    raise CurriculumError(
+                        "parallel curriculum validation requires a POSIX fork runtime"
+                    )
+                pool = multiprocessing.get_context("fork").Pool(processes=workers)
+                candidates = pool.imap(_score_candidate, handle, chunksize=64)
+            for phase_index, phase in enumerate(PHASES):
+                declared = payload.get("phases", {}).get(phase)
+                if (
+                    not isinstance(declared, dict)
+                    or declared.get("index") != phase_index
+                    or isinstance(declared.get("documents"), bool)
+                    or not isinstance(declared.get("documents"), int)
+                    or declared["documents"] <= 0
+                ):
+                    raise CurriculumError("curriculum phase evidence differs")
+                by_band: Counter[str] = Counter()
+                difficulty_sum = 0.0
+                phase_identity = hashlib.sha256()
+                for _ in range(declared["documents"]):
+                    try:
+                        row, signals, sketch = next(candidates)
+                    except StopIteration as error:
+                        raise CurriculumError(
+                            "curriculum output ended early"
+                        ) from error
+                    if row is None or signals is None or sketch is None:
+                        raise CurriculumError("curriculum output row differs")
+                    identity = row["identity_sha256"]
+                    if identity in seen_identities:
+                        raise CurriculumError("curriculum identity is duplicated")
+                    seen_identities.add(identity)
+                    if not signals["quality_accepted"]:
+                        raise CurriculumError("curriculum output failed quality replay")
+                    if _is_near_duplicate(sketch, sketches, sketch_index):
+                        raise CurriculumError(
+                            "curriculum near duplicate replay differs"
+                        )
+                    _add_sketch(sketch, sketches, sketch_index)
+                    band = signals["band"]
+                    by_band[band] += 1
+                    total_by_band[band] += 1
+                    difficulty_sum += float(signals["difficulty"])
+                    identity_bytes = bytes.fromhex(identity)
+                    phase_identity.update(identity_bytes)
+                    identity_integer = int.from_bytes(identity_bytes, "big")
+                    total_xor ^= identity_integer
+                    total_sum = (total_sum + identity_integer) % _U256_MODULUS
+                    total_count += 1
+                replayed = {
+                    "index": phase_index,
+                    "documents": declared["documents"],
+                    "by_band": {band: by_band[band] for band in BANDS},
+                    "mean_difficulty": difficulty_sum / declared["documents"],
+                    "identity_sha256": phase_identity.hexdigest(),
+                }
+                if replayed != declared:
+                    raise CurriculumError("curriculum phase replay differs")
+                replayed_phases[phase] = replayed
+            try:
+                next(candidates)
+            except StopIteration:
+                pass
+            else:
+                raise CurriculumError("curriculum output has undeclared rows")
+        if pool is not None:
+            pool.close()
+            pool.join()
+            pool = None
+    except BaseException:
+        if pool is not None:
+            pool.terminate()
+            pool.join()
+        raise
     fingerprint = _identity_fingerprint(
         count=total_count, xor_value=total_xor, sum_value=total_sum
     )
@@ -770,6 +801,7 @@ def main() -> None:
     build.add_argument("--workers", type=int, default=1)
     validate = subparsers.add_parser("validate")
     validate.add_argument("--receipt", type=Path, required=True)
+    validate.add_argument("--workers", type=int, default=1)
     args = parser.parse_args()
     if args.command == "build":
         payload = build_curriculum(
@@ -781,7 +813,7 @@ def main() -> None:
             workers=args.workers,
         )
     else:
-        payload = validate_curriculum(args.receipt)
+        payload = validate_curriculum(args.receipt, workers=args.workers)
     print(
         json.dumps(
             {

@@ -79,4 +79,5 @@ export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
   --workers "$SLURM_CPUS_PER_TASK"
 
 "$PYTHON" -P -s -B -m sai.data.curriculum validate \
-  --receipt "$CURRICULUM_RECEIPT"
+  --receipt "$CURRICULUM_RECEIPT" \
+  --workers "$SLURM_CPUS_PER_TASK"

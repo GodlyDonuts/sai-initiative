@@ -143,6 +143,7 @@ def test_curriculum_builds_all_four_progressive_phases_and_replays(
     assert payload["phases"]["specialization"]["by_band"]["foundation"] > 0
     assert len(output.read_text().splitlines()) == 40
     assert validate_curriculum(receipt) == payload
+    assert validate_curriculum(receipt, workers=2) == payload
 
 
 def test_parallel_scoring_preserves_exact_curriculum_bytes(
