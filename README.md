@@ -95,7 +95,12 @@ benchmark evidence selects an architecture.
   succeeded. After the exact memory diagnosis, its dependency was narrowed
   from `afternotok` to `afterany` immediately before cancelling `768892`;
   fallback `769225` then started on evc1 with zero restarts at 20:16 EDT. Its
-  four direct CPU descendants remain dependency-staged until it completes:
+  eight-hour running limit could not be extended in place. Exact timeout
+  recovery `769345` is therefore held on `afternotok:769225` with the same
+  compact commit, source, twenty ordered boundaries, output, and receipt, but a
+  twelve-hour limit. It requests no resource while `769225` remains healthy.
+  The four direct CPU descendants use an OR dependency on successful completion
+  of `769225` or `769345`, so exactly one decontamination lineage can release:
   shared Sai stream `769226`, refreshed development populations `769227`, Qwen
   stream `769228`, and SmolLM3 stream `769229`. This prevents a manual recovery
   gap without requesting a GPU or duplicating healthy work. The mutually
