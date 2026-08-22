@@ -1,0 +1,175 @@
+{
+  "schema": "sai-4b-120b-token-curriculum-candidate-v1",
+  "status": "prospective_source_population_build_required",
+  "user_four_b_training_authorization_received": true,
+  "data_ready": false,
+  "full_training_launch_allowed": false,
+  "architecture_improvement_claimed": false,
+  "target": {
+    "model_scale": "4b",
+    "sequence_length": 2048,
+    "total_sequences": 58593750,
+    "total_tokens": 120000000000,
+    "token_ids_encoding": "uint16_little_endian_for_exact_48000_token_vocabulary",
+    "document_boundary_mask_encoding": "one_bit_per_token",
+    "terminal_partial_sequence_policy": "none"
+  },
+  "source_inventories": [
+    {
+      "role": "foundation",
+      "dataset": "allenai/dolma3_mix-150B-1025",
+      "revision": "afa92bfb22366821c5e6cd427cdd036b34b713ef",
+      "inventory_receipt_sha256": "47611d6d92341aa8f1cc5c60e322499f3500a37c4a419d93d62073a6075d62d3",
+      "stratified_audit_receipt_sha256": "234db5341dbcf0c6615712139c64bc1dec1357584bad565feca4f6b1964f790f"
+    },
+    {
+      "role": "late_curriculum",
+      "dataset": "allenai/dolma3_dolmino_mix-100B-1025",
+      "revision": "f23942ae8a8114af6e992efe8188ce8c531acd16",
+      "inventory_receipt_sha256": "7e62c6006697110eba5857831d11903a14c41f76cb3547b866b69a4aa076ebf2",
+      "stratified_audit_receipt_sha256": "03cb36f0dbc85483b6fa732ce8fdf7bacd5bb12c573e6a7df06a902b24a5abdd"
+    }
+  ],
+  "canonical_source_pools": [
+    {
+      "pool": "foundation",
+      "minimum_phase": "grounding",
+      "candidate_components": [
+        "high_quality_english_web",
+        "wikipedia_and_wikibooks",
+        "arxiv_and_broad_reference",
+        "authored_open_foundations"
+      ]
+    },
+    {
+      "pool": "math",
+      "minimum_phase": "grounding",
+      "candidate_components": [
+        "finemath_filtered",
+        "cranemath",
+        "dolmino_math",
+        "megamatt",
+        "tinymath_mind",
+        "tinymath_pot"
+      ]
+    },
+    {
+      "pool": "code",
+      "minimum_phase": "grounding",
+      "candidate_components": [
+        "stack_edu_permissive_only",
+        "cranecode",
+        "authored_programming_foundations",
+        "code_meta_reasoning_after_integration"
+      ]
+    },
+    {
+      "pool": "science",
+      "minimum_phase": "grounding",
+      "candidate_components": [
+        "high_quality_science_pdfs",
+        "stem_heavy_crawl",
+        "science_math_technology_web"
+      ]
+    },
+    {
+      "pool": "reasoning",
+      "minimum_phase": "reasoning",
+      "candidate_components": [
+        "verified_program_reasoning",
+        "math_reasoning_traces",
+        "general_reasoning_traces",
+        "instruction_and_qa_with_generator_provenance"
+      ]
+    }
+  ],
+  "phases": [
+    {
+      "phase": "grounding",
+      "index": 0,
+      "sequences": 14648438,
+      "tokens": 30000001024,
+      "cumulative_tokens": 30000001024,
+      "by_pool_sequences": {
+        "foundation": 11718750,
+        "math": 732422,
+        "code": 732422,
+        "science": 1464844,
+        "reasoning": 0
+      }
+    },
+    {
+      "phase": "integration",
+      "index": 1,
+      "sequences": 17578125,
+      "tokens": 36000000000,
+      "cumulative_tokens": 66000001024,
+      "by_pool_sequences": {
+        "foundation": 12304688,
+        "math": 2636719,
+        "code": 1757812,
+        "science": 878906,
+        "reasoning": 0
+      }
+    },
+    {
+      "phase": "reasoning",
+      "index": 2,
+      "sequences": 17578125,
+      "tokens": 36000000000,
+      "cumulative_tokens": 102000001024,
+      "by_pool_sequences": {
+        "foundation": 7031250,
+        "math": 3515625,
+        "code": 2636719,
+        "science": 1757812,
+        "reasoning": 2636719
+      }
+    },
+    {
+      "phase": "specialization",
+      "index": 3,
+      "sequences": 8789062,
+      "tokens": 17999998976,
+      "cumulative_tokens": 120000000000,
+      "by_pool_sequences": {
+        "foundation": 2197266,
+        "math": 2197266,
+        "code": 1757812,
+        "science": 878906,
+        "reasoning": 1757812
+      }
+    }
+  ],
+  "total_by_pool": {
+    "foundation": {"sequences": 33251954, "tokens": 68100001792},
+    "math": {"sequences": 9082032, "tokens": 18600001536},
+    "code": {"sequences": 6884765, "tokens": 14099998720},
+    "science": {"sequences": 4980468, "tokens": 10199998464},
+    "reasoning": {"sequences": 4394531, "tokens": 8999999488}
+  },
+  "admission_policy": {
+    "canonical_document_stored_once_before_exposure_weighting": true,
+    "global_exact_cross_source_deduplication_required": true,
+    "high_confidence_near_duplicate_filter_required": true,
+    "benchmark_decontamination_after_every_text_transformation": true,
+    "stack_code_requires_per_file_permissive_license": true,
+    "no_license_and_missing_license_code_excluded": true,
+    "synthetic_generator_and_prompt_provenance_required": true,
+    "synthetic_reasoning_forbidden_before_reasoning_phase": true,
+    "foundational_rehearsal_required_in_every_phase": true,
+    "phase_boundaries_must_align_with_optimizer_updates": true,
+    "tokenizer_must_be_selected_before_packing": true,
+    "source_shortfall_policy": "fail_without_silent_reweighting"
+  },
+  "remaining_gates": [
+    "complete_source_component_selection_and_license_decisions",
+    "global_exact_and_high_confidence_near_duplicate_clustering",
+    "benchmark_decontamination",
+    "semantic_prerequisite_phase_assignment",
+    "numeric_tokenizer_ablation_and_exact_48k_selection",
+    "lossless_tokenization_and_packed_stream_replay",
+    "bounded_one_update_4b_execution_canary"
+  ],
+  "receipt_sha256": "1eee015f2c66f4097a0996a50ef7aa1dcb6ba2af4b8fd583d224dbb4294abd4c"
+}
