@@ -50,6 +50,16 @@ def _tensor_versions(module: nn.Module) -> tuple[tuple[str, int], ...]:
     )
 
 
+def _loading_strings(value: Any, field: str) -> list[str]:
+    """Normalize Transformers loading-info collections without weakening content."""
+
+    if not isinstance(value, (list, set, tuple)) or any(
+        not isinstance(item, str) for item in value
+    ):
+        raise HFParentError(f"parent text model {field} evidence differs")
+    return sorted(value)
+
+
 def _cuda_residency(module: nn.Module) -> dict[str, Any]:
     parameters = list(module.named_parameters())
     buffers = list(module.named_buffers())
@@ -138,15 +148,16 @@ def load_text_parent(model_root: Path) -> tuple[nn.Module, Any, dict[str, Any]]:
         raise HFParentError("parent text model class differs")
     if getattr(model.config, "vocab_size", None) != EXPECTED_MODEL_VOCAB_SIZE:
         raise HFParentError("parent model vocabulary differs")
-    if not isinstance(loading, dict) or any(
-        loading.get(field)
-        for field in ("missing_keys", "mismatched_keys", "error_msgs")
-    ):
+    if not isinstance(loading, dict):
         raise HFParentError("parent text model load is incomplete")
-    unexpected = loading.get("unexpected_keys", [])
-    if not isinstance(unexpected, list) or any(
-        not isinstance(name, str)
-        or not (name.startswith("model.visual.") or name.startswith("mtp."))
+    missing = _loading_strings(loading.get("missing_keys"), "missing keys")
+    mismatched = _loading_strings(loading.get("mismatched_keys"), "mismatched keys")
+    errors = _loading_strings(loading.get("error_msgs"), "error messages")
+    unexpected = _loading_strings(loading.get("unexpected_keys"), "unexpected keys")
+    if missing or mismatched or errors:
+        raise HFParentError("parent text model load is incomplete")
+    if any(
+        not (name.startswith("model.visual.") or name.startswith("mtp."))
         for name in unexpected
     ):
         raise HFParentError("parent text model unexpected weights differ")

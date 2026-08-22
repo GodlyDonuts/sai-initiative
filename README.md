@@ -150,8 +150,16 @@ benchmark evidence selects an architecture.
   token `248,046`. The first mechanics code incorrectly equated tokenizer
   length with model rows. The repaired implementation now binds all four
   identities independently in mechanics, stream-freeze, training, and replay
-  validation. Full local regression is 353 passed; this is an admission-code
-  correction before any Sai model result, not a scientific retry.
+  validation. Second mechanics allocation `769410` loaded all 320 weight
+  tensors on evc23, then failed in 49 seconds because Transformers 5.15 returns
+  its empty loading-key collections as sets while the validator required the
+  `unexpected_keys` container itself to be a list. CPU replay `769420` proved
+  exact empty sets for missing, unexpected, and mismatched keys and an empty
+  error list. The validator now normalizes only list/set/tuple container form,
+  still rejects any non-string or disallowed key, and continues to require no
+  missing, mismatched, or error entries. Full local regression is 354 passed;
+  these are admission-code corrections before any Sai model result, not
+  scientific retries.
 - The first capable-host Sai factor is now fully executable at commit
   `cc7039d1e5a0653f4581cbe1a7b3ce509fff58e6`: a `19,938,304`-parameter,
   16-slot recurrent workspace attached to the frozen Qwen3.5-0.8B text parent.

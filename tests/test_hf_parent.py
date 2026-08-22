@@ -15,6 +15,7 @@ from sai.evaluation.hf_parent import (
     EXPECTED_TOKENIZER_LENGTH,
     HFParentError,
     HFTextLogitAdapter,
+    _loading_strings,
 )
 
 
@@ -42,6 +43,15 @@ def test_parent_identity_constants_are_exact() -> None:
     assert EXPECTED_TOKENIZER_BASE_VOCAB_SIZE == 248_044
     assert EXPECTED_TOKENIZER_LENGTH == 248_077
     assert EXPECTED_EOS_TOKEN_ID == 248_046
+
+
+def test_loading_key_evidence_accepts_transformers_sets_but_not_bad_content() -> None:
+    assert _loading_strings(set(), "keys") == []
+    assert _loading_strings({"b", "a"}, "keys") == ["a", "b"]
+    with pytest.raises(HFParentError, match="evidence differs"):
+        _loading_strings("a", "keys")
+    with pytest.raises(HFParentError, match="evidence differs"):
+        _loading_strings({1}, "keys")
 
 
 def test_text_adapter_exposes_logits_and_rejects_segments() -> None:
