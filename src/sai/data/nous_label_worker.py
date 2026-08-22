@@ -38,6 +38,17 @@ class NousLabelWorkerError(RuntimeError):
 def _validate_endpoint(value: str) -> str:
     parsed = urllib.parse.urlsplit(value)
     if (
+        parsed.scheme == "http"
+        and parsed.hostname == "127.0.0.1"
+        and parsed.port == 8645
+        and parsed.path.rstrip("/") == "/v1"
+        and parsed.username is None
+        and parsed.password is None
+        and not parsed.query
+        and not parsed.fragment
+    ):
+        return "http://127.0.0.1:8645/v1"
+    if (
         parsed.scheme != "https"
         or parsed.hostname != "inference-api.nousresearch.com"
         or parsed.port not in (None, 443)
@@ -79,6 +90,7 @@ def _request_body(candidate: dict[str, Any], slot: int, model: str) -> dict[str,
         "temperature": 0,
         "max_tokens": 1200,
         "stream": False,
+        "response_format": {"type": "json_object"},
     }
 
 
@@ -134,6 +146,9 @@ def execute_one(
     request_sha256 = canonical_sha256(body)
     attempts = []
     response: dict[str, Any] | None = None
+    raw_judgment: dict[str, Any] | None = None
+    judgment: dict[str, Any] | None = None
+    choice: dict[str, Any] | None = None
     for attempt in range(1, maximum_attempts + 1):
         try:
             response, status = request_function(
@@ -142,37 +157,65 @@ def execute_one(
                 body=body,
                 timeout_seconds=timeout_seconds,
             )
-            attempts.append({"attempt": attempt, "http_status": status})
             if status != 200:
                 raise NousLabelWorkerError("successful request returned non-200")
+            choices = response.get("choices")
+            if not isinstance(choices, list) or len(choices) != 1:
+                raise NousLabelWorkerError("model response choices differ")
+            choice = choices[0]
+            if not isinstance(choice, dict) or not isinstance(
+                choice.get("message"), dict
+            ):
+                raise NousLabelWorkerError("model response message differs")
+            raw_judgment = _json_object(choice["message"].get("content"))
+            try:
+                judgment = normalize_model_judgment(raw_judgment, candidate, slot)
+            except AgentLabelingError as error:
+                raise NousLabelWorkerError(
+                    "model judgment violates the rubric"
+                ) from error
+            attempts.append(
+                {"attempt": attempt, "http_status": status, "outcome": "valid"}
+            )
             break
         except urllib.error.HTTPError as error:
-            attempts.append({"attempt": attempt, "http_status": error.code})
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "http_status": error.code,
+                    "outcome": "transient_http_error",
+                }
+            )
             if error.code not in RETRYABLE_STATUS or attempt == maximum_attempts:
                 raise NousLabelWorkerError(
                     f"Nous request failed with HTTP {error.code}"
                 ) from error
         except (TimeoutError, urllib.error.URLError) as error:
-            attempts.append({"attempt": attempt, "http_status": None})
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "http_status": None,
+                    "outcome": "transient_transport_error",
+                }
+            )
             if attempt == maximum_attempts:
                 raise NousLabelWorkerError(
                     "Nous request exhausted transient retries"
                 ) from error
+        except NousLabelWorkerError:
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "http_status": 200,
+                    "outcome": "invalid_model_output",
+                }
+            )
+            if attempt == maximum_attempts:
+                raise
         delay = min(30.0, float(2 ** (attempt - 1)))
         sleep_function(delay)
-    if response is None:
+    if response is None or raw_judgment is None or judgment is None or choice is None:
         raise NousLabelWorkerError("Nous request produced no response")
-    choices = response.get("choices")
-    if not isinstance(choices, list) or len(choices) != 1:
-        raise NousLabelWorkerError("model response choices differ")
-    choice = choices[0]
-    if not isinstance(choice, dict) or not isinstance(choice.get("message"), dict):
-        raise NousLabelWorkerError("model response message differs")
-    raw_judgment = _json_object(choice["message"].get("content"))
-    try:
-        judgment = normalize_model_judgment(raw_judgment, candidate, slot)
-    except AgentLabelingError as error:
-        raise NousLabelWorkerError("model judgment violates the rubric") from error
     usage = response.get("usage")
     if not isinstance(usage, dict):
         usage = {}
@@ -213,6 +256,11 @@ def execute_one(
         "perspective": PERSPECTIVES[slot],
         "rubric_sha256": RUBRIC_SHA256,
         "endpoint_origin": base_url.rstrip("/"),
+        "credential_transport": (
+            "hermes_loopback_proxy"
+            if base_url == "http://127.0.0.1:8645/v1"
+            else "direct_portal_bearer"
+        ),
         "requested_model": model,
         "request_sha256": request_sha256,
         "attempts": attempts,

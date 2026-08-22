@@ -72,7 +72,7 @@ RUBRIC = {
     "pedagogical_role": list(ROLES),
     "concepts_taught": "0..12 short lowercase concept labels",
     "prerequisites_assumed": "0..12 short lowercase concept labels",
-    "risks": list(RISK_KEYS),
+    "risks": {risk: "boolean" for risk in RISK_KEYS},
     "confidence_ppm": "integer 0..1000000",
     "evidence_quotes": "1..4 exact nonempty substrings copied from the document",
     "rationale": "one sentence, at most 320 characters",
@@ -80,6 +80,24 @@ RUBRIC = {
 RUBRIC_SHA256 = canonical_sha256(
     {"system_prompt": SYSTEM_PROMPT, "rubric": RUBRIC, "perspectives": PERSPECTIVES}
 )
+OUTPUT_TEMPLATE = {
+    "verdict": "retain|reject|review",
+    "quality_score": 0,
+    "english_score": 0,
+    "domains": ["foundation"],
+    "difficulty": 0,
+    "prerequisite_burden": 0,
+    "curriculum_phase": "grounding|integration|reasoning|specialization|reject",
+    "pedagogical_role": (
+        "definition|worked_example|exercise|explanation|reference|synthesis|mixed|noise"
+    ),
+    "concepts_taught": [],
+    "prerequisites_assumed": [],
+    "risks": {risk: False for risk in RISK_KEYS},
+    "confidence_ppm": 0,
+    "evidence_quotes": ["exact substring copied from document"],
+    "rationale": "one sentence",
+}
 
 
 class AgentLabelingError(RuntimeError):
@@ -198,6 +216,13 @@ def build_messages(
         "candidate_identity_sha256": candidate["candidate_identity_sha256"],
         "source_type": candidate["source"]["source_type"],
         "output_schema": RUBRIC,
+        "output_template": OUTPUT_TEMPLATE,
+        "output_rule": (
+            "Return exactly the 14 output_template keys. Replace every template value. "
+            "Do not add candidate_identity_sha256, schema, or any other key. risks "
+            "must "
+            "remain an object containing every listed boolean key."
+        ),
         "document": candidate["text"],
     }
     return [

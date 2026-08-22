@@ -24,6 +24,10 @@ Official integration points:
 - Hermes/Nous model catalog: `https://hermes-agent.nousresearch.com/docs/api/model-catalog.json`
 - Portal authentication is supplied at execution time and is never written into a
   receipt, request artifact, Slurm submit line, or repository file.
+- The exact loopback-only Hermes subscription proxy
+  `http://127.0.0.1:8645/v1` is allowed for local calibration. It attaches the OAuth
+  credential without exposing it to the labeler; no non-loopback HTTP endpoint is
+  accepted.
 
 ## Source ladder
 

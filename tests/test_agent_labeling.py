@@ -166,7 +166,7 @@ def test_execute_one_records_lineage_without_key() -> None:
     candidate = _candidate()
 
     def request_function(**kwargs):
-        assert kwargs["api_key"] == "secret"
+        assert kwargs["api_key"] in {"secret", "unused"}
         assert kwargs["body"]["model"] == "stealth/ox-alpha"
         return _api_response(_raw_judgment()), 200
 
@@ -184,6 +184,7 @@ def test_execute_one_records_lineage_without_key() -> None:
     assert receipt["api_key_persisted"] is False
     assert '"api_key"' not in json.dumps(receipt)
     assert receipt["judgment"]["perspective"] == "data_quality_editor"
+    assert receipt["credential_transport"] == "direct_portal_bearer"
 
     with pytest.raises(NousLabelWorkerError, match="endpoint differs"):
         execute_one(
@@ -196,6 +197,18 @@ def test_execute_one_records_lineage_without_key() -> None:
             maximum_attempts=1,
             request_function=request_function,
         )
+
+    proxy_receipt = execute_one(
+        candidate,
+        1,
+        model="stealth/ox-alpha",
+        base_url="http://127.0.0.1:8645/v1",
+        api_key="unused",
+        timeout_seconds=1,
+        maximum_attempts=1,
+        request_function=request_function,
+    )
+    assert proxy_receipt["credential_transport"] == "hermes_loopback_proxy"
 
 
 def test_worker_receipt_is_consumable_and_tamper_evident(tmp_path: Path) -> None:
@@ -221,6 +234,36 @@ def test_worker_receipt_is_consumable_and_tamper_evident(tmp_path: Path) -> None
     path.write_text(json.dumps(receipt))
     with pytest.raises(AgentLabelingError, match="receipt differs"):
         _load_judgment(path)
+
+
+def test_invalid_model_json_is_retried_as_same_vote() -> None:
+    candidate = _candidate()
+    calls = 0
+
+    def request_function(**kwargs):
+        nonlocal calls
+        calls += 1
+        payload = _raw_judgment()
+        if calls == 1:
+            payload["risks"] = []
+        return _api_response(payload), 200
+
+    receipt = execute_one(
+        candidate,
+        0,
+        model="stealth/ox-alpha",
+        base_url="https://inference-api.nousresearch.com/v1",
+        api_key="secret",
+        timeout_seconds=1,
+        maximum_attempts=2,
+        request_function=request_function,
+        sleep_function=lambda _: None,
+    )
+    assert calls == 2
+    assert receipt["attempts"] == [
+        {"attempt": 1, "http_status": 200, "outcome": "invalid_model_output"},
+        {"attempt": 2, "http_status": 200, "outcome": "valid"},
+    ]
 
 
 def test_shard_is_deterministic_create_only_and_resumable(tmp_path: Path) -> None:
