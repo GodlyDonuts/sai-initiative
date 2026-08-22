@@ -99,6 +99,11 @@ deduplication, and benchmark decontamination remain absent.
 The bounded FineMath evidence is recorded in
 `docs/SAI_FINEMATH_SHARD_AUDIT_20260822.md`; upstream `4plus` scores cannot admit
 rows. Cosmopedia and NVIDIA corpora remain separate declared ablations.
+The complete Stack-Edu Python metadata replay is recorded in
+`docs/SAI_STACK_EDU_PYTHON_LANGUAGE_AUDIT_20260822.md`. Only 514,566 of
+25,286,019 rows (2.0349%) survive the preliminary conservative metadata rule,
+and even those rows remain nominations rather than training data. Cross-shard
+duplicate identity checking and every content-level gate remain incomplete.
 OpenWebMath remains blocked on license evidence. No source ratio is frozen
 before small matched source-addition screens establish that the source helps
 rather than merely looking sophisticated.
