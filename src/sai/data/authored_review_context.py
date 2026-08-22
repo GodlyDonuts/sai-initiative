@@ -59,8 +59,8 @@ def _payload(
     try:
         snapshot = validate_external_snapshot(
             model_root,
-            manifest=manifest,
-            restoration_receipt=restoration_receipt,
+            manifest_path=manifest,
+            receipt_path=restoration_receipt,
             spec=REVIEWERS[reviewer],
         )
         inputs = _blind_inputs(

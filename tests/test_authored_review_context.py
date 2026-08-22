@@ -53,9 +53,14 @@ def _kwargs(tmp_path: Path) -> dict:
 def test_context_receipt_covers_all_blind_rows_and_replays(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setattr(
-        context, "validate_external_snapshot", lambda *a, **k: {"tree": "exact"}
-    )
+    def _snapshot(root, *, manifest_path, receipt_path, spec):
+        assert root == tmp_path / "model"
+        assert manifest_path == tmp_path / "manifest.json"
+        assert receipt_path == tmp_path / "restoration.json"
+        assert spec == context.REVIEWERS["qwen35_9b"]
+        return {"tree": "exact"}
+
+    monkeypatch.setattr(context, "validate_external_snapshot", _snapshot)
     monkeypatch.setattr(context, "_tokenizer", lambda path: (_Tokenizer(), "test"))
     kwargs = _kwargs(tmp_path)
     payload = run(**kwargs)
