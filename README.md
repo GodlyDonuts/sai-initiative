@@ -99,9 +99,14 @@ benchmark evidence selects an architecture.
   recovery `769345` is therefore held on `afternotok:769225` with the same
   compact commit, source, twenty ordered boundaries, output, and receipt, but a
   twelve-hour limit. It requests no resource while `769225` remains healthy.
-  The three stream descendants use an OR dependency on successful completion
-  of `769225` or `769345`, so exactly one decontamination lineage can release:
-  shared Sai stream `769226`, Qwen stream `769228`, and SmolLM3 stream `769229`.
+  At 22:00 EDT, process file-descriptor replay measured source position
+  `1,830,273,024 / 14,491,695,743` bytes (`12.63%`), with
+  `48,786,304 KiB` resident memory and `1,218,820,034` accepted output bytes.
+  Memory remains stable under the 64-GiB allocation. The three current stream
+  descendants use an OR dependency on successful completion of `769225` or
+  `769345`, so exactly one decontamination lineage can release: shared Sai
+  stream `769226`, exact 125M-token Qwen stream `769437`, and exact 125M-token
+  SmolLM3 stream `769455`.
   This prevents a manual recovery gap without requesting a GPU or duplicating
   healthy work. A pre-execution audit found that the first refreshed-population
   clone `769227` still checked terminal state for cancelled original job
@@ -111,17 +116,17 @@ benchmark evidence selects an architecture.
   could create any output. Exact mutually exclusive replacements now bind both
   scheduler and in-script custody to the same lineage: population jobs
   `769355`/`769356` follow primary/recovery corpus jobs `769225`/`769345`;
-  parent benchmark launchers are `769358`/`769359`; workspace evaluation stages
-  are `769360`/`769361`; and terminal comparisons are `769364`/`769365`. Each
+  parent benchmark launchers are `769425`/`769426`; workspace evaluation stages
+  are `769440`/`769441`; and terminal comparisons are `769442`/`769443`. Each
   pair targets the same collision-safe artifact and only the branch whose
   corpus lineage completes can run. The unaffected 100M/250M launcher `769232`
-  and workspace launcher `769236` remain staged. Two
+  and workspace launcher `769439` remain staged. Two
   malformed first launcher clones (`769233–769234`) were caught while still
   dependency-held and canceled with zero elapsed time and zero restarts; their
   corrected replacements bind the exact fallback population and stream job
   IDs. No recovery job executed concurrently with the primary scan.
-  Successful decontamination is followed by 499,998,720-token stream freeze
-  `768894`. Dependency-staged launcher `768932` will then run a fresh,
+  Successful decontamination is followed by shared 499,998,720-token stream
+  freeze `769226`. Dependency-staged launcher `769232` will then run a fresh,
   matched three-family screen over the exact 249,999,360-token prefix using
   three independent one-H100 jobs. This tests whether the near-chance 100M
   results reflect data starvation or the mixers themselves; it neither selects
