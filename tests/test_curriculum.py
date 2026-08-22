@@ -177,6 +177,21 @@ def test_parallel_scoring_preserves_exact_curriculum_bytes(
     assert serial.read_bytes() == parallel.read_bytes()
 
 
+def test_parallel_validation_job_is_cpu_only_and_exact() -> None:
+    job = (
+        Path(__file__).resolve().parents[1]
+        / "jobs"
+        / "sai-validate-500m-curriculum-cpu.sbatch"
+    ).read_text()
+    assert "#SBATCH --cpus-per-task=8" in job
+    assert "#SBATCH --no-requeue" in job
+    assert "#SBATCH --gres=" not in job
+    assert 'rev-parse HEAD)" = "$EXPECTED_COMMIT"' in job
+    assert "sai.data.curriculum validate" in job
+    assert '--workers "$SLURM_CPUS_PER_TASK"' in job
+    assert "sai.data.curriculum build" not in job
+
+
 def test_high_confidence_near_duplicate_sketch_is_rejected() -> None:
     base = (
         "A careful lesson introduces one idea before combining it with another. "
