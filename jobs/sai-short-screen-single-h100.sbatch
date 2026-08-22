@@ -46,6 +46,28 @@ test -d "$(dirname "$CHECKPOINT")"
 test -d "$(dirname "$OUTPUT")"
 test ! -e "$OUTPUT"
 
+if [[ -n "${MIN_QUOTA_HEADROOM_KIB:-}" || -n "${MIN_QUOTA_HEADROOM_FILES:-}" ]]; then
+  : "${MIN_QUOTA_HEADROOM_KIB:?MIN_QUOTA_HEADROOM_KIB is required with quota admission}"
+  : "${MIN_QUOTA_HEADROOM_FILES:?MIN_QUOTA_HEADROOM_FILES is required with quota admission}"
+  [[ "$MIN_QUOTA_HEADROOM_KIB" =~ ^[0-9]+$ ]]
+  [[ "$MIN_QUOTA_HEADROOM_FILES" =~ ^[0-9]+$ ]]
+  read -r quota_used_kib quota_hard_kib quota_files quota_hard_files < <(
+    /usr/bin/lfs quota -u "$(id -u)" /lustre/fs1 |
+      awk 'END {print $2, $4, $6, $8}'
+  )
+  for value in "$quota_used_kib" "$quota_hard_kib" \
+    "$quota_files" "$quota_hard_files"; do
+    [[ "$value" =~ ^[0-9]+$ ]]
+  done
+  quota_headroom_kib=$((quota_hard_kib - quota_used_kib))
+  quota_headroom_files=$((quota_hard_files - quota_files))
+  test "$quota_headroom_kib" -ge "$MIN_QUOTA_HEADROOM_KIB"
+  test "$quota_headroom_files" -ge "$MIN_QUOTA_HEADROOM_FILES"
+  printf 'quota_admission used_kib=%s hard_kib=%s headroom_kib=%s used_files=%s hard_files=%s headroom_files=%s\n' \
+    "$quota_used_kib" "$quota_hard_kib" "$quota_headroom_kib" \
+    "$quota_files" "$quota_hard_files" "$quota_headroom_files"
+fi
+
 code_sha256="$(git -C "$SAI_ROOT" archive --format=tar "$EXPECTED_COMMIT" | sha256sum | cut -d ' ' -f 1)"
 environment_sha256="$(sha256sum "$ENVIRONMENT_RECEIPT" | cut -d ' ' -f 1)"
 test "${#code_sha256}" = 64

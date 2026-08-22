@@ -282,6 +282,8 @@ def test_launcher_is_matched_independent_single_h100_and_nonretrying() -> None:
     assert "MIN_QUOTA_HEADROOM_FILES=10000" in launcher
     assert "/usr/bin/lfs quota" in launcher
     assert '"quota_preflight"' in launcher
+    assert "MIN_QUOTA_HEADROOM_KIB=$MIN_QUOTA_HEADROOM_KIB" in launcher
+    assert "MIN_QUOTA_HEADROOM_FILES=$MIN_QUOTA_HEADROOM_FILES" in launcher
     assert "FAMILY=gated_gqa" in launcher
     assert "TRAINING_SEQUENCES=244140" in launcher
     assert "OPTIMIZER_STEPS=954" in launcher
