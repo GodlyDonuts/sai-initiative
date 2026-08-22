@@ -61,6 +61,7 @@ def test_audits_metadata_without_admitting_code(tmp_path: Path) -> None:
     assert payload["summary"]["rows"] == 80
     assert payload["summary"]["candidate_rows"] == 40
     assert payload["summary"]["permissive_rows"] == 40
+    assert payload["summary"]["permissive_rows_without_detected_license"] == 0
     assert payload["summary"]["no_license_rows"] == 40
     assert payload["review_sample"]["rows"] == 64
     rows = [json.loads(line) for line in sample.read_text().splitlines()]
@@ -92,6 +93,25 @@ def test_rejects_unallowlisted_license_and_source_tamper(tmp_path: Path) -> None
         handle.write(b"tamper")
     with pytest.raises(StackEduAuditError, match="source differs"):
         validate_audit(receipt)
+
+
+def test_counts_but_does_not_admit_permissive_rows_without_license(
+    tmp_path: Path,
+) -> None:
+    source = _source(tmp_path)
+    table = pq.read_table(source).to_pylist()
+    table[0]["detected_licenses"] = []
+    pq.write_table(pa.Table.from_pylist(table), source)
+    payload = audit_shard(
+        source,
+        source_file="Python/train-00000-of-00005.parquet",
+        expected_bytes=source.stat().st_size,
+        expected_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+        sample_output=tmp_path / "sample.jsonl",
+        receipt_output=tmp_path / "receipt.json",
+    )
+    assert payload["summary"]["permissive_rows_without_detected_license"] == 1
+    assert payload["summary"]["candidate_rows"] == 39
 
 
 def test_rejects_resigned_receipt_and_sample_tamper(tmp_path: Path) -> None:

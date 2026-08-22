@@ -183,6 +183,7 @@ def _scan(
     candidate_rows = 0
     candidate_bytes = 0
     permissive_rows = 0
+    permissive_rows_without_detected_license = 0
     no_license_rows = 0
     duplicate_blob_ids = 0
     duplicate_repo_paths = 0
@@ -229,14 +230,15 @@ def _scan(
                 or row["license_type"] not in {"permissive", "no_license"}
             ):
                 raise StackEduAuditError("Stack-Edu row fields differ")
-            if row["license_type"] == "permissive" and not licenses:
-                raise StackEduAuditError("permissive row lacks detected license")
             total_bytes += row["length_bytes"]
             score_counts[row["int_score"]] += 1
             encoding_counts[row["src_encoding"]] += 1
             for license_id in licenses:
                 license_counts[license_id] += 1
             permissive_rows += row["license_type"] == "permissive"
+            permissive_rows_without_detected_license += (
+                row["license_type"] == "permissive" and not licenses
+            )
             no_license_rows += row["license_type"] == "no_license"
             if blob_id in seen_blobs:
                 duplicate_blob_ids += 1
@@ -290,6 +292,9 @@ def _scan(
             "rows": rows,
             "declared_content_bytes": total_bytes,
             "permissive_rows": permissive_rows,
+            "permissive_rows_without_detected_license": (
+                permissive_rows_without_detected_license
+            ),
             "no_license_rows": no_license_rows,
             "candidate_rows": candidate_rows,
             "candidate_declared_content_bytes": candidate_bytes,
