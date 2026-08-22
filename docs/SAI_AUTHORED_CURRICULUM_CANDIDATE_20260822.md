@@ -85,6 +85,16 @@ source-hash-bound. These model drafts can accelerate triage and quantify
 cross-family disagreement, but their receipts keep human review, audit
 qualification, training, and 4B authorization false.
 
+The final adjudicator now rejects arbitrary identity strings and model-reviewer
+receipts. Each side must provide a canonical
+`sai-authored-curriculum-human-reviewer-attestation-v1` that binds its role,
+the exact blind packet, annotation policy, completed review bytes, and all 127
+rows; declares completed human review and no model-generated labels; and states
+that the hidden ordering key was not accessed before labels were frozen. The
+two identity-attestation hashes must differ. These attestations still require
+external identity verification, but model-model agreement can no longer be
+misreported as a qualified independent human audit.
+
 ## Progression semantics
 
 The Rust Book begins with installation, hello-world programs, a guessing-game

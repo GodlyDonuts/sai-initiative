@@ -324,8 +324,6 @@ def _review_inputs(tmp_path: Path) -> dict[str, Path]:
     }
     policy["receipt_sha256"] = canonical_sha256(policy)
     paths["annotation_policy"].write_text(json.dumps(policy, sort_keys=True))
-    paths["annotator_identity"].write_text("annotator-one")
-    paths["reviewer_identity"].write_text("reviewer-two")
     packet = [
         json.loads(line) for line in paths["review_packet"].read_text().splitlines()
     ]
@@ -372,6 +370,28 @@ def _review_inputs(tmp_path: Path) -> dict[str, Path]:
     encoded = "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
     paths["annotator_reviews"].write_text(encoded)
     paths["reviewer_reviews"].write_text(encoded)
+    packet_sha256 = hashlib.sha256(paths["review_packet"].read_bytes()).hexdigest()
+    policy_sha256 = hashlib.sha256(paths["annotation_policy"].read_bytes()).hexdigest()
+    reviews_sha256 = hashlib.sha256(encoded.encode()).hexdigest()
+    for role, name, identity in (
+        ("annotator", "annotator_identity", "1" * 64),
+        ("reviewer", "reviewer_identity", "2" * 64),
+    ):
+        attestation = {
+            "schema": "sai-authored-curriculum-human-reviewer-attestation-v1",
+            "status": "complete",
+            "role": role,
+            "identity_attestation_sha256": identity,
+            "blind_review_packet_sha256": packet_sha256,
+            "annotation_policy_sha256": policy_sha256,
+            "completed_reviews_sha256": reviews_sha256,
+            "reviewed_documents": len(packet),
+            "human_review_completed": True,
+            "model_generated_labels": False,
+            "hidden_review_key_accessed_before_label_freeze": False,
+        }
+        attestation["receipt_sha256"] = canonical_sha256(attestation)
+        paths[name].write_text(json.dumps(attestation, sort_keys=True))
     return paths
 
 
@@ -395,6 +415,13 @@ def test_semantic_review_adjudication_preserves_measured_disagreement(
     paths["reviewer_reviews"].write_text(
         "".join(json.dumps(row, sort_keys=True) + "\n" for row in reviewer_rows)
     )
+    reviewer_identity = json.loads(paths["reviewer_identity"].read_text())
+    reviewer_identity["completed_reviews_sha256"] = hashlib.sha256(
+        paths["reviewer_reviews"].read_bytes()
+    ).hexdigest()
+    reviewer_identity.pop("receipt_sha256")
+    reviewer_identity["receipt_sha256"] = canonical_sha256(reviewer_identity)
+    paths["reviewer_identity"].write_text(json.dumps(reviewer_identity, sort_keys=True))
     failed = adjudicate(**paths, output=tmp_path / "failed.json")
     assert failed["status"] == "failed"
     assert failed["audit_qualified"] is False
@@ -413,3 +440,20 @@ def test_semantic_review_adjudication_rejects_blank_admit(tmp_path: Path) -> Non
     )
     with pytest.raises(AuthoredReviewAdjudicationError, match="no taught concept"):
         adjudicate(**paths, output=tmp_path / "blank-admit.json")
+
+
+def test_semantic_review_adjudication_rejects_model_or_unbound_identity(
+    tmp_path: Path,
+) -> None:
+    paths = _review_inputs(tmp_path)
+    paths["reviewer_identity"].write_text(
+        json.dumps(
+            {
+                "schema": "sai-authored-curriculum-model-reviewer-identity-v1",
+                "human_review_completed": False,
+                "model_generated_labels": True,
+            }
+        )
+    )
+    with pytest.raises(AuthoredReviewAdjudicationError, match="identity differs"):
+        adjudicate(**paths, output=tmp_path / "model-identity.json")

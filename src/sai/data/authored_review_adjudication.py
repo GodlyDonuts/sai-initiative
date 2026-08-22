@@ -18,6 +18,7 @@ from sai.data.token_stream import canonical_sha256
 
 SCHEMA = "sai-authored-curriculum-semantic-review-receipt-v1"
 ROW_SCHEMA = "sai-authored-curriculum-completed-review-row-v1"
+IDENTITY_SCHEMA = "sai-authored-curriculum-human-reviewer-attestation-v1"
 CONCEPT_LIST_SCHEMA = "sai-semantic-prerequisite-concept-list-v1"
 MAXIMUM_DISAGREEMENT_PPM = 50_000
 MAXIMUM_QUALITY_DELTA_PPM = 100_000
@@ -35,6 +36,20 @@ _ROW_KEYS = {
 _CONCEPT_KEYS = {"concept_id", "confidence_ppm", "evidence_spans"}
 _SPAN_KEYS = {"start", "end", "text_sha256"}
 _DEFECT_KEYS = {"category", "start", "end", "text_sha256"}
+_IDENTITY_KEYS = {
+    "schema",
+    "status",
+    "role",
+    "identity_attestation_sha256",
+    "blind_review_packet_sha256",
+    "annotation_policy_sha256",
+    "completed_reviews_sha256",
+    "reviewed_documents",
+    "human_review_completed",
+    "model_generated_labels",
+    "hidden_review_key_accessed_before_label_freeze",
+    "receipt_sha256",
+}
 
 
 class AuthoredReviewAdjudicationError(RuntimeError):
@@ -201,6 +216,44 @@ def _ceil_ppm(numerator: int, denominator: int) -> int:
     return (numerator * 1_000_000 + denominator - 1) // denominator
 
 
+def _identity(
+    encoded: bytes,
+    *,
+    role: str,
+    packet_sha256: str,
+    policy_sha256: str,
+    reviews_sha256: str,
+    reviewed_documents: int,
+) -> str:
+    try:
+        payload = json.loads(encoded)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise AuthoredReviewAdjudicationError("review identity differs") from error
+    if (
+        not isinstance(payload, dict)
+        or set(payload) != _IDENTITY_KEYS
+        or payload["schema"] != IDENTITY_SCHEMA
+        or payload["status"] != "complete"
+        or payload["role"] != role
+        or not isinstance(payload["identity_attestation_sha256"], str)
+        or len(payload["identity_attestation_sha256"]) != 64
+        or payload["identity_attestation_sha256"] == "0" * 64
+        or payload["blind_review_packet_sha256"] != packet_sha256
+        or payload["annotation_policy_sha256"] != policy_sha256
+        or payload["completed_reviews_sha256"] != reviews_sha256
+        or payload["reviewed_documents"] != reviewed_documents
+        or payload["human_review_completed"] is not True
+        or payload["model_generated_labels"] is not False
+        or payload["hidden_review_key_accessed_before_label_freeze"] is not False
+        or payload["receipt_sha256"]
+        != canonical_sha256(
+            {key: value for key, value in payload.items() if key != "receipt_sha256"}
+        )
+    ):
+        raise AuthoredReviewAdjudicationError("review identity differs")
+    return payload["identity_attestation_sha256"]
+
+
 def adjudicate(
     *,
     candidate: Path,
@@ -239,19 +292,39 @@ def adjudicate(
         raise AuthoredReviewAdjudicationError(
             "review parent evidence differs"
         ) from error
-    identity_a = _read_regular_bytes(annotator_identity, maximum_bytes=1 << 20)
-    identity_b = _read_regular_bytes(reviewer_identity, maximum_bytes=1 << 20)
-    identity_hashes = [
-        hashlib.sha256(value).hexdigest() for value in (identity_a, identity_b)
-    ]
-    if identity_hashes[0] == identity_hashes[1]:
-        raise AuthoredReviewAdjudicationError("review identities are not independent")
     annotator_rows, annotator_encoded = _load_jsonl(
         annotator_reviews, "annotator reviews"
     )
     reviewer_rows, reviewer_encoded = _load_jsonl(reviewer_reviews, "reviewer reviews")
     annotator = _validate_reviews(annotator_rows, packet_rows, concept_ids, "annotator")
     reviewer = _validate_reviews(reviewer_rows, packet_rows, concept_ids, "reviewer")
+    identity_a = _read_regular_bytes(annotator_identity, maximum_bytes=1 << 20)
+    identity_b = _read_regular_bytes(reviewer_identity, maximum_bytes=1 << 20)
+    packet_sha256 = hashlib.sha256(packet_encoded).hexdigest()
+    policy_sha256 = hashlib.sha256(policy_encoded).hexdigest()
+    identity_attestations = [
+        _identity(
+            identity_a,
+            role="annotator",
+            packet_sha256=packet_sha256,
+            policy_sha256=policy_sha256,
+            reviews_sha256=hashlib.sha256(annotator_encoded).hexdigest(),
+            reviewed_documents=len(packet_rows),
+        ),
+        _identity(
+            identity_b,
+            role="reviewer",
+            packet_sha256=packet_sha256,
+            policy_sha256=policy_sha256,
+            reviews_sha256=hashlib.sha256(reviewer_encoded).hexdigest(),
+            reviewed_documents=len(packet_rows),
+        ),
+    ]
+    if identity_attestations[0] == identity_attestations[1]:
+        raise AuthoredReviewAdjudicationError("review identities are not independent")
+    identity_hashes = [
+        hashlib.sha256(value).hexdigest() for value in (identity_a, identity_b)
+    ]
     concept_disagreements = []
     assumption_disagreements = []
     quality_disagreements = []
@@ -292,6 +365,8 @@ def adjudicate(
         "annotation_policy_sha256": hashlib.sha256(policy_encoded).hexdigest(),
         "annotator_identity_sha256": identity_hashes[0],
         "reviewer_identity_sha256": identity_hashes[1],
+        "annotator_identity_attestation_sha256": identity_attestations[0],
+        "reviewer_identity_attestation_sha256": identity_attestations[1],
         "annotator_reviews_sha256": hashlib.sha256(annotator_encoded).hexdigest(),
         "reviewer_reviews_sha256": hashlib.sha256(reviewer_encoded).hexdigest(),
         "reviewed_documents": denominator,
@@ -310,6 +385,7 @@ def adjudicate(
         },
         "limitations": [
             "agreement_does_not_prove_taxonomy_completeness",
+            "human_identity_attestations_require_external_identity_verification",
             "agreement_does_not_replace_license_deduplication_or_decontamination",
             "pass_authorizes_only_taxonomy_and_progression_analysis",
             "no_training_or_architecture_promotion_is_authorized",
