@@ -40,6 +40,18 @@ Its JSONL is 1,589,711 bytes with SHA-256
 The receipt self-hash is
 `80de7bef204793694cff606972823cd37e77740eb70d0cc0176e7c33f6de908e`.
 
+All 127 rows have also been frozen into an independently reviewable packet.
+Rows are sorted by a salted review identity and hide source path, publisher
+order, provisional stage, and declared prerequisites. The blind packet is
+1,573,811 bytes with SHA-256
+`2d662e9e394cd14ad0d7ce1c8058923c49837310663a7e0b57c2501ff8e34106`.
+The separate key is 67,930 bytes with SHA-256
+`b0e2c3d982b7fdb93fcd8bcbf9d4f224cf264a70f133fd4a9ed3ed97e766f9f0`.
+Review-packet receipt `f052ff87…b906` requires independent annotator and
+reviewer identities, exact evidence spans, at most five-percent concept-set
+disagreement, and preservation of the measured disagreement before
+adjudication. It contains no completed labels and authorizes no training.
+
 ## Progression semantics
 
 The Rust Book begins with installation, hello-world programs, a guessing-game

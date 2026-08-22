@@ -257,7 +257,10 @@ benchmark evidence selects an architecture.
   The authored sequence is a prospective pedagogical spine, not a complete
   corpus; semantic review, global deduplication, decontamination, source-addition
   controls, and identical-document order controls remain mandatory. Exact
-  evidence is in `docs/SAI_AUTHORED_CURRICULUM_CANDIDATE_20260822.md`.
+  evidence is in `docs/SAI_AUTHORED_CURRICULUM_CANDIDATE_20260822.md`. All 127
+  rows are now frozen in a salted blind-review packet (`f052ff87…b906`) that
+  hides our provisional order/stage key until independent concept labels and
+  evidence spans are complete.
 
 ## Live scratchpad — 2026-08-21
 

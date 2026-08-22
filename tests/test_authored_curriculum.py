@@ -12,6 +12,11 @@ from sai.data.authored_curriculum import (
     build,
     validate,
 )
+from sai.data.authored_review_packet import (
+    AuthoredReviewPacketError,
+    validate_packet,
+)
+from sai.data.authored_review_packet import build as build_review_packet
 
 RUST_REVISION = "1" * 40
 PYTHON_REVISION = "2" * 40
@@ -42,7 +47,7 @@ def _sources(tmp_path: Path, *, python_symlink: bool = False) -> tuple[Path, Pat
         f"{rust_root}/LICENSE-MIT": b"mit\n",
         f"{rust_root}/src/title-page.md": b"# Title\n",
     }
-    for index in range(1, 80):
+    for index in range(1, 111):
         name = f"ch{index:02d}-00.md"
         rust_summary.append(f"- [Chapter {index}]({name})")
         rust_members[f"{rust_root}/src/{name}"] = (
@@ -115,13 +120,13 @@ def test_build_preserves_progression_and_holds_training(tmp_path: Path) -> None:
     )
     assert report["training_authorized"] is False
     assert report["four_b_training_authorized"] is False
-    assert report["summary"]["rows"] == 96
+    assert report["summary"]["rows"] == 127
     rows = [json.loads(line) for line in output.read_text().splitlines()]
     assert rows[0]["source_path"] == "src/title-page.md"
-    assert rows[79]["source_path"] == "src/ch79-00.md"
-    assert rows[80]["source_path"] == "Doc/tutorial/appetite.rst"
-    assert rows[80]["required_prior_concepts"] == ["programming_foundations"]
-    assert ".. code-block:: python" in rows[80]["text"]
+    assert rows[110]["source_path"] == "src/ch110-00.md"
+    assert rows[111]["source_path"] == "Doc/tutorial/appetite.rst"
+    assert rows[111]["required_prior_concepts"] == ["programming_foundations"]
+    assert ".. code-block:: python" in rows[111]["text"]
     assert output.stat().st_mode & 0o222 == 0
     assert validate(output, receipt)["receipt_sha256"] == report["receipt_sha256"]
 
@@ -170,3 +175,67 @@ def test_validation_rejects_tamper(tmp_path: Path) -> None:
     )
     with pytest.raises(AuthoredCurriculumError, match="receipt differs"):
         validate(output, receipt)
+
+
+def test_blind_review_packet_hides_progression_key(tmp_path: Path) -> None:
+    rust, python = _sources(tmp_path)
+    candidate = tmp_path / "candidate.jsonl"
+    candidate_receipt = tmp_path / "candidate-receipt.json"
+    build(
+        rust_archive=rust,
+        rust_revision=RUST_REVISION,
+        python_archive=python,
+        python_revision=PYTHON_REVISION,
+        output=candidate,
+        receipt_output=candidate_receipt,
+    )
+    review = tmp_path / "review.jsonl"
+    key = tmp_path / "key.jsonl"
+    receipt = tmp_path / "review-receipt.json"
+    report = build_review_packet(
+        candidate=candidate,
+        candidate_receipt=candidate_receipt,
+        review_output=review,
+        key_output=key,
+        receipt_output=receipt,
+    )
+    review_rows = [json.loads(line) for line in review.read_text().splitlines()]
+    key_rows = [json.loads(line) for line in key.read_text().splitlines()]
+    assert report["status"] == "awaiting_independent_review"
+    assert report["training_authorized"] is False
+    assert len(review_rows) == len(key_rows) == 127
+    assert [row["review_identity_sha256"] for row in review_rows] == sorted(
+        row["review_identity_sha256"] for row in review_rows
+    )
+    assert "candidate_stage" not in review_rows[0]
+    assert "source_path" not in review_rows[0]
+    assert "candidate_stage" in key_rows[0]
+    assert review_rows[0]["requested_review"]["admission_recommendation"] == "unlabeled"
+    assert (
+        validate_packet(
+            candidate=candidate,
+            candidate_receipt=candidate_receipt,
+            review_output=review,
+            key_output=key,
+            receipt_output=receipt,
+        )["receipt_sha256"]
+        == report["receipt_sha256"]
+    )
+    with pytest.raises(AuthoredReviewPacketError, match="boundary"):
+        build_review_packet(
+            candidate=candidate,
+            candidate_receipt=candidate_receipt,
+            review_output=review,
+            key_output=tmp_path / "key-2.jsonl",
+            receipt_output=tmp_path / "receipt-2.json",
+        )
+    review.chmod(0o644)
+    review.write_text(review.read_text().replace("unlabeled", "pass", 1))
+    with pytest.raises(AuthoredReviewPacketError, match="output differs"):
+        validate_packet(
+            candidate=candidate,
+            candidate_receipt=candidate_receipt,
+            review_output=review,
+            key_output=key,
+            receipt_output=receipt,
+        )
