@@ -46,7 +46,8 @@ _CONCEPT_KEYS = {
     "minimum_prior_documents",
 }
 _ANNOTATION_KEYS = {"schema", "document_identity_sha256", "phase", "concepts"}
-_EVIDENCE_KEYS = {"concept_id", "confidence_ppm", "evidence_sha256"}
+_EVIDENCE_KEYS = {"concept_id", "confidence_ppm", "evidence_spans"}
+_SPAN_KEYS = {"start", "end", "text_sha256"}
 
 
 class PrerequisiteError(RuntimeError):
@@ -232,6 +233,7 @@ def analyze_progression(
     taxonomy_payload: Any,
     annotations: Any,
     expected_document_identities: list[str],
+    expected_document_texts: list[str],
 ) -> dict[str, Any]:
     """Audit whether ordered concept exposures respect declared prerequisites."""
 
@@ -240,6 +242,7 @@ def analyze_progression(
         not isinstance(annotations, list)
         or not annotations
         or len(annotations) != len(expected_document_identities)
+        or len(annotations) != len(expected_document_texts)
     ):
         raise PrerequisiteError("annotation population differs")
     expected = [
@@ -250,10 +253,12 @@ def analyze_progression(
         raise PrerequisiteError("expected document identity is duplicated")
 
     state = _ProgressionState(taxonomy)
-    for index, (raw_annotation, expected_identity) in enumerate(
-        zip(annotations, expected, strict=True)
+    for index, (raw_annotation, expected_identity, expected_text) in enumerate(
+        zip(annotations, expected, expected_document_texts, strict=True)
     ):
-        state.add(index, raw_annotation, expected_identity)
+        if not isinstance(expected_text, str) or not expected_text:
+            raise PrerequisiteError("expected document text differs")
+        state.add(index, raw_annotation, expected_identity, expected_text=expected_text)
     return state.report(
         documents=len(annotations),
         ordered_document_identity_sha256=canonical_sha256(expected),
@@ -280,6 +285,7 @@ class _ProgressionState:
         expected_identity: str,
         *,
         expected_phase: str | None = None,
+        expected_text: str,
     ) -> None:
         annotation = _exact_keys(raw_annotation, _ANNOTATION_KEYS, "annotation row")
         if annotation["schema"] != ANNOTATION_SCHEMA:
@@ -311,7 +317,24 @@ class _ProgressionState:
                 raise PrerequisiteError("annotation concept differs or is duplicated")
             seen.add(concept_id)
             confidence = _ppm(item["confidence_ppm"], "annotation confidence")
-            _sha256(item["evidence_sha256"], "annotation evidence")
+            spans = item["evidence_spans"]
+            if not isinstance(spans, list) or not spans:
+                raise PrerequisiteError("annotation evidence spans differ")
+            previous_end = -1
+            for raw_span in spans:
+                span = _exact_keys(raw_span, _SPAN_KEYS, "annotation evidence span")
+                start = _nonnegative_int(span["start"], "evidence span start")
+                end = _nonnegative_int(span["end"], "evidence span end")
+                if not previous_end <= start < end <= len(expected_text):
+                    raise PrerequisiteError("annotation evidence span differs")
+                expected_span_hash = hashlib.sha256(
+                    expected_text[start:end].encode("utf-8")
+                ).hexdigest()
+                if _sha256(span["text_sha256"], "annotation evidence span") != (
+                    expected_span_hash
+                ):
+                    raise PrerequisiteError("annotation evidence text differs")
+                previous_end = end
             if confidence < self.minimum_confidence:
                 continue
             confident.append(concept_id)
@@ -515,6 +538,7 @@ def analyze_curriculum_annotation_files(
                         annotation,
                         identity,
                         expected_phase=phase,
+                        expected_text=row["text"],
                     )
                     identities.add(identity)
                     annotation_population.add(annotation)

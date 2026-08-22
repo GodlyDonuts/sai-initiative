@@ -171,8 +171,10 @@ validates `sai-semantic-prerequisite-taxonomy-v1`: all five Sai domains, a
 cycle-free concept graph, non-placeholder annotator/policy/audit identities,
 and explicit minimum prior-document counts. The progression analyzer consumes
 annotations in the exact curriculum document order, counts only evidence above
-the frozen confidence floor, and checks prerequisites before updating the
-current document's exposures. Consequently, teaching a primitive and its
+the frozen confidence floor, rehashes every claimed non-overlapping character
+span against the exact document text, and checks prerequisites before updating
+the current document's exposures. Consequently, an unsupported concept label
+cannot pass with a detached evidence hash, and teaching a primitive and its
 dependent operation in the same document does not masquerade as prior coverage.
 Its self-hashed report binds the taxonomy, ordered document identities, entire
 annotation population, first exposure, per-phase coverage, missing concepts,

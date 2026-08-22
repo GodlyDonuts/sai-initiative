@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from copy import deepcopy
 from pathlib import Path
@@ -81,14 +82,21 @@ def _taxonomy() -> dict:
 
 
 def _evidence(concept_id: str, index: int, confidence: int = 900_000) -> dict:
+    text = "evidence"
     return {
         "concept_id": concept_id,
         "confidence_ppm": confidence,
-        "evidence_sha256": f"{index + 20:064x}",
+        "evidence_spans": [
+            {
+                "start": 0,
+                "end": len(text),
+                "text_sha256": hashlib.sha256(text.encode()).hexdigest(),
+            }
+        ],
     }
 
 
-def _annotations(valid: bool = True) -> tuple[list[dict], list[str]]:
+def _annotations(valid: bool = True) -> tuple[list[dict], list[str], list[str]]:
     identities = [f"{index + 100:064x}" for index in range(4)]
     concepts = [
         [_evidence("language.color", 0), _evidence("math.addition", 1)],
@@ -112,7 +120,7 @@ def _annotations(valid: bool = True) -> tuple[list[dict], list[str]]:
             strict=True,
         )
     ]
-    return rows, identities
+    return rows, identities, ["evidence"] * len(rows)
 
 
 def _resign(payload: dict) -> dict:
@@ -124,9 +132,9 @@ def _resign(payload: dict) -> dict:
 
 def test_taxonomy_and_progression_pass_with_prior_exposure() -> None:
     taxonomy = _taxonomy()
-    annotations, identities = _annotations()
+    annotations, identities, texts = _annotations()
     assert validate_taxonomy_payload(taxonomy) == taxonomy
-    report = analyze_progression(taxonomy, annotations, identities)
+    report = analyze_progression(taxonomy, annotations, identities, texts)
     assert report["status"] == "qualified"
     assert report["progression_qualified"] is True
     assert report["violations"] == []
@@ -141,8 +149,8 @@ def test_taxonomy_and_progression_pass_with_prior_exposure() -> None:
 
 
 def test_same_document_prerequisites_do_not_count_as_prior() -> None:
-    annotations, identities = _annotations(valid=False)
-    report = analyze_progression(_taxonomy(), annotations, identities)
+    annotations, identities, texts = _annotations(valid=False)
+    report = analyze_progression(_taxonomy(), annotations, identities, texts)
     assert report["status"] == "not_qualified"
     assert report["progression_qualified"] is False
     violation = report["violations"][0]
@@ -173,20 +181,20 @@ def test_rejects_resigned_taxonomy_drift(mutate) -> None:
 
 
 def test_rejects_annotation_identity_phase_and_evidence_tamper() -> None:
-    annotations, identities = _annotations()
+    annotations, identities, texts = _annotations()
     annotations[0]["document_identity_sha256"] = "f" * 64
     with pytest.raises(PrerequisiteError, match="document order"):
-        analyze_progression(_taxonomy(), annotations, identities)
+        analyze_progression(_taxonomy(), annotations, identities, texts)
 
-    annotations, identities = _annotations()
+    annotations, identities, texts = _annotations()
     annotations[2]["phase"] = "grounding"
     with pytest.raises(PrerequisiteError, match="not monotonic"):
-        analyze_progression(_taxonomy(), annotations, identities)
+        analyze_progression(_taxonomy(), annotations, identities, texts)
 
-    annotations, identities = _annotations()
-    annotations[0]["concepts"][0]["evidence_sha256"] = "0" * 64
+    annotations, identities, texts = _annotations()
+    annotations[0]["concepts"][0]["evidence_spans"][0]["text_sha256"] = "0" * 64
     with pytest.raises(PrerequisiteError, match="placeholder"):
-        analyze_progression(_taxonomy(), annotations, identities)
+        analyze_progression(_taxonomy(), annotations, identities, texts)
 
 
 def test_taxonomy_file_rejects_symlink_and_hardlink(tmp_path: Path) -> None:
@@ -232,9 +240,18 @@ def test_streaming_audit_reopens_exact_curriculum_and_publishes_atomically(
             )
         )
     curriculum_path.write_text("".join(json.dumps(row) + "\n" for row in rows))
-    annotations, _ = _annotations()
+    annotations, _, _ = _annotations()
     for annotation, row in zip(annotations, rows, strict=True):
         annotation["document_identity_sha256"] = row["identity_sha256"]
+        for evidence in annotation["concepts"]:
+            span_text = row["text"][:10]
+            evidence["evidence_spans"] = [
+                {
+                    "start": 0,
+                    "end": len(span_text),
+                    "text_sha256": hashlib.sha256(span_text.encode()).hexdigest(),
+                }
+            ]
     annotations_path = tmp_path / "annotations.jsonl"
     annotations_path.write_text(
         "".join(json.dumps(annotation) + "\n" for annotation in annotations)
