@@ -17,6 +17,8 @@ set -euo pipefail
 : "${PYTHON:?PYTHON is required}"
 : "${LOG_ROOT:?LOG_ROOT is required}"
 : "${DECONTAMINATION_JOB_ID:?DECONTAMINATION_JOB_ID is required}"
+: "${DECONTAMINATION_RECEIPT:?DECONTAMINATION_RECEIPT is required}"
+: "${DECONTAMINATION_OUTPUT:?DECONTAMINATION_OUTPUT is required}"
 : "${MMLU_QUESTIONS_SHA256:?MMLU_QUESTIONS_SHA256 is required}"
 : "${MMLU_ASSESSORS_SHA256:?MMLU_ASSESSORS_SHA256 is required}"
 : "${MMLU_IDENTITY_ORDER_SHA256:?MMLU_IDENTITY_ORDER_SHA256 is required}"
@@ -24,7 +26,6 @@ set -euo pipefail
 : "${MUSR_ASSESSORS_SHA256:?MUSR_ASSESSORS_SHA256 is required}"
 : "${MUSR_IDENTITY_ORDER_SHA256:?MUSR_IDENTITY_ORDER_SHA256 is required}"
 
-DECONTAMINATION_RECEIPT=/lustre/fs1/home/sa305415/sai-initiative/artifacts/fineweb_edu_mechanics_admitted_be505b6_r1.receipt.json
 MMLU_QUESTIONS=/lustre/fs1/home/sa305415/shohin/artifacts/public_bench_qwen9_766196_r1/data/mmlu_pro/full.questions.jsonl
 MMLU_ASSESSORS=/lustre/fs1/home/sa305415/shohin/artifacts/public_bench_qwen9_766196_r1/data/mmlu_pro/full.assessors.jsonl
 MUSR_QUESTIONS=/lustre/fs1/home/sa305415/shohin/artifacts/public_bench_qwen9_766196_r1/data/musr/full.questions.jsonl
@@ -40,6 +41,7 @@ require_absolute() {
 
 for path in \
   "$SAI_ROOT" "$PYTHON" "$LOG_ROOT" "$DECONTAMINATION_RECEIPT" \
+  "$DECONTAMINATION_OUTPUT" \
   "$MMLU_QUESTIONS" "$MMLU_ASSESSORS" "$MUSR_QUESTIONS" \
   "$MUSR_ASSESSORS" "$OUTPUT_ROOT"; do
   require_absolute "$path"
@@ -70,7 +72,8 @@ decontamination_state="$(sacct -j "$DECONTAMINATION_JOB_ID" -X -n -P -o State | 
 test "$decontamination_state" = "COMPLETED"
 
 for path in \
-  "$DECONTAMINATION_RECEIPT" "$MMLU_QUESTIONS" "$MMLU_ASSESSORS" \
+  "$DECONTAMINATION_RECEIPT" "$DECONTAMINATION_OUTPUT" \
+  "$MMLU_QUESTIONS" "$MMLU_ASSESSORS" \
   "$MUSR_QUESTIONS" "$MUSR_ASSESSORS"; do
   test -f "$path"
   test ! -L "$path"
@@ -82,6 +85,20 @@ test "$(sha256sum "$MUSR_QUESTIONS" | cut -d ' ' -f 1)" = "$MUSR_QUESTIONS_SHA25
 test "$(sha256sum "$MUSR_ASSESSORS" | cut -d ' ' -f 1)" = "$MUSR_ASSESSORS_SHA256"
 decontamination_receipt_sha256="$(sha256sum "$DECONTAMINATION_RECEIPT" | cut -d ' ' -f 1)"
 test "${#decontamination_receipt_sha256}" = 64
+"$PYTHON" -P -s -B - <<'PY' \
+  "$DECONTAMINATION_RECEIPT" "$DECONTAMINATION_OUTPUT"
+import json
+import pathlib
+import sys
+
+receipt_path = pathlib.Path(sys.argv[1])
+expected_output = pathlib.Path(sys.argv[2])
+receipt = json.loads(receipt_path.read_text())
+if receipt.get("status") != "passed":
+    raise SystemExit("training decontamination did not pass")
+if receipt.get("output", {}).get("path") != str(expected_output.resolve()):
+    raise SystemExit("training decontamination output differs")
+PY
 
 MMLU_SOURCE="$OUTPUT_ROOT/mmlu_pro.jsonl"
 MMLU_DISJOINT="$OUTPUT_ROOT/mmlu_pro.source_disjoint.receipt.json"

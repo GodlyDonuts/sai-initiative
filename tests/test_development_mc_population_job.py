@@ -13,8 +13,12 @@ def test_cpu_population_job_freezes_exact_two_benchmark_graph() -> None:
     assert 'rev-parse --is-inside-work-tree)" = "true"' in job
     assert 'test -d "$SAI_ROOT/.git"' not in job
     assert "DECONTAMINATION_JOB_ID" in job
+    assert "DECONTAMINATION_RECEIPT" in job
+    assert "DECONTAMINATION_OUTPUT" in job
     assert 'decontamination_state" = "COMPLETED"' in job
-    assert "fineweb_edu_mechanics_admitted_be505b6_r1.receipt.json" in job
+    assert "fineweb_edu_mechanics_admitted_be505b6_r1.receipt.json" not in job
+    assert 'receipt.get("output", {}).get("path")' in job
+    assert "str(expected_output.resolve())" in job
     assert "public_bench_qwen9_766196_r1/data/mmlu_pro/full.questions.jsonl" in job
     assert "public_bench_qwen9_766196_r1/data/musr/full.assessors.jsonl" in job
     assert "--expected-rows 12032" in job
