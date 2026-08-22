@@ -167,6 +167,15 @@ benchmark evidence selects an architecture.
   submits the real-board graph only through the frozen positive-NLL condition.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
+- A deterministic forty-document qualitative audit of the exact development
+  population confirms that the frozen surface score is not semantic pedagogy:
+  grounding can include electrostatics and engineering, reasoning can include
+  introductory rocks or biographies, and specialization can include basic
+  traffic-light explanations or mythology. The exact sample rule, source
+  hashes, observations, and resulting 4B-data prohibition are recorded in
+  `docs/SAI_CURRICULUM_QUALITATIVE_AUDIT_20260822.md`. The current comparison
+  remains an order falsification experiment; it cannot waive a later semantic-
+  prerequisite or source-mixture gate.
 
 ## Live scratchpad — 2026-08-21
 
