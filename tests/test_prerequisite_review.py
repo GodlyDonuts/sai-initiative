@@ -150,6 +150,9 @@ def test_builds_replays_and_qualifies_independent_review(
     assert payload["status"] == "passed"
     assert payload["audit_qualified"] is True
     assert payload["reviewed_documents"] == 120
+    assert payload["minimum_labeled_documents"] == 100
+    assert payload["annotator_labeled_documents"] == 120
+    assert payload["reviewer_labeled_documents"] == 114
     assert payload["disagreement_documents"] == 6
     assert payload["observed_disagreement_ppm"] == 50_000
     assert payload["training_authorized"] is False
@@ -177,6 +180,23 @@ def test_builds_replays_and_qualifies_independent_review(
     assert taxonomy["annotation_method"]["audit_sample_receipt_sha256"] == sha256_file(
         output
     )
+
+
+def test_empty_agreement_cannot_qualify_semantic_review(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths = _artifacts(tmp_path, monkeypatch, disagreements=0)
+    for name in ("annotator_annotations", "reviewer_annotations"):
+        rows = [json.loads(line) for line in paths[name].read_text().splitlines()]
+        for row in rows:
+            row["concepts"] = []
+        _write_jsonl(paths[name], rows)
+    payload = _build(paths, tmp_path / "empty-review.json")
+    assert payload["status"] == "failed"
+    assert payload["audit_qualified"] is False
+    assert payload["disagreement_documents"] == 0
+    assert payload["annotator_labeled_documents"] == 0
+    assert payload["reviewer_labeled_documents"] == 0
 
 
 def test_failed_disagreement_receipt_cannot_build_taxonomy(

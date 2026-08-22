@@ -20,10 +20,11 @@ from sai.data.prerequisite_development_sample import (
 from sai.data.prerequisite_sample import validate_audit_population
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-semantic-prerequisite-audit-sample-v2"
+SCHEMA = "sai-semantic-prerequisite-audit-sample-v3"
 ANNOTATION_SCHEMA = "sai-prerequisite-document-annotation-v1"
 CONCEPT_LIST_SCHEMA = "sai-semantic-prerequisite-concept-list-v1"
 MINIMUM_REVIEWED_DOCUMENTS = 100
+MINIMUM_LABELED_DOCUMENTS = 100
 MAXIMUM_ALLOWED_DISAGREEMENT_PPM = 50_000
 _MAX_FILE_BYTES = 64 << 20
 _TOP_KEYS = {
@@ -41,6 +42,9 @@ _TOP_KEYS = {
     "annotator_annotations",
     "reviewer_annotations",
     "reviewed_documents",
+    "minimum_labeled_documents",
+    "annotator_labeled_documents",
+    "reviewer_labeled_documents",
     "disagreement_documents",
     "observed_disagreement_ppm",
     "maximum_disagreement_ppm",
@@ -335,13 +339,18 @@ def build_review_receipt(
     reviewed, reviewed_bytes = _jsonl(reviewer_annotations, "reviewer annotations")
     proposed_sets = _validate_annotations(proposed, population, concepts, "annotator")
     reviewed_sets = _validate_annotations(reviewed, population, concepts, "reviewer")
+    proposed_labeled = sum(bool(concept_set) for concept_set in proposed_sets)
+    reviewed_labeled = sum(bool(concept_set) for concept_set in reviewed_sets)
     disagreements = sum(
         a != b for a, b in zip(proposed_sets, reviewed_sets, strict=True)
     )
     documents = len(population)
     observed = disagreements * 1_000_000 // documents
     qualified = (
-        documents >= MINIMUM_REVIEWED_DOCUMENTS and observed <= maximum_disagreement_ppm
+        documents >= MINIMUM_REVIEWED_DOCUMENTS
+        and proposed_labeled >= MINIMUM_LABELED_DOCUMENTS
+        and reviewed_labeled >= MINIMUM_LABELED_DOCUMENTS
+        and observed <= maximum_disagreement_ppm
     )
     reviewer_descriptor = _file_descriptor(reviewer_identity, reviewer_identity_bytes)
     proposed_descriptor = _file_descriptor(annotator_annotations, proposed_bytes)
@@ -365,6 +374,9 @@ def build_review_receipt(
         "annotator_annotations": proposed_descriptor,
         "reviewer_annotations": reviewed_descriptor,
         "reviewed_documents": documents,
+        "minimum_labeled_documents": MINIMUM_LABELED_DOCUMENTS,
+        "annotator_labeled_documents": proposed_labeled,
+        "reviewer_labeled_documents": reviewed_labeled,
         "disagreement_documents": disagreements,
         "observed_disagreement_ppm": observed,
         "maximum_disagreement_ppm": maximum_disagreement_ppm,
@@ -498,12 +510,23 @@ def validate_review_payload(
         raise PrerequisiteReviewError("annotation population hash differs")
     proposed_sets = _validate_annotations(proposed, population, concepts, "annotator")
     reviewed_sets = _validate_annotations(reviewed, population, concepts, "reviewer")
+    proposed_labeled = sum(bool(concept_set) for concept_set in proposed_sets)
+    reviewed_labeled = sum(bool(concept_set) for concept_set in reviewed_sets)
     disagreements = sum(
         a != b for a, b in zip(proposed_sets, reviewed_sets, strict=True)
     )
     documents = len(population)
     observed = disagreements * 1_000_000 // documents
     reviewed_documents = _integer(receipt["reviewed_documents"], "reviewed documents")
+    minimum_labeled = _integer(
+        receipt["minimum_labeled_documents"], "minimum labeled documents"
+    )
+    proposed_labeled_receipt = _integer(
+        receipt["annotator_labeled_documents"], "annotator labeled documents"
+    )
+    reviewed_labeled_receipt = _integer(
+        receipt["reviewer_labeled_documents"], "reviewer labeled documents"
+    )
     disagreement_documents = _integer(
         receipt["disagreement_documents"], "disagreement documents"
     )
@@ -513,11 +536,19 @@ def validate_review_payload(
     maximum = _integer(receipt["maximum_disagreement_ppm"], "maximum disagreement")
     if maximum > MAXIMUM_ALLOWED_DISAGREEMENT_PPM:
         raise PrerequisiteReviewError("maximum disagreement differs")
-    qualified = documents >= MINIMUM_REVIEWED_DOCUMENTS and observed <= maximum
+    qualified = (
+        documents >= MINIMUM_REVIEWED_DOCUMENTS
+        and proposed_labeled >= MINIMUM_LABELED_DOCUMENTS
+        and reviewed_labeled >= MINIMUM_LABELED_DOCUMENTS
+        and observed <= maximum
+    )
     if (
         receipt["sample_population_sha256"]
         != population_row["ordered_population_sha256"]
         or reviewed_documents != documents
+        or minimum_labeled != MINIMUM_LABELED_DOCUMENTS
+        or proposed_labeled_receipt != proposed_labeled
+        or reviewed_labeled_receipt != reviewed_labeled
         or disagreement_documents != disagreements
         or observed_receipt != observed
         or receipt["audit_qualified"] is not qualified

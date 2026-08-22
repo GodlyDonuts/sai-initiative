@@ -217,6 +217,9 @@ benchmark evidence selects an architecture.
   order, and emits a separate lineage receipt. A single compiled review remains
   explicitly insufficient; qualification still requires two independent
   identities and a passing disagreement replay.
+  The replay now additionally requires each independent side to label at least
+  100 of the 120 documents with evidence-backed concepts. Two empty annotation
+  files therefore fail even if their nominal disagreement is zero.
 - Source-disjoint split `770039` is now running from that independently
   qualified receipt with four ordered workers across both receipt validation
   and exact split reconstruction, plus a four-hour fail-closed wall limit.

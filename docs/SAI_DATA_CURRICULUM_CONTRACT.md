@@ -411,7 +411,10 @@ reopen against the frozen source text. The receipt binds and reopens the sample,
 candidate concept list, identities, policy, and both annotation files; it
 computes document-level concept-set disagreement rather than accepting caller
 arithmetic. Taxonomy construction requires at least 100 reviewed documents and
-a prospectively capped disagreement rate no greater than five percent. Evidence
+a prospectively capped disagreement rate no greater than five percent. Each
+side must also provide at least one evidence-backed concept for at least 100 of
+the 120 documents, so two empty annotation files cannot manufacture perfect
+agreement. Evidence
 span differences remain inspectable but do not count as semantic label
 disagreement when both reviewers selected the same concept. A failed audit is
 preserved as evidence and cannot construct the taxonomy.
