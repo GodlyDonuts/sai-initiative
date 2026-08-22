@@ -291,6 +291,12 @@ benchmark evidence selects an architecture.
   order control `770155` then started independently on `evc22` and `evc24`.
   Both train exactly 499,998,720 tokens with the same model, initialization,
   optimizer, seed, update count, tokenizer, and admitted record multiset.
+  Both independently published their first durable checkpoints at optimizer
+  step 10: exactly 2,560 sequences each. Their checkpoint manifests bind the
+  same code (`16439922…410`), configuration (`a34e96f8…f11`), environment
+  (`778d1372…f29`), and model (`ef67fa5d…574`) identities; only the ordered-
+  stream and resulting run identities differ. The curriculum checkpoint hash
+  is `02fe57b4…e2d`, and the control checkpoint hash is `1fef6028…996`.
 - Continuation `770137` failed in five CPU seconds before submitting work
   because Slurm would not accept a new dependency on completed population job
   `770126` after it aged out of the live controller table. The population and
