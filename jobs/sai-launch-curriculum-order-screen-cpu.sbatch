@@ -138,6 +138,7 @@ job_ids+=("$canary_job")
 curriculum_job="$({
   env -u SLURM_OVERLAP -u SLURM_WHOLE sbatch --parsable \
     --chdir="$SAI_ROOT" --dependency="afterok:$canary_job" \
+    --time=18:00:00 \
     --kill-on-invalid-dep=yes \
     --output="$LOG_ROOT/sai_curriculum_500m_%j.out" \
     --error="$LOG_ROOT/sai_curriculum_500m_%j.err" \
@@ -150,6 +151,7 @@ job_ids+=("$curriculum_job")
 control_job="$({
   env -u SLURM_OVERLAP -u SLURM_WHOLE sbatch --parsable \
     --chdir="$SAI_ROOT" --dependency="afterok:$canary_job" \
+    --time=18:00:00 \
     --kill-on-invalid-dep=yes \
     --output="$LOG_ROOT/sai_order_control_500m_%j.out" \
     --error="$LOG_ROOT/sai_order_control_500m_%j.err" \

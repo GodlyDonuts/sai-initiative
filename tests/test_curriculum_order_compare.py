@@ -278,6 +278,7 @@ def test_launcher_is_matched_independent_single_h100_and_nonretrying() -> None:
     assert "#SBATCH --mem=16G" in launcher
     assert "#SBATCH --time=04:00:00" in launcher
     assert "sbatch --parsable --time=04:00:00" in launcher
+    assert launcher.count("--time=18:00:00") == 2
     assert "FAMILY=gated_gqa" in launcher
     assert "TRAINING_SEQUENCES=244140" in launcher
     assert "OPTIMIZER_STEPS=954" in launcher

@@ -182,6 +182,14 @@ benchmark evidence selects an architecture.
   restarts. It has not yet submitted a GPU child. Continuation `770137` remains
   dependency-held. The trainer, evaluator, comparator, data bytes, model
   geometry, seed, optimizer, and evaluation rows are unchanged.
+  Pre-allocation runtime audit then found that the prior 100M-token GQA arm
+  required `9,905` seconds; a linear 500M-token projection is `49,525` seconds
+  and the predeclared 25% safety margin is `61,907` seconds. The original
+  eight-hour child limit was therefore deterministically insufficient. Future
+  launcher bytes request 18 hours for each full arm. A create-only live guard
+  will apply the same limit to the two still-pending children immediately after
+  `770136` publishes their dispatch, before either training arm starts; it
+  changes no data, model, seed, optimizer, update, or evaluation identity.
 - Source-disjoint MMLU-Pro and MuSR evaluation now admits curriculum-derived
   streams only through the exact completed lineage from the benchmark-audited
   decontaminated source, through the qualified curriculum and split receipts,
