@@ -18,12 +18,19 @@ from sai.data.token_stream import canonical_sha256
 
 
 def _receipt(path: Path, *, schema: str, status: str, source_id: str) -> dict:
+    qualification_fields = {
+        "test-license_review-v1": "license_approved",
+        "test-quality_audit-v1": "quality_qualified",
+        "test-decontamination-v1": "decontamination_qualified",
+        "test-pedagogical_progression-v1": "progression_qualified",
+    }
     payload = {
         "schema": schema,
         "status": status,
         "training_authorized": False,
         "four_b_training_authorized": False,
         "source_id": source_id,
+        qualification_fields[schema]: True,
     }
     payload["receipt_sha256"] = canonical_sha256(payload)
     path.write_text(json.dumps(payload, sort_keys=True) + "\n")
@@ -250,6 +257,26 @@ def test_rejects_unsafe_and_receipt_self_hash_drift(tmp_path: Path) -> None:
     )
     _resign(payload)
     with pytest.raises(DataMixtureEvidenceError, match="missing or unsafe"):
+        validate_payload(payload, evidence_root=root)
+
+
+def test_rejects_re_signed_receipt_without_role_qualification(tmp_path: Path) -> None:
+    root = tmp_path / "evidence"
+    root.mkdir()
+    payload = _plan(root)
+    descriptor = payload["sources"][3]["evidence"]["quality_audit"]
+    path = root / descriptor["relative_path"]
+    receipt = json.loads(path.read_text())
+    receipt["quality_qualified"] = False
+    receipt["receipt_sha256"] = canonical_sha256(
+        {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    )
+    path.write_text(json.dumps(receipt, sort_keys=True) + "\n")
+    descriptor["file_sha256"] = hashlib.sha256(path.read_bytes()).hexdigest()
+    descriptor["receipt_sha256"] = receipt["receipt_sha256"]
+    _resign(payload)
+
+    with pytest.raises(DataMixtureEvidenceError, match="quality_audit receipt differs"):
         validate_payload(payload, evidence_root=root)
 
 

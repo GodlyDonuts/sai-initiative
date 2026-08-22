@@ -276,7 +276,9 @@ benchmark evidence selects an architecture.
   source manifest, selection policy, license decision, quality audit,
   decontamination receipt, and pedagogical progression receipt; validates exact
   file bytes plus canonical receipt schema/status/self-hash; and rejects links,
-  missing evidence, and re-signed drift. No v3 mixture passes yet.
+  missing evidence, and re-signed drift. Each receipt must also carry its exact
+  role-specific positive decision; a generic `status: qualified` cannot admit a
+  source. No v3 mixture passes yet.
 
 ## Live scratchpad — 2026-08-21
 

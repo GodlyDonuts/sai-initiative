@@ -43,6 +43,12 @@ _ALLOWED_STATUSES = {
     "decontamination": {"complete", "passed", "qualified"},
     "pedagogical_progression": {"complete", "passed", "qualified"},
 }
+_QUALIFICATION_FIELDS = {
+    "license_review": "license_approved",
+    "quality_audit": "quality_qualified",
+    "decontamination": "decontamination_qualified",
+    "pedagogical_progression": "progression_qualified",
+}
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _TOP_KEYS = {
     "schema",
@@ -196,6 +202,7 @@ def _receipt(encoded: bytes, descriptor: dict[str, Any], role: str) -> None:
         or payload.get("receipt_sha256") != descriptor["receipt_sha256"]
         or payload.get("receipt_sha256") != canonical_sha256(unsigned)
         or descriptor["status"] not in _ALLOWED_STATUSES[role]
+        or payload.get(_QUALIFICATION_FIELDS[role]) is not True
         or payload.get("training_authorized") not in {None, False}
         or payload.get("four_b_training_authorized") not in {None, False}
     ):

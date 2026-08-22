@@ -20,7 +20,11 @@ be a single-link regular file reached through non-symlink directories; its
 bytes must match the declared SHA-256. Receipt roles additionally require the
 declared schema/status and a replayed canonical self-hash. Missing evidence,
 bare invented hashes, unsafe paths, re-signed content drift, and status drift
-all fail. Shared global evidence is permitted only when every source declares
+all fail. A generic successful-looking status is insufficient: license,
+quality, decontamination, and pedagogical receipts must respectively assert the
+exact boolean decisions `license_approved`, `quality_qualified`,
+`decontamination_qualified`, and `progression_qualified`. Shared global evidence
+is permitted only when every source declares
 the identical descriptor. No v3 mixture currently passes because the source
 selection work is intentionally incomplete.
 
