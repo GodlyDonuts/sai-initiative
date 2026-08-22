@@ -68,5 +68,31 @@ versioned, prospectively frozen human-review ladder comparing no language floor,
 measure accepted-row precision and rejected-row false negatives before any
 FineMath source-addition screen.
 
+`sai-build-finemath-review-ladder` implements that frozen next step without
+overlapping review arms. Rows passing every non-language V1 rule are divided
+into `<0.90`, `0.90–0.95`, and `>=0.95` strata. It deterministically selects 64
+per stratum, shuffles their presentation by a second identity hash, and removes
+the stratum and language score from the reviewer-facing packet. The mapping key
+is a distinct artifact that must remain closed until labels are complete. The
+full candidate population, blinded packet, hidden key, source audit, and policy
+are all replay-bound; none authorizes training.
+
+The real-shard V2 build completed with the exact prospective geometry:
+
+- candidates passing every non-language V1 rule: `3,114`;
+- `<0.90`: `2,424`; `0.90–0.95`: `625`; `>=0.95`: `65`;
+- blinded review rows: `192`, exactly `64` from each stratum;
+- ladder receipt self-hash:
+  `a17dcf577768aa1999d4939deef54c6fbd565cf777973954ebc993cca80dd6d0`;
+- candidate population: 23,405,228 bytes, SHA-256
+  `5a73768f47ea94ed19d89f1b98bcca938c7c62925b72f998ae738f10eaad03f1`;
+- blinded packet: 1,386,522 bytes, SHA-256
+  `1fdfbb1494e7b3fabfe9a5ddc791820a40bd7f4d4360270d4fac7ff2cf361948`;
+- closed score key: 54,656 bytes, SHA-256
+  `c871bd4bf20b0e1a92f2a984a27aa52a685f331e5abcfb1c54de1768677da0f1`.
+
+These are selected review candidates, not accepted training rows. Threshold
+selection remains pending blind quality labels.
+
 No row from V1 is admitted to training. No result here authorizes an optimizer
 job, architecture promotion, or 4B training.

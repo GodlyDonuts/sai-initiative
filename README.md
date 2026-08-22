@@ -243,6 +243,11 @@ benchmark evidence selects an architecture.
   outcome. `docs/SAI_FINEMATH_FILTER_V1_RESULT_20260822.md` binds the receipt,
   rejection counts, and exact funnel. The next prospective step is a blind
   human-review ladder at no language floor, 0.90, and 0.95—not training.
+- That prospective ladder has now frozen `3,114` non-language-qualified
+  candidates and a 192-row blind packet: exactly 64 rows from each of `<0.90`,
+  `0.90–0.95`, and `>=0.95`. The packet hides score and stratum; its separate
+  key remains closed until labels are complete. Receipt
+  `a17dcf57…d6d0` authorizes no training.
 
 ## Live scratchpad — 2026-08-21
 
