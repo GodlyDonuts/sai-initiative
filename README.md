@@ -248,6 +248,16 @@ benchmark evidence selects an architecture.
   `0.90–0.95`, and `>=0.95`. The packet hides score and stratum; its separate
   key remains closed until labels are complete. Receipt
   `a17dcf57…d6d0` authorizes no training.
+- An authored programming-curriculum candidate now preserves 111 Rust Book
+  chapters and 16 CPython tutorial chapters at exact pinned revisions, in
+  publisher order with byte-exact code and license evidence. Its 127-row
+  candidate receipt is `80de7bef…08e`; it authorizes no training. Python's
+  tutorial explicitly assumes prior programming knowledge, so every Python row
+  requires `programming_foundations` instead of being mislabeled as grounding.
+  The authored sequence is a prospective pedagogical spine, not a complete
+  corpus; semantic review, global deduplication, decontamination, source-addition
+  controls, and identical-document order controls remain mandatory. Exact
+  evidence is in `docs/SAI_AUTHORED_CURRICULUM_CANDIDATE_20260822.md`.
 
 ## Live scratchpad — 2026-08-21
 

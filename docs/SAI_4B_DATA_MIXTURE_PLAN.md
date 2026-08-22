@@ -89,6 +89,17 @@ strong candidates for a code prerequisite lane, but neither is treated as a
 complete beginner curriculum or blended with scraped code before a matched
 source-addition test.
 
+The first exact authored candidate is now frozen. It binds Rust Book revision
+`917544888a55e4da7109bdba8c88c893c0da70f4` and CPython revision
+`01104ce1beb3135c2e0c01ec835b994c1f55a1c0`, preserves 127 publisher-ordered
+chapters and 1,475,885 source bytes without cross-chapter chunking, and records
+receipt `80de7bef…08e`. The Python tutorial's own stated audience is used as a
+hard curriculum constraint: every Python row requires prior programming
+foundations. This candidate remains outside training pending semantic review,
+license review, global deduplication, benchmark decontamination, and matched
+source-addition and order controls. Full evidence is recorded in
+`SAI_AUTHORED_CURRICULUM_CANDIDATE_20260822.md`.
+
 OpenStax is not admitted as one source class merely because it is called open.
 Current official licensing information describes its textbooks as
 CC BY-NC-SA, while some individual catalog records describe earlier titles as
