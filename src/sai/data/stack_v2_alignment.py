@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 import uuid
 from collections import Counter
 from pathlib import Path
@@ -128,6 +129,20 @@ def _json(path: Path, label: str, maximum: int = 64 << 20) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise StackV2AlignmentError(f"{label} differs")
     return payload
+
+
+def _regular_output(path: Path, label: str) -> os.stat_result:
+    try:
+        descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    except OSError as error:
+        raise StackV2AlignmentError(f"{label} is missing or unsafe") from error
+    try:
+        value = os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+    if not stat.S_ISREG(value.st_mode) or value.st_nlink != 1:
+        raise StackV2AlignmentError(f"{label} is missing or unsafe")
+    return value
 
 
 def _artifact(path: Path, label: str) -> dict[str, Any]:
@@ -727,7 +742,7 @@ def validate_alignment(receipt: Path) -> dict[str, Any]:
         candidate_path, snapshot_path, Path(output["path"])
     )
     aligned_path = Path(output["path"])
-    metadata = _safe_regular(aligned_path, "Stack v2 aligned candidates")
+    metadata = _regular_output(aligned_path, "Stack v2 aligned candidates")
     if (
         expected != payload
         or metadata.st_size != len(encoded)

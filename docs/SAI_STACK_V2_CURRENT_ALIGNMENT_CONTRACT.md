@@ -67,3 +67,27 @@ still requires all of the following before source admission:
 No missing gate may be inferred from another. In particular, current presence
 does not prove quality, a high quality score does not prove pedagogical order,
 and a curriculum label does not authorize 4B training.
+
+## Exact content-bundle boundary
+
+Once separately authorized bulk access produces content, the bytes are packed
+into one sealed concatenated bundle plus one sealed ordered JSONL index. This
+avoids creating hundreds of thousands of small filesystem objects. Each index
+row binds its candidate ordinal, repository, path, blob ID, exact offset and
+length, independent SHA-256, Software Heritage bucket/key, and acquisition
+ETag.
+
+`sai-verify-stack-edu-content` refuses to operate unless the current snapshot's
+access evidence explicitly records bulk-content authorization. It then replays
+every aligned row in order and requires:
+
+- no gaps, overlaps, missing rows, extra rows, or trailing bundle bytes;
+- exact equality with the Stack-Edu declared byte length;
+- `SHA1("blob " + decimal_length + NUL + content) == blob_id`;
+- equality with the independently recorded SHA-256;
+- strict UTF-8 decoding and byte-identical UTF-8 round trip;
+- sealed regular single-link bundle, index, alignment, snapshot, and access
+  evidence boundaries.
+
+The resulting content receipt still keeps both training authorizations false.
+It proves byte identity, not quality or pedagogy.

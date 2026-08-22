@@ -391,6 +391,13 @@ benchmark evidence selects an architecture.
   verification, attribution, secret/PII/malware scanning, global exact and near
   deduplication, benchmark decontamination, and semantic curriculum review all
   remain mandatory. See `docs/SAI_STACK_V2_CURRENT_ALIGNMENT_CONTRACT.md`.
+- Authorized acquired code must then pass the separate exact-content bundle
+  verifier. It requires a sealed contiguous bundle and ordered index, recomputes
+  the Git/SWH blob SHA-1 over `blob <length>\0<bytes>`, checks independent
+  SHA-256 and declared length, proves strict UTF-8 round trips, and rejects any
+  gap, overlap, missing row, or trailing byte. A valid byte receipt still keeps
+  training and 4B authorization false; quality, secrets, global duplication,
+  contamination, and semantic placement remain downstream gates.
 - An authored programming-curriculum candidate now preserves 111 Rust Book
   chapters and 16 CPython tutorial chapters at exact pinned revisions, in
   publisher order with byte-exact code and license evidence. Its 127-row
