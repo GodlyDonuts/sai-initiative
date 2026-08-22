@@ -284,6 +284,13 @@ benchmark evidence selects an architecture.
 
 ## Live scratchpad — 2026-08-21
 
+- Measured full curriculum/split/stream replay exceeded two CPU wall-hours on
+  Newton before dispatch. Future curriculum-order launchers therefore reserve
+  six CPU hours for the evidence replay; the downstream comparison remains a
+  separate four-hour CPU job, and both 500M-token H100 arms retain their
+  independently measured 18-hour limits. This changes no data, seed, model, or
+  scientific result.
+
 - Exact FLA 0.4.2 Gated DeltaNet and KDA chunk mechanics remain qualified by
   Newton job `768134`. The environment receipt file is SHA-256
   `778d137224671a44acdcc923270dc7478cded5437780a0ea37e19b764a219f29`.

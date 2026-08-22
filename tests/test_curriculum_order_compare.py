@@ -276,7 +276,7 @@ def test_launcher_is_matched_independent_single_h100_and_nonretrying() -> None:
     assert "curriculum_workers=curriculum_workers" in launcher
     assert "#SBATCH --cpus-per-task=8" in launcher
     assert "#SBATCH --mem=16G" in launcher
-    assert "#SBATCH --time=04:00:00" in launcher
+    assert "#SBATCH --time=06:00:00" in launcher
     assert "sbatch --parsable --time=04:00:00" in launcher
     assert launcher.count("--time=18:00:00") == 2
     assert "FAMILY=gated_gqa" in launcher
