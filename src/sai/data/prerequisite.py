@@ -16,7 +16,7 @@ from typing import Any
 from sai.data.curriculum import PHASES, validate_curriculum
 from sai.data.token_stream import ALLOWED_DOMAINS, canonical_sha256, normalize_document
 
-TAXONOMY_SCHEMA = "sai-semantic-prerequisite-taxonomy-v1"
+TAXONOMY_SCHEMA = "sai-semantic-prerequisite-taxonomy-v2"
 ANNOTATION_SCHEMA = "sai-prerequisite-document-annotation-v1"
 REPORT_SCHEMA = "sai-semantic-prerequisite-progression-report-v1"
 ANNOTATION_METHODS = {"deterministic", "model", "hybrid", "human"}
@@ -44,6 +44,7 @@ _CONCEPT_KEYS = {
     "domain",
     "prerequisites",
     "minimum_prior_documents",
+    "minimum_phase_documents",
 }
 _ANNOTATION_KEYS = {"schema", "document_identity_sha256", "phase", "concepts"}
 _EVIDENCE_KEYS = {"concept_id", "confidence_ppm", "evidence_spans"}
@@ -169,6 +170,18 @@ def validate_taxonomy_payload(payload: Any) -> dict[str, Any]:
         )
         if bool(prerequisites) != bool(minimum):
             raise PrerequisiteError("concept prerequisite threshold differs")
+        minimum_phase_documents = _exact_keys(
+            concept["minimum_phase_documents"],
+            set(PHASES),
+            "concept phase minimums",
+        )
+        for phase in PHASES:
+            _nonnegative_int(
+                minimum_phase_documents[phase],
+                f"{phase} minimum documents",
+            )
+        if not any(minimum_phase_documents.values()):
+            raise PrerequisiteError("concept has no required curriculum exposure")
         concepts[concept_id] = concept
 
     if domains != ALLOWED_DOMAINS:
@@ -274,6 +287,7 @@ class _ProgressionState:
         self.prior_counts: Counter[str] = Counter()
         self.phase_counts: Counter[str] = Counter()
         self.concept_counts: Counter[str] = Counter()
+        self.concept_phase_counts: Counter[tuple[str, str]] = Counter()
         self.first_exposure: dict[str, int] = {}
         self.violations: list[dict[str, Any]] = []
         self.previous_phase = -1
@@ -339,6 +353,7 @@ class _ProgressionState:
                 continue
             confident.append(concept_id)
             self.concept_counts[concept_id] += 1
+            self.concept_phase_counts[(concept_id, phase)] += 1
             self.first_exposure.setdefault(concept_id, index)
             concept = self.concepts[concept_id]
             minimum = concept["minimum_prior_documents"]
@@ -369,7 +384,25 @@ class _ProgressionState:
         if set(self.phase_counts) != set(PHASES):
             raise PrerequisiteError("annotation population does not cover every phase")
         missing_concepts = sorted(set(self.concepts) - set(self.concept_counts))
-        progression_qualified = not self.violations and not missing_concepts
+        phase_coverage_violations = []
+        for concept_id, concept in sorted(self.concepts.items()):
+            for phase in PHASES:
+                required = concept["minimum_phase_documents"][phase]
+                observed = self.concept_phase_counts[(concept_id, phase)]
+                if observed < required:
+                    phase_coverage_violations.append(
+                        {
+                            "concept_id": concept_id,
+                            "phase": phase,
+                            "required_documents": required,
+                            "observed_documents": observed,
+                        }
+                    )
+        progression_qualified = (
+            not self.violations
+            and not missing_concepts
+            and not phase_coverage_violations
+        )
         report: dict[str, Any] = {
             "schema": REPORT_SCHEMA,
             "status": "qualified" if progression_qualified else "not_qualified",
@@ -382,11 +415,16 @@ class _ProgressionState:
                 concept_id: {
                     "confident_documents": self.concept_counts[concept_id],
                     "first_document_index": self.first_exposure.get(concept_id),
+                    "phase_documents": {
+                        phase: self.concept_phase_counts[(concept_id, phase)]
+                        for phase in PHASES
+                    },
                 }
                 for concept_id in sorted(self.concepts)
             },
             "missing_concepts": missing_concepts,
             "violations": self.violations,
+            "phase_coverage_violations": phase_coverage_violations,
             "progression_qualified": progression_qualified,
             "training_authorized": False,
             "four_b_training_authorized": False,

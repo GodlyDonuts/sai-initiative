@@ -33,6 +33,12 @@ def _taxonomy() -> dict:
             "domain": "english",
             "prerequisites": [],
             "minimum_prior_documents": 0,
+            "minimum_phase_documents": {
+                "grounding": 1,
+                "integration": 0,
+                "reasoning": 0,
+                "specialization": 0,
+            },
         },
         {
             "concept_id": "code.variable",
@@ -40,6 +46,12 @@ def _taxonomy() -> dict:
             "domain": "code",
             "prerequisites": [],
             "minimum_prior_documents": 0,
+            "minimum_phase_documents": {
+                "grounding": 0,
+                "integration": 1,
+                "reasoning": 0,
+                "specialization": 0,
+            },
         },
         {
             "concept_id": "math.addition",
@@ -47,6 +59,12 @@ def _taxonomy() -> dict:
             "domain": "math",
             "prerequisites": [],
             "minimum_prior_documents": 0,
+            "minimum_phase_documents": {
+                "grounding": 1,
+                "integration": 0,
+                "reasoning": 0,
+                "specialization": 0,
+            },
         },
         {
             "concept_id": "science.primary-colors",
@@ -54,6 +72,12 @@ def _taxonomy() -> dict:
             "domain": "science",
             "prerequisites": ["language.color"],
             "minimum_prior_documents": 1,
+            "minimum_phase_documents": {
+                "grounding": 0,
+                "integration": 0,
+                "reasoning": 1,
+                "specialization": 0,
+            },
         },
         {
             "concept_id": "technical.color-mixing",
@@ -61,6 +85,12 @@ def _taxonomy() -> dict:
             "domain": "technical",
             "prerequisites": ["science.primary-colors", "math.addition"],
             "minimum_prior_documents": 1,
+            "minimum_phase_documents": {
+                "grounding": 0,
+                "integration": 0,
+                "reasoning": 0,
+                "specialization": 1,
+            },
         },
     ]
     payload = {
@@ -141,7 +171,14 @@ def test_taxonomy_and_progression_pass_with_prior_exposure() -> None:
     assert report["concepts"]["technical.color-mixing"] == {
         "confident_documents": 1,
         "first_document_index": 3,
+        "phase_documents": {
+            "grounding": 0,
+            "integration": 0,
+            "reasoning": 0,
+            "specialization": 1,
+        },
     }
+    assert report["phase_coverage_violations"] == []
     assert report["ordered_document_identity_sha256"] == canonical_sha256(identities)
     assert report["annotations_sha256"] == canonical_sha256(annotations)
     assert report["training_authorized"] is False
@@ -156,6 +193,25 @@ def test_same_document_prerequisites_do_not_count_as_prior() -> None:
     violation = report["violations"][0]
     assert violation["concept_id"] == "technical.color-mixing"
     assert violation["observed_prior_documents"] == 0
+
+
+def test_missing_later_rehearsal_fails_progression() -> None:
+    taxonomy = deepcopy(_taxonomy())
+    taxonomy["concepts"][0]["minimum_phase_documents"]["specialization"] = 1
+    _resign(taxonomy)
+    annotations, identities, texts = _annotations()
+    report = analyze_progression(taxonomy, annotations, identities, texts)
+    assert report["status"] == "not_qualified"
+    assert report["progression_qualified"] is False
+    assert report["violations"] == []
+    assert report["phase_coverage_violations"] == [
+        {
+            "concept_id": "language.color",
+            "phase": "specialization",
+            "required_documents": 1,
+            "observed_documents": 0,
+        }
+    ]
 
 
 @pytest.mark.parametrize(

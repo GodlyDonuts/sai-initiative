@@ -221,9 +221,10 @@ Two later hypotheses must remain separate factors:
    identities, and score-to-order policy must be frozen before the comparison.
 
 The prospective semantic boundary is executable. `sai-validate-prerequisites`
-validates `sai-semantic-prerequisite-taxonomy-v1`: all five Sai domains, a
+validates `sai-semantic-prerequisite-taxonomy-v2`: all five Sai domains, a
 cycle-free concept graph, non-placeholder annotator/policy/audit identities,
-and explicit minimum prior-document counts. The progression analyzer consumes
+explicit minimum prior-document counts, and frozen per-concept minimum exposure
+counts for every curriculum phase. The progression analyzer consumes
 annotations in the exact curriculum document order, counts only evidence above
 the frozen confidence floor, rehashes every claimed non-overlapping character
 span against the exact document text, and checks prerequisites before updating
@@ -232,7 +233,8 @@ cannot pass with a detached evidence hash, and teaching a primitive and its
 dependent operation in the same document does not masquerade as prior coverage.
 Its self-hashed report binds the taxonomy, ordered document identities, entire
 annotation population, first exposure, per-phase coverage, missing concepts,
-and every violation. It remains prospective and cannot authorize training.
+every prerequisite violation, and every missing rehearsal obligation. It
+remains prospective and cannot authorize training.
 `sai-validate-prerequisites audit-curriculum` performs this audit as a streaming
 replay: it first revalidates the curriculum receipt, then rereads the exact
 curriculum and annotation files in lockstep, derives phase membership from the
