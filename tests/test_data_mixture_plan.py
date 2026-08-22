@@ -31,8 +31,11 @@ def _source(
         "license": "ODC-BY-1.0",
         "domain": domain,
         "source_manifest_sha256": f"{index + 11:064x}",
+        "license_review_receipt_sha256": f"{index + 16:064x}",
+        "quality_audit_receipt_sha256": f"{index + 18:064x}",
         "selection_policy_sha256": f"{index + 21:064x}",
         "decontamination_receipt_sha256": f"{index + 31:064x}",
+        "pedagogical_progression_receipt_sha256": f"{index + 41:064x}",
         "minimum_phase": minimum_phase,
         "rehearsal_required": rehearsal_required,
         "planned_tokens": planned_tokens,
@@ -143,6 +146,10 @@ def test_validates_exact_multisource_progressive_plan(tmp_path: Path) -> None:
         lambda value: value["sources"][0].update(license="TBD"),
         lambda value: value["sources"][0].update(revision="0" * 40),
         lambda value: value["sources"][0].update(source_manifest_sha256="0" * 64),
+        lambda value: value["sources"][0].update(quality_audit_receipt_sha256="0" * 64),
+        lambda value: value["sources"][0].update(
+            pedagogical_progression_receipt_sha256="0" * 64
+        ),
         lambda value: value.update(four_b_training_authorized=True),
     ],
 )

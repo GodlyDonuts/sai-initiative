@@ -12,7 +12,7 @@ from typing import Any
 
 from sai.data.token_stream import ALLOWED_DOMAINS, canonical_sha256
 
-SCHEMA = "sai-4b-data-mixture-plan-v1"
+SCHEMA = "sai-4b-data-mixture-plan-v2"
 PHASES = ("grounding", "integration", "reasoning", "specialization")
 SOURCE_CLASSES = {
     "educational_web",
@@ -45,8 +45,11 @@ _SOURCE_KEYS = {
     "license",
     "domain",
     "source_manifest_sha256",
+    "license_review_receipt_sha256",
+    "quality_audit_receipt_sha256",
     "selection_policy_sha256",
     "decontamination_receipt_sha256",
+    "pedagogical_progression_receipt_sha256",
     "minimum_phase",
     "rehearsal_required",
     "planned_tokens",
@@ -159,8 +162,11 @@ def validate_payload(payload: Any) -> dict[str, Any]:
         domains.add(source["domain"])
         for field in (
             "source_manifest_sha256",
+            "license_review_receipt_sha256",
+            "quality_audit_receipt_sha256",
             "selection_policy_sha256",
             "decontamination_receipt_sha256",
+            "pedagogical_progression_receipt_sha256",
         ):
             _sha256(source[field], field)
         if source["minimum_phase"] not in PHASES:
