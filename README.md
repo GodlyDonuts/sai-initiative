@@ -123,8 +123,8 @@ benchmark evidence selects an architecture.
   parent benchmark launchers are `769425`/`769426`; workspace evaluation stages
   are `769440`/`769441`; and terminal comparisons are `769442`/`769443`. Each
   pair targets the same collision-safe artifact and only the branch whose
-  corpus lineage completes can run. The unaffected 100M/250M launcher `769232`
-  and workspace launcher `769439` remain staged. Two
+  corpus lineage completes can run. Workspace launcher `769439` remains
+  staged. Two
   malformed first launcher clones (`769233–769234`) were caught while still
   dependency-held and canceled with zero elapsed time and zero restarts; their
   corrected replacements bind the exact fallback population and stream job
@@ -132,12 +132,18 @@ benchmark evidence selects an architecture.
   Recovery-bound parent/workspace/benchmark stagers have been rewired to
   population job `769627`; primary-bound branches are now dependency-dead and
   cannot race the recovery lineage. Successful decontamination is followed by
-  shared 499,998,720-token stream
-  freeze `769226`. Dependency-staged launcher `769232` will then run a fresh,
-  matched three-family screen over the exact 249,999,360-token prefix using
-  three independent one-H100 jobs. This tests whether the near-chance 100M
-  results reflect data starvation or the mixers themselves; it neither selects
-  a mixer in advance nor authorizes 4B. The real-benchmark continuation is now
+  shared 499,998,720-token stream freeze `769226`. The original dependency-held
+  100M launcher `769232` and benchmark stager `769649` were cancelled with zero
+  elapsed time and zero restarts after end-to-end DeltaMixer qualification found
+  that their older immutable runtime checked only operator-level FLA parity.
+  They submitted no child jobs and created no screen result. Current code now
+  requires an explicit, non-downgrading scope: `gqa_only` submits exactly one
+  reference GQA baseline over the same 249,999,360-token prefix and labels it
+  non-tournament; `three_family` fails before output creation or submission
+  unless an exact full-DeltaMixer receipt is hash-pinned and independently
+  revalidated by both launcher and GPU job. This neither selects a mixer in
+  advance nor authorizes 4B. Once a three-family screen is qualified, the
+  real-benchmark continuation is
   executable rather than aspirational: after those three checkpoint jobs and
   the refreshed decontamination population close, a CPU-only stager submits
   eight independent one-H100 MMLU-Pro shards plus one independent one-H100
@@ -158,9 +164,25 @@ benchmark evidence selects an architecture.
   `/lustre/fs1/home/sa305415/sai-initiative-runtime-f128faa-r1` contains 213
   files at tree `ff7fba7473785368c2e5274e37c29edfdd02c343`. Stale pending
   stager `769619` was cancelled with zero elapsed time and zero restarts.
-  Replacement `769649` binds the parallel recovery population `769627`, the
-  existing screen launcher `769232`, the new immutable runtime, and a fresh
-  collision-free result root. It remains dependency-held and requests no GPU.
+  Replacement `769649` was also cancelled dependency-held, with zero elapsed
+  time and zero restarts, when its unqualified upstream launcher was withdrawn.
+- Full-model FLA qualification is an evidence-bearing NO-GO, not an assumed
+  pass. Jobs `769650–769654`, `769658`, and `769659` used independent one-H100,
+  no-requeue requests and executed zero optimizer steps. Across fixed seeds,
+  all structural mappings, row resets, `scale=1`, and every one of 24 direct
+  packed causal-convolution comparisons passed. The direct recurrence isolation
+  at seed `20260823` produced GDN normalized-RMSE ratios
+  `0.00413/0.00462/0.00457/0.00447` and KDA ratios
+  `0.00213/0.00465/0.00565/0.00434` for lengths `1/63/64/65`. Pinned FLA 0.4.2
+  requires strict forward ratio below `0.005`, so KDA length 64 is a real
+  failure and the existing v1 receipt remains unqualified. All direct
+  convolution checks passed; full-layer ratios were about `0.35–1.09%`, with
+  sparse maximum-element outliers, so neither threshold relaxation nor a
+  mapping-bug claim is justified. Commit `e27a8d723a19cea3c0790568667dee06e5e67b15`
+  preserves the failed evidence and gates hybrid screens on a future qualified
+  receipt. A family-separated v2 primitive gate is being prepared with the
+  upstream FLA forward/backward ratio limits and fresh held-out seeds; GQA-only
+  reference training remains independently admissible.
 - The exact pretrained capable-host control is now restored at
   `Qwen/Qwen3.5-0.8B@2fc06364715b967f1860aea9cf38778875588b17` without using a
   GPU. CPU attempts `769141` and `769144` failed before publication on a Bash
