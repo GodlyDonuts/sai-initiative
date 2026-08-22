@@ -14,10 +14,13 @@ uses the same ordered data stream and compute budget but may consume a
 different-length prefix. The Sai candidate differs only by the factor set that
 won the 100M, 300M, and 1B promotion ladder.
 
-Candidate and control remain single-pass causal language models. Neither
-receives a draft, verifier result, benchmark label, or second model call at
-inference. Qwen uses its frozen native prompt and decoding contract, with any
-cross-model presentation difference declared before results are opened.
+Candidate and control remain one-checkpoint, one-external-invocation causal
+language models. A bounded internal recurrent path is admissible only if it won
+the sub-4B matched-control ladder; every internal iteration is included in the
+inference-FLOP and latency accounting. Neither system receives a draft,
+verifier result, benchmark label, or second model invocation at inference.
+Qwen uses its frozen native prompt and decoding contract, with any cross-model
+presentation difference declared before results are opened.
 
 ## Reasoning curriculum
 

@@ -1,8 +1,9 @@
 # Sai 4B Specialization Research Plan
 
-Status: prospective specialization workstream inside the architecture
-tournament. This document authorizes no GPU work by itself. The training hold
-in the README remains in force.
+Status: active sub-4B specialization workstream inside the architecture
+tournament. The user's 2026-08-21 order authorizes preparation and training
+below 4B. This document authorizes no 4B training by itself; the explicit 4B
+hold in the README remains in force.
 
 ## Thesis
 
@@ -119,7 +120,8 @@ pretraining corpus.
    criteria from `docs/SAI_4B_BENCHMARK_FIRST_CONTRACT.md`; one serious
    regression vetoes the claim.
 
-Steps 3 through 6 remain behind the explicit official training order.
+Step 3 is active under the sub-4B training order. Steps 4 through 6 remain
+behind a separate explicit 4B training order.
 
 ## Success definition
 
