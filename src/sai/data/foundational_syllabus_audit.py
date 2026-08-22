@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.authored_curriculum import _read_regular_bytes, _write_create_only
+from sai.data.curriculum import PHASES
 from sai.data.foundational_syllabus import _prepare as _prepare_syllabus
 from sai.data.token_stream import canonical_sha256
 
@@ -53,6 +54,11 @@ def _prepare(*, base_concepts: Path, additions: Path) -> tuple[dict[str, Any], b
             result.update(ancestors(prerequisite))
         return frozenset(result)
 
+    def earliest_phase(row: dict[str, Any]) -> str:
+        return next(
+            phase for phase in PHASES if row["minimum_phase_documents"][phase] > 0
+        )
+
     concept_rows = []
     for concept_id in sorted(by_identity):
         row = by_identity[concept_id]
@@ -60,6 +66,12 @@ def _prepare(*, base_concepts: Path, additions: Path) -> tuple[dict[str, Any], b
             prerequisite
             for prerequisite in row["prerequisites"]
             if by_identity[prerequisite]["domain"] != row["domain"]
+        )
+        phase_inversions = sorted(
+            prerequisite
+            for prerequisite in row["prerequisites"]
+            if PHASES.index(earliest_phase(by_identity[prerequisite]))
+            > PHASES.index(earliest_phase(row))
         )
         concept_rows.append(
             {
@@ -70,6 +82,7 @@ def _prepare(*, base_concepts: Path, additions: Path) -> tuple[dict[str, Any], b
                 "direct_hard_prerequisites": len(row["prerequisites"]),
                 "direct_dependents": len(downstream[concept_id]),
                 "cross_domain_hard_prerequisites": cross_domain,
+                "hard_prerequisite_phase_inversions": phase_inversions,
                 "risk_flags": sorted(
                     [
                         *(
@@ -88,6 +101,11 @@ def _prepare(*, base_concepts: Path, additions: Path) -> tuple[dict[str, Any], b
                             if cross_domain
                             else []
                         ),
+                        *(
+                            ["hard_prerequisite_starts_after_dependent"]
+                            if phase_inversions
+                            else []
+                        ),
                     ]
                 ),
             }
@@ -104,6 +122,9 @@ def _prepare(*, base_concepts: Path, additions: Path) -> tuple[dict[str, Any], b
     )
     depth_counts = Counter(depth(row["concept_id"]) for row in rows)
     flagged = [row for row in concept_rows if row["risk_flags"]]
+    phase_inversion_count = sum(
+        len(row["hard_prerequisite_phase_inversions"]) for row in concept_rows
+    )
     payload: dict[str, Any] = {
         "schema": SCHEMA,
         "status": "graph_risk_review_required",
@@ -126,6 +147,7 @@ def _prepare(*, base_concepts: Path, additions: Path) -> tuple[dict[str, Any], b
             "leaf_concept_ids": leaves,
             "hard_edges": edge_count,
             "cross_domain_hard_edges": cross_domain_edges,
+            "hard_prerequisite_phase_inversions": phase_inversion_count,
             "maximum_hard_prerequisite_depth": max(depth_counts),
             "concepts_by_hard_prerequisite_depth": {
                 str(value): depth_counts[value] for value in sorted(depth_counts)
@@ -138,6 +160,7 @@ def _prepare(*, base_concepts: Path, additions: Path) -> tuple[dict[str, Any], b
             "review_two_root_bottleneck_for_false_serialization",
             "review_every_depth_at_least_ten_chain",
             "review_every_prerequisite_with_at_least_eight_direct_dependents",
+            "resolve_every_hard_prerequisite_phase_inversion",
             "recompute_graph_after_adjudication_before_document_annotation",
         ],
         "progression_qualified": False,

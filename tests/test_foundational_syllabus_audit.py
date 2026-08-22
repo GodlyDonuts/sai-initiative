@@ -39,6 +39,7 @@ def test_measures_exact_graph_risks_without_qualifying_progression(
     ]
     assert payload["summary"]["hard_edges"] == 263
     assert payload["summary"]["cross_domain_hard_edges"] == 66
+    assert payload["summary"]["hard_prerequisite_phase_inversions"] == 1
     assert payload["summary"]["maximum_hard_prerequisite_depth"] == 12
     assert payload["summary"]["flagged_concepts"] > 0
     assert payload["progression_qualified"] is False
@@ -58,6 +59,12 @@ def test_flags_deep_central_and_cross_domain_concepts(tmp_path: Path) -> None:
     assert "high_direct_dependent_centrality" in rows["english.reference"]["risk_flags"]
     assert (
         "math.number" in rows["english.quantifier"]["cross_domain_hard_prerequisites"]
+    )
+    assert rows["code.testing"]["hard_prerequisite_phase_inversions"] == [
+        "english.evidence"
+    ]
+    assert (
+        "hard_prerequisite_starts_after_dependent" in rows["code.testing"]["risk_flags"]
     )
 
 

@@ -38,6 +38,10 @@ gate could over-serialize the curriculum. `sai-audit-foundational-syllabus`
 therefore freezes direct and transitive depth, centrality, cross-domain edges,
 roots, leaves, and an exact review set. Every flagged edge must be classified as
 hard, supporting, or removed before document annotation begins.
+The replay also found one concrete inherited phase inversion:
+`code.testing` begins in integration although its declared hard prerequisite
+`english.evidence` begins in reasoning. Final application must rephase one side
+or reclassify/remove that edge; preserving the contradiction cannot pass.
 
 `sai-build-foundational-syllabus-review` makes that classification executable
 without a server. Its exact offline workspace covers all 125 concepts and all
@@ -56,3 +60,14 @@ is published with both decisions and leaves subject review unqualified; neither
 reviewer is silently preferred. Even complete consensus still requires a final
 replay that applies the agreed graph and reruns acyclicity, phase, and coverage
 checks.
+
+`sai-apply-foundational-syllabus-reviews` implements that final replay for
+complete structured consensus. Hard edges remain exposure gates; supporting
+edges move to a separate hash-bound context sidecar; removed edges disappear;
+and agreed names, added prerequisites, and phase changes are applied. The
+revised hard graph must again pass exact production taxonomy validation.
+Concept rejection or non-appropriate granularity cannot be represented as a
+rename or edge edit, so either outcome stops for an explicit split/merge/removal
+candidate. Even a successfully applied consensus remains unqualified until a
+new annotation policy, human calibration, and real source-coverage evidence
+bind the reviewed bytes.

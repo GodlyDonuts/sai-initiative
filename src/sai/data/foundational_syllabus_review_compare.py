@@ -174,7 +174,7 @@ def _structured(row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def compare(
+def _prepare_comparison(
     *,
     base_concepts: Path,
     additions: Path,
@@ -182,7 +182,6 @@ def compare(
     expected_review_a_sha256: str,
     review_b: Path,
     expected_review_b_sha256: str,
-    output: Path,
 ) -> dict[str, Any]:
     try:
         composition_receipt, concept_encoded, _ = _prepare_syllabus(
@@ -307,6 +306,11 @@ def compare(
         "four_b_training_authorized": False,
     }
     payload["receipt_sha256"] = canonical_sha256(payload)
+    return payload
+
+
+def compare(*, output: Path, **kwargs: Any) -> dict[str, Any]:
+    payload = _prepare_comparison(**kwargs)
     try:
         _write_create_only(
             output, json.dumps(payload, sort_keys=True, indent=2).encode() + b"\n"
