@@ -17,12 +17,14 @@ from sai.data.learnability_curriculum import (
     build_learnability_curriculum,
     validate_learnability_curriculum,
 )
+from sai.data.learnability_score import OUTPUT_NAME, RECEIPT_NAME
 from sai.data.token_stream import (
     canonical_sha256,
     causal_loss_mask_from_start_bits,
     freeze,
     sha256_file,
 )
+from tests.test_learnability_score import _receipt as _write_score_receipt
 from tests.test_token_stream import CharacterTokenizer, document, write_documents
 
 
@@ -98,11 +100,11 @@ def _policy(path: Path, source: Path, report: dict) -> dict:
         },
         "scoring": {
             "method": "weak_minus_strong_normalized_nll_microunits",
-            "weak_checkpoint_sha256": "3" * 64,
-            "strong_checkpoint_sha256": "4" * 64,
-            "tokenizer_sha256": "5" * 64,
-            "evaluator_sha256": "6" * 64,
-            "runtime_sha256": "7" * 64,
+            "weak_checkpoint_sha256": "d" * 64,
+            "strong_checkpoint_sha256": "f" * 64,
+            "tokenizer_sha256": report["tokenizer_identity_sha256"],
+            "evaluator_sha256": "3" * 64,
+            "runtime_sha256": "4" * 64,
             "treatment_checkpoint_used": False,
             "terminal_benchmark_feedback_used": False,
         },
@@ -152,9 +154,27 @@ def _scores(path: Path, source: Path, report: dict) -> list[dict]:
 def _fixture(tmp_path: Path) -> tuple[Path, Path, Path, dict]:
     source, report = _parent(tmp_path)
     policy = tmp_path / "policy.json"
-    scores = tmp_path / "scores.jsonl"
+    scores = tmp_path / "scores"
+    scores.mkdir()
     _policy(policy, source, report)
-    _scores(scores, source, report)
+    rows = _scores(scores / OUTPUT_NAME, source, report)
+    receipt = _write_score_receipt(scores, rows)
+    receipt["target_stream"] = {
+        "path": str(source.resolve()),
+        "receipt_file_sha256": sha256_file(source / "stream_receipt.json"),
+        "ordered_stream_identity_sha256": report["ordered_stream_identity_sha256"],
+        "source_manifest_sha256": report["source_manifest_sha256"],
+        "tokenizer_identity_sha256": report["tokenizer_identity_sha256"],
+        "sequences": report["sequences"],
+        "sequence_length": report["sequence_length"],
+    }
+    receipt["probe_training_stream"]["tokenizer_identity_sha256"] = report[
+        "tokenizer_identity_sha256"
+    ]
+    receipt["receipt_sha256"] = canonical_sha256(
+        {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    )
+    (scores / RECEIPT_NAME).write_text(json.dumps(receipt, sort_keys=True) + "\n")
     return source, scores, policy, report
 
 
@@ -183,7 +203,7 @@ def test_builds_and_replays_exact_record_model_centric_curriculum(
     }
     assert (
         validate_learnability_curriculum(
-            output, source=source, scores_path=scores, policy_path=policy
+            output, source=source, scores_root=scores, policy_path=policy
         )
         == report
     )
@@ -205,16 +225,17 @@ def test_rejects_posthoc_policy_or_score_tamper(tmp_path: Path) -> None:
     policy.write_text(json.dumps(policy_payload) + "\n")
     with pytest.raises(LearnabilityCurriculumError, match="rehearsal boundary"):
         validate_learnability_curriculum(
-            output, source=source, scores_path=scores, policy_path=policy
+            output, source=source, scores_root=scores, policy_path=policy
         )
 
     _policy(policy, source, json.loads((source / "stream_receipt.json").read_text()))
-    score_rows = [json.loads(line) for line in scores.read_text().splitlines()]
+    score_path = scores / OUTPUT_NAME
+    score_rows = [json.loads(line) for line in score_path.read_text().splitlines()]
     score_rows[0]["record_sha256"] = "f" * 64
-    scores.write_text("".join(json.dumps(row) + "\n" for row in score_rows))
-    with pytest.raises(LearnabilityCurriculumError, match="score record"):
+    score_path.write_text("".join(json.dumps(row) + "\n" for row in score_rows))
+    with pytest.raises(LearnabilityCurriculumError, match="score receipt"):
         validate_learnability_curriculum(
-            output, source=source, scores_path=scores, policy_path=policy
+            output, source=source, scores_root=scores, policy_path=policy
         )
 
 
@@ -283,5 +304,5 @@ def test_create_only_and_output_tamper_fail(tmp_path: Path) -> None:
     token_path.write_bytes(payload)
     with pytest.raises(Exception, match="content differs|multiset differs"):
         validate_learnability_curriculum(
-            output, source=source, scores_path=scores, policy_path=policy
+            output, source=source, scores_root=scores, policy_path=policy
         )

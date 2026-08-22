@@ -228,6 +228,69 @@ def validate_milestone(
     }
 
 
+def load_validated_milestone_state(
+    path: Path,
+    *,
+    model: nn.Module,
+    expected_bindings: CheckpointBindings,
+    expected_descriptor: dict[str, Any],
+) -> dict[str, Any]:
+    """Load only one exact, receipt-bound model state into an instantiated model."""
+
+    if not isinstance(expected_descriptor, dict) or set(expected_descriptor) != {
+        "path",
+        "bytes",
+        "sha256",
+        "optimizer_step",
+        "sequences",
+        "targets",
+        "model_state_sha256",
+    }:
+        raise MilestoneSnapshotError("milestone descriptor differs")
+    step = expected_descriptor["optimizer_step"]
+    if (
+        expected_descriptor["path"] != Path(path).name
+        or isinstance(expected_descriptor["bytes"], bool)
+        or not isinstance(expected_descriptor["bytes"], int)
+        or expected_descriptor["bytes"] <= 0
+        or not isinstance(expected_descriptor["sha256"], str)
+        or len(expected_descriptor["sha256"]) != 64
+        or isinstance(step, bool)
+        or not isinstance(step, int)
+        or step <= 0
+    ):
+        raise MilestoneSnapshotError("milestone descriptor differs")
+    payload, size, artifact_sha256 = _read_artifact(path)
+    observed_descriptor = validate_milestone(
+        path,
+        expected_bindings=expected_bindings,
+        expected_step=step,
+        expected_state_sha256=expected_descriptor["model_state_sha256"],
+    )
+    if (
+        observed_descriptor != expected_descriptor
+        or size != expected_descriptor["bytes"]
+        or artifact_sha256 != expected_descriptor["sha256"]
+    ):
+        raise MilestoneSnapshotError("milestone descriptor differs")
+    saved = payload.get("model_state_dict")
+    current = model.state_dict()
+    if not isinstance(saved, dict) or set(saved) != set(current):
+        raise MilestoneSnapshotError("milestone model state differs")
+    for name, target in current.items():
+        source = saved[name]
+        if (
+            not isinstance(source, torch.Tensor)
+            or source.shape != target.shape
+            or source.dtype != target.dtype
+        ):
+            raise MilestoneSnapshotError(f"milestone model tensor {name} differs")
+    model.load_state_dict(saved, strict=True)
+    if state_sha256(model.state_dict()) != expected_descriptor["model_state_sha256"]:
+        raise MilestoneSnapshotError("milestone model state differs")
+    return observed_descriptor
+
+
 def publish_or_validate_milestone(
     root: Path,
     *,

@@ -303,6 +303,51 @@ def _load_scores(
     return rows, encoded
 
 
+def _validated_score_inputs(
+    scores_root: Path,
+    parent: dict[str, Any],
+    policy: dict[str, Any],
+) -> tuple[dict[str, Any], Path, bytes]:
+    from sai.data.learnability_score import (
+        OUTPUT_NAME,
+        RECEIPT_NAME,
+        validate_score_population,
+    )
+
+    try:
+        receipt = validate_score_population(scores_root)
+    except Exception as error:
+        raise LearnabilityCurriculumError(
+            "learnability score receipt validation failed"
+        ) from error
+    target = receipt["target_stream"]
+    probe = receipt["probe"]
+    scoring = receipt["scoring"]
+    policy_scoring = policy["scoring"]
+    if (
+        target["ordered_stream_identity_sha256"]
+        != parent["ordered_stream_identity_sha256"]
+        or target["source_manifest_sha256"] != parent["source_manifest_sha256"]
+        or target["tokenizer_identity_sha256"] != parent["tokenizer_identity_sha256"]
+        or target["sequences"] != parent["sequences"]
+        or target["sequence_length"] != parent["sequence_length"]
+        or policy_scoring["weak_checkpoint_sha256"] != probe["weak_milestone"]["sha256"]
+        or policy_scoring["strong_checkpoint_sha256"]
+        != probe["strong_checkpoint"]["checkpoint"]["sha256"]
+        or policy_scoring["tokenizer_sha256"] != target["tokenizer_identity_sha256"]
+        or policy_scoring["evaluator_sha256"] != scoring["evaluator_sha256"]
+        or policy_scoring["runtime_sha256"] != scoring["runtime_receipt"]["sha256"]
+    ):
+        raise LearnabilityCurriculumError("score receipt and policy differ")
+    receipt_path = scores_root / RECEIPT_NAME
+    receipt_bytes = _read_regular(
+        receipt_path,
+        "learnability score receipt",
+        maximum_bytes=_MAX_POLICY_BYTES,
+    )
+    return receipt, scores_root / OUTPUT_NAME, receipt_bytes
+
+
 def _rank_bands(
     rows: list[dict[str, Any]], policy: dict[str, Any]
 ) -> dict[str, list[int]]:
@@ -466,6 +511,9 @@ def _schedule_descriptor(
     scores_path: Path,
     scores: list[dict[str, Any]],
     scores_bytes: bytes,
+    score_receipt_path: Path,
+    score_receipt: dict[str, Any],
+    score_receipt_bytes: bytes,
     permutation: list[int],
     multiset_sha256: str,
     realized: dict[str, dict[str, int]],
@@ -498,6 +546,10 @@ def _schedule_descriptor(
             **_descriptor(scores_path, scores_bytes),
             "ordered_population_sha256": canonical_sha256(scores),
         },
+        "score_receipt": {
+            **_descriptor(score_receipt_path, score_receipt_bytes),
+            "receipt_sha256": score_receipt["receipt_sha256"],
+        },
         "permutation_sha256": _permutation_sha256(permutation),
         "sequence_multiset_sha256": multiset_sha256,
         "phases": phase_summaries,
@@ -515,7 +567,7 @@ def _schedule_descriptor(
 
 
 def build_learnability_curriculum(
-    source: Path, scores_path: Path, policy_path: Path, output: Path
+    source: Path, scores_root: Path, policy_path: Path, output: Path
 ) -> dict[str, Any]:
     """Materialize one exact-record curriculum from frozen score evidence."""
 
@@ -523,6 +575,9 @@ def build_learnability_curriculum(
     if output.exists() or output.is_symlink():
         raise LearnabilityCurriculumError("learnability output already exists")
     policy, policy_bytes = load_policy(policy_path, source, parent)
+    score_receipt, scores_path, score_receipt_bytes = _validated_score_inputs(
+        scores_root, parent, policy
+    )
     stage = output.parent / f".{output.name}.partial.{uuid.uuid4().hex}"
     output.parent.mkdir(parents=True, exist_ok=True)
     stage.mkdir(mode=0o700)
@@ -541,6 +596,9 @@ def build_learnability_curriculum(
             scores_path=scores_path,
             scores=scores,
             scores_bytes=scores_bytes,
+            score_receipt_path=scores_root / "score_receipt.json",
+            score_receipt=score_receipt,
+            score_receipt_bytes=score_receipt_bytes,
             permutation=permutation,
             multiset_sha256=multiset_sha256,
             realized=realized,
@@ -573,7 +631,7 @@ def build_learnability_curriculum(
         _validate_learnability_curriculum(
             stage,
             source=source,
-            scores_path=scores_path,
+            scores_root=scores_root,
             policy_path=policy_path,
         )
         os.replace(stage, output)
@@ -584,11 +642,14 @@ def build_learnability_curriculum(
 
 
 def _validate_learnability_curriculum(
-    output: Path, *, source: Path, scores_path: Path, policy_path: Path
+    output: Path, *, source: Path, scores_root: Path, policy_path: Path
 ) -> dict[str, Any]:
     report = validate_frozen_stream(output, verify_sources=True)
     parent = validate_frozen_stream(source, verify_sources=True)
     policy, policy_bytes = load_policy(policy_path, source, parent)
+    score_receipt, scores_path, score_receipt_bytes = _validated_score_inputs(
+        scores_root, parent, policy
+    )
     with _Records(source, parent) as parent_records:
         scores, scores_bytes = _load_scores(scores_path, parent_records, parent)
         permutation, realized = _derive_permutation(scores, policy)
@@ -612,6 +673,9 @@ def _validate_learnability_curriculum(
         scores_path=scores_path,
         scores=scores,
         scores_bytes=scores_bytes,
+        score_receipt_path=scores_root / "score_receipt.json",
+        score_receipt=score_receipt,
+        score_receipt_bytes=score_receipt_bytes,
         permutation=permutation,
         multiset_sha256=multiset_sha256,
         realized=realized,
@@ -630,14 +694,14 @@ def _validate_learnability_curriculum(
 
 
 def validate_learnability_curriculum(
-    output: Path, *, source: Path, scores_path: Path, policy_path: Path
+    output: Path, *, source: Path, scores_root: Path, policy_path: Path
 ) -> dict[str, Any]:
     """Replay scores, policy, source records, and the full output permutation."""
 
     return _validate_learnability_curriculum(
         output,
         source=source,
-        scores_path=scores_path,
+        scores_root=scores_root,
         policy_path=policy_path,
     )
 
@@ -660,7 +724,7 @@ def main() -> None:
         payload = validate_learnability_curriculum(
             args.output,
             source=args.source,
-            scores_path=args.scores,
+            scores_root=args.scores,
             policy_path=args.policy,
         )
     print(

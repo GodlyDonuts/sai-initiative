@@ -244,12 +244,23 @@ Two later hypotheses must remain separate factors:
    answers or the treatment model's later state. Its scorer, checkpoint, sample
    identities, and score-to-order policy must be frozen before the comparison.
 
-The first executable model-centric scheduler is
-`sai-build-learnability-curriculum`. It consumes one already-qualified packed
-stream, one prospectively frozen policy, and one exact score row per packed
-sequence. Each score binds the record's token-and-boundary-mask hash, target
-count, weak and strong normalized NLL in integer microunits, and their exact
-difference. The policy binds two distinct frozen probe checkpoints, tokenizer,
+The executable scorer is `sai-score-learnability`. It uses a predeclared model-
+only milestone and the terminal state from the same independent probe training
+trajectory as the weak and strong states. It scores a separately frozen target
+stream only after proving that no exact packed token-and-boundary record occurs
+in both the probe-training and target streams. Every target sequence receives
+weak and strong normalized NLL in integer microunits. The create-only two-file
+score population binds the model states, completed probe result, target and
+probe stream identities, tokenizer, runtime, evaluator, every record hash, and
+the ordered score population. Scoring runs in inference mode and proves zero
+optimizer steps, zero backward calls, unchanged model states, and unchanged RNG
+state. Exact-record disjointness does not establish near-duplicate or semantic
+disjointness; those remain separate mandatory source gates.
+
+The scheduler `sai-build-learnability-curriculum` consumes one already-
+qualified packed stream, the immutable score-population root, and one
+prospectively frozen policy. Detached score rows are not admissible. The policy
+binds the exact weak milestone, strong terminal checkpoint, tokenizer,
 evaluator, runtime, phase and band populations, optimizer-aligned phase
 boundaries, and a score-independent within-phase order. It forbids treatment
 checkpoint state and terminal benchmark feedback.
@@ -261,11 +272,19 @@ specialization under an exactly frozen matrix, and preserves ready-record
 rehearsal in every later phase. Within each phase records are hash-ranked rather
 than loss-ranked, so the changed factor is the phase mixture rather than a
 continuous easiest-to-hardest micro-order. Validation reopens the parent,
-policy, and every score; recomputes every packed-record hash, rank, band,
-allocation, permutation, and multiset; and proves that token IDs and document
-boundary masks are unchanged. This schedule is explicitly model-centric and
-does **not** prove semantic prerequisite ordering. It remains a separate matched
-factor and authorizes neither training nor 4B.
+policy, score receipt, and every score; recomputes every packed-record hash,
+rank, band, allocation, permutation, and multiset; and proves that token IDs and
+document boundary masks are unchanged. This schedule is explicitly model-
+centric and does **not** prove semantic prerequisite ordering. It remains a
+separate matched factor and authorizes neither training nor 4B.
+
+Model-relative learnability and semantic prerequisite depth are deliberately
+independent axes. A low-loss advanced example is not moved ahead of missing
+primitives merely because the probe already knows it, and a prerequisite-
+complete example is not presumed learnable merely because a taxonomy approves
+its position. A production curriculum must satisfy the semantic graph first,
+then pace records within admitted semantic regions using prospectively frozen
+model evidence, while retaining foundational rehearsal in later phases.
 
 The prospective semantic boundary is executable. `sai-validate-prerequisites`
 validates `sai-semantic-prerequisite-taxonomy-v3`: all five Sai domains, a

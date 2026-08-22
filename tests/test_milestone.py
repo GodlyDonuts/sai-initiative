@@ -8,10 +8,12 @@ import torch
 from sai.training.checkpoint import CheckpointBindings, TrainingCounters
 from sai.training.milestone import (
     MilestoneSnapshotError,
+    load_validated_milestone_state,
     milestone_path,
     parse_milestone_steps,
     prepare_milestone_root,
     publish_or_validate_milestone,
+    state_sha256,
     validate_milestone,
     validate_milestone_population,
 )
@@ -83,6 +85,21 @@ def test_publishes_and_replays_one_create_only_model_snapshot(tmp_path: Path) ->
         )
         == first
     )
+
+    restored = torch.nn.Sequential(torch.nn.Linear(4, 5), torch.nn.Linear(5, 2))
+    with torch.no_grad():
+        for parameter in restored.parameters():
+            parameter.zero_()
+    assert (
+        load_validated_milestone_state(
+            milestone_path(root, 2),
+            model=restored,
+            expected_bindings=_bindings(),
+            expected_descriptor=first,
+        )
+        == first
+    )
+    assert state_sha256(restored.state_dict()) == first["model_state_sha256"]
 
     with torch.no_grad():
         next(model.parameters()).add_(1)

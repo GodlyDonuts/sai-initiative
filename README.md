@@ -102,16 +102,22 @@ benchmark evidence selects an architecture.
   rule that a model should encounter the concepts of yellow and blue before it
   is expected to learn their composition into green.
 - A separate model-centric scheduler is now executable for web-scale pacing.
-  `sai-build-learnability-curriculum` consumes one qualified packed stream, a
-  prospectively frozen weak/strong-checkpoint policy, and one exact normalized
-  loss row per sequence. It reorders the identical token-and-boundary record
+  `sai-score-learnability` first compares a predeclared earlier milestone with
+  the terminal state from the same independent probe trajectory on an
+  exact-record-disjoint target stream. Its immutable receipt binds both model
+  states, the target and probe streams, tokenizer, runtime, and every normalized
+  loss row. `sai-build-learnability-curriculum` then consumes that receipt and a
+  prospectively frozen weak/strong-checkpoint policy. It reorders the identical
+  token-and-boundary record
   multiset into `ready`, `developing`, `challenging`, and `stretch` bands,
   preserves ready-record rehearsal in every later phase, and hash-randomizes
   within each phase so continuous loss order is not a hidden factor. The full
   permutation is replayable and treatment checkpoints and terminal benchmark
   feedback are prohibited. This is a future matched factor, not a semantic
-  prerequisite claim; no qualifying score population or training run exists
-  yet.
+  prerequisite claim; no qualifying production score population or training
+  run exists yet. Sai therefore treats difficulty as two independent axes:
+  model-relative learnability and audited semantic prerequisites. Neither can
+  silently substitute for the other.
 - The semantic gate now freezes exactly 128 review documents, balanced across
   all four phases and four surface bands, before any labels are produced. A
   separate replay compares the prospective annotator with an independently
