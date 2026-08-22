@@ -176,6 +176,13 @@ benchmark evidence selects an architecture.
   `docs/SAI_CURRICULUM_QUALITATIVE_AUDIT_20260822.md`. The current comparison
   remains an order falsification experiment; it cannot waive a later semantic-
   prerequisite or source-mixture gate.
+- The first public math-source audit rejected blind use of FineMath `4plus`.
+  Exact shard `5d0b2611...1fe5` contains `104,680` unique rows, but only
+  `34.7583%` set `found_math=true`; direct evidence includes incoherent score-5
+  algebra with essay-service links plus answer-farm, SEO, gambling, and
+  commercial-homework material. `docs/SAI_FINEMATH_SHARD_AUDIT_20260822.md`
+  freezes the input and findings. FineMath remains a candidate only after a new
+  Sai quality, provenance, deduplication, and decontamination filter.
 
 ## Live scratchpad — 2026-08-21
 

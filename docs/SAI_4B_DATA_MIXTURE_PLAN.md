@@ -45,7 +45,7 @@ without a new factor declaration.
 | Candidate | Resolved revision | Repository license/gate metadata | Sai disposition before admission |
 |---|---|---|---|
 | [FineWeb-Edu](https://huggingface.co/datasets/HuggingFaceFW/fineweb-edu) | `87f09149ef4734204d70ed1d046ddc9ca3f2b8f9` | ODC-By, public | Current raw educational-web control only; retain exact quality, duplicate, and curriculum audit requirements. |
-| [FineMath](https://huggingface.co/datasets/HuggingFaceTB/finemath) | `e92b25a616738fe95dc186b64dfb19f9c8525594` | ODC-By, public | Preferred first mathematics candidate; freeze a small inspectable slice and independently decontaminate before any comparison. |
+| [FineMath](https://huggingface.co/datasets/HuggingFaceTB/finemath) | `e92b25a616738fe95dc186b64dfb19f9c8525594` | ODC-By, public | Raw mathematics candidate only. A verified 104,680-row `4plus` shard contains incoherent score-5 prose, answer-farm/SEO/commercial-homework material, and only 34.76% `found_math=true`; apply a new Sai filter and full audit before any comparison. |
 | [OpenWebMath](https://huggingface.co/datasets/open-web-math/open-web-math) | `fde8ef8de2300f5e778f56261843dab89f230815` | no repository-level license recorded by the API | Research control only until exact source and redistribution terms are resolved; do not infer permission from public downloadability. |
 | [Stack-Edu](https://huggingface.co/datasets/HuggingFaceTB/stack-edu) | `eeec5caac5cc3758a18f1d3ba4416837a9ba814c` | no single repository license; inherits The Stack v2 provenance and opt-out obligations | Strong code-quality candidate, but admit only file identities with acceptable licenses, preserved attribution/removal metadata, secret scanning, and current opt-out replay. |
 | [The Stack v2](https://huggingface.co/datasets/bigcode/the-stack-v2) | use Stack-Edu's exact parent lineage rather than a moving head | per-file licenses or no detected license; Software Heritage content indirection | Never admit unlicensed files. Prefer the educational subset and a Sai allowlist of accepted SPDX terms over the full pool. |
@@ -56,12 +56,15 @@ without a new factor declaration.
 | [Nemotron-CC-v2](https://huggingface.co/datasets/nvidia/Nemotron-CC-v2) | `2669787c66d18601c0e91167fd520be6c1245865` | manually gated; repository updated 2026-07-07 | Evaluation candidate only after separating organic web from synthetic rewriting. The dataset card warns that synthetic Qwen/DeepSeek-derived subsets may impose model redistribution requirements; those subsets are excluded until resolved. |
 
 Initial source-factor priority is therefore: FineWeb-Edu as the existing web
-control; FineMath as the first public math candidate; a license-allowlisted,
-provenance-preserving Stack-Edu slice as the first code candidate; and selected
-Dolma components for non-web diversity. Cosmopedia and NVIDIA corpora remain
-separate declared ablations. OpenWebMath remains blocked on license evidence.
-No source ratio is frozen before small matched source-addition screens establish
-that the source helps rather than merely looking sophisticated.
+control; a newly filtered and audited FineMath-derived pool as the first public
+math candidate; a license-allowlisted, provenance-preserving Stack-Edu slice as
+the first code candidate; and selected Dolma components for non-web diversity.
+The bounded FineMath evidence is recorded in
+`docs/SAI_FINEMATH_SHARD_AUDIT_20260822.md`; upstream `4plus` scores cannot admit
+rows. Cosmopedia and NVIDIA corpora remain separate declared ablations.
+OpenWebMath remains blocked on license evidence. No source ratio is frozen
+before small matched source-addition screens establish that the source helps
+rather than merely looking sophisticated.
 
 Sai will not ingest an opaque pre-blended corpus and then claim source-level
 control. When a candidate distribution contains multiple source components,
