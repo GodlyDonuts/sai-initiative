@@ -118,6 +118,14 @@ benchmark evidence selects an architecture.
   run exists yet. Sai therefore treats difficulty as two independent axes:
   model-relative learnability and audited semantic prerequisites. Neither can
   silently substitute for the other.
+- `sai-compose-semantic-learnability` is the production composition boundary.
+  It replays the complete semantic taxonomy, curriculum, annotations, and
+  progression report; requires zero skipped or truncated semantic documents;
+  and locks every packed record to its audited semantic phase. Weak/strong
+  learnability evidence may only determine bands and order *inside* that phase.
+  An advanced low-loss record therefore cannot jump ahead of missing
+  prerequisites. The output retains the identical token-and-boundary multiset
+  and remains unauthorized for training or 4B until a matched comparison wins.
 - The semantic gate now freezes exactly 128 review documents, balanced across
   all four phases and four surface bands, before any labels are produced. A
   separate replay compares the prospective annotator with an independently

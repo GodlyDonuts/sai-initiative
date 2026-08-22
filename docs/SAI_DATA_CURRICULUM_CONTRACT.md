@@ -266,7 +266,9 @@ boundaries, and a score-independent within-phase order. It forbids treatment
 checkpoint state and terminal benchmark feedback.
 
 The builder ranks identical packed records into `ready`, `developing`,
-`challenging`, and `stretch` bands using weak-minus-strong normalized loss,
+`challenging`, and `stretch` bands using strong-checkpoint normalized loss as
+the primary current-difficulty signal and weak-to-strong improvement as the
+secondary learning-progress signal,
 allocates those bands across grounding, integration, reasoning, and
 specialization under an exactly frozen matrix, and preserves ready-record
 rehearsal in every later phase. Within each phase records are hash-ranked rather
@@ -285,6 +287,29 @@ complete example is not presumed learnable merely because a taxonomy approves
 its position. A production curriculum must satisfy the semantic graph first,
 then pace records within admitted semantic regions using prospectively frozen
 model evidence, while retaining foundational rehearsal in later phases.
+
+The executable composition boundary is
+`sai-compose-semantic-learnability`. It first replays the taxonomy, qualified
+document curriculum, full annotation population, and semantic progression
+report. The packed parent must bind that exact curriculum output and its
+qualification receipt, use contiguous token-budgeted semantic phases, and have
+zero skipped or truncated source documents in every phase. This last condition
+is mandatory: a later concept cannot rely on prerequisite exposures that were
+present in the audited document file but silently omitted by packing.
+
+Only after semantic replay passes does the composer admit the independently
+receipt-bound weak/strong score population. Within each semantic phase it ranks
+current mastery by the strong checkpoint's normalized NLL first and uses
+weak-to-strong improvement as the secondary learning-progress signal. This
+prevents a persistently high-loss, non-improving example from being mislabeled
+`ready` merely because its weak/strong difference is small. It divides records into
+`ready`/`developing`/`challenging`/`stretch` bands separately inside each
+semantic phase and hash-orders records inside a band. Every output phase is
+proven to contain exactly the same packed-record identities as the corresponding
+parent phase; only within-phase order changes. Validation reopens all semantic
+and model evidence, replays every score and source record, and recomputes the
+complete permutation and multiset. The composite remains a prospective matched
+data factor and authorizes neither training nor 4B.
 
 The prospective semantic boundary is executable. `sai-validate-prerequisites`
 validates `sai-semantic-prerequisite-taxonomy-v3`: all five Sai domains, a

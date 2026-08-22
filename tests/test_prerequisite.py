@@ -18,6 +18,7 @@ from sai.data.prerequisite import (
     analyze_curriculum_annotation_files,
     analyze_progression,
     build_taxonomy,
+    replay_curriculum_annotation_files,
     validate_taxonomy_payload,
 )
 from sai.data.prerequisite_review import SCHEMA as AUDIT_SAMPLE_SCHEMA
@@ -531,6 +532,13 @@ def test_streaming_audit_reopens_exact_curriculum_and_publishes_atomically(
         "validate_curriculum",
         lambda receipt, workers=1: curriculum_payload,
     )
+    replayed = replay_curriculum_annotation_files(
+        taxonomy_path,
+        tmp_path / "curriculum.receipt.json",
+        annotations_path,
+        workers=2,
+    )
+    assert replayed["status"] == "qualified"
     output = tmp_path / "progression.json"
     report = analyze_curriculum_annotation_files(
         taxonomy_path,
@@ -539,6 +547,7 @@ def test_streaming_audit_reopens_exact_curriculum_and_publishes_atomically(
         output,
         workers=2,
     )
+    assert report == replayed
     assert report["status"] == "qualified"
     assert json.loads(output.read_text()) == report
     assert output.stat().st_mode & 0o777 == 0o444

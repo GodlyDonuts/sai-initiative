@@ -354,8 +354,9 @@ def _rank_bands(
     ranked = sorted(
         range(len(rows)),
         key=lambda index: (
-            rows[index]["preference_delta_microunits"],
             rows[index]["strong_nll_microunits_per_target"],
+            -rows[index]["preference_delta_microunits"],
+            rows[index]["weak_nll_microunits_per_target"],
             rows[index]["record_sha256"],
         ),
     )

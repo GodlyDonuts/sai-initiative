@@ -14,6 +14,7 @@ from sai.data.learnability_curriculum import (
     POLICY_SCHEMA,
     SCORE_SCHEMA,
     LearnabilityCurriculumError,
+    _rank_bands,
     build_learnability_curriculum,
     validate_learnability_curriculum,
 )
@@ -207,6 +208,36 @@ def test_builds_and_replays_exact_record_model_centric_curriculum(
         )
         == report
     )
+
+
+def test_band_ranking_uses_current_mastery_before_learning_delta() -> None:
+    rows = []
+    for index, (strong, delta) in enumerate(
+        (
+            (1_200_000, 20_000),
+            (800_000, 50_000),
+            (1_000_000, 200_000),
+            (900_000, 150_000),
+        )
+    ):
+        rows.append(
+            {
+                "record_sha256": f"{index + 1:064x}",
+                "strong_nll_microunits_per_target": strong,
+                "weak_nll_microunits_per_target": strong + delta,
+                "preference_delta_microunits": delta,
+            }
+        )
+    bands = _rank_bands(
+        rows,
+        {"band_sequence_counts": {band: 1 for band in BANDS}},
+    )
+    assert bands == {
+        "ready": [1],
+        "developing": [3],
+        "challenging": [2],
+        "stretch": [0],
+    }
 
 
 def test_rejects_posthoc_policy_or_score_tamper(tmp_path: Path) -> None:

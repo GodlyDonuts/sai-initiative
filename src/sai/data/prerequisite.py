@@ -720,22 +720,15 @@ def _atomic_write_report(path: Path, report: dict[str, Any]) -> None:
         temporary.unlink(missing_ok=True)
 
 
-def analyze_curriculum_annotation_files(
+def replay_curriculum_annotation_files(
     taxonomy_path: Path,
     curriculum_receipt_path: Path,
     annotations_path: Path,
-    output_path: Path,
     *,
     workers: int = 1,
 ) -> dict[str, Any]:
-    """Replay a qualified curriculum and its semantic annotations in lockstep."""
+    """Replay a qualified curriculum and its semantic annotations without writes."""
 
-    if (
-        not output_path.is_absolute()
-        or output_path.exists()
-        or output_path.is_symlink()
-    ):
-        raise PrerequisiteError("progression output path is unsafe or already exists")
     taxonomy = _read_taxonomy(taxonomy_path)
     curriculum = validate_curriculum(curriculum_receipt_path, workers=workers)
     curriculum_output = Path(curriculum["output"]["path"])
@@ -850,6 +843,31 @@ def analyze_curriculum_annotation_files(
             "annotations_bytes": annotation_bytes,
             "annotations_file_sha256": annotation_file_hash.hexdigest(),
         },
+    )
+    return report
+
+
+def analyze_curriculum_annotation_files(
+    taxonomy_path: Path,
+    curriculum_receipt_path: Path,
+    annotations_path: Path,
+    output_path: Path,
+    *,
+    workers: int = 1,
+) -> dict[str, Any]:
+    """Replay a qualified curriculum and atomically publish its semantic report."""
+
+    if (
+        not output_path.is_absolute()
+        or output_path.exists()
+        or output_path.is_symlink()
+    ):
+        raise PrerequisiteError("progression output path is unsafe or already exists")
+    report = replay_curriculum_annotation_files(
+        taxonomy_path,
+        curriculum_receipt_path,
+        annotations_path,
+        workers=workers,
     )
     _atomic_write_report(output_path, report)
     return report
