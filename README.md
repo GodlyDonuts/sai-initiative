@@ -67,11 +67,14 @@ benchmark evidence selects an architecture.
   initialization, optimizer, updates, and compute. Held-out NLL/UTF-8 byte and
   source-disjoint real capability must improve or remain nonnegative without a
   domain regression. Tokenizer, filtering, and ordering remain separate factors.
-- Source-disjoint split `770024` is now running from that independently
-  qualified receipt with four ordered validation workers and a four-hour
-  fail-closed wall limit. Development stream `770025`, update-aligned 500M-token
-  training stream `770026`, exact sequence-multiset order control `770027`, and
-  matched GQA launcher `770028` are dependency-staged. The first three
+- Source-disjoint split `770039` is now running from that independently
+  qualified receipt with four ordered workers across both receipt validation
+  and exact split reconstruction, plus a four-hour fail-closed wall limit.
+  Earlier split `770024` was cancelled after 542 seconds, before creating any
+  output, when byte-equivalence tests proved the ordered parallel
+  reconstruction. Development stream `770040`, update-aligned 500M-token
+  training stream `770041`, exact sequence-multiset order control `770042`, and
+  matched GQA launcher `770043` are dependency-staged. The first three
   curriculum boundaries occur exactly after optimizer updates 191, 429, and
   715, so no gradient accumulation window mixes adjacent difficulty phases.
 - Architecture work is preparation-only behind this boundary. No Sai training
