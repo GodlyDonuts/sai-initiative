@@ -370,11 +370,22 @@ benchmark evidence selects an architecture.
 - Continuation `770137` failed in five CPU seconds before submitting work
   because Slurm would not accept a new dependency on completed population job
   `770126` after it aged out of the live controller table. The population and
-  split jobs remain exactly `COMPLETED|0:0|0` in accounting. Recovery stage
-  `770159` depends only on the still-live NLL comparison and will independently
-  reopen those completed receipts before any benchmark submission. No GPU job
-  was duplicated and no scientific identity changed. Source now avoids this
-  aged-dependency failure in future continuations.
+  split jobs remain exactly `COMPLETED|0:0|0` in accounting. A later audit found
+  that pending comparator `770156` would have published a raw checkpoint-file
+  hash where the benchmark evaluator requires the canonical checkpoint plus
+  manifest bundle hash. Pending benchmark stage `770159` inherited that
+  deterministic lineage mismatch. Both jobs had zero elapsed time and zero
+  restarts, created no outputs, and were cancelled without touching live
+  training. The exact scientific inputs and destinations are now staged behind
+  corrected CPU comparator `770503` and benchmark stage `770505`, using sealed,
+  clean runtime commit `c4b3b011ddee4d5e8aad3b60a30219b799c5b686`.
+  Comparator `770503` still depends only on training jobs `770154` and `770155`;
+  stage `770505` depends only on `770503` and will independently reopen all
+  completed population, split, stream, checkpoint, and manifest evidence before
+  it may submit benchmark work. No GPU job was duplicated and no scientific
+  identity, record order, token budget, model byte, or evaluation population
+  changed. Source now avoids both the aged-dependency and checkpoint-identity
+  failures in future continuations.
 - Semantic annotation policy v2 and prerequisite taxonomy v3 now require every
   accepted positive concept label to bind at least 16 exact source Unicode
   codepoints. A bare term mention therefore cannot establish that a prerequisite
