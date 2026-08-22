@@ -23,6 +23,22 @@ def test_stage_launches_two_matched_benchmark_fanouts_only_after_nll_pass() -> N
     assert "trap cancel_partial_graph EXIT" in job
 
 
+def test_continuation_extracts_live_ids_and_dependency_stages_benchmarks() -> None:
+    job = _read("sai-stage-curriculum-benchmark-continuation-cpu.sbatch")
+    assert "#SBATCH --gres" not in job
+    assert "#SBATCH --no-requeue" in job
+    assert 'payload["schema"] == "sai-curriculum-order-screen-dispatch-v1"' in job
+    assert 'payload["training_tokens_per_arm"] == 499_998_720' in job
+    assert 'dependency="$comparison_job:$POPULATION_JOB_ID"' in job
+    assert job.count("sbatch --parsable") == 1
+    assert "sai-stage-curriculum-development-mc-cpu.sbatch" in job
+    assert (
+        '"benchmark_work_condition": "heldout_nll_and_every_phase_nonregression"' in job
+    )
+    assert '"gpu_jobs_submitted": 0' in job
+    assert '"four_b_training_authorized": False' in job
+
+
 def test_comparison_stage_binds_four_terminals_and_eighteen_h100_jobs() -> None:
     job = _read("sai-stage-curriculum-development-mc-comparison-cpu.sbatch")
     assert "#SBATCH --gres" not in job

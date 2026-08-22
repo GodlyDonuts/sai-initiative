@@ -137,6 +137,11 @@ benchmark evidence selects an architecture.
   H100 jobs to `COMPLETED|0:0|0` with zero restarts before applying the frozen
   benchmark decision. Partial submission is cancelled, while a negative NLL
   decision submits no benchmark work.
+- A dependency-held continuation reads the live training dispatch and stages
+  that handoff against the exact comparison and canonical population jobs.
+  This removes the manual gap between a clean NLL decision and real-board
+  measurement without reserving an idle GPU or pre-authorizing a favorable
+  result.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
 
