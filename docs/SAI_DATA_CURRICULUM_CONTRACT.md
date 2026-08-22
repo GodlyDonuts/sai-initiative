@@ -396,6 +396,14 @@ reviewers from using the curriculum's proposed label as evidence for the very
 semantic progression they are supposed to audit. The builder reopens the full
 population receipt, publishes all three outputs create-only, and keeps training
 and 4B authorization false.
+After one reviewer freezes a completed file keyed only by the salted review
+identities, the same CLI's `compile` command reopens the packet and hidden key,
+validates every concept against the frozen candidate list, re-hashes every cited
+character span against the blinded source text, and restores document identity
+and phase only in canonical population order. Its compilation receipt binds the
+packet, blind input, concept list, and canonical output. Two separately compiled
+files and two independently identified reviewer artifacts are still required by
+`sai-review-prerequisite-audit`; one compilation cannot qualify the taxonomy.
 `sai-review-prerequisite-audit` then compares the prospective annotator against
 an independently identified reviewer on those exact 120 documents. Both sides
 must provide canonical concept sets with nonempty evidence spans whose hashes

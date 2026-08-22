@@ -211,6 +211,12 @@ benchmark evidence selects an architecture.
   band, source, original index, and document identity; the separate key retains
   all mappings. The packet is now ready for two independently identified blind
   reviews, but contains no completed labels and authorizes no training.
+  The same tool now compiles a frozen blind response only after reopening the
+  sealed key: it validates the candidate concept vocabulary and every cited
+  character span, restores phase and document identity in canonical population
+  order, and emits a separate lineage receipt. A single compiled review remains
+  explicitly insufficient; qualification still requires two independent
+  identities and a passing disagreement replay.
 - Source-disjoint split `770039` is now running from that independently
   qualified receipt with four ordered workers across both receipt validation
   and exact split reconstruction, plus a four-hour fail-closed wall limit.

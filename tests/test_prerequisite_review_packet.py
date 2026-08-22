@@ -8,8 +8,11 @@ import pytest
 
 import sai.data.prerequisite_review_packet as packet
 from sai.data.prerequisite_review_packet import (
+    BLIND_ANNOTATION_SCHEMA,
     PrerequisiteReviewPacketError,
     build_packet,
+    compile_annotations,
+    validate_compilation,
     validate_packet,
 )
 from sai.data.token_stream import canonical_sha256
@@ -90,6 +93,49 @@ def _paths(tmp_path: Path) -> tuple[Path, Path, Path]:
     )
 
 
+def _blind_annotations(
+    tmp_path: Path, review: Path, *, corrupt_span: bool = False
+) -> tuple[Path, Path]:
+    concept_list = tmp_path / "concepts.json"
+    concept_list.write_text(
+        json.dumps(
+            {
+                "schema": "sai-semantic-prerequisite-concept-list-v1",
+                "status": "candidate",
+                "concepts": [{"concept_id": "color_composition"}],
+            },
+            sort_keys=True,
+        )
+        + "\n"
+    )
+    rows = []
+    for review_row in map(json.loads, review.read_text().splitlines()):
+        text = review_row["text"]
+        start = text.index("colors")
+        end = start + len("colors")
+        text_sha256 = hashlib.sha256(text[start:end].encode()).hexdigest()
+        if corrupt_span:
+            text_sha256 = "f" * 64
+        rows.append(
+            {
+                "schema": BLIND_ANNOTATION_SCHEMA,
+                "review_identity_sha256": review_row["review_identity_sha256"],
+                "concepts": [
+                    {
+                        "concept_id": "color_composition",
+                        "confidence_ppm": 900_000,
+                        "evidence_spans": [
+                            {"start": start, "end": end, "text_sha256": text_sha256}
+                        ],
+                    }
+                ],
+            }
+        )
+    blind = tmp_path / "blind-annotations.jsonl"
+    blind.write_bytes(_jsonl(rows))
+    return blind, concept_list
+
+
 def test_packet_hides_curriculum_labels_and_replays(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -162,3 +208,90 @@ def test_packet_is_create_only_and_population_bound(
     population.write_bytes(population.read_bytes().replace(b"colors", b"shapes", 1))
     with pytest.raises(PrerequisiteReviewPacketError):
         validate_packet(population_receipt, review, key, receipt)
+
+
+def test_blind_annotations_compile_to_canonical_population_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    population_receipt = _population(tmp_path, monkeypatch)
+    review, key, packet_receipt = _paths(tmp_path)
+    build_packet(population_receipt, review, key, packet_receipt)
+    blind, concepts = _blind_annotations(tmp_path, review)
+    output = tmp_path / "canonical-annotations.jsonl"
+    compilation_receipt = tmp_path / "compilation.receipt.json"
+
+    payload = compile_annotations(
+        population_receipt=population_receipt,
+        review_output=review,
+        key_output=key,
+        packet_receipt=packet_receipt,
+        blind_annotations=blind,
+        concept_list=concepts,
+        output=output,
+        compilation_receipt=compilation_receipt,
+    )
+    rows = [json.loads(line) for line in output.read_text().splitlines()]
+    population_rows = [
+        json.loads(line)
+        for line in (tmp_path / "population.jsonl").read_text().splitlines()
+    ]
+    assert len(rows) == 120
+    assert [row["document_identity_sha256"] for row in rows] == [
+        row["document_identity_sha256"] for row in population_rows
+    ]
+    assert [row["phase"] for row in rows] == [row["phase"] for row in population_rows]
+    assert all("review_identity_sha256" not in row for row in rows)
+    assert payload["training_authorized"] is False
+    assert payload["four_b_training_authorized"] is False
+    assert (
+        validate_compilation(
+            population_receipt=population_receipt,
+            review_output=review,
+            key_output=key,
+            packet_receipt=packet_receipt,
+            blind_annotations=blind,
+            concept_list=concepts,
+            output=output,
+            compilation_receipt=compilation_receipt,
+        )
+        == payload
+    )
+
+
+def test_compilation_rejects_bad_evidence_and_blind_identity(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    population_receipt = _population(tmp_path, monkeypatch)
+    review, key, packet_receipt = _paths(tmp_path)
+    build_packet(population_receipt, review, key, packet_receipt)
+    blind, concepts = _blind_annotations(tmp_path, review, corrupt_span=True)
+    output = tmp_path / "canonical-annotations.jsonl"
+    compilation_receipt = tmp_path / "compilation.receipt.json"
+    with pytest.raises(PrerequisiteReviewPacketError, match="evidence"):
+        compile_annotations(
+            population_receipt=population_receipt,
+            review_output=review,
+            key_output=key,
+            packet_receipt=packet_receipt,
+            blind_annotations=blind,
+            concept_list=concepts,
+            output=output,
+            compilation_receipt=compilation_receipt,
+        )
+    assert not output.exists() and not compilation_receipt.exists()
+
+    blind, concepts = _blind_annotations(tmp_path, review)
+    rows = [json.loads(line) for line in blind.read_text().splitlines()]
+    rows[0]["review_identity_sha256"] = "a" * 64
+    blind.write_bytes(_jsonl(rows))
+    with pytest.raises(PrerequisiteReviewPacketError, match="annotations"):
+        compile_annotations(
+            population_receipt=population_receipt,
+            review_output=review,
+            key_output=key,
+            packet_receipt=packet_receipt,
+            blind_annotations=blind,
+            concept_list=concepts,
+            output=output,
+            compilation_receipt=compilation_receipt,
+        )
