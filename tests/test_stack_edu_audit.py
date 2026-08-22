@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import pyarrow as pa
@@ -171,3 +172,34 @@ def test_rejects_wrong_columns_revision_and_existing_outputs(tmp_path: Path) -> 
             sample_output=tmp_path / "new-sample.jsonl",
             receipt_output=tmp_path / "another-receipt.json",
         )
+
+
+def test_rolls_back_sample_when_receipt_publication_collides(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = _source(tmp_path)
+    sample = tmp_path / "sample.jsonl"
+    receipt = tmp_path / "receipt.json"
+    original_link = os.link
+    calls = 0
+
+    def collide(stage: Path, target: Path) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise FileExistsError("simulated receipt collision")
+        original_link(stage, target)
+
+    monkeypatch.setattr("sai.data.stack_edu_audit.os.link", collide)
+    with pytest.raises(StackEduAuditError, match="output boundary differs"):
+        audit_shard(
+            source,
+            source_file="Python/train-00000-of-00005.parquet",
+            expected_bytes=source.stat().st_size,
+            expected_sha256=hashlib.sha256(source.read_bytes()).hexdigest(),
+            sample_output=sample,
+            receipt_output=receipt,
+        )
+    assert not sample.exists()
+    assert not receipt.exists()
+    assert not list(tmp_path.glob(".*.partial.*"))

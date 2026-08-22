@@ -10,6 +10,7 @@ import math
 import os
 import re
 import stat
+import uuid
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -387,27 +388,44 @@ def audit_shard(
         json.dumps(payload, sort_keys=True, indent=2).encode("utf-8") + b"\n"
     )
     sample_output.parent.mkdir(parents=True, exist_ok=True)
-    sample_stage = sample_output.with_name(
-        f".{sample_output.name}.partial.{os.getpid()}"
-    )
-    receipt_stage = receipt_output.with_name(
-        f".{receipt_output.name}.partial.{os.getpid()}"
-    )
+    token = uuid.uuid4().hex
+    sample_stage = sample_output.with_name(f".{sample_output.name}.partial.{token}")
+    receipt_stage = receipt_output.with_name(f".{receipt_output.name}.partial.{token}")
+    linked: list[Path] = []
     try:
-        sample_stage.write_bytes(sample_encoded)
-        receipt_stage.write_bytes(receipt_encoded)
-        for path in (sample_stage, receipt_stage):
-            descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
-            try:
-                os.fsync(descriptor)
-            finally:
-                os.close(descriptor)
-        os.replace(sample_stage, sample_output)
-        os.replace(receipt_stage, receipt_output)
+        for path, encoded in (
+            (sample_stage, sample_encoded),
+            (receipt_stage, receipt_encoded),
+        ):
+            descriptor = os.open(
+                path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC, 0o600
+            )
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(encoded)
+                handle.flush()
+                os.fsync(handle.fileno())
+        for stage, target in (
+            (sample_stage, sample_output),
+            (receipt_stage, receipt_output),
+        ):
+            os.link(stage, target)
+            linked.append(target)
+        directory = os.open(sample_output.parent, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    except FileExistsError as error:
+        for target in reversed(linked):
+            target.unlink(missing_ok=True)
+        raise StackEduAuditError("Stack-Edu audit output boundary differs") from error
     except BaseException:
+        for target in reversed(linked):
+            target.unlink(missing_ok=True)
+        raise
+    finally:
         sample_stage.unlink(missing_ok=True)
         receipt_stage.unlink(missing_ok=True)
-        raise
     return validate_audit(receipt_output)
 
 
