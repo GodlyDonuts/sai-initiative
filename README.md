@@ -159,7 +159,16 @@ benchmark evidence selects an architecture.
   still rejects any non-string or disallowed key, and continues to require no
   missing, mismatched, or error entries. Full local regression is 354 passed;
   these are admission-code corrections before any Sai model result, not
-  scientific retries.
+  scientific retries. Exact repaired commit
+  `d2cdf5f1fc314fd424c0316df278496a8675c157` is sealed on Newton with zero
+  writable members. Fresh mechanics `769422` is an independent one-H100,
+  no-requeue request with a measured-safe eight-minute limit. Its corrected
+  graph is dependency-staged without occupying GPUs: Qwen stream `769411`,
+  primary/recovery parent launchers `769425`/`769426`, workspace launcher
+  `769427`, primary/recovery workspace evaluation stages `769428`/`769429`,
+  and terminal comparisons `769431`/`769432`. Every target was absent at
+  submission; a mechanics failure cancels all scientific descendants before
+  allocation.
 - The first capable-host Sai factor is now fully executable at commit
   `cc7039d1e5a0653f4581cbe1a7b3ce509fff58e6`: a `19,938,304`-parameter,
   16-slot recurrent workspace attached to the frozen Qwen3.5-0.8B text parent.
