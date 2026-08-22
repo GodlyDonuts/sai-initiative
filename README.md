@@ -336,8 +336,10 @@ benchmark evidence selects an architecture.
   measurement without reserving an idle GPU or pre-authorizing a favorable
   result. Job `770127` is held on launcher `770106`; it requests no GPU and
   submits the real-board graph only through the frozen positive-NLL condition.
-- Architecture work is preparation-only behind this boundary. No Sai training
-  job is currently running, and the 4B prohibition remains unchanged.
+- Architecture promotion remains behind this boundary. Two matched 100M GQA
+  jobs now measure curriculum ordering versus a deterministic order control on
+  the identical record multiset; they are a data-order falsification, not an
+  architecture result. The 4B prohibition remains unchanged.
 - A deterministic forty-document qualitative audit of the exact development
   population confirms that the frozen surface score is not semantic pedagogy:
   grounding can include electrostatics and engineering, reasoning can include
@@ -367,6 +369,16 @@ benchmark evidence selects an architecture.
   `0.90–0.95`, and `>=0.95`. The packet hides score and stratum; its separate
   key remains closed until labels are complete. Receipt
   `a17dcf57…d6d0` authorizes no training.
+- An offline workspace now exposes only the 192 row identities and texts, with
+  resumable evidence-backed labels and no external requests, URLs, language
+  scores, strata, or hidden key. The post-review decision was frozen before
+  labels: two independent reviewers, at least 90% consensus acceptance and an
+  80% Wilson 95% lower bound in every included stratum, then the lowest passing
+  floor among none, 0.90, and 0.95. If the `>=0.95` stratum fails, FineMath is
+  rejected rather than retrospectively relaxed. Any selected rows remain
+  non-training candidates pending global deduplication, benchmark
+  decontamination, provenance replay, and semantic prerequisite placement.
+  `docs/SAI_FINEMATH_HUMAN_REVIEW_WORKSPACE.md` freezes this boundary.
 - Bulk code admission now begins with an executable Stack-Edu metadata audit,
   not a download. It pins revision `eeec5caa…814c`, rejects every unlicensed or
   mixed-unallowlisted row, and measures quality score, encoding, length,
