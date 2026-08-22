@@ -244,6 +244,14 @@ cover at least 100 reviewed documents, reproduce its disagreement arithmetic,
 and pass a prospectively capped disagreement rate no greater than five percent.
 The create-once output is validated before atomic publication and retains both
 training authorizations as false.
+`sai-select-prerequisite-audit` freezes the review population before annotation.
+It deterministically selects the eight lowest salted identity hashes from every
+combination of four curriculum phases and four surface bands: 128 documents in
+16 equal strata. The selector revalidates the parent curriculum, preserves full
+text and source identity, publishes create-once evidence, and can replay the
+selection exactly. Surface bands are used only to prevent an easy or late-phase
+sample from dominating review; they are not treated as semantic difficulty or
+domain labels.
 `sai-validate-prerequisites audit-curriculum` performs this audit as a streaming
 replay: it first revalidates the curriculum receipt, then rereads the exact
 curriculum and annotation files in lockstep, derives phase membership from the
