@@ -112,7 +112,7 @@ def _fixture(
     monkeypatch.setattr(
         comparison,
         "validate_curriculum_split",
-        lambda _: {
+        lambda _, **__: {
             "receipt_sha256": SPLIT_ID,
             "train": {"path": "train.jsonl"},
             "development": {"path": "development.jsonl"},
@@ -197,6 +197,7 @@ def test_launcher_is_matched_independent_single_h100_and_nonretrying() -> None:
         assert "retry" not in job.lower()
     assert "validate_order_control" in launcher
     assert "validate_curriculum_split" in launcher
+    assert "curriculum_workers=curriculum_workers" in launcher
     assert "FAMILY=gated_gqa" in launcher
     assert "TRAINING_SEQUENCES=244140" in launcher
     assert "OPTIMIZER_STEPS=954" in launcher

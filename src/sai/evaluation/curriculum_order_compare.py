@@ -149,10 +149,13 @@ def compare_curriculum_order(
     control_stream: Path,
     development_stream: Path,
     split_receipt: Path,
+    curriculum_workers: int = 1,
 ) -> dict[str, Any]:
     """Prove exact matching and report the held-out effect of order alone."""
 
-    split = validate_curriculum_split(split_receipt)
+    split = validate_curriculum_split(
+        split_receipt, curriculum_workers=curriculum_workers
+    )
     curriculum = validate_frozen_stream(curriculum_stream, verify_sources=True)
     control = validate_order_control(control_stream)
     development = validate_frozen_stream(development_stream, verify_sources=True)
@@ -308,6 +311,7 @@ def main() -> int:
     parser.add_argument("--control-stream", type=Path, required=True)
     parser.add_argument("--development-stream", type=Path, required=True)
     parser.add_argument("--split-receipt", type=Path, required=True)
+    parser.add_argument("--curriculum-validation-workers", type=int, default=1)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     payload = compare_curriculum_order(
@@ -317,6 +321,7 @@ def main() -> int:
         control_stream=args.control_stream,
         development_stream=args.development_stream,
         split_receipt=args.split_receipt,
+        curriculum_workers=args.curriculum_validation_workers,
     )
     write_comparison(args.output, payload)
     print(

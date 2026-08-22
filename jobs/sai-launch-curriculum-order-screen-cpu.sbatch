@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=4G
-#SBATCH --time=00:10:00
+#SBATCH --time=01:00:00
 #SBATCH --no-requeue
 #SBATCH --output=/dev/null
 #SBATCH --error=/dev/null
@@ -56,7 +56,7 @@ export PYTHONDONTWRITEBYTECODE=1
 read -r curriculum_identity control_identity development_identity < <(
   "$PYTHON" -P -s -B - \
     "$CURRICULUM_STREAM" "$CONTROL_STREAM" "$DEVELOPMENT_STREAM" \
-    "$SPLIT_RECEIPT" <<'PY'
+    "$SPLIT_RECEIPT" "$SLURM_CPUS_PER_TASK" <<'PY'
 import pathlib
 import sys
 
@@ -65,9 +65,12 @@ from sai.data.curriculum_split import validate_curriculum_split
 from sai.data.token_stream import sha256_file, validate_frozen_stream
 
 curriculum_root, control_root, development_root, split_path = map(
-    pathlib.Path, sys.argv[1:]
+    pathlib.Path, sys.argv[1:5]
 )
-split = validate_curriculum_split(split_path)
+curriculum_workers = int(sys.argv[5])
+split = validate_curriculum_split(
+    split_path, curriculum_workers=curriculum_workers
+)
 curriculum = validate_frozen_stream(curriculum_root, verify_sources=True)
 control = validate_order_control(control_root)
 development = validate_frozen_stream(development_root, verify_sources=True)

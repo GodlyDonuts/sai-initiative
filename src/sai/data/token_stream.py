@@ -1126,6 +1126,8 @@ def load_curriculum_phase_contract(
     receipt_path: Path,
     sources: list[Path],
     source_qualification_sha256: str | None,
+    *,
+    curriculum_workers: int = 1,
 ) -> list[tuple[str, int]]:
     """Validate either a full curriculum or its qualified training split."""
 
@@ -1141,14 +1143,16 @@ def load_curriculum_phase_contract(
     if schema == "sai-curriculum-order-receipt-v1":
         from sai.data.curriculum import validate_curriculum
 
-        validated = validate_curriculum(receipt_path)
+        validated = validate_curriculum(receipt_path, workers=curriculum_workers)
         source_row = validated.get("output", {})
         phases = validated.get("phases")
         qualified = validated.get("curriculum_qualified") is True
     elif schema == "sai-curriculum-train-development-split-v1":
         from sai.data.curriculum_split import validate_curriculum_split
 
-        validated = validate_curriculum_split(receipt_path)
+        validated = validate_curriculum_split(
+            receipt_path, curriculum_workers=curriculum_workers
+        )
         source_row = validated.get("train", {})
         phases = source_row.get("phases")
         qualified = bool(
@@ -1193,6 +1197,7 @@ def main() -> int:
     parser.add_argument("--sequences-per-shard", type=int, default=4_096)
     parser.add_argument("--source-qualification-sha256")
     parser.add_argument("--curriculum-receipt", type=Path)
+    parser.add_argument("--curriculum-validation-workers", type=int, default=1)
     parser.add_argument("--curriculum-phase-sequences", action="append")
     parser.add_argument(
         "--require-all-curriculum-phases-at-prefix", type=int, action="append"
@@ -1223,6 +1228,7 @@ def main() -> int:
             args.curriculum_receipt,
             args.source,
             args.source_qualification_sha256,
+            curriculum_workers=args.curriculum_validation_workers,
         )
     curriculum_phase_sequence_targets = None
     if args.curriculum_phase_sequences is not None:

@@ -52,6 +52,7 @@ def test_stream_job_reopens_corpus_and_stream_evidence() -> None:
     assert "--source-qualification-sha256" in job
     assert '--curriculum-receipt "$CURRICULUM_RECEIPT"' in job
     assert "--curriculum-phase-sequences grounding=48896" in job
+    assert '--curriculum-validation-workers "$SLURM_CPUS_PER_TASK"' in job
     assert "--curriculum-phase-sequences integration=60928" in job
     assert "--curriculum-phase-sequences reasoning=73216" in job
     assert "--curriculum-phase-sequences specialization=61100" in job

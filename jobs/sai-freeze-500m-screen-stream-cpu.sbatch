@@ -64,7 +64,8 @@ export PYTHONPATH="$SAI_ROOT/src"
 export PYTHONDONTWRITEBYTECODE=1
 
 tokenizer_sha256="$("$PYTHON" -P -s -B - \
-  "$SELECTED_RECEIPT" "$TRAIN_CORPUS" "$CURRICULUM_RECEIPT" <<'PY'
+  "$SELECTED_RECEIPT" "$TRAIN_CORPUS" "$CURRICULUM_RECEIPT" \
+  "$SLURM_CPUS_PER_TASK" <<'PY'
 import json
 import pathlib
 import sys
@@ -72,7 +73,8 @@ import sys
 from sai.data.curriculum_split import validate_curriculum_split
 from sai.data.token_stream import sha256_file
 
-selected_path, corpus_path, corpus_receipt_path = map(pathlib.Path, sys.argv[1:])
+selected_path, corpus_path, corpus_receipt_path = map(pathlib.Path, sys.argv[1:4])
+curriculum_workers = int(sys.argv[4])
 selected = json.loads(selected_path.read_text())
 assert selected["schema"] == "sai-tokenizer-qualification-receipt-v1"
 assert selected["status"] == "qualified"
@@ -80,7 +82,9 @@ assert selected["vocab_size"] == 48_000
 assert selected["byte_fallback"] is True
 assert selected["roundtrip_failures"] == 0
 assert selected["special_tokens_preserved"] is True
-receipt = validate_curriculum_split(corpus_receipt_path)
+receipt = validate_curriculum_split(
+    corpus_receipt_path, curriculum_workers=curriculum_workers
+)
 train = receipt["train"]
 assert receipt["status"] == "qualified"
 assert receipt["split_qualified"] is True
@@ -109,6 +113,7 @@ export TOKENIZERS_PARALLELISM=false
   --source "$TRAIN_CORPUS" \
   --source-qualification-sha256 "$curriculum_sha256" \
   --curriculum-receipt "$CURRICULUM_RECEIPT" \
+  --curriculum-validation-workers "$SLURM_CPUS_PER_TASK" \
   --output "$TRAIN_STREAM" \
   --sequence-length 2048 \
   --prefix-sequences 256 \
