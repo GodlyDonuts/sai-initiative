@@ -198,6 +198,7 @@ def build_order_control(
                     "ordered_stream_identity_sha256",
                     "prefix_utf8_bytes",
                     "shards",
+                    "curriculum",
                 }
             },
             "schema": TOKEN_STREAM_SCHEMA,

@@ -40,7 +40,13 @@ def test_stream_job_reopens_corpus_and_stream_evidence() -> None:
     assert 'all(receipt["progression_checks"].values())' in job
     assert 'receipt["output"]["sha256"] == hashlib.sha256' in job
     assert "--source-qualification-sha256" in job
+    assert '--curriculum-receipt "$CURRICULUM_RECEIPT"' in job
+    for value in (61_035, 122_070, 183_105, 244_140):
+        assert f"--require-all-curriculum-phases-at-prefix {value}" in job
     assert 'stream["source_qualification_sha256"] == sys.argv[3]' in job
+    assert (
+        'stream["curriculum"]["all_required_prefixes_cover_every_phase"] is True' in job
+    )
     assert "validate_frozen_stream" in job
     assert "verify_sources=True" in job
     assert 'stream["benchmark_disjoint"] is True' in job

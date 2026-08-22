@@ -113,13 +113,18 @@ export TOKENIZERS_PARALLELISM=false
   --expected-tokenizer-sha256 "$tokenizer_sha256" \
   --source "$TRAIN_CORPUS" \
   --source-qualification-sha256 "$curriculum_sha256" \
+  --curriculum-receipt "$CURRICULUM_RECEIPT" \
   --output "$TRAIN_STREAM" \
   --sequence-length 2048 \
   --prefix-sequences 256 \
   --prefix-sequences 61035 \
   --prefix-sequences 122070 \
   --prefix-sequences 183105 \
-  --prefix-sequences 244140
+  --prefix-sequences 244140 \
+  --require-all-curriculum-phases-at-prefix 61035 \
+  --require-all-curriculum-phases-at-prefix 122070 \
+  --require-all-curriculum-phases-at-prefix 183105 \
+  --require-all-curriculum-phases-at-prefix 244140
 
 "$PYTHON" -P -s -B - "$TRAIN_STREAM" "$tokenizer_sha256" "$curriculum_sha256" <<'PY'
 import pathlib
@@ -142,4 +147,16 @@ assert set(stream["prefix_utf8_bytes"]) == {
 }
 assert stream["benchmark_disjoint"] is True
 assert stream["cross_document_targets_masked"] is True
+assert stream["curriculum"]["required_all_phase_prefixes"] == [
+    61_035,
+    122_070,
+    183_105,
+    244_140,
+]
+assert stream["curriculum"]["all_required_prefixes_cover_every_phase"] is True
+for prefix in stream["curriculum"]["required_all_phase_prefixes"]:
+    assert all(
+        row["tokens"] > 0 and row["utf8_bytes"] > 0
+        for row in stream["curriculum"]["prefixes"][str(prefix)].values()
+    )
 PY

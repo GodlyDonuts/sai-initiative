@@ -161,6 +161,60 @@ def test_freeze_packs_exact_tokens_boundaries_and_utf8_prefixes(
     ]
 
 
+def test_curriculum_phase_accounting_covers_the_actual_training_prefix(
+    tmp_path: Path,
+) -> None:
+    phases = [
+        ("grounding", 1),
+        ("integration", 1),
+        ("reasoning", 1),
+        ("specialization", 1),
+    ]
+    output = tmp_path / "curriculum-stream"
+    report = freeze(
+        CharacterTokenizer(),
+        [source(tmp_path)],
+        output,
+        tokenizer_identity_sha256="1" * 64,
+        sequence_length=4,
+        prefix_sequences={1, 2, 3, 4},
+        sequences_per_shard=2,
+        curriculum_phases=phases,
+        required_phase_complete_prefixes={4},
+    )
+    curriculum = report["curriculum"]
+    assert curriculum["required_all_phase_prefixes"] == [4]
+    assert curriculum["all_required_prefixes_cover_every_phase"] is True
+    assert sum(curriculum["consumed_phase_tokens"].values()) == 16
+    assert sum(curriculum["consumed_phase_utf8_bytes"].values()) == 12
+    assert all(
+        row["tokens"] > 0 and row["utf8_bytes"] > 0
+        for row in curriculum["prefixes"]["4"].values()
+    )
+    assert validate_frozen_stream(output) == report
+
+
+def test_curriculum_phase_gate_rejects_a_prefix_before_specialization(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(TokenStreamError, match="lacks a curriculum phase"):
+        freeze(
+            CharacterTokenizer(),
+            [source(tmp_path)],
+            tmp_path / "too-early",
+            tokenizer_identity_sha256="1" * 64,
+            sequence_length=4,
+            prefix_sequences={2, 4},
+            curriculum_phases=[
+                ("grounding", 1),
+                ("integration", 1),
+                ("reasoning", 1),
+                ("specialization", 1),
+            ],
+            required_phase_complete_prefixes={2},
+        )
+
+
 def test_freeze_accepts_hugging_face_style_mapping_output(tmp_path: Path) -> None:
     report = freeze(
         MappingTokenizer(),
