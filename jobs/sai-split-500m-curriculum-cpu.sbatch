@@ -53,7 +53,9 @@ export PYTHONDONTWRITEBYTECODE=1
   --curriculum-receipt "$CURRICULUM_RECEIPT" \
   --train "$TRAIN_CORPUS" \
   --development "$DEVELOPMENT_CORPUS" \
-  --receipt "$SPLIT_RECEIPT"
+  --receipt "$SPLIT_RECEIPT" \
+  --curriculum-workers "$SLURM_CPUS_PER_TASK"
 
 "$PYTHON" -P -s -B -m sai.data.curriculum_split validate \
-  --receipt "$SPLIT_RECEIPT"
+  --receipt "$SPLIT_RECEIPT" \
+  --curriculum-workers "$SLURM_CPUS_PER_TASK"

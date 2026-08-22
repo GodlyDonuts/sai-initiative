@@ -94,10 +94,12 @@ def build_curriculum_split(
     train: Path,
     development: Path,
     receipt: Path,
+    *,
+    curriculum_workers: int = 1,
 ) -> dict[str, Any]:
     """Create an exact identity-hash split after global near-deduplication."""
 
-    curriculum = validate_curriculum(curriculum_receipt)
+    curriculum = validate_curriculum(curriculum_receipt, workers=curriculum_workers)
     source = Path(curriculum["output"]["path"])
     if any(
         path.exists() or path.is_symlink() for path in (train, development, receipt)
@@ -254,7 +256,9 @@ def build_curriculum_split(
         raise
 
 
-def validate_curriculum_split(receipt: Path) -> dict[str, Any]:
+def validate_curriculum_split(
+    receipt: Path, *, curriculum_workers: int = 1
+) -> dict[str, Any]:
     """Reopen the curriculum and prove every row's exact split assignment."""
 
     if not receipt.is_file() or receipt.is_symlink():
@@ -267,7 +271,7 @@ def validate_curriculum_split(receipt: Path) -> dict[str, Any]:
         raise CurriculumSplitError("curriculum split receipt hash differs")
     source_row = payload.get("source_curriculum", {})
     source_receipt = Path(source_row.get("receipt_path", ""))
-    curriculum = validate_curriculum(source_receipt)
+    curriculum = validate_curriculum(source_receipt, workers=curriculum_workers)
     source = Path(curriculum["output"]["path"])
     if (
         source_row.get("receipt_bytes") != source_receipt.stat().st_size
@@ -408,15 +412,23 @@ def main() -> None:
     build.add_argument("--train", type=Path, required=True)
     build.add_argument("--development", type=Path, required=True)
     build.add_argument("--receipt", type=Path, required=True)
+    build.add_argument("--curriculum-workers", type=int, default=1)
     validate = subparsers.add_parser("validate")
     validate.add_argument("--receipt", type=Path, required=True)
+    validate.add_argument("--curriculum-workers", type=int, default=1)
     args = parser.parse_args()
     if args.command == "build":
         payload = build_curriculum_split(
-            args.curriculum_receipt, args.train, args.development, args.receipt
+            args.curriculum_receipt,
+            args.train,
+            args.development,
+            args.receipt,
+            curriculum_workers=args.curriculum_workers,
         )
     else:
-        payload = validate_curriculum_split(args.receipt)
+        payload = validate_curriculum_split(
+            args.receipt, curriculum_workers=args.curriculum_workers
+        )
     print(
         json.dumps(
             {

@@ -114,6 +114,7 @@ def test_split_is_exact_disjoint_progressive_and_replayable(
     assert list(payload["development"]["phases"]) == list(PHASES)
     assert all(payload["checks"].values())
     assert validate_curriculum_split(receipt) == payload
+    assert validate_curriculum_split(receipt, curriculum_workers=2) == payload
     assert load_curriculum_phase_contract(
         receipt,
         [Path(payload["train"]["path"])],
@@ -150,6 +151,7 @@ def test_split_and_development_stream_jobs_are_cpu_only_and_create_only() -> Non
         assert "scancel" not in job.lower()
     assert "sai.data.curriculum_split build" in split
     assert "sai.data.curriculum_split validate" in split
+    assert split.count('--curriculum-workers "$SLURM_CPUS_PER_TASK"') == 2
     assert 'test ! -e "$TRAIN_CORPUS"' in split
     assert 'test ! -e "$DEVELOPMENT_CORPUS"' in split
     assert 'test ! -e "$SPLIT_RECEIPT"' in split
