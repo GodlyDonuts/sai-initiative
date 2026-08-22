@@ -101,6 +101,14 @@ benchmark evidence selects an architecture.
   rehearsal, and unresolved violations. This is the executable version of the
   rule that a model should encounter the concepts of yellow and blue before it
   is expected to learn their composition into green.
+- The semantic gate now freezes exactly 128 review documents, balanced across
+  all four phases and four surface bands, before any labels are produced. A
+  separate replay compares the prospective annotator with an independently
+  identified reviewer, validates every cited evidence span against immutable
+  source text, and computes concept-set disagreement directly. The taxonomy
+  cannot be built unless at least 100 documents were reviewed and disagreement
+  is at most the prospectively frozen five-percent ceiling; callers can no
+  longer satisfy this gate with an unattached arithmetic-only receipt.
 - Source-disjoint split `770039` is now running from that independently
   qualified receipt with four ordered workers across both receipt validation
   and exact split reconstruction, plus a four-hour fail-closed wall limit.

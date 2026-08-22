@@ -252,6 +252,17 @@ text and source identity, publishes create-once evidence, and can replay the
 selection exactly. Surface bands are used only to prevent an easy or late-phase
 sample from dominating review; they are not treated as semantic difficulty or
 domain labels.
+`sai-review-prerequisite-audit` then compares the prospective annotator against
+an independently identified reviewer on those exact 128 documents. Both sides
+must provide canonical concept sets with nonempty evidence spans whose hashes
+reopen against the frozen source text. The receipt binds and reopens the sample,
+candidate concept list, identities, policy, and both annotation files; it
+computes document-level concept-set disagreement rather than accepting caller
+arithmetic. Taxonomy construction requires at least 100 reviewed documents and
+a prospectively capped disagreement rate no greater than five percent. Evidence
+span differences remain inspectable but do not count as semantic label
+disagreement when both reviewers selected the same concept. A failed audit is
+preserved as evidence and cannot construct the taxonomy.
 `sai-validate-prerequisites audit-curriculum` performs this audit as a streaming
 replay: it first revalidates the curriculum receipt, then rereads the exact
 curriculum and annotation files in lockstep, derives phase membership from the

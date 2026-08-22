@@ -14,6 +14,10 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.curriculum import PHASES, validate_curriculum
+from sai.data.prerequisite_review import (
+    PrerequisiteReviewError,
+    validate_review_payload,
+)
 from sai.data.token_stream import (
     ALLOWED_DOMAINS,
     canonical_sha256,
@@ -22,7 +26,6 @@ from sai.data.token_stream import (
 
 TAXONOMY_SCHEMA = "sai-semantic-prerequisite-taxonomy-v2"
 CONCEPT_LIST_SCHEMA = "sai-semantic-prerequisite-concept-list-v1"
-AUDIT_SAMPLE_SCHEMA = "sai-semantic-prerequisite-audit-sample-v1"
 ANNOTATION_SCHEMA = "sai-prerequisite-document-annotation-v1"
 REPORT_SCHEMA = "sai-semantic-prerequisite-progression-report-v1"
 ANNOTATION_METHODS = {"deterministic", "model", "hybrid", "human"}
@@ -52,22 +55,6 @@ _CONCEPT_KEYS = {
     "minimum_prior_documents",
     "minimum_phase_documents",
 }
-_AUDIT_SAMPLE_KEYS = {
-    "schema",
-    "status",
-    "training_authorized",
-    "four_b_training_authorized",
-    "annotator_identity_sha256",
-    "annotation_policy_sha256",
-    "sample_population_sha256",
-    "reviewed_documents",
-    "disagreement_documents",
-    "observed_disagreement_ppm",
-    "maximum_disagreement_ppm",
-    "receipt_sha256",
-}
-_MINIMUM_AUDIT_DOCUMENTS = 100
-_MAXIMUM_ALLOWED_DISAGREEMENT_PPM = 50_000
 _ANNOTATION_KEYS = {"schema", "document_identity_sha256", "phase", "concepts"}
 _EVIDENCE_KEYS = {"concept_id", "confidence_ppm", "evidence_spans"}
 _SPAN_KEYS = {"start", "end", "text_sha256"}
@@ -124,9 +111,8 @@ def build_taxonomy(
     """Create one immutable prospective taxonomy from real evidence artifacts."""
 
     try:
-        concept_source = json.loads(
-            _read_small_regular(concepts_path, "concept list").decode("utf-8")
-        )
+        concept_bytes = _read_small_regular(concepts_path, "concept list")
+        concept_source = json.loads(concept_bytes.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise PrerequisiteError("concept list JSON differs") from error
     concept_source = _exact_keys(
@@ -159,11 +145,17 @@ def build_taxonomy(
         audit_payload = json.loads(audit_bytes.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as error:
         raise PrerequisiteError("audit sample receipt JSON differs") from error
-    _validate_audit_sample_payload(
-        audit_payload,
-        annotator_identity_sha256=annotator_hash,
-        annotation_policy_sha256=policy_hash,
-    )
+    try:
+        audit = validate_review_payload(
+            audit_payload,
+            expected_annotator_identity_sha256=annotator_hash,
+            expected_annotation_policy_sha256=policy_hash,
+            expected_concept_list_sha256=hashlib.sha256(concept_bytes).hexdigest(),
+        )
+    except PrerequisiteReviewError as error:
+        raise PrerequisiteError("audit sample qualification differs") from error
+    if audit["status"] != "passed" or audit["audit_qualified"] is not True:
+        raise PrerequisiteError("audit sample qualification differs")
     evidence_hashes = [
         annotator_hash,
         policy_hash,
@@ -220,41 +212,6 @@ def _ppm(value: Any, label: str, *, positive: bool = False) -> int:
     if result > 1_000_000 or (positive and result == 0):
         raise PrerequisiteError(f"{label} differs")
     return result
-
-
-def _validate_audit_sample_payload(
-    payload: Any,
-    *,
-    annotator_identity_sha256: str,
-    annotation_policy_sha256: str,
-) -> dict[str, Any]:
-    audit = _exact_keys(payload, _AUDIT_SAMPLE_KEYS, "audit sample receipt")
-    receipt_sha256 = _sha256(audit["receipt_sha256"], "audit sample receipt")
-    unsigned = {key: value for key, value in audit.items() if key != "receipt_sha256"}
-    reviewed = _nonnegative_int(audit["reviewed_documents"], "reviewed documents")
-    disagreements = _nonnegative_int(
-        audit["disagreement_documents"], "disagreement documents"
-    )
-    observed_ppm = _ppm(audit["observed_disagreement_ppm"], "observed disagreement")
-    maximum_ppm = _ppm(audit["maximum_disagreement_ppm"], "maximum disagreement")
-    if (
-        audit["schema"] != AUDIT_SAMPLE_SCHEMA
-        or audit["status"] != "passed"
-        or audit["training_authorized"] is not False
-        or audit["four_b_training_authorized"] is not False
-        or receipt_sha256 != canonical_sha256(unsigned)
-        or audit["annotator_identity_sha256"] != annotator_identity_sha256
-        or audit["annotation_policy_sha256"] != annotation_policy_sha256
-        or _sha256(audit["sample_population_sha256"], "sample population")
-        != audit["sample_population_sha256"]
-        or reviewed < _MINIMUM_AUDIT_DOCUMENTS
-        or disagreements > reviewed
-        or observed_ppm != disagreements * 1_000_000 // reviewed
-        or maximum_ppm > _MAXIMUM_ALLOWED_DISAGREEMENT_PPM
-        or observed_ppm > maximum_ppm
-    ):
-        raise PrerequisiteError("audit sample qualification differs")
-    return audit
 
 
 def _assert_acyclic(concepts: dict[str, dict[str, Any]]) -> None:
