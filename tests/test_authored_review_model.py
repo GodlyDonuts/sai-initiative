@@ -160,8 +160,42 @@ def test_response_maps_only_unique_whitespace_quote_to_exact_source() -> None:
     payload["taught_concepts"][0]["evidence_quotes"] = [
         "This paraphrase is absent from the source chapter."
     ]
-    with pytest.raises(AuthoredModelReviewError, match="missing or ambiguous"):
-        _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+    draft = _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+    assert draft["taught_concepts"] == []
+    assert draft["admission_recommendation"] == "revise"
+
+
+def test_response_removes_redundant_nested_quality_and_unsupported_quote() -> None:
+    inputs = _inputs()
+    source = inputs.packet[0]
+    concepts = {item["concept_id"] for item in inputs.concept_payload["concepts"]}
+    quote = (
+        "Any type composed entirely of `Send` types is automatically marked as "
+        "`Send` as well."
+    )
+    payload = {
+        "instructional_quality_ppm": 950_000,
+        "assumed_prior_concepts": ["code.collection"],
+        "taught_concepts": [
+            {
+                "concept_id": "code.collection",
+                "confidence_ppm": 980_000,
+                "evidence_quotes": ["match", quote],
+                "instructional_quality_ppm": 950_000,
+            }
+        ],
+        "defects": [],
+        "admission_recommendation": "admit",
+    }
+    draft = _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+    assert draft["assumed_prior_concepts"] == []
+    assert draft["taught_concepts"] == [
+        {
+            "concept_id": "code.collection",
+            "confidence_ppm": 980_000,
+            "evidence_quotes": [quote.replace(" as well.", " as\nwell.")],
+        }
+    ]
 
 
 def test_response_resolves_taught_assumed_overlap_in_favor_of_evidence() -> None:
@@ -233,7 +267,7 @@ def test_input_ids_accepts_exact_tensor_or_input_only_mapping() -> None:
         _input_ids(torch.tensor([1, 2, 3]), torch)
 
 
-def test_response_rejects_commentary_and_missing_quote() -> None:
+def test_response_rejects_commentary_and_drops_missing_quote() -> None:
     with pytest.raises(AuthoredModelReviewError, match="JSON"):
         _response_object('Commentary {"instructional_quality_ppm": 1}')
     inputs = _inputs()
@@ -254,8 +288,9 @@ def test_response_rejects_commentary_and_missing_quote() -> None:
             "admission_recommendation": "admit",
         }
     )
-    with pytest.raises(AuthoredModelReviewError, match="missing or ambiguous"):
-        _draft_from_response(source, response, concepts, inputs.policy)
+    draft = _draft_from_response(source, response, concepts, inputs.policy)
+    assert draft["taught_concepts"] == []
+    assert draft["admission_recommendation"] == "revise"
 
 
 def test_response_bounds_lists_and_reports_output_budget_exhaustion() -> None:
