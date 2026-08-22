@@ -15,7 +15,7 @@ from typing import Any
 from sai.data.token_stream import canonical_sha256
 from sai.evaluation.population_builder import convert
 
-SCHEMA = "sai-development-mc-populations-refresh-v1"
+SCHEMA = "sai-development-mc-populations-aggregate-v1"
 
 
 class PopulationRefreshError(RuntimeError):
@@ -142,13 +142,13 @@ def refresh(args: argparse.Namespace) -> dict[str, Any]:
         payload = {
             "schema": SCHEMA,
             "status": "complete",
-            "source_commit": args.source_commit,
+            "development_only": True,
+            "official_benchmark_result": False,
+            "architecture_promotion_allowed": False,
+            "code_commit": args.source_commit,
             "training_decontamination_receipt": _artifact(args.decontamination_receipt),
             "populations": populations,
             "total_rows": sum(item["rows"] for item in populations),
-            "development_only": True,
-            "official_benchmark_result": False,
-            "four_b_training_authorized": False,
         }
         payload["receipt_sha256"] = canonical_sha256(payload)
         _write_new(output_root / "populations.aggregate.receipt.json", payload)

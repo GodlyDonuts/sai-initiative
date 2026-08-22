@@ -119,6 +119,11 @@ benchmark evidence selects an architecture.
   to the frozen train stream. Direct-source evaluation remains unchanged;
   missing, partial, parent-drifted, or train-drifted lineage fails before
   benchmark GPU submission.
+- Population refresh now publishes the same canonical aggregate contract as
+  the original population builder. The immutable 12,032-row MMLU-Pro and
+  756-row MuSR sources are reconverted against the current decontamination
+  receipt; a refresh-only schema can no longer strand an otherwise valid
+  evaluation before submission.
 - The real-development decision is frozen before scores exist. Both matched
   checkpoints must complete all 12,032 MMLU-Pro rows and all 756 MuSR rows.
   Curriculum order is retained only with nonnegative deltas on both boards, a
