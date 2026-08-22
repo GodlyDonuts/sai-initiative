@@ -7,6 +7,14 @@ scratchpad and implementation surface for that effort.
 Nothing is called an improvement until it beats the unchanged parent and an
 equal-compute control on real, source-disjoint benchmarks.
 
+**Data precedes architecture.** Sai first earns a trustworthy learning
+sequence: verified source bytes, quality and duplication controls, explicit
+prerequisite coverage, gradual difficulty, later rehearsal of fundamentals,
+and source-disjoint evaluation. A sophisticated mixer cannot compensate for
+bad examples or for teaching dependent concepts before their primitives. No
+architecture is promoted on a data schedule that has not independently beaten
+an identical-document order control.
+
 **Execution status:** the user authorized sub-4B preparation and training on
 2026-08-21. The 4B run remains explicitly prohibited until smaller-scale real
 benchmark evidence selects an architecture.
@@ -109,10 +117,19 @@ benchmark evidence selects an architecture.
   historical executable bits had been stripped, so the runtime correctly
   failed its clean-tree check before Python or data access. Its dependent
   launcher `770088` canceled without allocation. Both output roots remained
-  absent. Replacement job `770105` is running against clean immutable runtime
-  `78f9d7b`; replacement launcher `770106` waits on it and the order-control
-  job `770042`. The trainer, evaluator, comparator, and development-freezer
-  bytes are unchanged from their previously reviewed versions.
+  absent. Replacement job `770105` completed at `0:0` with zero restarts and
+  empty stderr against clean immutable runtime `78f9d7b`. It published exactly
+  `1,024` packed sequences: `256` and `524,288` tokens from each of grounding,
+  integration, reasoning, and specialization. The stream receipt file is
+  SHA-256
+  `6ae403c18f683fa3ddd7536989c38f7c5c4c14a3b448993e020cf84cabb8eb9a`;
+  its ordered-stream identity is
+  `232f68b380db1cbfa75aeda8c8bb3a878f9afe1551528b6efcbccbb4c6e6a34a`.
+  Its exact train/development split receipt and development source hashes match
+  the independently qualified lineage. Replacement launcher `770106` now
+  waits only on order-control job `770042`. The trainer, evaluator, comparator,
+  and development-freezer bytes are unchanged from their previously reviewed
+  versions.
 - Source-disjoint MMLU-Pro and MuSR evaluation now admits curriculum-derived
   streams only through the exact completed lineage from the benchmark-audited
   decontaminated source, through the qualified curriculum and split receipts,
