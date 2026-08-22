@@ -234,7 +234,7 @@ Two later hypotheses must remain separate factors:
    identities, and score-to-order policy must be frozen before the comparison.
 
 The prospective semantic boundary is executable. `sai-validate-prerequisites`
-validates `sai-semantic-prerequisite-taxonomy-v2`: all five Sai domains, a
+validates `sai-semantic-prerequisite-taxonomy-v3`: all five Sai domains, a
 cycle-free concept graph, non-placeholder annotator/policy/audit identities,
 explicit minimum prior-document counts, and frozen per-concept minimum exposure
 counts for every curriculum phase. The first phase with a nonzero exposure
@@ -248,8 +248,10 @@ annotations in the exact curriculum document order, counts only evidence above
 the frozen confidence floor, rehashes every claimed non-overlapping character
 span against the exact document text, and checks prerequisites before updating
 the current document's exposures. Consequently, an unsupported concept label
-cannot pass with a detached evidence hash, and teaching a primitive and its
-dependent operation in the same document does not masquerade as prior coverage.
+cannot pass with a detached evidence hash or a token mention: every positive
+label must bind at least 16 source Unicode codepoints of substantive evidence.
+Teaching a primitive and its dependent operation in the same document does not
+masquerade as prior coverage.
 Its self-hashed report binds the taxonomy, ordered document identities, entire
 annotation population, first exposure, per-phase coverage, missing concepts,
 every prerequisite violation, and every missing rehearsal obligation. It

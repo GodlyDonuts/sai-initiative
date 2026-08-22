@@ -25,7 +25,7 @@ from sai.data.token_stream import (
     normalize_document,
 )
 
-TAXONOMY_SCHEMA = "sai-semantic-prerequisite-taxonomy-v2"
+TAXONOMY_SCHEMA = "sai-semantic-prerequisite-taxonomy-v3"
 CONCEPT_LIST_SCHEMA = "sai-semantic-prerequisite-concept-list-v1"
 ANNOTATION_SCHEMA = "sai-prerequisite-document-annotation-v1"
 REPORT_SCHEMA = "sai-semantic-prerequisite-progression-report-v3"
@@ -38,6 +38,7 @@ _TAXONOMY_KEYS = {
     "training_authorized",
     "four_b_training_authorized",
     "minimum_annotation_confidence_ppm",
+    "minimum_evidence_codepoints_per_positive_label",
     "maximum_new_concepts_per_document",
     "annotation_method",
     "concepts",
@@ -150,7 +151,7 @@ def build_taxonomy(
         _read_small_regular(annotation_policy_path, "annotation policy")
     ).hexdigest()
     try:
-        validate_policy(
+        policy = validate_policy(
             annotation_policy_path,
             expected_concept_list_sha256=hashlib.sha256(concept_bytes).hexdigest(),
         )
@@ -185,6 +186,9 @@ def build_taxonomy(
         "training_authorized": False,
         "four_b_training_authorized": False,
         "minimum_annotation_confidence_ppm": minimum_annotation_confidence_ppm,
+        "minimum_evidence_codepoints_per_positive_label": policy[
+            "evidence_span_contract"
+        ]["minimum_codepoints_per_positive_label"],
         "maximum_new_concepts_per_document": maximum_new_concepts_per_document,
         "annotation_method": {
             "method": annotation_method,
@@ -278,6 +282,12 @@ def validate_taxonomy_payload(payload: Any) -> dict[str, Any]:
     )
     if not 1 <= maximum_new_concepts_per_document <= 64:
         raise PrerequisiteError("maximum new concepts per document differs")
+    minimum_evidence_codepoints = _nonnegative_int(
+        taxonomy["minimum_evidence_codepoints_per_positive_label"],
+        "minimum evidence codepoints per positive label",
+    )
+    if not 1 <= minimum_evidence_codepoints <= 10_000:
+        raise PrerequisiteError("minimum evidence codepoints differ")
 
     method = _exact_keys(taxonomy["annotation_method"], _METHOD_KEYS, "annotation")
     if method["method"] not in ANNOTATION_METHODS:
@@ -435,6 +445,9 @@ class _ProgressionState:
         self.taxonomy = taxonomy
         self.concepts = {item["concept_id"]: item for item in taxonomy["concepts"]}
         self.minimum_confidence = taxonomy["minimum_annotation_confidence_ppm"]
+        self.minimum_evidence_codepoints = taxonomy[
+            "minimum_evidence_codepoints_per_positive_label"
+        ]
         self.maximum_new_concepts_per_document = taxonomy[
             "maximum_new_concepts_per_document"
         ]
@@ -492,6 +505,7 @@ class _ProgressionState:
             if not isinstance(spans, list) or not spans:
                 raise PrerequisiteError("annotation evidence spans differ")
             previous_end = -1
+            evidence_codepoints = 0
             for raw_span in spans:
                 span = _exact_keys(raw_span, _SPAN_KEYS, "annotation evidence span")
                 start = _nonnegative_int(span["start"], "evidence span start")
@@ -505,7 +519,10 @@ class _ProgressionState:
                     expected_span_hash
                 ):
                     raise PrerequisiteError("annotation evidence text differs")
+                evidence_codepoints += end - start
                 previous_end = end
+            if evidence_codepoints < self.minimum_evidence_codepoints:
+                raise PrerequisiteError("annotation evidence is too short")
             if confidence < self.minimum_confidence:
                 continue
             confident.append(concept_id)

@@ -29,6 +29,7 @@ def test_candidate_concept_graph_is_balanced_acyclic_and_rehearsed() -> None:
         "training_authorized": False,
         "four_b_training_authorized": False,
         "minimum_annotation_confidence_ppm": 800_000,
+        "minimum_evidence_codepoints_per_positive_label": 16,
         "maximum_new_concepts_per_document": 2,
         "annotation_method": {
             "method": "hybrid",

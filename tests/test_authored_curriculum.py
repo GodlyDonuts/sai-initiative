@@ -286,7 +286,7 @@ def _review_inputs(tmp_path: Path) -> dict[str, Path]:
     )
     negative_rule = "omit_when_direct_source_evidence_is_absent_or_ambiguous"
     policy = {
-        "schema": "sai-semantic-annotation-policy-v1",
+        "schema": "sai-semantic-annotation-policy-v2",
         "status": "prospective",
         "training_authorized": False,
         "four_b_training_authorized": False,
@@ -297,6 +297,7 @@ def _review_inputs(tmp_path: Path) -> dict[str, Path]:
         "evidence_span_contract": {
             "coordinate_system": "unicode_codepoint_half_open",
             "minimum_spans_per_positive_label": 1,
+            "minimum_codepoints_per_positive_label": 16,
             "source_hash_required": True,
             "exact_text_match_required": True,
         },

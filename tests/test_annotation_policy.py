@@ -32,6 +32,9 @@ def test_candidate_policy_is_exact_conservative_and_non_authorizing() -> None:
     assert payload["annotation_unit"] == "document_concept_presence"
     assert payload["confidence_contract"]["minimum_confidence_ppm"] == 800_000
     assert (
+        payload["evidence_span_contract"]["minimum_codepoints_per_positive_label"] == 16
+    )
+    assert (
         payload["prerequisite_contract"]["same_document_exposure_counts_as_prior"]
         is False
     )
@@ -51,6 +54,9 @@ def test_candidate_policy_is_exact_conservative_and_non_authorizing() -> None:
             same_document_exposure_counts_as_prior=True
         ),
         lambda value: value["review_contract"].update(maximum_disagreement_ppm=100_000),
+        lambda value: value["evidence_span_contract"].update(
+            minimum_codepoints_per_positive_label=1
+        ),
         lambda value: value.update(extra="undeclared"),
     ],
 )

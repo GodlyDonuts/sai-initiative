@@ -103,6 +103,7 @@ def _taxonomy() -> dict:
         "training_authorized": False,
         "four_b_training_authorized": False,
         "minimum_annotation_confidence_ppm": 800_000,
+        "minimum_evidence_codepoints_per_positive_label": 1,
         "maximum_new_concepts_per_document": 2,
         "annotation_method": {
             "method": "hybrid",
@@ -182,6 +183,7 @@ def _write_annotation_policy(path: Path, concept_list_sha256: str) -> None:
         "evidence_span_contract": {
             "coordinate_system": "unicode_codepoint_half_open",
             "minimum_spans_per_positive_label": 1,
+            "minimum_codepoints_per_positive_label": 16,
             "source_hash_required": True,
             "exact_text_match_required": True,
         },
@@ -255,6 +257,16 @@ def test_progression_rejects_too_many_first_exposures_in_one_document() -> None:
             "maximum_new_concepts": 1,
         }
     ]
+
+
+def test_progression_rejects_term_mentions_as_prerequisite_evidence() -> None:
+    taxonomy = _taxonomy()
+    taxonomy["minimum_evidence_codepoints_per_positive_label"] = 9
+    _resign(taxonomy)
+    annotations, identities, texts = _annotations()
+
+    with pytest.raises(PrerequisiteError, match="evidence is too short"):
+        analyze_progression(taxonomy, annotations, identities, texts)
 
 
 def test_progression_rejects_advanced_concept_before_its_declared_phase() -> None:

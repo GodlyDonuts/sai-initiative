@@ -10,7 +10,7 @@ from typing import Any
 
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-semantic-annotation-policy-v1"
+SCHEMA = "sai-semantic-annotation-policy-v2"
 _MAX_BYTES = 1 << 20
 _TOP_KEYS = {
     "schema",
@@ -30,6 +30,7 @@ _TOP_KEYS = {
 _SPAN_KEYS = {
     "coordinate_system",
     "minimum_spans_per_positive_label",
+    "minimum_codepoints_per_positive_label",
     "source_hash_required",
     "exact_text_match_required",
 }
@@ -144,6 +145,7 @@ def validate_policy_payload(
     if span != {
         "coordinate_system": "unicode_codepoint_half_open",
         "minimum_spans_per_positive_label": 1,
+        "minimum_codepoints_per_positive_label": 16,
         "source_hash_required": True,
         "exact_text_match_required": True,
     }:
