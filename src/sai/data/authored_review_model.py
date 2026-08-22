@@ -15,6 +15,7 @@ import inspect
 import json
 import os
 import platform
+import re
 import stat
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -371,6 +372,20 @@ def _response_object(response: str) -> dict[str, Any]:
     return payload
 
 
+def _canonical_quote(source_text: str, quote: str) -> str:
+    if source_text.count(quote) == 1:
+        return quote
+    tokens = quote.split()
+    if not tokens:
+        return quote
+    matches = list(
+        re.finditer(r"\s+".join(re.escape(token) for token in tokens), source_text)
+    )
+    if len(matches) != 1:
+        return quote
+    return source_text[matches[0].start() : matches[0].end()]
+
+
 def _draft_from_response(
     source: dict[str, Any],
     response: str,
@@ -405,6 +420,31 @@ def _draft_from_response(
         payload["taught_concepts"] = sorted(
             taught, key=lambda value: value["concept_id"]
         )
+    for value in taught:
+        if isinstance(value, dict) and isinstance(value.get("evidence_quotes"), list):
+            value["evidence_quotes"] = [
+                (
+                    _canonical_quote(source["text"], quote)
+                    if isinstance(quote, str)
+                    else quote
+                )
+                for quote in value["evidence_quotes"]
+            ]
+    for value in defects:
+        if isinstance(value, dict) and isinstance(value.get("evidence_quote"), str):
+            value["evidence_quote"] = _canonical_quote(
+                source["text"], value["evidence_quote"]
+            )
+    if all(isinstance(value, str) for value in assumed) and all(
+        isinstance(value, dict) and isinstance(value.get("concept_id"), str)
+        for value in taught
+    ):
+        overlap = sorted(set(assumed) & {value["concept_id"] for value in taught})
+        if overlap:
+            raise AuthoredModelReviewError(
+                "concept roles differ; remove taught concepts from "
+                "assumed_prior_concepts: " + ",".join(overlap)
+            )
     draft = {
         "schema": DRAFT_SCHEMA,
         "review_identity_sha256": source["review_identity_sha256"],

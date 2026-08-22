@@ -133,6 +133,62 @@ def test_response_mechanically_canonicalizes_order_but_not_duplicates() -> None:
         _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
 
 
+def test_response_maps_only_unique_whitespace_quote_to_exact_source() -> None:
+    inputs = _inputs()
+    source = inputs.packet[0]
+    concepts = {item["concept_id"] for item in inputs.concept_payload["concepts"]}
+    collapsed = (
+        "Any type composed entirely of `Send` types is automatically marked as "
+        "`Send` as well."
+    )
+    payload = {
+        "instructional_quality_ppm": 900_000,
+        "assumed_prior_concepts": [],
+        "taught_concepts": [
+            {
+                "concept_id": "code.collection",
+                "confidence_ppm": 900_000,
+                "evidence_quotes": [collapsed],
+            }
+        ],
+        "defects": [],
+        "admission_recommendation": "admit",
+    }
+    draft = _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+    exact = draft["taught_concepts"][0]["evidence_quotes"][0]
+    assert exact == collapsed.replace(" as well.", " as\nwell.")
+    payload["taught_concepts"][0]["evidence_quotes"] = [
+        "This paraphrase is absent from the source chapter."
+    ]
+    with pytest.raises(AuthoredModelReviewError, match="missing or ambiguous"):
+        _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+
+
+def test_response_reports_exact_taught_assumed_overlap() -> None:
+    inputs = _inputs()
+    source = inputs.packet[0]
+    concepts = {item["concept_id"] for item in inputs.concept_payload["concepts"]}
+    quote = (
+        "Any type composed entirely of `Send` types is automatically marked as "
+        "`Send` as well."
+    )
+    payload = {
+        "instructional_quality_ppm": 900_000,
+        "assumed_prior_concepts": ["code.collection"],
+        "taught_concepts": [
+            {
+                "concept_id": "code.collection",
+                "confidence_ppm": 900_000,
+                "evidence_quotes": [quote],
+            }
+        ],
+        "defects": [],
+        "admission_recommendation": "admit",
+    }
+    with pytest.raises(AuthoredModelReviewError, match="code.collection"):
+        _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+
+
 def test_input_ids_accepts_exact_tensor_or_input_only_mapping() -> None:
     import torch
 
