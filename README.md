@@ -35,8 +35,16 @@ ordering beat a same-record order control before scaling.
 
 ### Sai data constitution
 
-Data decisions precede tokenizer, architecture, and scale decisions. Every
-training population must pass these gates in order:
+Data decisions precede tokenizer, architecture, and scale decisions.
+
+The latest open-recipe evidence is reconciled in
+[`docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md`](docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md).
+Sai uses progressive composition with continuous broad rehearsal, retains
+low-dose foundational code/math/science/technical exposure early, and measures
+specialist upsampling, reasoning mid-training, and long-context adaptation as
+separate factors rather than copying another model's ratios.
+
+Every training population must pass these gates in order:
 
 1. **Source truth:** reopen exact source bytes; reject corruption, spam,
    benchmark overlap, unsupported claims, and high-confidence duplicates.

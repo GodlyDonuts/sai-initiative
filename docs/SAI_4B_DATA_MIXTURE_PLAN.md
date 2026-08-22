@@ -3,6 +3,13 @@
 Status: prospective and data-first. This plan authorizes no 4B training. It
 defines the evidence required before a final Sai corpus can exist.
 
+The current primary-source research synthesis and its implications for
+progressive composition, continuous rehearsal, and stage separation are frozen
+in
+[`SAI_2026_DATA_RESEARCH_SYNTHESIS.md`](SAI_2026_DATA_RESEARCH_SYNTHESIS.md).
+Published mixtures are treated as experimental priors, never copied as Sai
+ratios without matched evidence.
+
 `sai-validate-data-mixture <plan.json>` enforces the structural prospective
 `sai-4b-data-mixture-plan-v2` schema. It checks immutable-looking revisions and
 hash identities, all five Sai domains, exact per-source and per-phase token
