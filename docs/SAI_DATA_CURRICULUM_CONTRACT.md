@@ -244,6 +244,29 @@ Two later hypotheses must remain separate factors:
    answers or the treatment model's later state. Its scorer, checkpoint, sample
    identities, and score-to-order policy must be frozen before the comparison.
 
+The first executable model-centric scheduler is
+`sai-build-learnability-curriculum`. It consumes one already-qualified packed
+stream, one prospectively frozen policy, and one exact score row per packed
+sequence. Each score binds the record's token-and-boundary-mask hash, target
+count, weak and strong normalized NLL in integer microunits, and their exact
+difference. The policy binds two distinct frozen probe checkpoints, tokenizer,
+evaluator, runtime, phase and band populations, optimizer-aligned phase
+boundaries, and a score-independent within-phase order. It forbids treatment
+checkpoint state and terminal benchmark feedback.
+
+The builder ranks identical packed records into `ready`, `developing`,
+`challenging`, and `stretch` bands using weak-minus-strong normalized loss,
+allocates those bands across grounding, integration, reasoning, and
+specialization under an exactly frozen matrix, and preserves ready-record
+rehearsal in every later phase. Within each phase records are hash-ranked rather
+than loss-ranked, so the changed factor is the phase mixture rather than a
+continuous easiest-to-hardest micro-order. Validation reopens the parent,
+policy, and every score; recomputes every packed-record hash, rank, band,
+allocation, permutation, and multiset; and proves that token IDs and document
+boundary masks are unchanged. This schedule is explicitly model-centric and
+does **not** prove semantic prerequisite ordering. It remains a separate matched
+factor and authorizes neither training nor 4B.
+
 The prospective semantic boundary is executable. `sai-validate-prerequisites`
 validates `sai-semantic-prerequisite-taxonomy-v3`: all five Sai domains, a
 cycle-free concept graph, non-placeholder annotator/policy/audit identities,
