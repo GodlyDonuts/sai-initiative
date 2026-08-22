@@ -22,7 +22,10 @@ from sai.data.token_stream import canonical_sha256
 SCHEMA = "sai-qwen35-0p8b-text-mechanics-v1"
 EXPECTED_MODEL_CLASS = "Qwen3_5ForCausalLM"
 EXPECTED_PARAMETER_COUNT = 752_393_024
-EXPECTED_VOCAB_SIZE = 248_320
+EXPECTED_MODEL_VOCAB_SIZE = 248_320
+EXPECTED_TOKENIZER_BASE_VOCAB_SIZE = 248_044
+EXPECTED_TOKENIZER_LENGTH = 248_077
+EXPECTED_EOS_TOKEN_ID = 248_046
 
 
 class HFParentError(RuntimeError):
@@ -117,7 +120,11 @@ def load_text_parent(model_root: Path) -> tuple[nn.Module, Any, dict[str, Any]]:
         local_files_only=True,
         trust_remote_code=False,
     )
-    if len(tokenizer) != EXPECTED_VOCAB_SIZE:
+    if (
+        tokenizer.vocab_size != EXPECTED_TOKENIZER_BASE_VOCAB_SIZE
+        or len(tokenizer) != EXPECTED_TOKENIZER_LENGTH
+        or tokenizer.eos_token_id != EXPECTED_EOS_TOKEN_ID
+    ):
         raise HFParentError("parent tokenizer vocabulary differs")
     model, loading = AutoModelForCausalLM.from_pretrained(
         model_root,
@@ -129,6 +136,8 @@ def load_text_parent(model_root: Path) -> tuple[nn.Module, Any, dict[str, Any]]:
     )
     if type(model).__name__ != EXPECTED_MODEL_CLASS:
         raise HFParentError("parent text model class differs")
+    if getattr(model.config, "vocab_size", None) != EXPECTED_MODEL_VOCAB_SIZE:
+        raise HFParentError("parent model vocabulary differs")
     if not isinstance(loading, dict) or any(
         loading.get(field)
         for field in ("missing_keys", "mismatched_keys", "error_msgs")
@@ -149,6 +158,10 @@ def load_text_parent(model_root: Path) -> tuple[nn.Module, Any, dict[str, Any]]:
         "snapshot_receipt_sha256": snapshot["receipt_sha256"],
         "snapshot_tree_sha256": snapshot["tree_sha256"],
         "model_class": type(model).__name__,
+        "model_vocab_size": EXPECTED_MODEL_VOCAB_SIZE,
+        "tokenizer_base_vocab_size": tokenizer.vocab_size,
+        "tokenizer_length": len(tokenizer),
+        "tokenizer_eos_token_id": tokenizer.eos_token_id,
         "transformers_version": transformers.__version__,
         "transformers_model_source_sha256": _sha256_file(model_source),
         "unexpected_weight_count": len(unexpected),
@@ -185,7 +198,7 @@ def qualify_parent(model_root: Path) -> dict[str, Any]:
             logits = getattr(output, "logits", None)
             if (
                 not isinstance(logits, torch.Tensor)
-                or logits.shape != (1, 1, EXPECTED_VOCAB_SIZE)
+                or logits.shape != (1, 1, EXPECTED_MODEL_VOCAB_SIZE)
                 or not bool(torch.isfinite(logits).all().item())
             ):
                 raise HFParentError("parent mechanics logits differ")
@@ -280,13 +293,18 @@ def validate_mechanics_receipt(
         or runtime.get("snapshot_receipt_sha256") != snapshot["receipt_sha256"]
         or runtime.get("snapshot_tree_sha256") != snapshot["tree_sha256"]
         or runtime.get("model_class") != EXPECTED_MODEL_CLASS
+        or runtime.get("model_vocab_size") != EXPECTED_MODEL_VOCAB_SIZE
+        or runtime.get("tokenizer_base_vocab_size")
+        != EXPECTED_TOKENIZER_BASE_VOCAB_SIZE
+        or runtime.get("tokenizer_length") != EXPECTED_TOKENIZER_LENGTH
+        or runtime.get("tokenizer_eos_token_id") != EXPECTED_EOS_TOKEN_ID
         or runtime.get("parameter_count") != EXPECTED_PARAMETER_COUNT
         or runtime.get("all_parameters_and_buffers_cuda_zero") is not True
         or not isinstance(environment, dict)
         or "H100" not in str(environment.get("gpu_name"))
         or not isinstance(forward, dict)
         or forward.get("finite") is not True
-        or forward.get("logits_shape") != [1, 1, EXPECTED_VOCAB_SIZE]
+        or forward.get("logits_shape") != [1, 1, EXPECTED_MODEL_VOCAB_SIZE]
         or receipt.get("training_executed") is not False
         or receipt.get("optimizer_steps") != 0
         or receipt.get("backward_calls") != 0

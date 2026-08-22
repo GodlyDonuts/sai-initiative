@@ -65,7 +65,7 @@ validate_mechanics_receipt(
     model_root=pathlib.Path(mechanics["model_root"]),
 )
 stream = validate_frozen_stream(stream_root, verify_sources=True)
-if stream["sequence_length"] != 2048 or stream["vocab_size"] != 248320:
+if stream["sequence_length"] != 2048 or stream["vocab_size"] != 248077:
     raise SystemExit("Qwen workspace stream geometry differs")
 if not all(str(value) in stream["prefix_utf8_bytes"] for value in (256, 61035)):
     raise SystemExit("Qwen workspace prefixes differ")

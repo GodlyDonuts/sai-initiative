@@ -84,8 +84,8 @@ assert stream["tokenizer_identity_sha256"] == sys.argv[2]
 assert stream["sequence_length"] == 2048
 assert stream["sequences"] == 244140
 assert stream["valid_tokens"] == 499998720
-assert stream["vocab_size"] == 248320
-assert stream["eos_token_id"] == 248044
+assert stream["vocab_size"] == 248077
+assert stream["eos_token_id"] == 248046
 assert set(stream["prefix_utf8_bytes"]) == {"256", "61035", "122070", "183105", "244140"}
 assert stream["benchmark_disjoint"] is True
 assert stream["cross_document_targets_masked"] is True

@@ -31,8 +31,9 @@ from sai.adaptive.reference import LatentWorkspace
 from sai.data.hf_model_snapshot import validate_snapshot
 from sai.data.token_stream import canonical_sha256, validate_frozen_stream
 from sai.evaluation.hf_parent import (
+    EXPECTED_EOS_TOKEN_ID,
     EXPECTED_PARAMETER_COUNT,
-    EXPECTED_VOCAB_SIZE,
+    EXPECTED_TOKENIZER_LENGTH,
     load_text_parent,
     validate_mechanics_receipt,
 )
@@ -417,8 +418,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     report = validate_frozen_stream(args.train_stream, verify_sources=True)
     if (
         report["sequence_length"] != SEQUENCE_LENGTH
-        or report["vocab_size"] != EXPECTED_VOCAB_SIZE
-        or report["eos_token_id"] != 248_044
+        or report["vocab_size"] != EXPECTED_TOKENIZER_LENGTH
+        or report["eos_token_id"] != EXPECTED_EOS_TOKEN_ID
         or report["ordered_stream_identity_sha256"]
         != _sha256(args.train_identity, "training stream identity")
         or args.training_sequences > report["sequences"]
@@ -467,7 +468,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise HFWorkspaceScreenError("workspace parameter count differs")
     initial_workspace_sha256 = _state_sha256(workspace)
     parent, tokenizer, runtime = load_text_parent(args.model_root)
-    if runtime != mechanics["runtime"] or len(tokenizer) != EXPECTED_VOCAB_SIZE:
+    if runtime != mechanics["runtime"] or len(tokenizer) != EXPECTED_TOKENIZER_LENGTH:
         raise HFWorkspaceScreenError("live parent differs from mechanics")
     system = FrozenHFWorkspaceSystem(parent, workspace)
     parent_versions = _tensor_versions(parent)

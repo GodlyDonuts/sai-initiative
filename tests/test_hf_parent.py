@@ -7,9 +7,12 @@ import torch
 from torch import nn
 
 from sai.evaluation.hf_parent import (
+    EXPECTED_EOS_TOKEN_ID,
     EXPECTED_MODEL_CLASS,
+    EXPECTED_MODEL_VOCAB_SIZE,
     EXPECTED_PARAMETER_COUNT,
-    EXPECTED_VOCAB_SIZE,
+    EXPECTED_TOKENIZER_BASE_VOCAB_SIZE,
+    EXPECTED_TOKENIZER_LENGTH,
     HFParentError,
     HFTextLogitAdapter,
 )
@@ -35,7 +38,10 @@ class _DummyParent(nn.Module):
 def test_parent_identity_constants_are_exact() -> None:
     assert EXPECTED_MODEL_CLASS == "Qwen3_5ForCausalLM"
     assert EXPECTED_PARAMETER_COUNT == 752_393_024
-    assert EXPECTED_VOCAB_SIZE == 248_320
+    assert EXPECTED_MODEL_VOCAB_SIZE == 248_320
+    assert EXPECTED_TOKENIZER_BASE_VOCAB_SIZE == 248_044
+    assert EXPECTED_TOKENIZER_LENGTH == 248_077
+    assert EXPECTED_EOS_TOKEN_ID == 248_046
 
 
 def test_text_adapter_exposes_logits_and_rejects_segments() -> None:

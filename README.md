@@ -140,6 +140,18 @@ benchmark evidence selects an architecture.
   and its receipt is
   `3c7d25ab4d4bcf4dec81b594f8919636483bd64607ec1ae506c76e6ba815e00b`.
   This is host preparation, not a Sai architecture result.
+- First parent-mechanics allocation `769161` ran once on evc37 for 227 seconds,
+  with zero restarts, and failed before model-weight loading, inference,
+  training, or output publication. Its exact stderr SHA-256 is
+  `f1a91a4e0d5f7511f8c1f6607f7586995e6e2be7519fc399c7c537c5e88735bf`.
+  Read-only replay established that the checkpoint intentionally separates a
+  `248,320`-row padded model embedding/logit vocabulary from a tokenizer with
+  base vocabulary `248,044`, 33 added tokens, exact length `248,077`, and EOS
+  token `248,046`. The first mechanics code incorrectly equated tokenizer
+  length with model rows. The repaired implementation now binds all four
+  identities independently in mechanics, stream-freeze, training, and replay
+  validation. Full local regression is 353 passed; this is an admission-code
+  correction before any Sai model result, not a scientific retry.
 - The first capable-host Sai factor is now fully executable at commit
   `cc7039d1e5a0653f4581cbe1a7b3ce509fff58e6`: a `19,938,304`-parameter,
   16-slot recurrent workspace attached to the frozen Qwen3.5-0.8B text parent.

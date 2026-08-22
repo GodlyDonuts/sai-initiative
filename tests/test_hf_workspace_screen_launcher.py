@@ -28,7 +28,7 @@ def test_workspace_launcher_replays_inputs_and_binds_dispatch() -> None:
         "validate_mechanics_receipt(",
         "validate_frozen_stream(stream_root, verify_sources=True)",
         'stream["sequence_length"] != 2048',
-        'stream["vocab_size"] != 248320',
+        'stream["vocab_size"] != 248077',
         'str(value) in stream["prefix_utf8_bytes"]',
         '"git", "-C", os.environ["SAI_ROOT"], "ls-tree"',
         "python_path = pathlib.Path(os.path.realpath(sys.argv[4]))",
