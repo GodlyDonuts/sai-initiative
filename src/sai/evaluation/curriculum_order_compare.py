@@ -1,0 +1,332 @@
+"""Compare matched curriculum and exact-sequence-order-control training runs."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import math
+import os
+import uuid
+from pathlib import Path
+from typing import Any
+
+from sai.data.curriculum_control import validate_order_control
+from sai.data.curriculum_split import validate_curriculum_split
+from sai.data.token_stream import canonical_sha256, sha256_file, validate_frozen_stream
+
+SCHEMA = "sai-curriculum-order-training-comparison-v1"
+SHARED_SPECIFICATION_FIELDS = (
+    "config",
+    "config_sha256",
+    "model_sha256",
+    "delta_backend",
+    "initialization_policy_sha256",
+    "initialization_seed",
+    "development_stream_identity_sha256",
+    "code_sha256",
+    "environment_sha256",
+    "optimizer",
+    "precision",
+    "micro_batch_size_sequences",
+    "sequences_per_update",
+    "training_sequences",
+    "development_sequences",
+    "development_batch_size_sequences",
+    "checkpoint_interval_steps",
+    "mechanics_only",
+    "parameter_count",
+    "initialization",
+)
+RUN_SPECIFICATION_FIELDS = (
+    "schema",
+    "evidence_class",
+    "scientific_promotion_authorized",
+    "four_b_training_authorized",
+    "config",
+    "config_sha256",
+    "model_sha256",
+    "delta_backend",
+    "initialization_policy_sha256",
+    "initialization_seed",
+    "training_stream_identity_sha256",
+    "development_stream_identity_sha256",
+    "code_sha256",
+    "environment_sha256",
+    "optimizer",
+    "precision",
+    "micro_batch_size_sequences",
+    "sequences_per_update",
+    "training_sequences",
+    "training_utf8_bytes",
+    "development_sequences",
+    "development_batch_size_sequences",
+    "checkpoint_interval_steps",
+    "mechanics_only",
+)
+
+
+class CurriculumOrderComparisonError(RuntimeError):
+    """A stream, result, matched binding, or score differs."""
+
+
+def _load_result(path: Path) -> tuple[dict[str, Any], str]:
+    if not path.is_file() or path.is_symlink():
+        raise CurriculumOrderComparisonError("training result is missing or unsafe")
+    file_sha256 = sha256_file(path)
+    try:
+        payload = json.loads(path.read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise CurriculumOrderComparisonError("training result is unreadable") from error
+    if not isinstance(payload, dict):
+        raise CurriculumOrderComparisonError("training result differs")
+    unsigned = dict(payload)
+    receipt_sha256 = unsigned.pop("receipt_sha256", None)
+    validation = payload.get("development_nll")
+    counters = payload.get("counters")
+    checkpoint = payload.get("checkpoint")
+    specification = {field: payload.get(field) for field in RUN_SPECIFICATION_FIELDS}
+    if (
+        payload.get("schema") != "sai-sub-4b-short-screen-v1"
+        or payload.get("status") != "complete"
+        or payload.get("delta_backend") != "reference"
+        or payload.get("config", {}).get("mixer_family") != "gated_gqa"
+        or payload.get("scientific_promotion_authorized") is not False
+        or payload.get("four_b_training_authorized") is not False
+        or payload.get("mechanics_only") is not False
+        or payload.get("training_sequences") != 244_140
+        or payload.get("sequences_per_update") != 256
+        or payload.get("micro_batch_size_sequences") != 8
+        or payload.get("optimizer", {}).get("optimizer_steps") != 954
+        or payload.get("development_sequences") != 1_024
+        or receipt_sha256 != canonical_sha256(unsigned)
+        or not isinstance(validation, dict)
+        or not isinstance(counters, dict)
+        or counters.get("optimizer_steps") != 954
+        or counters.get("sequences") != 244_140
+        or isinstance(counters.get("targets"), bool)
+        or not isinstance(counters.get("targets"), int)
+        or counters["targets"] <= 0
+        or not isinstance(checkpoint, dict)
+        or payload.get("run_sha256") != canonical_sha256(specification)
+        or not isinstance(checkpoint.get("sha256"), str)
+        or len(checkpoint["sha256"]) != 64
+        or any(
+            character not in "0123456789abcdef" for character in checkpoint["sha256"]
+        )
+    ):
+        raise CurriculumOrderComparisonError("training result receipt differs")
+    numeric = (
+        "negative_log_likelihood",
+        "nll_per_target",
+        "perplexity",
+        "nll_per_utf8_byte",
+    )
+    if (
+        validation.get("sequences") != 1_024
+        or isinstance(validation.get("targets"), bool)
+        or not isinstance(validation.get("targets"), int)
+        or validation["targets"] <= 0
+        or isinstance(validation.get("admitted_utf8_bytes"), bool)
+        or not isinstance(validation.get("admitted_utf8_bytes"), int)
+        or validation["admitted_utf8_bytes"] <= 0
+        or any(
+            isinstance(validation.get(field), bool)
+            or not isinstance(validation.get(field), (int, float))
+            or not math.isfinite(validation[field])
+            or validation[field] <= 0
+            for field in numeric
+        )
+    ):
+        raise CurriculumOrderComparisonError("development NLL differs")
+    return payload, file_sha256
+
+
+def compare_curriculum_order(
+    curriculum_result: Path,
+    control_result: Path,
+    *,
+    curriculum_stream: Path,
+    control_stream: Path,
+    development_stream: Path,
+    split_receipt: Path,
+) -> dict[str, Any]:
+    """Prove exact matching and report the held-out effect of order alone."""
+
+    split = validate_curriculum_split(split_receipt)
+    curriculum = validate_frozen_stream(curriculum_stream, verify_sources=True)
+    control = validate_order_control(control_stream)
+    development = validate_frozen_stream(development_stream, verify_sources=True)
+    split_file_sha256 = sha256_file(split_receipt)
+    ordering = control["ordering_control"]
+    if (
+        curriculum.get("source_qualification_sha256") != split_file_sha256
+        or control.get("source_qualification_sha256") != split_file_sha256
+        or development.get("source_qualification_sha256") != split_file_sha256
+        or curriculum["tokenizer_identity_sha256"]
+        != control["tokenizer_identity_sha256"]
+        or curriculum["tokenizer_identity_sha256"]
+        != development["tokenizer_identity_sha256"]
+        or curriculum["sequence_length"] != 2_048
+        or control["sequence_length"] != 2_048
+        or development["sequence_length"] != 2_048
+        or curriculum["sequences"] != 244_140
+        or control["sequences"] != 244_140
+        or development["sequences"] != 1_024
+        or curriculum["admitted_utf8_bytes"] != control["admitted_utf8_bytes"]
+        or ordering["parent_stream"]["ordered_stream_identity_sha256"]
+        != curriculum["ordered_stream_identity_sha256"]
+        or ordering["same_tokens_and_boundary_masks"] is not True
+        or ordering["same_sequence_multiset"] is not True
+        or ordering["only_sequence_order_changed"] is not True
+        or curriculum["ordered_stream_identity_sha256"]
+        == control["ordered_stream_identity_sha256"]
+        or split["train"]["path"] != curriculum["source_receipts"][0]["path"]
+        or split["development"]["path"] != development["source_receipts"][0]["path"]
+    ):
+        raise CurriculumOrderComparisonError("matched stream contract differs")
+
+    curriculum_result_payload, curriculum_result_sha256 = _load_result(
+        curriculum_result
+    )
+    control_result_payload, control_result_sha256 = _load_result(control_result)
+    if any(
+        curriculum_result_payload.get(field) != control_result_payload.get(field)
+        for field in SHARED_SPECIFICATION_FIELDS
+    ):
+        raise CurriculumOrderComparisonError("matched training specification differs")
+    development_identity = development["ordered_stream_identity_sha256"]
+    curriculum_identity = curriculum["ordered_stream_identity_sha256"]
+    control_identity = control["ordered_stream_identity_sha256"]
+    if (
+        curriculum_result_payload.get("training_stream_identity_sha256")
+        != curriculum_identity
+        or control_result_payload.get("training_stream_identity_sha256")
+        != control_identity
+        or curriculum_result_payload.get("development_stream_identity_sha256")
+        != development_identity
+        or control_result_payload.get("development_stream_identity_sha256")
+        != development_identity
+        or curriculum_result_payload.get("training_utf8_bytes")
+        != curriculum["admitted_utf8_bytes"]
+        or control_result_payload.get("training_utf8_bytes")
+        != control["admitted_utf8_bytes"]
+        or curriculum_result_payload["development_nll"]["stream_identity_sha256"]
+        != development_identity
+        or control_result_payload["development_nll"]["stream_identity_sha256"]
+        != development_identity
+        or curriculum_result_payload["development_nll"]["targets"]
+        != control_result_payload["development_nll"]["targets"]
+        or curriculum_result_payload["development_nll"]["admitted_utf8_bytes"]
+        != control_result_payload["development_nll"]["admitted_utf8_bytes"]
+        or curriculum_result_payload["checkpoint"].get("sha256")
+        == control_result_payload["checkpoint"].get("sha256")
+    ):
+        raise CurriculumOrderComparisonError("training result lineage differs")
+    curriculum_nll = curriculum_result_payload["development_nll"]["nll_per_target"]
+    control_nll = control_result_payload["development_nll"]["nll_per_target"]
+    curriculum_byte_nll = curriculum_result_payload["development_nll"][
+        "nll_per_utf8_byte"
+    ]
+    control_byte_nll = control_result_payload["development_nll"]["nll_per_utf8_byte"]
+    supported = curriculum_nll < control_nll and curriculum_byte_nll < control_byte_nll
+    payload: dict[str, Any] = {
+        "schema": SCHEMA,
+        "status": "complete",
+        "comparison": "curriculum_order_vs_exact_sequence_multiset_permutation",
+        "same_documents_tokens_targets_masks": True,
+        "only_training_sequence_order_changed": True,
+        "same_model_initialization_optimizer_budget_compute": True,
+        "development_population_disjoint_from_training": True,
+        "training_tokens_per_arm": 499_998_720,
+        "optimizer_steps_per_arm": 954,
+        "development_sequences": 1_024,
+        "curriculum_order_supported_by_heldout_nll": supported,
+        "curriculum_minus_control": {
+            "nll_per_target": curriculum_nll - control_nll,
+            "perplexity": curriculum_result_payload["development_nll"]["perplexity"]
+            - control_result_payload["development_nll"]["perplexity"],
+            "nll_per_utf8_byte": curriculum_byte_nll - control_byte_nll,
+        },
+        "arms": {
+            "curriculum": {
+                "stream_identity_sha256": curriculum_identity,
+                "result_file_sha256": curriculum_result_sha256,
+                "result_receipt_sha256": curriculum_result_payload["receipt_sha256"],
+                "checkpoint_sha256": curriculum_result_payload["checkpoint"]["sha256"],
+                "development_nll": curriculum_result_payload["development_nll"],
+            },
+            "order_control": {
+                "stream_identity_sha256": control_identity,
+                "result_file_sha256": control_result_sha256,
+                "result_receipt_sha256": control_result_payload["receipt_sha256"],
+                "checkpoint_sha256": control_result_payload["checkpoint"]["sha256"],
+                "development_nll": control_result_payload["development_nll"],
+            },
+        },
+        "bindings": {
+            "split_receipt_file_sha256": split_file_sha256,
+            "split_receipt_sha256": split["receipt_sha256"],
+            "sequence_multiset_sha256": ordering["sequence_multiset_sha256"],
+            "permutation_sha256": ordering["permutation_sha256"],
+            "development_stream_identity_sha256": development_identity,
+            "tokenizer_identity_sha256": curriculum["tokenizer_identity_sha256"],
+            "code_sha256": curriculum_result_payload["code_sha256"],
+            "environment_sha256": curriculum_result_payload["environment_sha256"],
+        },
+        "replication_required_for_architecture_claim": True,
+        "real_benchmark_gate_required": True,
+        "scientific_promotion_authorized": False,
+        "four_b_training_authorized": False,
+    }
+    payload["receipt_sha256"] = canonical_sha256(payload)
+    return payload
+
+
+def write_comparison(path: Path, payload: dict[str, Any]) -> None:
+    if path.exists() or path.is_symlink() or not path.parent.is_dir():
+        raise CurriculumOrderComparisonError("comparison output path differs")
+    temporary = path.parent / f".{path.name}.{uuid.uuid4().hex}.tmp"
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(descriptor, "w") as handle:
+            json.dump(payload, handle, indent=2, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.link(temporary, path)
+        temporary.unlink()
+    except BaseException:
+        temporary.unlink(missing_ok=True)
+        raise
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--curriculum-result", type=Path, required=True)
+    parser.add_argument("--control-result", type=Path, required=True)
+    parser.add_argument("--curriculum-stream", type=Path, required=True)
+    parser.add_argument("--control-stream", type=Path, required=True)
+    parser.add_argument("--development-stream", type=Path, required=True)
+    parser.add_argument("--split-receipt", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    args = parser.parse_args()
+    payload = compare_curriculum_order(
+        args.curriculum_result,
+        args.control_result,
+        curriculum_stream=args.curriculum_stream,
+        control_stream=args.control_stream,
+        development_stream=args.development_stream,
+        split_receipt=args.split_receipt,
+    )
+    write_comparison(args.output, payload)
+    print(
+        json.dumps(
+            {"status": payload["status"], "receipt_sha256": payload["receipt_sha256"]},
+            sort_keys=True,
+        )
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
