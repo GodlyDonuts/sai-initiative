@@ -76,17 +76,26 @@ benchmark evidence selects an architecture.
   was written. Corrected job `768891` then scanned exactly 21,855,000 documents
   and admitted 2,661,644 into a 14,491,695,743-byte source whose SHA-256 is
   `2f908f5f225de109a21f66fb9fb31baa1f35b4a57f1d6d2a3f60fa95a98ea7e6`.
-  Exact decontamination `768892` is running. At 20:05 EDT its live source file
-  descriptor was at `5,854,330,880 / 14,491,695,743` bytes (`40.40%`), its
-  maximum RSS was `66,099,084 KiB`, and it had zero restarts. Recent scan
-  throughput projected completion before the job's 00:48 EDT deadline. A
+  Exact decontamination `768892` reached a live source position of at least
+  `6,257,876,992 / 14,491,695,743` bytes (`43.18%`) with zero restarts, but its
+  maximum RSS had risen to `66,368,664 KiB` inside a 64-GiB allocation. Exact
+  source replay proved that implementation stored each SHA-256 shingle as a
+  64-character Python string; measured RSS growth left only about 740 MiB and
+  projected an unavoidable OOM near halfway. It was therefore cancelled at
+  20:16 EDT before infrastructure termination, after `12,457` seconds and
+  before publishing an output or receipt. Its sole abandoned partial was
+  explicitly resolved as PID `3211846`, measured at `4,150,497,097` bytes,
+  permanently removed, and confirmed absent. No scientific decision changed. A
   disk-read heuristic initially overstated progress; the process file
   descriptor is the authoritative scan measurement. Newton rejected a running
-  wall-time extension, so conditional CPU fallback `769225` is held on
-  `afternotok:768892` with compact, byte-equivalent SHA-256 shingle storage at
+  wall-time extension. Conditional CPU fallback `769225` was originally held
+  on `afternotok:768892` with compact, byte-equivalent SHA-256 shingle storage at
   commit `540d1080ebc5b1cd2b463d8c137e9d2c71567e82`. It cannot execute while
-  `768892` remains healthy and will be invalidated if `768892` succeeds. Its
-  four direct CPU descendants are also dependency-staged but ineligible:
+  `768892` remains healthy and would have been invalidated if `768892`
+  succeeded. After the exact memory diagnosis, its dependency was narrowed
+  from `afternotok` to `afterany` immediately before cancelling `768892`;
+  fallback `769225` then started on evc1 with zero restarts at 20:16 EDT. Its
+  four direct CPU descendants remain dependency-staged until it completes:
   shared Sai stream `769226`, refreshed development populations `769227`, Qwen
   stream `769228`, and SmolLM3 stream `769229`. This prevents a manual recovery
   gap without requesting a GPU or duplicating healthy work. The mutually
@@ -96,7 +105,7 @@ benchmark evidence selects an architecture.
   malformed first launcher clones (`769233–769234`) were caught while still
   dependency-held and canceled with zero elapsed time and zero restarts; their
   corrected replacements bind the exact fallback population and stream job
-  IDs. No recovery job is eligible while the primary path remains healthy.
+  IDs. No recovery job executed concurrently with the primary scan.
   Successful decontamination is followed by 499,998,720-token stream freeze
   `768894`. Dependency-staged launcher `768932` will then run a fresh,
   matched three-family screen over the exact 249,999,360-token prefix using
@@ -168,6 +177,14 @@ benchmark evidence selects an architecture.
   submission, uses one H100 per scientific job, and still records both
   `four_b_training_executed=false` and `four_b_training_authorized=false`.
   This is executable preparation only; no Smol GPU job has been submitted.
+  Commit `72289ca` additionally provides one fail-closed CPU release that can
+  open the passing Qwen comparison and submit the complete Smol mechanics,
+  parent evaluation, matched training, workspace evaluation, and comparison
+  hierarchy. The hierarchy contains 32 eventual independent one-H100 jobs and
+  cannot release on a failed or re-signed Qwen receipt. A clean read-only
+  Newton checkout of this exact commit is sealed at
+  `/lustre/fs1/home/sa305415/sai-initiative-72289ca` with 226 regular files,
+  zero symlinks, and zero writable members. No release job has been submitted.
 - Thirteen obsolete Q36 score jobs (`759843`, `759860`, `760174`, `760180`,
   `760185`, `760187`, `760194`, `760201`, `760206`, `760208`, `760215`,
   `760216`, and `760217`) were terminally cancelled after each was proven held
