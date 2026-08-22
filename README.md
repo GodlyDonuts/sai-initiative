@@ -74,7 +74,10 @@ benchmark evidence selects an architecture.
   output, when byte-equivalence tests proved the ordered parallel
   reconstruction. Development stream `770040`, update-aligned 500M-token
   training stream `770041`, exact sequence-multiset order control `770042`, and
-  matched GQA launcher `770043` are dependency-staged. The first three
+  matched GQA launcher `770050` are dependency-staged. Launcher `770043`
+  was canceled before allocation (zero elapsed and zero outputs) when the
+  frozen runtime was advanced solely to give terminal replay four hours.
+  The first three
   curriculum boundaries occur exactly after optimizer updates 191, 429, and
   715, so no gradient accumulation window mixes adjacent difficulty phases.
 - Architecture work is preparation-only behind this boundary. No Sai training
