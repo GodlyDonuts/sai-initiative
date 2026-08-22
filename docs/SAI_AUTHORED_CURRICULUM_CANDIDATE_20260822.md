@@ -95,6 +95,13 @@ two identity-attestation hashes must differ. These attestations still require
 external identity verification, but model-model agreement can no longer be
 misreported as a qualified independent human audit.
 
+`sai-attest-authored-human-review` is the create-only human handoff. It replays
+all 127 completed rows against the blind packet, exact evidence spans, concept
+list, and annotation policy, then binds the label bytes to one declared role
+and externally verified identity-attestation hash. It has no hidden-key input.
+The separate annotator and reviewer must freeze their labels and attestations
+before adjudication opens the hidden ordering key.
+
 `sai.data.authored_review_model_compare` replays both sealed model-review trees
 and publishes a CPU-only cross-family triage report. It measures taught-concept,
 assumed-prerequisite, quality, admission, and defect-category disagreement for
