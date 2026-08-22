@@ -95,7 +95,11 @@ def manifest(tmp_path: Path) -> dict:
 
 def test_complete_preparation_still_requires_user_order(tmp_path: Path) -> None:
     receipt = validate(manifest(tmp_path))
-    assert receipt["status"] == "ready_for_user_training_order"
+    assert receipt["schema"] == "sai-4b-qwen-replay-rehearsal-receipt-v1"
+    assert receipt["status"] == "provisional_qwen_replay_rehearsal_complete"
+    assert not receipt["sai_4b_pretraining_ready"]
+    assert receipt["selected_300m_1b_architecture_receipts_required"]
+    assert receipt["selected_tokenizer_and_base_stream_receipts_required"]
     assert not receipt["training_authorized"]
     assert receipt["official_training_order_required"]
 

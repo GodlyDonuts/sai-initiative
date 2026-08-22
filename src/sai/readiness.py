@@ -1,4 +1,4 @@
-"""Fail-closed readiness validation before any Sai training order is accepted."""
+"""Validate the provisional Qwen replay-control rehearsal without authorizing Sai."""
 
 from __future__ import annotations
 
@@ -157,7 +157,13 @@ def _validate_matched_training(training: Any) -> dict[str, Any]:
 
 
 def validate(payload: Any) -> dict[str, Any]:
-    """Return a readiness receipt while retaining the explicit training hold."""
+    """Return a rehearsal receipt while retaining the explicit 4B training hold.
+
+    This legacy manifest exercises Qwen-parent replay matching.  It cannot
+    establish final Sai pretraining readiness because it does not bind the
+    evidence-selected 300M/1B architecture, tokenizer, or base-pretraining
+    stream.
+    """
 
     if not isinstance(payload, dict):
         raise ReadinessError("readiness manifest must be an object")
@@ -206,8 +212,11 @@ def validate(payload: Any) -> dict[str, Any]:
         raise ReadinessError("resource plan differs")
 
     return {
-        "schema": "sai-4b-pretraining-readiness-receipt-v1",
-        "status": "ready_for_user_training_order",
+        "schema": "sai-4b-qwen-replay-rehearsal-receipt-v1",
+        "status": "provisional_qwen_replay_rehearsal_complete",
+        "sai_4b_pretraining_ready": False,
+        "selected_300m_1b_architecture_receipts_required": True,
+        "selected_tokenizer_and_base_stream_receipts_required": True,
         "training_authorized": False,
         "official_training_order_required": True,
         "parent_manifest": parent_manifest,

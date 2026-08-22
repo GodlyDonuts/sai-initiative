@@ -1,8 +1,9 @@
 # Sai 4B Specialization Research Plan
 
-Status: prospective specialization workstream inside the architecture
-tournament. This document authorizes no GPU work by itself. The training hold
-in the README remains in force.
+Status: active sub-4B specialization workstream inside the architecture
+tournament. The user's 2026-08-21 order authorizes preparation and training
+below 4B. This document authorizes no 4B training by itself; the explicit 4B
+hold in the README remains in force.
 
 ## Thesis
 
@@ -14,10 +15,13 @@ primary parameter and token budget; arbitrary Unicode remains losslessly
 encodable through byte fallback.
 
 Specialization is one independently measured workstream, not the definition of
-the model and not permission to skip the architecture ladder. The final 4B body
-must first win the gated-GQA versus GDN-hybrid versus KDA/MLA-hybrid tournament
-at 100M, 300M, and 1B. Qwen3.5-4B remains a baseline and fallback control, not an
-assumed Sai architecture.
+the model and not permission to skip the data or architecture ladders. The data
+schedule is selected first with matched small-model controls that change only
+content mixture or presentation order. Every later architecture arm inherits
+that same selected stream. Only then may the final 4B body be chosen through the
+gated-GQA versus GDN-hybrid versus KDA/MLA-hybrid tournament at 100M, 300M, and
+1B. Qwen3.5-4B remains a baseline and fallback control, not an assumed Sai
+architecture.
 
 Every claimed advantage below is stated as a measurable quantity with a control,
 because the Shohin falsification showed that plausible mechanisms lose to
@@ -102,30 +106,39 @@ pretraining corpus.
    pretraining stream with source hashes, UTF-8 prefix bytes, document-boundary
    masks, and benchmark-disjoint evidence. Separately freeze skill, direct,
    deliberate, replay, and RL-prompt banks for later stages.
-2. **Qualify tokenizer candidates.** Publish byte-normalized fertility and
+2. **Select the curriculum and source mixture.** At small scale, compare the
+   exact prerequisite-to-specialization stream against a same-sequence-multiset
+   order control. Test source mixture, surface difficulty, semantic
+   prerequisites, and model-centric learnability as separate factors. Retain a
+   schedule only after held-out likelihood and broad source-disjoint capability
+   both support it. This gate precedes architecture selection.
+3. **Qualify tokenizer candidates.** Publish byte-normalized fertility and
    round-trip results for untouched 64K, 48K, and 32K candidates. Compare the
    tokenizer itself at fixed body geometry before testing parameter
    reallocation.
-3. **Select the base architecture.** Execute the frozen 100M three-family/
+4. **Select the base architecture.** Execute the frozen 100M three-family/
    three-seed iso-data and exact iso-FLOP screen, then evidence-gated 300M and 1B
-   confirmation. No 4B architecture is chosen in advance.
-4. **Train one selected 4B base.** Package only the winning body, tokenizer,
+   confirmation on the selected data schedule. No 4B architecture is chosen in
+   advance.
+5. **Train one selected 4B base.** Package only the winning body, tokenizer,
    ordered stream, optimizer, seeds, runtime, and matched controls. A low-token
    mechanics run precedes the full budget.
-5. **Post-train only the surviving base.** Test verified instruction data and
+6. **Post-train only the surviving base.** Test verified instruction data and
    frozen-parent replay against an equal-compute control; retain direct and
    deliberate behavior without mandatory revision.
-6. **Run the complete five-board gate.** Apply the unchanged conjunctive
+7. **Run the complete five-board gate.** Apply the unchanged conjunctive
    criteria from `docs/SAI_4B_BENCHMARK_FIRST_CONTRACT.md`; one serious
    regression vetoes the claim.
 
-Steps 3 through 6 remain behind the explicit official training order.
+Step 2 is active under the sub-4B training order. Steps 5 through 7 remain
+behind a separate explicit 4B training order.
 
 ## Success definition
 
-Sai v0 succeeds only if the selected 4B stack beats the unchanged 4B baseline
-and every applicable equal-compute control on the declared source-disjoint
-development and public gates, without a serious domain regression. Tokenizer,
-architecture, data, and post-training gains are credited only from their own
-matched contrasts. Anything less is a documented negative result, retained the
-same way the Shohin falsification was.
+Sai v0 succeeds only if its selected data schedule first beats or preserves its
+matched small-model controls and the selected 4B stack then beats the unchanged
+4B baseline and every applicable equal-compute control on the declared
+source-disjoint development and public gates, without a serious domain
+regression. Tokenizer, architecture, data, and post-training gains are credited
+only from their own matched contrasts. Anything less is a documented negative
+result, retained the same way the Shohin falsification was.

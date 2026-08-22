@@ -1,0 +1,16 @@
+{
+  "dataset": "HuggingFaceFW/fineweb-edu",
+  "files": [
+    {"path": "sample/100BT/000_00000.parquet", "sha256": "955ff462f3db09a52a4750e7a69901f89d64e48dfc936de0847c9f234f32b695", "size": 2153444469},
+    {"path": "sample/100BT/000_00001.parquet", "sha256": "776654388fdb2e5a1518b8d9d32543f418f1705d8bbaf408d221f08d76293680", "size": 2152716615},
+    {"path": "sample/100BT/000_00002.parquet", "sha256": "85b0bc930150d24b44041745b47ecb1433d961cb6974a31227430644008eec49", "size": 2152829440},
+    {"path": "sample/100BT/000_00003.parquet", "sha256": "34e77fe4ecc6075a2521d7716efb993636cd83ccefc2afc3fda3dbf35854c78b", "size": 2151532316},
+    {"path": "sample/100BT/000_00004.parquet", "sha256": "2f3f66cd93f0cf4919725e6dbcd1c240314a2866c9527870231e6148061ca73f", "size": 2151238351},
+    {"path": "sample/100BT/000_00005.parquet", "sha256": "9f089373c48cdeea728da9790bc369cc4d88243b3b18c13f5ec4e06e8446b6df", "size": 2152630983}
+  ],
+  "revision": "87f09149ef4734204d70ed1d046ddc9ca3f2b8f9",
+  "schema": "sai-pinned-hf-file-selection-v1",
+  "selected_bytes": 12914392174,
+  "selection": {"method": "complete_prefix_sorted_tree", "selected_count": 6},
+  "upstream_full_manifest_sha256": "759963e1db699dd27e0f1402d8f5622b22673a85ff6688999bf2e3afa5335fea"
+}

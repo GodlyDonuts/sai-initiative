@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 import torch
+import torch.nn.functional as F
 
 from sai.model.config import (
     SCALE_TEMPLATES,
@@ -58,6 +59,49 @@ def test_exact_frozen_layer_patterns() -> None:
         "kda",
         "gated_mla",
     ]
+
+
+def test_runtime_backend_selector_does_not_change_state_or_parameter_geometry() -> None:
+    config = tiny_config("gdn_hybrid")
+    reference = SaiCausalLM(config)
+    accelerated = SaiCausalLM(config, delta_backend="fla")
+    assert list(reference.state_dict()) == list(accelerated.state_dict())
+    assert exact_parameter_count(reference) == exact_parameter_count(accelerated)
+    with pytest.raises(SaiReferenceError, match="backend"):
+        SaiCausalLM(config, delta_backend="unqualified")
+
+
+@pytest.mark.parametrize("family", ["gdn_hybrid", "kda_mla_hybrid"])
+def test_fla_runtime_selector_preserves_reference_semantics_with_oracle_adapters(
+    monkeypatch: pytest.MonkeyPatch, family: str
+) -> None:
+    config = tiny_config(family)
+    torch.manual_seed(20260821)
+    reference = SaiCausalLM(config)
+    accelerated = SaiCausalLM(config, delta_backend="fla")
+    accelerated.load_state_dict(reference.state_dict())
+
+    def oracle_conv(value, weight, segment_ids):
+        channels = value.shape[-1]
+        if segment_ids is not None:
+            raise AssertionError("unsegmented oracle case expected")
+        output = F.conv1d(
+            value.transpose(1, 2),
+            weight,
+            padding=weight.shape[-1] - 1,
+            groups=channels,
+        )[..., : value.shape[1]]
+        return F.silu(output.transpose(1, 2))
+
+    def oracle_delta(q, k, v, alpha, beta, segment_ids, *, channel_wise_decay):
+        assert segment_ids is None
+        assert channel_wise_decay is (family == "kda_mla_hybrid")
+        return causal_delta_recurrence(q, k, v, alpha, beta)[0]
+
+    monkeypatch.setattr("sai.model.fla_backend.fla_causal_conv1d", oracle_conv)
+    monkeypatch.setattr("sai.model.fla_backend.fla_delta_recurrence", oracle_delta)
+    tokens = torch.randint(0, config.vocab_size, (2, 7))
+    torch.testing.assert_close(accelerated(tokens), reference(tokens), rtol=0, atol=0)
 
 
 @pytest.mark.parametrize("family", ["gated_gqa", "gdn_hybrid", "kda_mla_hybrid"])

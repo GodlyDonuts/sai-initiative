@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import struct
+from collections import UserDict
 from pathlib import Path
 
 import pytest
@@ -51,6 +52,29 @@ class NormalizingTokenizer(CharacterTokenizer):
         return super().decode(token_ids, **kwargs).upper()
 
 
+class MappingTokenizer(CharacterTokenizer):
+    def __call__(self, text, **kwargs):
+        return UserDict(super().__call__(text, **kwargs))
+
+
+class AddedVocabularyTokenizer:
+    eos_token_id = 5
+    vocab_size = 4
+
+    def __len__(self):
+        return 6
+
+    def __call__(self, text, *, add_special_tokens=False, return_offsets_mapping=False):
+        assert text == "a"
+        assert not add_special_tokens
+        assert return_offsets_mapping
+        return {"input_ids": [4], "offset_mapping": [(0, 1)]}
+
+    def decode(self, token_ids, **kwargs):
+        assert token_ids == [4]
+        return "a"
+
+
 def document(index: int, text: str, *, benchmark_disjoint: bool = True) -> dict:
     return {
         "schema": ROW_SCHEMA,
@@ -97,9 +121,11 @@ def test_freeze_packs_exact_tokens_boundaries_and_utf8_prefixes(
         sequence_length=8,
         prefix_sequences={1, 2},
         sequences_per_shard=1,
+        source_qualification_sha256="2" * 64,
     )
     assert validate_frozen_stream(output) == report
     assert report["prefix_utf8_bytes"] == {"1": 6, "2": 12}
+    assert report["source_qualification_sha256"] == "2" * 64
     assert report["valid_tokens"] == 16
     assert report["documents"]["accepted"] == 4
 
@@ -133,6 +159,137 @@ def test_freeze_packs_exact_tokens_boundaries_and_utf8_prefixes(
         False,
         False,
     ]
+
+
+def test_curriculum_phase_accounting_covers_the_actual_training_prefix(
+    tmp_path: Path,
+) -> None:
+    phases = [
+        ("grounding", 1),
+        ("integration", 1),
+        ("reasoning", 1),
+        ("specialization", 1),
+    ]
+    output = tmp_path / "curriculum-stream"
+    report = freeze(
+        CharacterTokenizer(),
+        [source(tmp_path)],
+        output,
+        tokenizer_identity_sha256="1" * 64,
+        sequence_length=4,
+        prefix_sequences={1, 2, 3, 4},
+        sequences_per_shard=2,
+        curriculum_phases=phases,
+        required_phase_complete_prefixes={4},
+    )
+    curriculum = report["curriculum"]
+    assert curriculum["phase_order"] == [
+        "grounding",
+        "integration",
+        "reasoning",
+        "specialization",
+    ]
+    assert curriculum["required_all_phase_prefixes"] == [4]
+    assert curriculum["all_required_prefixes_cover_every_phase"] is True
+    assert curriculum["phase_order_contiguous_at_every_prefix"] is True
+    assert sum(curriculum["consumed_phase_tokens"].values()) == 16
+    assert sum(curriculum["consumed_phase_utf8_bytes"].values()) == 12
+    assert all(
+        row["tokens"] > 0 and row["utf8_bytes"] > 0
+        for row in curriculum["prefixes"]["4"].values()
+    )
+    assert validate_frozen_stream(output) == report
+
+
+def test_curriculum_phase_gate_rejects_a_prefix_before_specialization(
+    tmp_path: Path,
+) -> None:
+    with pytest.raises(TokenStreamError, match="lacks a curriculum phase"):
+        freeze(
+            CharacterTokenizer(),
+            [source(tmp_path)],
+            tmp_path / "too-early",
+            tokenizer_identity_sha256="1" * 64,
+            sequence_length=4,
+            prefix_sequences={2, 4},
+            curriculum_phases=[
+                ("grounding", 1),
+                ("integration", 1),
+                ("reasoning", 1),
+                ("specialization", 1),
+            ],
+            required_phase_complete_prefixes={2},
+        )
+
+
+def test_curriculum_phase_token_budget_fits_every_phase_inside_actual_run(
+    tmp_path: Path,
+) -> None:
+    phases = [
+        ("grounding", 1),
+        ("integration", 1),
+        ("reasoning", 1),
+        ("specialization", 1),
+    ]
+    output = tmp_path / "token-budgeted-curriculum"
+    curriculum_source = write_documents(
+        tmp_path / "token-budget-source.jsonl",
+        [
+            document(index, text)
+            for index, text in enumerate(("abc", "def", "ghi", "jkl"))
+        ],
+    )
+    report = freeze(
+        CharacterTokenizer(),
+        [curriculum_source],
+        output,
+        tokenizer_identity_sha256="1" * 64,
+        sequence_length=4,
+        prefix_sequences={1, 2, 3, 4},
+        curriculum_phases=phases,
+        curriculum_phase_sequence_targets=[(phase, 1) for phase, _ in phases],
+        required_phase_complete_prefixes={4},
+    )
+    curriculum = report["curriculum"]
+    assert curriculum["phase_token_budget_enforced"] is True
+    assert curriculum["phase_sequence_targets"] == {phase: 1 for phase, _ in phases}
+    assert curriculum["phase_sequences_emitted"] == {phase: 1 for phase, _ in phases}
+    assert curriculum["consumed_phase_tokens"] == {phase: 4 for phase, _ in phases}
+    assert sum(curriculum["phase_documents_truncated"].values()) <= 4
+    assert validate_frozen_stream(output) == report
+
+
+def test_freeze_accepts_hugging_face_style_mapping_output(tmp_path: Path) -> None:
+    report = freeze(
+        MappingTokenizer(),
+        [source(tmp_path)],
+        tmp_path / "stream",
+        tokenizer_identity_sha256="a" * 64,
+        sequence_length=8,
+        prefix_sequences={1},
+    )
+    assert report["status"] == "complete"
+
+
+def test_freeze_uses_full_tokenizer_length_for_added_eos_tokens(
+    tmp_path: Path,
+) -> None:
+    input_path = write_documents(tmp_path / "added.jsonl", [document(0, "a")])
+    output = tmp_path / "stream"
+    report = freeze(
+        AddedVocabularyTokenizer(),
+        [input_path],
+        output,
+        tokenizer_identity_sha256="b" * 64,
+        sequence_length=2,
+        prefix_sequences={1},
+    )
+    assert report["vocab_size"] == 6
+    assert report["eos_token_id"] == 5
+    assert struct.unpack("<2I", (output / "shard_00000.tokens.u32le").read_bytes()) == (
+        4,
+        5,
+    )
 
 
 def test_freeze_is_byte_deterministic_across_output_roots(tmp_path: Path) -> None:
@@ -266,3 +423,31 @@ def test_tokenizer_tree_hash_rejects_links_and_changes_with_bytes(
     (root / "link").symlink_to(root / "tokenizer.json")
     with pytest.raises(TokenStreamError, match="contains a link"):
         sha256_tree(root)
+
+
+def test_mechanics_stream_job_is_cpu_only_and_freezes_exact_short_budget() -> None:
+    root = Path(__file__).resolve().parents[1]
+    job = (root / "jobs" / "sai-freeze-mechanics-streams-cpu.sbatch").read_text()
+    assert "--no-requeue" in job
+    assert "--gres=" not in job
+    assert "--prefix-sequences 256" in job
+    assert "--prefix-sequences 48828" in job
+    assert "--prefix-sequences 1024" in job
+    assert "--prefix-sequences 4096" not in job
+    assert "sai-tokenizer-qualification-receipt-v1" in job
+    assert "sai-selected-tokenizer-receipt-v1" not in job
+
+
+def test_development_stream_continuation_reuses_validated_train_stream() -> None:
+    job = (
+        Path(__file__).parents[1] / "jobs" / "sai-freeze-development-stream-cpu.sbatch"
+    ).read_text()
+    assert "#SBATCH --gres" not in job
+    assert "#SBATCH --no-requeue" in job
+    assert 'test -d "$TRAIN_STREAM"' in job
+    assert "validate_frozen_stream" in job
+    assert 'train["sequences"] >= 48_828' in job
+    assert 'train["prefix_utf8_bytes"]["48828"] > 0' in job
+    assert "--prefix-sequences 1024" in job
+    assert "--prefix-sequences 4096" not in job
+    assert 'test ! -e "$DEVELOPMENT_STREAM"' in job

@@ -11,6 +11,7 @@ import shutil
 import struct
 import sys
 from collections import Counter
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -33,7 +34,7 @@ class OffsetTokenizer(Protocol):
         *,
         add_special_tokens: bool,
         return_offsets_mapping: bool,
-    ) -> dict[str, Any]: ...
+    ) -> Mapping[str, Any]: ...
 
     def decode(
         self,
@@ -166,7 +167,7 @@ def _tokenize(
     tokenizer: OffsetTokenizer, text: str, vocabulary_size: int
 ) -> tuple[list[int], list[int]]:
     encoded = tokenizer(text, add_special_tokens=False, return_offsets_mapping=True)
-    if not isinstance(encoded, dict):
+    if not isinstance(encoded, Mapping):
         raise TokenStreamError("tokenizer output differs")
     token_ids = encoded.get("input_ids")
     offsets = encoded.get("offset_mapping")
@@ -296,10 +297,61 @@ def freeze(
     sequence_length: int,
     prefix_sequences: set[int],
     sequences_per_shard: int = 4_096,
+    source_qualification_sha256: str | None = None,
+    curriculum_phases: list[tuple[str, int]] | None = None,
+    curriculum_phase_sequence_targets: list[tuple[str, int]] | None = None,
+    required_phase_complete_prefixes: set[int] | None = None,
 ) -> dict[str, Any]:
     """Pack an explicit source order into uint32 tokens and boundary bitsets."""
 
     tokenizer_identity = _sha256(tokenizer_identity_sha256, "tokenizer identity")
+    source_qualification = (
+        None
+        if source_qualification_sha256 is None
+        else _sha256(source_qualification_sha256, "source qualification")
+    )
+    normalized_curriculum_phases = (
+        [] if curriculum_phases is None else list(curriculum_phases)
+    )
+    normalized_phase_sequence_targets = (
+        []
+        if curriculum_phase_sequence_targets is None
+        else list(curriculum_phase_sequence_targets)
+    )
+    required_phase_prefixes = required_phase_complete_prefixes or set()
+    if (
+        any(
+            not isinstance(name, str)
+            or not name
+            or isinstance(documents, bool)
+            or not isinstance(documents, int)
+            or documents <= 0
+            for name, documents in normalized_curriculum_phases
+        )
+        or len({name for name, _ in normalized_curriculum_phases})
+        != len(normalized_curriculum_phases)
+        or any(
+            isinstance(value, bool) or not isinstance(value, int) or value <= 0
+            for value in required_phase_prefixes
+        )
+        or (required_phase_prefixes and not normalized_curriculum_phases)
+        or any(
+            not isinstance(name, str)
+            or not name
+            or isinstance(sequences, bool)
+            or not isinstance(sequences, int)
+            or sequences <= 0
+            for name, sequences in normalized_phase_sequence_targets
+        )
+        or len({name for name, _ in normalized_phase_sequence_targets})
+        != len(normalized_phase_sequence_targets)
+        or (
+            normalized_phase_sequence_targets
+            and [name for name, _ in normalized_phase_sequence_targets]
+            != [name for name, _ in normalized_curriculum_phases]
+        )
+    ):
+        raise TokenStreamError("curriculum phase geometry differs")
     if output.exists():
         raise TokenStreamError("token stream output already exists")
     if (
@@ -316,12 +368,21 @@ def freeze(
         )
     ):
         raise TokenStreamError("packed stream geometry differs")
-    vocabulary_size = getattr(tokenizer, "vocab_size", None)
+    if not required_phase_prefixes.issubset(prefix_sequences):
+        raise TokenStreamError("required curriculum prefixes differ")
+    base_vocabulary_size = getattr(tokenizer, "vocab_size", None)
+    try:
+        vocabulary_size = len(tokenizer)  # type: ignore[arg-type]
+    except TypeError:
+        vocabulary_size = base_vocabulary_size
     eos_token_id = getattr(tokenizer, "eos_token_id", None)
     if (
-        isinstance(vocabulary_size, bool)
+        isinstance(base_vocabulary_size, bool)
+        or not isinstance(base_vocabulary_size, int)
+        or base_vocabulary_size <= 0
+        or isinstance(vocabulary_size, bool)
         or not isinstance(vocabulary_size, int)
-        or vocabulary_size <= 0
+        or vocabulary_size < base_vocabulary_size
         or isinstance(eos_token_id, bool)
         or not isinstance(eos_token_id, int)
         or not 0 <= eos_token_id < vocabulary_size
@@ -330,6 +391,12 @@ def freeze(
     source_receipts = _source_receipts(sources)
     source_manifest_sha256 = canonical_sha256(source_receipts)
     target_sequences = max(prefix_sequences)
+    phase_sequence_targets = dict(normalized_phase_sequence_targets)
+    if (
+        phase_sequence_targets
+        and sum(phase_sequence_targets.values()) != target_sequences
+    ):
+        raise TokenStreamError("curriculum phase sequence budget differs")
     stage = output.with_name(f".{output.name}.partial.{os.getpid()}")
     if stage.exists():
         raise TokenStreamError("token stream staging path already exists")
@@ -338,6 +405,7 @@ def freeze(
     tokens: list[int] = []
     starts: list[bool] = []
     byte_increments: list[int] = []
+    curriculum_labels: list[str] = []
     cumulative_utf8_bytes = 0
     prefix_bytes: dict[str, int] = {}
     sequence_count = 0
@@ -348,6 +416,13 @@ def freeze(
     seen_identities: set[str] = set()
     seen_texts: set[str] = set()
     domain_documents: Counter[str] = Counter()
+    curriculum_documents: Counter[str] = Counter()
+    curriculum_tokens: Counter[str] = Counter()
+    curriculum_bytes: Counter[str] = Counter()
+    curriculum_prefixes: dict[str, dict[str, dict[str, int]]] = {}
+    curriculum_sequences: Counter[str] = Counter()
+    curriculum_skipped_documents: Counter[str] = Counter()
+    curriculum_truncated_documents: Counter[str] = Counter()
     documents_scanned = documents_accepted = duplicate_documents = malformed = 0
 
     def open_shard() -> tuple[Any, Any]:
@@ -392,19 +467,56 @@ def freeze(
         token_handle.write(struct.pack(f"<{sequence_length}I", *tokens))
         start_handle.write(_start_bits(starts, sequence_length))
         cumulative_utf8_bytes += sum(byte_increments)
+        if normalized_curriculum_phases:
+            sequence_phases = set(curriculum_labels)
+            if phase_sequence_targets and len(sequence_phases) != 1:
+                raise TokenStreamError(
+                    "token-budgeted curriculum sequence crosses a phase boundary"
+                )
+            for phase, byte_count in zip(
+                curriculum_labels, byte_increments, strict=True
+            ):
+                curriculum_tokens[phase] += 1
+                curriculum_bytes[phase] += byte_count
+            if phase_sequence_targets:
+                curriculum_sequences[next(iter(sequence_phases))] += 1
         sequence_count += 1
         shard_sequences += 1
         if sequence_count in prefix_sequences:
             prefix_bytes[str(sequence_count)] = cumulative_utf8_bytes
+            if normalized_curriculum_phases:
+                curriculum_prefixes[str(sequence_count)] = {
+                    phase: {
+                        "tokens": curriculum_tokens[phase],
+                        "utf8_bytes": curriculum_bytes[phase],
+                    }
+                    for phase, _ in normalized_curriculum_phases
+                }
         tokens.clear()
         starts.clear()
         byte_increments.clear()
+        curriculum_labels.clear()
         if shard_sequences == sequences_per_shard:
             close_shard()
             shard_index += 1
 
     try:
+        phase_boundaries: list[tuple[str, int]] = []
+        phase_total = 0
+        for phase_name, phase_documents in normalized_curriculum_phases:
+            phase_total += phase_documents
+            phase_boundaries.append((phase_name, phase_total))
+
+        def curriculum_phase(document_index: int) -> str:
+            if not phase_boundaries:
+                return ""
+            for phase_name, boundary in phase_boundaries:
+                if document_index < boundary:
+                    return phase_name
+            raise TokenStreamError("curriculum source exceeds declared phases")
+
         complete = False
+        curriculum_source_documents = 0
         for source in sources:
             with source.open(encoding="utf-8") as handle:
                 for line in handle:
@@ -413,14 +525,30 @@ def freeze(
                     documents_scanned += 1
                     try:
                         row = normalize_document(json.loads(line))
-                    except (json.JSONDecodeError, TokenStreamError):
+                    except (json.JSONDecodeError, TokenStreamError) as error:
+                        if normalized_curriculum_phases:
+                            raise TokenStreamError(
+                                "qualified curriculum contains a malformed row"
+                            ) from error
                         malformed += 1
+                        continue
+                    phase = curriculum_phase(curriculum_source_documents)
+                    curriculum_source_documents += 1
+                    if (
+                        phase_sequence_targets
+                        and curriculum_sequences[phase] >= phase_sequence_targets[phase]
+                    ):
+                        curriculum_skipped_documents[phase] += 1
                         continue
                     text_identity = hashlib.sha256(row["text"].encode()).hexdigest()
                     if (
                         row["identity_sha256"] in seen_identities
                         or text_identity in seen_texts
                     ):
+                        if normalized_curriculum_phases:
+                            raise TokenStreamError(
+                                "qualified curriculum contains a duplicate row"
+                            )
                         duplicate_documents += 1
                         continue
                     document_tokens, document_bytes = _tokenize(
@@ -429,6 +557,8 @@ def freeze(
                     seen_identities.add(row["identity_sha256"])
                     seen_texts.add(text_identity)
                     domain_documents[row["source"]["domain"]] += 1
+                    if phase:
+                        curriculum_documents[phase] += 1
                     documents_accepted += 1
                     document_tokens.append(eos_token_id)
                     document_bytes.append(0)
@@ -438,9 +568,27 @@ def freeze(
                         starts.append(not tokens or document_index == 0)
                         tokens.append(token_id)
                         byte_increments.append(byte_count)
+                        if phase:
+                            curriculum_labels.append(phase)
                         if len(tokens) == sequence_length:
                             write_sequence()
-                            if sequence_count == target_sequences:
+                            if (
+                                phase_sequence_targets
+                                and curriculum_sequences[phase]
+                                == phase_sequence_targets[phase]
+                            ):
+                                if document_index + 1 < len(document_tokens):
+                                    curriculum_truncated_documents[phase] += 1
+                                if all(
+                                    curriculum_sequences[name] == target
+                                    for name, target in phase_sequence_targets.items()
+                                ):
+                                    complete = True
+                                break
+                            if (
+                                not phase_sequence_targets
+                                and sequence_count == target_sequences
+                            ):
                                 complete = True
                                 break
                     if complete:
@@ -453,6 +601,27 @@ def freeze(
             raise TokenStreamError(
                 "pretraining sources cannot fill every required prefix"
             )
+        curriculum_phase_names = [phase for phase, _ in normalized_curriculum_phases]
+        for prefix, evidence in curriculum_prefixes.items():
+            active = [
+                phase
+                for phase in curriculum_phase_names
+                if evidence.get(phase, {}).get("tokens", 0) > 0
+            ]
+            if not active or active != curriculum_phase_names[: len(active)]:
+                raise TokenStreamError(
+                    f"curriculum prefix {prefix} skips a prerequisite phase"
+                )
+        for prefix in required_phase_prefixes:
+            evidence = curriculum_prefixes.get(str(prefix), {})
+            if any(
+                evidence.get(phase, {}).get("tokens", 0) <= 0
+                or evidence.get(phase, {}).get("utf8_bytes", 0) <= 0
+                for phase in curriculum_phase_names
+            ):
+                raise TokenStreamError(
+                    "required training prefix lacks a curriculum phase"
+                )
         close_shard()
         report_unsigned: dict[str, Any] = {
             "schema": SCHEMA,
@@ -479,9 +648,71 @@ def freeze(
                 "accepted": documents_accepted,
                 "duplicates_dropped": duplicate_documents,
                 "malformed_or_unverified_dropped": malformed,
+                "curriculum_phase_budget_skipped": sum(
+                    curriculum_skipped_documents.values()
+                ),
                 "accepted_by_domain": dict(sorted(domain_documents.items())),
             },
         }
+        if normalized_curriculum_phases:
+            report_unsigned["curriculum"] = {
+                "phase_order": [phase for phase, _ in normalized_curriculum_phases],
+                "phase_token_budget_enforced": bool(phase_sequence_targets),
+                "phase_sequence_targets": (
+                    {
+                        phase: phase_sequence_targets[phase]
+                        for phase, _ in normalized_curriculum_phases
+                    }
+                    if phase_sequence_targets
+                    else None
+                ),
+                "phase_sequences_emitted": (
+                    {
+                        phase: curriculum_sequences[phase]
+                        for phase, _ in normalized_curriculum_phases
+                    }
+                    if phase_sequence_targets
+                    else None
+                ),
+                "phase_source_documents_skipped": (
+                    {
+                        phase: curriculum_skipped_documents[phase]
+                        for phase, _ in normalized_curriculum_phases
+                    }
+                    if phase_sequence_targets
+                    else None
+                ),
+                "phase_documents_truncated": (
+                    {
+                        phase: curriculum_truncated_documents[phase]
+                        for phase, _ in normalized_curriculum_phases
+                    }
+                    if phase_sequence_targets
+                    else None
+                ),
+                "declared_phase_documents": {
+                    phase: documents
+                    for phase, documents in normalized_curriculum_phases
+                },
+                "consumed_phase_documents": {
+                    phase: curriculum_documents[phase]
+                    for phase, _ in normalized_curriculum_phases
+                },
+                "consumed_phase_tokens": {
+                    phase: curriculum_tokens[phase]
+                    for phase, _ in normalized_curriculum_phases
+                },
+                "consumed_phase_utf8_bytes": {
+                    phase: curriculum_bytes[phase]
+                    for phase, _ in normalized_curriculum_phases
+                },
+                "prefixes": curriculum_prefixes,
+                "required_all_phase_prefixes": sorted(required_phase_prefixes),
+                "all_required_prefixes_cover_every_phase": True,
+                "phase_order_contiguous_at_every_prefix": True,
+            }
+        if source_qualification is not None:
+            report_unsigned["source_qualification_sha256"] = source_qualification
         report_unsigned["ordered_stream_identity_sha256"] = canonical_sha256(
             report_unsigned
         )
@@ -549,6 +780,8 @@ def validate_frozen_stream(
         raise TokenStreamError("token stream geometry differs")
     _sha256(report.get("tokenizer_identity_sha256"), "tokenizer identity")
     _sha256(report.get("source_manifest_sha256"), "source manifest")
+    if "source_qualification_sha256" in report:
+        _sha256(report["source_qualification_sha256"], "source qualification")
     admitted_bytes = report.get("admitted_utf8_bytes")
     prefixes = report.get("prefix_utf8_bytes")
     if (
@@ -583,6 +816,7 @@ def validate_frozen_stream(
         "accepted",
         "duplicates_dropped",
         "malformed_or_unverified_dropped",
+        "curriculum_phase_budget_skipped",
         "accepted_by_domain",
     }:
         raise TokenStreamError("token stream document accounting differs")
@@ -591,6 +825,7 @@ def validate_frozen_stream(
         "accepted",
         "duplicates_dropped",
         "malformed_or_unverified_dropped",
+        "curriculum_phase_budget_skipped",
     ):
         if (
             isinstance(documents[key], bool)
@@ -605,6 +840,7 @@ def validate_frozen_stream(
         != documents["accepted"]
         + documents["duplicates_dropped"]
         + documents["malformed_or_unverified_dropped"]
+        + documents["curriculum_phase_budget_skipped"]
         or not isinstance(domains, dict)
         or not set(domains).issubset(ALLOWED_DOMAINS)
         or any(
@@ -614,6 +850,168 @@ def validate_frozen_stream(
         or sum(domains.values()) != documents["accepted"]
     ):
         raise TokenStreamError("token stream document accounting is inconsistent")
+    curriculum = report.get("curriculum")
+    if curriculum is not None:
+        if not isinstance(curriculum, dict) or set(curriculum) != {
+            "phase_order",
+            "phase_token_budget_enforced",
+            "phase_sequence_targets",
+            "phase_sequences_emitted",
+            "phase_source_documents_skipped",
+            "phase_documents_truncated",
+            "declared_phase_documents",
+            "consumed_phase_documents",
+            "consumed_phase_tokens",
+            "consumed_phase_utf8_bytes",
+            "prefixes",
+            "required_all_phase_prefixes",
+            "all_required_prefixes_cover_every_phase",
+            "phase_order_contiguous_at_every_prefix",
+        }:
+            raise TokenStreamError("token stream curriculum evidence differs")
+        declared = curriculum["declared_phase_documents"]
+        consumed_documents = curriculum["consumed_phase_documents"]
+        consumed_tokens = curriculum["consumed_phase_tokens"]
+        consumed_bytes = curriculum["consumed_phase_utf8_bytes"]
+        phase_names = set(declared) if isinstance(declared, dict) else set()
+        phase_order = curriculum["phase_order"]
+        phase_budget_enforced = curriculum["phase_token_budget_enforced"]
+        phase_targets = curriculum["phase_sequence_targets"]
+        phase_sequences = curriculum["phase_sequences_emitted"]
+        skipped_documents = curriculum["phase_source_documents_skipped"]
+        truncated_documents = curriculum["phase_documents_truncated"]
+        if (
+            not phase_names
+            or not isinstance(phase_order, list)
+            or len(phase_order) != len(set(phase_order))
+            or set(phase_order) != phase_names
+            or not isinstance(phase_budget_enforced, bool)
+            or not all(
+                isinstance(mapping, dict) and set(mapping) == phase_names
+                for mapping in (consumed_documents, consumed_tokens, consumed_bytes)
+            )
+            or any(
+                isinstance(value, bool) or not isinstance(value, int) or value <= 0
+                for value in declared.values()
+            )
+            or any(
+                isinstance(value, bool) or not isinstance(value, int) or value < 0
+                for mapping in (consumed_documents, consumed_tokens, consumed_bytes)
+                for value in mapping.values()
+            )
+            or sum(declared.values()) < documents["accepted"]
+            or sum(consumed_documents.values()) != documents["accepted"]
+            or sum(consumed_tokens.values()) != report["valid_tokens"]
+            or sum(consumed_bytes.values()) != admitted_bytes
+        ):
+            raise TokenStreamError("token stream curriculum totals differ")
+        if phase_budget_enforced:
+            if (
+                not all(
+                    isinstance(mapping, dict) and set(mapping) == phase_names
+                    for mapping in (
+                        phase_targets,
+                        phase_sequences,
+                        skipped_documents,
+                        truncated_documents,
+                    )
+                )
+                or any(
+                    isinstance(value, bool) or not isinstance(value, int) or value <= 0
+                    for mapping in (phase_targets, phase_sequences)
+                    for value in mapping.values()
+                )
+                or any(
+                    isinstance(value, bool) or not isinstance(value, int) or value < 0
+                    for mapping in (skipped_documents, truncated_documents)
+                    for value in mapping.values()
+                )
+                or phase_targets != phase_sequences
+                or sum(phase_targets.values()) != sequences
+                or any(
+                    consumed_tokens[phase] != phase_targets[phase] * sequence_length
+                    for phase in phase_names
+                )
+                or any(truncated_documents[phase] > 1 for phase in phase_names)
+            ):
+                raise TokenStreamError(
+                    "token stream curriculum phase token budget differs"
+                )
+        elif any(
+            value is not None
+            for value in (
+                phase_targets,
+                phase_sequences,
+                skipped_documents,
+                truncated_documents,
+            )
+        ):
+            raise TokenStreamError("unexpected curriculum phase token budget")
+        curriculum_prefixes = curriculum["prefixes"]
+        if not isinstance(curriculum_prefixes, dict) or set(curriculum_prefixes) != set(
+            prefixes
+        ):
+            raise TokenStreamError("token stream curriculum prefixes differ")
+        for prefix, phase_evidence in curriculum_prefixes.items():
+            if (
+                not isinstance(phase_evidence, dict)
+                or set(phase_evidence) != phase_names
+            ):
+                raise TokenStreamError("token stream curriculum phase set differs")
+            for values in phase_evidence.values():
+                if (
+                    not isinstance(values, dict)
+                    or set(values) != {"tokens", "utf8_bytes"}
+                    or any(
+                        isinstance(value, bool)
+                        or not isinstance(value, int)
+                        or value < 0
+                        for value in values.values()
+                    )
+                ):
+                    raise TokenStreamError(
+                        "token stream curriculum prefix values differ"
+                    )
+            if (
+                sum(values["tokens"] for values in phase_evidence.values())
+                != int(prefix) * sequence_length
+                or sum(values["utf8_bytes"] for values in phase_evidence.values())
+                != prefixes[prefix]
+            ):
+                raise TokenStreamError("token stream curriculum prefix totals differ")
+        required = curriculum["required_all_phase_prefixes"]
+        if (
+            not isinstance(required, list)
+            or any(
+                isinstance(value, bool)
+                or not isinstance(value, int)
+                or str(value) not in curriculum_prefixes
+                for value in required
+            )
+            or required != sorted(set(required))
+            or curriculum["all_required_prefixes_cover_every_phase"] is not True
+            or curriculum["phase_order_contiguous_at_every_prefix"] is not True
+        ):
+            raise TokenStreamError("token stream curriculum requirement differs")
+        for prefix in required:
+            if any(
+                curriculum_prefixes[str(prefix)][phase]["tokens"] <= 0
+                or curriculum_prefixes[str(prefix)][phase]["utf8_bytes"] <= 0
+                for phase in phase_names
+            ):
+                raise TokenStreamError("token stream curriculum phase is absent")
+        ordered_phase_names = phase_order
+        for prefix, phase_evidence in curriculum_prefixes.items():
+            active = [
+                phase
+                for phase in ordered_phase_names
+                if phase_evidence[phase]["tokens"] > 0
+            ]
+            if not active or active != ordered_phase_names[: len(active)]:
+                raise TokenStreamError(
+                    "token stream curriculum prefix "
+                    f"{prefix} skips a prerequisite phase"
+                )
     shards = report.get("shards")
     if not isinstance(shards, list) or not shards:
         raise TokenStreamError("token stream shards are missing")
@@ -724,6 +1122,87 @@ def validate_frozen_stream(
     return report
 
 
+def load_curriculum_phase_contract(
+    receipt_path: Path,
+    sources: list[Path],
+    source_qualification_sha256: str | None,
+    *,
+    curriculum_workers: int = 1,
+    population: str = "train",
+) -> list[tuple[str, int]]:
+    """Validate a full curriculum or one qualified split population."""
+
+    if not receipt_path.is_file() or receipt_path.is_symlink():
+        raise TokenStreamError("curriculum receipt is missing or unsafe")
+    try:
+        payload = json.loads(receipt_path.read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise TokenStreamError("curriculum receipt is unreadable") from error
+    if len(sources) != 1 or source_qualification_sha256 != sha256_file(receipt_path):
+        raise TokenStreamError("curriculum receipt differs")
+    schema = payload.get("schema")
+    if schema == "sai-curriculum-order-receipt-v1":
+        if population != "train":
+            raise TokenStreamError("curriculum population differs")
+        from sai.data.curriculum import validate_curriculum
+
+        validated = validate_curriculum(receipt_path, workers=curriculum_workers)
+        source_row = validated.get("output", {})
+        phases = validated.get("phases")
+        qualified = validated.get("curriculum_qualified") is True
+    elif schema == "sai-curriculum-train-development-split-v1":
+        if population not in {"train", "development"}:
+            raise TokenStreamError("curriculum population differs")
+        from sai.data.curriculum_split import validate_curriculum_split
+
+        validated = validate_curriculum_split(
+            receipt_path, curriculum_workers=curriculum_workers
+        )
+        source_row = validated.get(population, {})
+        phases = source_row.get("phases")
+        population_qualified = (
+            source_row.get("curriculum_qualified") is True
+            if population == "train"
+            else isinstance(phases, dict)
+            and bool(phases)
+            and all(
+                isinstance(row, dict)
+                and isinstance(row.get("documents"), int)
+                and not isinstance(row.get("documents"), bool)
+                and row["documents"] > 0
+                for row in phases.values()
+            )
+        )
+        qualified = bool(
+            validated.get("split_qualified") is True and population_qualified
+        )
+    else:
+        raise TokenStreamError("curriculum receipt schema differs")
+    source = sources[0]
+    if (
+        validated.get("status") != "qualified"
+        or validated.get("training_authorized") is not False
+        or not qualified
+        or not isinstance(phases, dict)
+        or source_row.get("path") != str(source.resolve())
+        or source_row.get("bytes") != source.stat().st_size
+        or source_row.get("sha256") != sha256_file(source)
+    ):
+        raise TokenStreamError("curriculum receipt differs")
+    ordered_phases = sorted(phases.items(), key=lambda item: item[1].get("index", -1))
+    if [row.get("index") for _, row in ordered_phases] != list(
+        range(len(ordered_phases))
+    ):
+        raise TokenStreamError("curriculum phase order differs")
+    result = [(name, row.get("documents")) for name, row in ordered_phases]
+    if any(
+        not isinstance(documents, int) or isinstance(documents, bool) or documents <= 0
+        for _, documents in result
+    ):
+        raise TokenStreamError("curriculum phase geometry differs")
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tokenizer-root", type=Path, required=True)
@@ -733,6 +1212,18 @@ def main() -> int:
     parser.add_argument("--sequence-length", type=int, default=2_048)
     parser.add_argument("--prefix-sequences", type=int, action="append", required=True)
     parser.add_argument("--sequences-per-shard", type=int, default=4_096)
+    parser.add_argument("--source-qualification-sha256")
+    parser.add_argument("--curriculum-receipt", type=Path)
+    parser.add_argument("--curriculum-validation-workers", type=int, default=1)
+    parser.add_argument(
+        "--curriculum-population",
+        choices=("train", "development"),
+        default="train",
+    )
+    parser.add_argument("--curriculum-phase-sequences", action="append")
+    parser.add_argument(
+        "--require-all-curriculum-phases-at-prefix", type=int, action="append"
+    )
     args = parser.parse_args()
     observed_identity = sha256_tree(args.tokenizer_root)
     if observed_identity != _sha256(
@@ -753,6 +1244,26 @@ def main() -> int:
     )
     if not getattr(tokenizer, "is_fast", False):
         raise TokenStreamError("a fast tokenizer with offsets is required")
+    curriculum_phases = None
+    if args.curriculum_receipt is not None:
+        curriculum_phases = load_curriculum_phase_contract(
+            args.curriculum_receipt,
+            args.source,
+            args.source_qualification_sha256,
+            curriculum_workers=args.curriculum_validation_workers,
+            population=args.curriculum_population,
+        )
+    curriculum_phase_sequence_targets = None
+    if args.curriculum_phase_sequences is not None:
+        curriculum_phase_sequence_targets = []
+        try:
+            for value in args.curriculum_phase_sequences:
+                name, encoded_count = value.split("=", 1)
+                curriculum_phase_sequence_targets.append((name, int(encoded_count)))
+        except (AttributeError, TypeError, ValueError) as error:
+            raise TokenStreamError(
+                "curriculum phase sequence target differs"
+            ) from error
     report = freeze(
         tokenizer,
         args.source,
@@ -761,6 +1272,12 @@ def main() -> int:
         sequence_length=args.sequence_length,
         prefix_sequences=set(args.prefix_sequences),
         sequences_per_shard=args.sequences_per_shard,
+        source_qualification_sha256=args.source_qualification_sha256,
+        curriculum_phases=curriculum_phases,
+        curriculum_phase_sequence_targets=curriculum_phase_sequence_targets,
+        required_phase_complete_prefixes=set(
+            args.require_all_curriculum_phases_at_prefix or []
+        ),
     )
     print(
         json.dumps(

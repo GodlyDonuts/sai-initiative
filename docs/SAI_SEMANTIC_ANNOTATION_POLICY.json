@@ -1,0 +1,35 @@
+{
+  "annotation_unit": "document_concept_presence",
+  "concept_list_sha256": "1a5533e98cbae764312572fd4dcbd83a6ae848ed9220e65768b0869a46755ef1",
+  "confidence_contract": {
+    "below_threshold_action": "omit_and_flag_for_review",
+    "confidence_is_probability_of_policy_compliance": true,
+    "minimum_confidence_ppm": 800000
+  },
+  "evidence_span_contract": {
+    "coordinate_system": "unicode_codepoint_half_open",
+    "exact_text_match_required": true,
+    "minimum_codepoints_per_positive_label": 16,
+    "minimum_spans_per_positive_label": 1,
+    "source_hash_required": true
+  },
+  "four_b_training_authorized": false,
+  "negative_label_rule": "omit_when_direct_source_evidence_is_absent_or_ambiguous",
+  "positive_label_rule": "explicit_instruction_or_demonstrated_use_with_verifiable_source_span",
+  "prerequisite_contract": {
+    "phase_source": "bound_curriculum_receipt_only",
+    "same_document_exposure_counts_as_prior": false,
+    "unmet_prerequisite_action": "record_violation_and_reject_progression"
+  },
+  "receipt_sha256": "d60439f5c392b07073a8f2b08f5bc3eda98f74229d9ea1edd401dc3982e61ac2",
+  "review_contract": {
+    "adjudication_may_not_change_measured_disagreement": true,
+    "blind_independent_review": true,
+    "disagreement_unit": "unordered_unique_concept_identity_set_per_document",
+    "maximum_disagreement_ppm": 50000,
+    "minimum_reviewed_documents": 100
+  },
+  "schema": "sai-semantic-annotation-policy-v2",
+  "status": "prospective",
+  "training_authorized": false
+}
