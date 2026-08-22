@@ -212,7 +212,12 @@ benchmark evidence selects an architecture.
   is sealed on Newton with zero writable members. Superseded generic stream
   `769229` was cancelled with zero elapsed time and zero restarts; accelerated
   Smol stream `769455` is dependency-held on the same mutually exclusive
-  primary/recovery corpus lineage.
+  primary/recovery corpus lineage. Conditional release jobs `769457`/`769458`
+  are now staged behind the matching primary/recovery Qwen comparison,
+  population, and Smol-stream branches. They target one collision-safe run
+  root and submit the 32-job, independent-one-H100 cross-family graph only if
+  the reopened Qwen receipt passes its predeclared gate; a measured Qwen fail
+  exits before any Smol H100 request.
 - The first capable-host Sai factor is now fully executable at commit
   `cc7039d1e5a0653f4581cbe1a7b3ce509fff58e6`: a `19,938,304`-parameter,
   16-slot recurrent workspace attached to the frozen Qwen3.5-0.8B text parent.
