@@ -271,8 +271,7 @@ def test_launcher_is_matched_independent_single_h100_and_nonretrying() -> None:
         assert "#SBATCH --gres=" not in job
         assert 'rev-parse HEAD)" = "$EXPECTED_COMMIT"' in job
         assert "retry" not in job.lower()
-    assert "validate_order_control" in launcher
-    assert "validate_curriculum_split" in launcher
+    assert "validate_curriculum_order_bundle" in launcher
     assert "curriculum_workers=curriculum_workers" in launcher
     assert "#SBATCH --cpus-per-task=8" in launcher
     assert "#SBATCH --mem=16G" in launcher

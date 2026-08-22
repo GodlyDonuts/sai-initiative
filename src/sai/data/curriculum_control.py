@@ -243,7 +243,42 @@ def build_order_control(
 
 
 def validate_order_control(output: Path) -> dict[str, Any]:
-    report = validate_frozen_stream(output, verify_sources=True)
+    return _validate_order_control(output)
+
+
+def _bind_qualified_source(
+    report: dict[str, Any],
+    expected: dict[str, Any],
+    qualification_sha256: str,
+) -> None:
+    receipt = {
+        "order": 0,
+        "path": expected["path"],
+        "bytes": expected["bytes"],
+        "sha256": expected["sha256"],
+    }
+    if (
+        report.get("source_receipts") != [receipt]
+        or report.get("source_qualification_sha256") != qualification_sha256
+    ):
+        raise CurriculumControlError("qualified split source differs")
+
+
+def _validate_order_control(
+    output: Path,
+    *,
+    trusted_parent: tuple[Path, dict[str, Any]] | None = None,
+    expected_source: dict[str, Any] | None = None,
+    qualification_sha256: str | None = None,
+) -> dict[str, Any]:
+    report = validate_frozen_stream(
+        output,
+        verify_sources=trusted_parent is None,
+    )
+    if trusted_parent is not None:
+        if expected_source is None or qualification_sha256 is None:
+            raise CurriculumControlError("qualified split source differs")
+        _bind_qualified_source(report, expected_source, qualification_sha256)
     ordering = report.get("ordering_control")
     if (
         not isinstance(ordering, dict)
@@ -258,7 +293,15 @@ def validate_order_control(output: Path) -> dict[str, Any]:
     parent_row = ordering.get("parent_stream")
     if not isinstance(parent_row, dict):
         raise CurriculumControlError("sequence-control parent differs")
-    parent_root = Path(parent_row.get("path", ""))
+    declared_parent_root = Path(parent_row.get("path", ""))
+    if trusted_parent is None:
+        parent_root = declared_parent_root
+        parent = validate_frozen_stream(parent_root, verify_sources=True)
+    else:
+        parent_root, parent = trusted_parent
+        if declared_parent_root != parent_root.resolve():
+            raise CurriculumControlError("sequence-control parent differs")
+        _bind_qualified_source(parent, expected_source, qualification_sha256)
     parent_receipt = parent_root / "stream_receipt.json"
     if (
         not parent_receipt.is_file()
@@ -267,7 +310,6 @@ def validate_order_control(output: Path) -> dict[str, Any]:
         or parent_row.get("receipt_file_sha256") != sha256_file(parent_receipt)
     ):
         raise CurriculumControlError("sequence-control parent receipt differs")
-    parent = validate_frozen_stream(parent_root, verify_sources=True)
     sequences = report["sequences"]
     permutation = _permutation(sequences, FROZEN_SEED)
     if (
@@ -301,6 +343,41 @@ def validate_order_control(output: Path) -> dict[str, Any]:
             ):
                 raise CurriculumControlError("sequence-control permutation differs")
     return report
+
+
+def validate_curriculum_order_bundle(
+    curriculum_root: Path,
+    control_root: Path,
+    development_root: Path,
+    split_receipt: Path,
+    *,
+    curriculum_workers: int = 1,
+) -> dict[str, dict[str, Any]]:
+    """Replay the split once, then bind all three streams to its exact outputs."""
+
+    from sai.data.curriculum_split import validate_curriculum_split
+
+    split = validate_curriculum_split(
+        split_receipt,
+        curriculum_workers=curriculum_workers,
+    )
+    qualification_sha256 = sha256_file(split_receipt)
+    curriculum = validate_frozen_stream(curriculum_root, verify_sources=False)
+    development = validate_frozen_stream(development_root, verify_sources=False)
+    _bind_qualified_source(curriculum, split["train"], qualification_sha256)
+    _bind_qualified_source(development, split["development"], qualification_sha256)
+    control = _validate_order_control(
+        control_root,
+        trusted_parent=(curriculum_root, curriculum),
+        expected_source=split["train"],
+        qualification_sha256=qualification_sha256,
+    )
+    return {
+        "split": split,
+        "curriculum": curriculum,
+        "control": control,
+        "development": development,
+    }
 
 
 def main() -> None:

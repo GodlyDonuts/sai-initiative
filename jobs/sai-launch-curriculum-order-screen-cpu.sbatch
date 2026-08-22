@@ -60,24 +60,23 @@ read -r curriculum_identity control_identity development_identity < <(
 import pathlib
 import sys
 
-from sai.data.curriculum_control import validate_order_control
-from sai.data.curriculum_split import validate_curriculum_split
-from sai.data.token_stream import sha256_file, validate_frozen_stream
+from sai.data.curriculum_control import validate_curriculum_order_bundle
 
 curriculum_root, control_root, development_root, split_path = map(
     pathlib.Path, sys.argv[1:5]
 )
 curriculum_workers = int(sys.argv[5])
-split = validate_curriculum_split(
-    split_path, curriculum_workers=curriculum_workers
+bundle = validate_curriculum_order_bundle(
+    curriculum_root,
+    control_root,
+    development_root,
+    split_path,
+    curriculum_workers=curriculum_workers,
 )
-curriculum = validate_frozen_stream(curriculum_root, verify_sources=True)
-control = validate_order_control(control_root)
-development = validate_frozen_stream(development_root, verify_sources=True)
-split_sha = sha256_file(split_path)
-assert curriculum["source_qualification_sha256"] == split_sha
-assert control["source_qualification_sha256"] == split_sha
-assert development["source_qualification_sha256"] == split_sha
+split = bundle["split"]
+curriculum = bundle["curriculum"]
+control = bundle["control"]
+development = bundle["development"]
 assert curriculum["sequence_length"] == control["sequence_length"] == 2_048
 assert development["sequence_length"] == 2_048
 assert curriculum["sequences"] == control["sequences"] == 244_140

@@ -184,6 +184,12 @@ validation replays every output record against its declared parent index. This
 is stronger than independently shuffling documents, which could change which
 tail tokens survive a fixed-token cutoff.
 
+The launch-time bundle validator replays the qualified train/development split
+once, binds the parent, control, and development stream source receipts to those
+exact output hashes, then verifies the control permutation and record multiset.
+It removes redundant full-source hashing without removing any evidence check;
+the split replay remains the authoritative proof of source bytes.
+
 ## Do not conflate three curriculum hypotheses
 
 The current experiment tests only a **surface-complexity curriculum**. Its
