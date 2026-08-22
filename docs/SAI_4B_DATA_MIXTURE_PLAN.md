@@ -3,6 +3,13 @@
 Status: prospective and data-first. This plan authorizes no 4B training. It
 defines the evidence required before a final Sai corpus can exist.
 
+`sai-validate-data-mixture <plan.json>` enforces the prospective
+`sai-4b-data-mixture-plan-v1` schema. It requires immutable revisions and
+source receipts, all five Sai domains, exact per-source and per-phase token
+budgets, minimum-phase admission, mandatory rehearsal, optimizer-aligned phase
+boundaries, factor-isolated controls, and both training authorization fields set
+to false.
+
 ## Principle
 
 Sai is not allowed to compensate for bad data with a novel architecture. The

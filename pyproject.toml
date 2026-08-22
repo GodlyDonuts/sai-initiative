@@ -13,6 +13,7 @@ dependencies = []
 sai-freeze-data = "sai.data.freeze:main"
 sai-freeze-token-stream = "sai.data.token_stream:main"
 sai-decontaminate = "sai.data.decontamination:main"
+sai-validate-data-mixture = "sai.data.mixture_plan:main"
 sai-convert-fineweb-edu = "sai.data.fineweb_edu:main"
 sai-split-documents = "sai.data.split:main"
 sai-build-tokenizers = "sai.tokenizer.build:main"
