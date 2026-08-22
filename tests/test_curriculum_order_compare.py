@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -41,7 +42,7 @@ def _stream(identity: str, *, sequences: int, source: str) -> dict:
     return payload
 
 
-def _result(training_identity: str, checkpoint: str, nll: float) -> dict:
+def _result(training_identity: str, checkpoint: dict, nll: float) -> dict:
     payload = {
         "schema": "sai-sub-4b-short-screen-v1",
         "evidence_class": "mechanics/development-screen-only",
@@ -109,7 +110,7 @@ def _result(training_identity: str, checkpoint: str, nll: float) -> dict:
                     )
                 },
             },
-            "checkpoint": {"sha256": checkpoint},
+            "checkpoint": checkpoint,
         }
     )
     payload["receipt_sha256"] = canonical_sha256(payload)
@@ -152,10 +153,34 @@ def _fixture(
         ),
     )
     monkeypatch.setattr(comparison, "validate_order_control", lambda _: control)
+    descriptors = {}
+    for arm in ("curriculum", "control"):
+        checkpoint_path = tmp_path / f"{arm}.checkpoint.pt"
+        checkpoint_path.write_bytes(f"{arm}-checkpoint".encode())
+        descriptors[arm] = {
+            "path": checkpoint_path.name,
+            "bytes": checkpoint_path.stat().st_size,
+            "sha256": hashlib.sha256(checkpoint_path.read_bytes()).hexdigest(),
+        }
+        manifest_path = checkpoint_path.with_name(
+            f"{checkpoint_path.name}.manifest.json"
+        )
+        manifest_path.write_text(
+            json.dumps(
+                {
+                    "schema": "sai-mechanics-checkpoint-manifest-v1",
+                    "checkpoint": descriptors[arm],
+                }
+            )
+        )
     curriculum_result = tmp_path / "curriculum.result.json"
     control_result = tmp_path / "control.result.json"
-    curriculum_result.write_text(json.dumps(_result(CURRICULUM_ID, "d" * 64, 5.0)))
-    control_result.write_text(json.dumps(_result(CONTROL_ID, "e" * 64, 5.2)))
+    curriculum_result.write_text(
+        json.dumps(_result(CURRICULUM_ID, descriptors["curriculum"], 5.0))
+    )
+    control_result.write_text(
+        json.dumps(_result(CONTROL_ID, descriptors["control"], 5.2))
+    )
     return split, curriculum_result, control_result
 
 
@@ -180,6 +205,29 @@ def test_compares_only_order_and_writes_once(
     assert payload["only_training_sequence_order_changed"] is True
     assert payload["replication_required_for_architecture_claim"] is True
     assert payload["four_b_training_authorized"] is False
+    for arm in ("curriculum", "order_control"):
+        source_arm = "control" if arm == "order_control" else arm
+        checkpoint = tmp_path / f"{source_arm}.checkpoint.pt"
+        manifest = checkpoint.with_name(f"{checkpoint.name}.manifest.json")
+        expected_bundle = canonical_sha256(
+            [
+                {
+                    "name": checkpoint.name,
+                    "bytes": checkpoint.stat().st_size,
+                    "sha256": comparison.sha256_file(checkpoint),
+                },
+                {
+                    "name": manifest.name,
+                    "bytes": manifest.stat().st_size,
+                    "sha256": comparison.sha256_file(manifest),
+                },
+            ]
+        )
+        assert payload["arms"][arm]["checkpoint_sha256"] == expected_bundle
+        assert payload["arms"][arm]["checkpoint_bundle_sha256"] == expected_bundle
+        assert payload["arms"][arm]["checkpoint_file_sha256"] == comparison.sha256_file(
+            checkpoint
+        )
     output = tmp_path / "comparison.json"
     write_comparison(output, payload)
     assert json.loads(output.read_text()) == payload

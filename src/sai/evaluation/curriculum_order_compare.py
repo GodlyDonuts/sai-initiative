@@ -13,6 +13,7 @@ from typing import Any
 from sai.data.curriculum_control import validate_order_control
 from sai.data.curriculum_split import validate_curriculum_split
 from sai.data.token_stream import canonical_sha256, sha256_file, validate_frozen_stream
+from sai.training.checkpoint import MANIFEST_SCHEMA
 
 SCHEMA = "sai-curriculum-order-training-comparison-v1"
 SHARED_SPECIFICATION_FIELDS = (
@@ -141,6 +142,63 @@ def _load_result(path: Path) -> tuple[dict[str, Any], str]:
     return payload, file_sha256
 
 
+def _checkpoint_bundle(result_path: Path, result: dict[str, Any]) -> dict[str, Any]:
+    """Reproduce the exact checkpoint bundle identity used by development MC."""
+
+    descriptor = result.get("checkpoint")
+    if (
+        not isinstance(descriptor, dict)
+        or set(descriptor) != {"path", "bytes", "sha256"}
+        or not isinstance(descriptor["path"], str)
+        or Path(descriptor["path"]).name != descriptor["path"]
+        or isinstance(descriptor["bytes"], bool)
+        or not isinstance(descriptor["bytes"], int)
+        or descriptor["bytes"] <= 0
+    ):
+        raise CurriculumOrderComparisonError("checkpoint descriptor differs")
+    checkpoint = result_path.parent / descriptor["path"]
+    manifest = checkpoint.with_name(f"{checkpoint.name}.manifest.json")
+    if (
+        not checkpoint.is_file()
+        or checkpoint.is_symlink()
+        or checkpoint.stat().st_size != descriptor["bytes"]
+        or sha256_file(checkpoint) != descriptor["sha256"]
+        or not manifest.is_file()
+        or manifest.is_symlink()
+    ):
+        raise CurriculumOrderComparisonError("checkpoint artifact differs")
+    try:
+        manifest_payload = json.loads(manifest.read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise CurriculumOrderComparisonError(
+            "checkpoint manifest is unreadable"
+        ) from error
+    if (
+        not isinstance(manifest_payload, dict)
+        or manifest_payload.get("schema") != MANIFEST_SCHEMA
+        or manifest_payload.get("checkpoint") != descriptor
+    ):
+        raise CurriculumOrderComparisonError("checkpoint manifest differs")
+    manifest_sha256 = sha256_file(manifest)
+    rows = [
+        {
+            "name": checkpoint.name,
+            "bytes": checkpoint.stat().st_size,
+            "sha256": descriptor["sha256"],
+        },
+        {
+            "name": manifest.name,
+            "bytes": manifest.stat().st_size,
+            "sha256": manifest_sha256,
+        },
+    ]
+    return {
+        "checkpoint_file_sha256": descriptor["sha256"],
+        "checkpoint_manifest_file_sha256": manifest_sha256,
+        "checkpoint_bundle_sha256": canonical_sha256(rows),
+    }
+
+
 def _validate_phase_strata(
     result: dict[str, Any], development: dict[str, Any]
 ) -> dict[str, dict[str, Any]]:
@@ -265,6 +323,10 @@ def compare_curriculum_order(
         curriculum_result
     )
     control_result_payload, control_result_sha256 = _load_result(control_result)
+    curriculum_checkpoint = _checkpoint_bundle(
+        curriculum_result, curriculum_result_payload
+    )
+    control_checkpoint = _checkpoint_bundle(control_result, control_result_payload)
     curriculum_strata = _validate_phase_strata(curriculum_result_payload, development)
     control_strata = _validate_phase_strata(control_result_payload, development)
     if any(
@@ -356,14 +418,16 @@ def compare_curriculum_order(
                 "stream_identity_sha256": curriculum_identity,
                 "result_file_sha256": curriculum_result_sha256,
                 "result_receipt_sha256": curriculum_result_payload["receipt_sha256"],
-                "checkpoint_sha256": curriculum_result_payload["checkpoint"]["sha256"],
+                "checkpoint_sha256": curriculum_checkpoint["checkpoint_bundle_sha256"],
+                **curriculum_checkpoint,
                 "development_nll": curriculum_result_payload["development_nll"],
             },
             "order_control": {
                 "stream_identity_sha256": control_identity,
                 "result_file_sha256": control_result_sha256,
                 "result_receipt_sha256": control_result_payload["receipt_sha256"],
-                "checkpoint_sha256": control_result_payload["checkpoint"]["sha256"],
+                "checkpoint_sha256": control_checkpoint["checkpoint_bundle_sha256"],
+                **control_checkpoint,
                 "development_nll": control_result_payload["development_nll"],
             },
         },
