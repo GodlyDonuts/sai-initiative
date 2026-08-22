@@ -488,6 +488,11 @@ The exact no-training 100M comparison planner is specified in
 [`docs/SAI_100M_EXPERIMENT_PLAN.md`](docs/SAI_100M_EXPERIMENT_PLAN.md).
 The tokenizer/data specialization workstream is reconciled with that ladder in
 [`docs/SAI_4B_SPECIALIZATION_RESEARCH_PLAN.md`](docs/SAI_4B_SPECIALIZATION_RESEARCH_PLAN.md).
+The data-first source, mixture, curriculum, and promotion boundary is specified
+in
+[`docs/SAI_4B_DATA_MIXTURE_PLAN.md`](docs/SAI_4B_DATA_MIXTURE_PLAN.md)
+and
+[`docs/SAI_DATA_CURRICULUM_CONTRACT.md`](docs/SAI_DATA_CURRICULUM_CONTRACT.md).
 The exact lossless 64K/48K/32K measurement boundary is frozen in
 [`docs/SAI_TOKENIZER_QUALIFICATION_CONTRACT.md`](docs/SAI_TOKENIZER_QUALIFICATION_CONTRACT.md).
 The high-upside conditional-compute thesis and its ordered kill tests are in
