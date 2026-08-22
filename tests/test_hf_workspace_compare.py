@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from sai.data.token_stream import canonical_sha256
+from sai.evaluation.hf_smol_workspace_compare import compare_cross_family
 from sai.evaluation.hf_workspace_compare import (
     HFWorkspaceComparisonError,
     compare,
@@ -289,17 +290,26 @@ def test_comparison_reuses_exact_gate_with_cross_family_schema(tmp_path: Path) -
             value.pop("receipt_sha256")
             value["receipt_sha256"] = canonical_sha256(value)
             paths[mode][benchmark].write_text(json.dumps(value))
-    result = compare(
+    qwen_factor = {
+        "schema": "sai-qwen35-0p8b-matched-workspace-comparison-v1",
+        "status": "complete",
+        "checks": {"macro_gain": True, "paired_lcb": True},
+        "pass": True,
+        "action": "authorize_sub4b_confirmation",
+        "architecture_locked": False,
+        "four_b_training_executed": False,
+        "four_b_training_authorized": False,
+    }
+    qwen_factor["receipt_sha256"] = canonical_sha256(qwen_factor)
+    qwen_factor_path = tmp_path / "qwen-factor.json"
+    qwen_factor_path.write_text(json.dumps(qwen_factor))
+    result = compare_cross_family(
+        qwen_factor_receipt=qwen_factor_path,
         parent_paths=paths["parent"],
         recurrent_paths=paths["recurrent"],
         reset_paths=paths["reset_average"],
         recurrent_training_result=paths["training"]["recurrent"],
         reset_training_result=paths["training"]["reset_average"],
-        training_schema=SMOL_TRAINING_SCHEMA,
-        comparison_schema="sai-smollm3-3b-matched-workspace-comparison-v1",
-        pass_action="cross_family_factor_confirmed_await_user_4b_authorization",
-        fail_action="reject_recurrent_workspace_cross_family",
-        claim_limit="cross-family test limit",
     )
     assert result["schema"] == "sai-smollm3-3b-matched-workspace-comparison-v1"
     assert result["pass"] is True
@@ -307,4 +317,25 @@ def test_comparison_reuses_exact_gate_with_cross_family_schema(tmp_path: Path) -
         "cross_family_factor_confirmed_await_user_4b_authorization"
     )
     assert result["four_b_training_authorized"] is False
-    assert result["claim_limit"] == "cross-family test limit"
+    assert result["qwen_factor_evidence"] == {
+        "path": str(qwen_factor_path.resolve()),
+        "file_sha256": hashlib.sha256(qwen_factor_path.read_bytes()).hexdigest(),
+        "receipt_sha256": qwen_factor["receipt_sha256"],
+        "schema": qwen_factor["schema"],
+        "pass": True,
+        "action": "authorize_sub4b_confirmation",
+    }
+
+    qwen_factor["pass"] = False
+    qwen_factor.pop("receipt_sha256")
+    qwen_factor["receipt_sha256"] = canonical_sha256(qwen_factor)
+    qwen_factor_path.write_text(json.dumps(qwen_factor))
+    with pytest.raises(HFWorkspaceComparisonError, match="did not pass"):
+        compare_cross_family(
+            qwen_factor_receipt=qwen_factor_path,
+            parent_paths=paths["parent"],
+            recurrent_paths=paths["recurrent"],
+            reset_paths=paths["reset_average"],
+            recurrent_training_result=paths["training"]["recurrent"],
+            reset_training_result=paths["training"]["reset_average"],
+        )
