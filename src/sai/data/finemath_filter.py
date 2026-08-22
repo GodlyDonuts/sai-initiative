@@ -288,15 +288,16 @@ def _scan(
             elif item > heap[0]:
                 heapq.heapreplace(heap, item)
     review_rows = []
+    review_rows_by_decision = {}
     for decision in ("accepted", "rejected"):
-        if len(review_heaps[decision]) != review_per_decision:
-            raise FineMathFilterError("review decision stratum is incomplete")
-        review_rows.extend(
+        selected = [
             item[2]
             for item in sorted(
                 review_heaps[decision], key=lambda item: (-item[0], -item[1])
             )
-        )
+        ]
+        review_rows_by_decision[decision] = len(selected)
+        review_rows.extend(selected)
     summary = {
         "rows": rows,
         "unique_text_sha256": len(exact_texts),
@@ -304,6 +305,7 @@ def _scan(
         "rejected_rows": rows - len(accepted),
         "accepted_fraction_ppm": len(accepted) * 1_000_000 // rows,
         "rejection_reason_counts": dict(sorted(reason_counts.items())),
+        "review_rows_by_decision": review_rows_by_decision,
     }
     return accepted, review_rows, summary
 
@@ -347,8 +349,8 @@ def build_filtered_candidate(
     )
     accepted_bytes = _jsonl_bytes(accepted)
     review_bytes = _jsonl_bytes(review_rows)
-    if not accepted_bytes or not review_bytes:
-        raise FineMathFilterError("FineMath filter produced an empty artifact")
+    if not review_bytes:
+        raise FineMathFilterError("FineMath filter produced no review evidence")
     accepted_output.parent.mkdir(parents=True, exist_ok=True)
     stages = [path.with_name(f".{path.name}.partial.{os.getpid()}") for path in outputs]
     try:
@@ -362,7 +364,11 @@ def build_filtered_candidate(
         policy = _policy()
         payload: dict[str, Any] = {
             "schema": SCHEMA,
-            "status": "filtered_candidate_not_admitted",
+            "status": (
+                "filtered_candidate_not_admitted"
+                if accepted
+                else "filter_empty_no_candidate"
+            ),
             "training_authorized": False,
             "four_b_training_authorized": False,
             "audit": {
@@ -386,6 +392,7 @@ def build_filtered_candidate(
                 "sha256": hashlib.sha256(review_bytes).hexdigest(),
                 "ordered_rows_sha256": canonical_sha256(review_rows),
                 "rows_per_decision": review_per_decision,
+                "rows_by_decision": summary["review_rows_by_decision"],
             },
             "limitations": [
                 "accepted_rows_require_independent_human_review",
@@ -451,7 +458,12 @@ def validate_filtered_candidate(receipt: Path) -> dict[str, Any]:
     accepted_path = Path(payload["accepted_output"].get("path", ""))
     review_path = Path(review_descriptor.get("path", ""))
     if (
-        payload["status"] != "filtered_candidate_not_admitted"
+        payload["status"]
+        != (
+            "filtered_candidate_not_admitted"
+            if accepted
+            else "filter_empty_no_candidate"
+        )
         or payload["training_authorized"] is not False
         or payload["four_b_training_authorized"] is not False
         or payload["source"] != source_row
@@ -480,6 +492,7 @@ def validate_filtered_candidate(receipt: Path) -> dict[str, Any]:
             "sha256": hashlib.sha256(review_bytes).hexdigest(),
             "ordered_rows_sha256": canonical_sha256(review_rows),
             "rows_per_decision": review_per_decision,
+            "rows_by_decision": summary["review_rows_by_decision"],
         }
         or payload["limitations"]
         != [

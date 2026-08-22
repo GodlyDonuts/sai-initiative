@@ -143,3 +143,41 @@ def test_rejects_tamper_overwrite_and_bad_review_geometry(tmp_path: Path) -> Non
             tmp_path / "new-receipt.json",
             review_per_decision=0,
         )
+
+
+def test_preserves_zero_acceptance_as_terminal_evidence(tmp_path: Path) -> None:
+    source = tmp_path / "all-rejected.parquet"
+    _source(source)
+    table = pq.read_table(source)
+    columns = {name: table[name].to_pylist() for name in table.column_names}
+    columns["int_score"] = [4] * table.num_rows
+    pq.write_table(pa.Table.from_pydict(columns), source)
+    audit_receipt = tmp_path / "audit-receipt.json"
+    audit_shard(
+        source,
+        revision="1" * 40,
+        source_file="finemath-4plus/train-00000-of-00064.parquet",
+        expected_bytes=source.stat().st_size,
+        expected_sha256=sha256_file(source),
+        sample_size=5,
+        sample_output=tmp_path / "audit-sample.jsonl",
+        receipt_output=audit_receipt,
+    )
+    accepted = tmp_path / "accepted.jsonl"
+    review = tmp_path / "review.jsonl"
+    receipt = tmp_path / "receipt.json"
+    payload = build_filtered_candidate(
+        audit_receipt,
+        accepted,
+        review,
+        receipt,
+        review_per_decision=1,
+    )
+    assert payload["status"] == "filter_empty_no_candidate"
+    assert payload["summary"]["accepted_rows"] == 0
+    assert payload["summary"]["review_rows_by_decision"] == {
+        "accepted": 0,
+        "rejected": 1,
+    }
+    assert accepted.read_bytes() == b""
+    assert validate_filtered_candidate(receipt) == payload

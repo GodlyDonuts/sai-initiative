@@ -235,6 +235,14 @@ benchmark evidence selects an architecture.
   commercial-homework material. `docs/SAI_FINEMATH_SHARD_AUDIT_20260822.md`
   freezes the input and findings. FineMath remains a candidate only after a new
   Sai quality, provenance, deduplication, and decontamination filter.
+- FineMath filter V1 then applied a prospectively frozen high-precision policy
+  to all `104,680` rows and accepted zero. The dominant cause was a miscalibrated
+  upstream language-confidence floor of 0.98: only `367` total rows reached it,
+  while `3,114` rows passed every non-language criterion. V1 remains an
+  immutable `filter_empty_no_candidate` result; it was not relaxed after the
+  outcome. `docs/SAI_FINEMATH_FILTER_V1_RESULT_20260822.md` binds the receipt,
+  rejection counts, and exact funnel. The next prospective step is a blind
+  human-review ladder at no language floor, 0.90, and 0.95—not training.
 
 ## Live scratchpad — 2026-08-21
 
