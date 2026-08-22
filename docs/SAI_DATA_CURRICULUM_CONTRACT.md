@@ -96,6 +96,22 @@ validated across resume, and cannot be selected after observing a learning
 curve. They do not alter or retroactively apply to the live frozen 500M-token
 surface-order experiment.
 
+`sai-evaluate-curriculum-milestones` makes those snapshots operational. For
+each arm it reconstructs the exact initialization, replays every model-only
+snapshot, reopens the terminal checkpoint, and scores the identical
+phase-stratified development stream at initialization, every phase boundary,
+and termination. The evaluator performs zero optimizer steps and zero backward
+calls. `sai-compare-curriculum-milestones` then requires identical initial
+state/evidence, development population, milestone schedule, model identity,
+and observation geometry across the curriculum and order-control arms. It
+reports, separately for every phase, acquisition by the phase's completion
+boundary, curriculum-versus-control likelihood at that boundary, subsequent
+forgetting relative to control, and terminal retention. A mechanics pass still
+cannot promote data or authorize 4B training; real source-disjoint benchmark
+confirmation remains mandatory. The live frozen 500M-token surface-order jobs
+predate these snapshots and therefore provide final phase retention but not a
+retrospective phase-boundary learning curve.
+
 The receipt records documents skipped after each phase budget, at most one
 truncated tail document per phase, exact emitted phase sequences/tokens/bytes,
 and every declared evaluation prefix. Without this budget, a 500M-token cutoff

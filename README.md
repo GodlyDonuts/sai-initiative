@@ -62,6 +62,15 @@ compositions needed to extract its signal. Sai will not compensate for a bad
 curriculum by adding parameters, inference-time reasoning, or architectural
 machinery.
 
+The executable milestone evaluator now enforces the retention part of this
+constitution for future matched runs. It scores the same phase-stratified
+development population at initialization, every prospectively declared phase
+boundary, and termination, then compares curriculum and order-control
+acquisition and forgetting phase by phase. The current live 500M-token run was
+frozen before milestone snapshots were added; it retains valid final
+phase-stratified evidence but will not be misrepresented as a full dynamic
+learning-curve experiment.
+
 **Execution status:** the user authorized sub-4B preparation and training on
 2026-08-21. The 4B run remains explicitly prohibited until smaller-scale real
 benchmark evidence selects an architecture.
