@@ -13,6 +13,7 @@ dependencies = []
 sai-freeze-data = "sai.data.freeze:main"
 sai-freeze-token-stream = "sai.data.token_stream:main"
 sai-decontaminate = "sai.data.decontamination:main"
+sai-inventory-hf-dataset = "sai.data.hf_dataset_inventory:main"
 sai-validate-data-mixture = "sai.data.mixture_plan:main"
 sai-validate-data-mixture-evidence = "sai.data.mixture_evidence:main"
 sai-validate-prerequisites = "sai.data.prerequisite:main"

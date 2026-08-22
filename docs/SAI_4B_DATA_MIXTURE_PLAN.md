@@ -99,6 +99,14 @@ a substitute for the terms or provenance of the reconstructed data. The 150B
 mix is a useful bounded modern source-addition population only after its
 components survive Sai admission, while Dolmino remains a separately declared
 mid-training factor.
+`sai-inventory-hf-dataset` has frozen the 150B sample's exact no-download Hub
+inventory at revision `afa92bf…`: 6,084 repository members, 6,081 LFS-bound
+data shards, 110,586,325,507 compressed data bytes, and 224 component
+partitions. The file-manifest digest is
+`34025b06a15ddc9bd5b762891362cee5b503ea22b08eb08a252b755ba125a3a9` and
+the inventory receipt is
+`47611d6d92341aa8f1cc5c60e322499f3500a37c4a419d93d62073a6075d62d3`.
+This metadata receipt authorizes no download, source admission, or training.
 `sai-audit-stack-edu` now makes the first code-source step executable without
 downloading code content. It accepts only the exact Stack-Edu revision above and
 an exact Parquet shard hash, replays all metadata rows, and measures detected
