@@ -90,32 +90,36 @@ benchmark evidence selects an architecture.
   descriptor is the authoritative scan measurement. Newton rejected a running
   wall-time extension. Conditional CPU fallback `769225` was originally held
   on `afternotok:768892` with compact, byte-equivalent SHA-256 shingle storage at
-  commit `540d1080ebc5b1cd2b463d8c137e9d2c71567e82`. It cannot execute while
-  `768892` remains healthy and would have been invalidated if `768892`
-  succeeded. After the exact memory diagnosis, its dependency was narrowed
-  from `afternotok` to `afterany` immediately before cancelling `768892`;
-  fallback `769225` then started on evc1 with zero restarts at 20:16 EDT. Its
-  eight-hour running limit could not be extended in place. Exact timeout
-  recovery `769345` is therefore held on `afternotok:769225` with the same
-  compact commit, source, twenty ordered boundaries, output, and receipt, but a
-  twelve-hour limit. It requests no resource while `769225` remains healthy.
-  At 22:00 EDT, process file-descriptor replay measured source position
-  `1,830,273,024 / 14,491,695,743` bytes (`12.63%`), with
-  `48,786,304 KiB` resident memory and `1,218,820,034` accepted output bytes.
-  Memory remains stable under the 64-GiB allocation. The three current stream
-  descendants use an OR dependency on successful completion of `769225` or
-  `769345`, so exactly one decontamination lineage can release: shared Sai
-  stream `769226`, exact 125M-token Qwen stream `769437`, and exact 125M-token
-  SmolLM3 stream `769455`.
-  This prevents a manual recovery gap without requesting a GPU or duplicating
-  healthy work. A pre-execution audit found that the first refreshed-population
+  commit `540d1080ebc5b1cd2b463d8c137e9d2c71567e82`. It started on evc1 with zero
+  restarts at 20:16 EDT. The compact representation held resident memory near
+  `48,812,000 KiB`, but exact process-file-descriptor replay at 22:51 EDT
+  measured only `3,701,448,704 / 14,491,695,743` source bytes (`25.54%`) after
+  2h34m, projecting beyond its immutable eight-hour limit. A deterministic
+  ordered fork implementation was therefore built at commit
+  `cc5a7fd4c938e66166c1a9fd7aef91b2f51f2877`. A live 20,000-row, one-boundary
+  A/B proved that sequential and eight-worker builds produced the exact same
+  `101,009,890`-byte output with SHA-256
+  `d86c43c32f4a0a6649fbd5045515c798f232ea1829d26fce2f85b374d2fc1212`.
+  Parallel job `769636` completed in 134 seconds versus 311 seconds for
+  sequential job `769635`, an exact measured `2.32x` speedup. The slow primary
+  was then cancelled deliberately at 22:55 EDT after 9,516 seconds, before any
+  final output or receipt existed, and parallel recovery `769626` started
+  immediately on evc1 with zero restarts and a 14-hour limit. Its source,
+  twenty ordered boundaries, final output path, and receipt path are identical.
+  The abandoned `2,521,335,906`-byte partial from PID `3216825` was proven
+  unreferenced, atomically quarantined, permanently removed, and confirmed
+  absent; the new job owns a distinct staging file. The three stream descendants
+  use an OR dependency on successful completion of `769225` or `769626`, so the
+  parallel lineage now exclusively releases shared Sai stream `769226`, exact
+  125M-token Qwen stream `769437`, and exact 125M-token SmolLM3 stream `769455`.
+  A pre-execution audit found that the first refreshed-population
   clone `769227` still checked terminal state for cancelled original job
   `768892` inside its script even though its scheduler dependency had been
   repaired. That clone and its three bound descendants `769235`, `769237`, and
   `769238` were cancelled with zero elapsed time and zero restarts before they
   could create any output. Exact mutually exclusive replacements now bind both
   scheduler and in-script custody to the same lineage: population jobs
-  `769355`/`769356` follow primary/recovery corpus jobs `769225`/`769345`;
+  `769355`/`769627` follow primary/recovery corpus jobs `769225`/`769626`;
   parent benchmark launchers are `769425`/`769426`; workspace evaluation stages
   are `769440`/`769441`; and terminal comparisons are `769442`/`769443`. Each
   pair targets the same collision-safe artifact and only the branch whose
@@ -125,7 +129,10 @@ benchmark evidence selects an architecture.
   dependency-held and canceled with zero elapsed time and zero restarts; their
   corrected replacements bind the exact fallback population and stream job
   IDs. No recovery job executed concurrently with the primary scan.
-  Successful decontamination is followed by shared 499,998,720-token stream
+  Recovery-bound parent/workspace/benchmark stagers have been rewired to
+  population job `769627`; primary-bound branches are now dependency-dead and
+  cannot race the recovery lineage. Successful decontamination is followed by
+  shared 499,998,720-token stream
   freeze `769226`. Dependency-staged launcher `769232` will then run a fresh,
   matched three-family screen over the exact 249,999,360-token prefix using
   three independent one-H100 jobs. This tests whether the near-chance 100M
