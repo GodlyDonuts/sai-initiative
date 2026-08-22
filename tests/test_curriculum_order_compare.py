@@ -287,6 +287,8 @@ def test_launcher_is_matched_independent_single_h100_and_nonretrying() -> None:
     assert "FAMILY=gated_gqa" in launcher
     assert "TRAINING_SEQUENCES=244140" in launcher
     assert "OPTIMIZER_STEPS=954" in launcher
+    assert launcher.count("MILESTONE_STEPS=191:429:715") == 2
+    assert '"milestone_steps_per_arm": [191, 429, 715]' in launcher
     assert "SEED=20260821" in launcher
     assert "MECHANICS_ONLY=1" in launcher
     assert '--dependency="afterok:$canary_job"' in launcher

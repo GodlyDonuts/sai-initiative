@@ -155,6 +155,9 @@ fi
 if [[ -n "${CHECKPOINT_INTERVAL:-}" ]]; then
   arguments+=(--checkpoint-interval "$CHECKPOINT_INTERVAL")
 fi
+if [[ -n "${MILESTONE_STEPS:-}" ]]; then
+  arguments+=(--milestone-steps "$MILESTONE_STEPS")
+fi
 if [[ -n "${SEED:-}" ]]; then
   arguments+=(--seed "$SEED")
 fi

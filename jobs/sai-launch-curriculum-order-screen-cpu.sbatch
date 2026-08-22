@@ -156,7 +156,7 @@ curriculum_job="$({
     --kill-on-invalid-dep=yes \
     --output="$LOG_ROOT/sai_curriculum_500m_%j.out" \
     --error="$LOG_ROOT/sai_curriculum_500m_%j.err" \
-    --export="$shared,TRAIN_STREAM=$CURRICULUM_STREAM,TRAIN_IDENTITY=$curriculum_identity,DEVELOPMENT_SEQUENCES=1024,OPTIMIZER_STEPS=954,TRAINING_SEQUENCES=244140,DEVELOPMENT_BATCH_SIZE=8,CHECKPOINT_INTERVAL=10,CHECKPOINT=$curriculum_checkpoint,OUTPUT=$curriculum_result" \
+    --export="$shared,TRAIN_STREAM=$CURRICULUM_STREAM,TRAIN_IDENTITY=$curriculum_identity,DEVELOPMENT_SEQUENCES=1024,OPTIMIZER_STEPS=954,TRAINING_SEQUENCES=244140,DEVELOPMENT_BATCH_SIZE=8,CHECKPOINT_INTERVAL=10,MILESTONE_STEPS=191:429:715,CHECKPOINT=$curriculum_checkpoint,OUTPUT=$curriculum_result" \
     "$SAI_ROOT/jobs/sai-short-screen-single-h100.sbatch"
 })"
 [[ "$curriculum_job" =~ ^[0-9]+$ ]]
@@ -169,7 +169,7 @@ control_job="$({
     --kill-on-invalid-dep=yes \
     --output="$LOG_ROOT/sai_order_control_500m_%j.out" \
     --error="$LOG_ROOT/sai_order_control_500m_%j.err" \
-    --export="$shared,TRAIN_STREAM=$CONTROL_STREAM,TRAIN_IDENTITY=$control_identity,DEVELOPMENT_SEQUENCES=1024,OPTIMIZER_STEPS=954,TRAINING_SEQUENCES=244140,DEVELOPMENT_BATCH_SIZE=8,CHECKPOINT_INTERVAL=10,CHECKPOINT=$control_checkpoint,OUTPUT=$control_result" \
+    --export="$shared,TRAIN_STREAM=$CONTROL_STREAM,TRAIN_IDENTITY=$control_identity,DEVELOPMENT_SEQUENCES=1024,OPTIMIZER_STEPS=954,TRAINING_SEQUENCES=244140,DEVELOPMENT_BATCH_SIZE=8,CHECKPOINT_INTERVAL=10,MILESTONE_STEPS=191:429:715,CHECKPOINT=$control_checkpoint,OUTPUT=$control_result" \
     "$SAI_ROOT/jobs/sai-short-screen-single-h100.sbatch"
 })"
 [[ "$control_job" =~ ^[0-9]+$ ]]
@@ -219,6 +219,8 @@ payload = {
     "training_sequences_per_arm": 244_140,
     "training_tokens_per_arm": 499_998_720,
     "optimizer_steps_per_arm": 954,
+    "milestone_steps_per_arm": [191, 429, 715],
+    "milestone_snapshot_scope": "model_only_evaluation_without_optimizer_or_rng",
     "seed": 20260821,
     "quota_preflight": {
         "used_kib": int(sys.argv[10]),

@@ -156,6 +156,8 @@ def _short_screen_specification(
     }
     if scale != "100m":
         fields.update({"scale", "promotion_receipt_sha256"})
+    if "milestone_steps" in result:
+        fields.add("milestone_steps")
     if not fields.issubset(result):
         raise ShortScreenMCError("short-screen specification is incomplete")
     return {field: result[field] for field in fields}

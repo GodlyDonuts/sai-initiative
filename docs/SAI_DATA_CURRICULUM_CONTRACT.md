@@ -85,6 +85,17 @@ update. No gradient accumulation window therefore mixes examples from adjacent
 difficulty phases. The final 244,140-sequence boundary ends with the declared
 172-sequence partial update and preserves the exact 499,998,720-token budget.
 
+Future semantic-curriculum and matched-control runs may additionally freeze
+predeclared model-only milestone snapshots at exact optimizer steps. Each
+create-once snapshot binds the complete run identity, cumulative sequence and
+target counters, stream cursor, canonical model-state hash, and artifact hash;
+it contains neither optimizer nor RNG state and is evaluation-only. Treatment
+and control must use the identical milestone-step set so observation I/O does
+not become an unacknowledged factor. Milestones are bound into the run identity,
+validated across resume, and cannot be selected after observing a learning
+curve. They do not alter or retroactively apply to the live frozen 500M-token
+surface-order experiment.
+
 The receipt records documents skipped after each phase budget, at most one
 truncated tail document per phase, exact emitted phase sequences/tokens/bytes,
 and every declared evaluation prefix. Without this budget, a 500M-token cutoff

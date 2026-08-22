@@ -94,7 +94,8 @@ assert set(payload) == {
     "gpu_jobs_submitted", "maximum_concurrent_gpu_jobs", "gpus_per_job",
     "same_sequence_multiset", "only_training_order_changed",
     "training_sequences_per_arm", "training_tokens_per_arm",
-    "optimizer_steps_per_arm", "seed", "quota_preflight",
+    "optimizer_steps_per_arm", "milestone_steps_per_arm",
+    "milestone_snapshot_scope", "seed", "quota_preflight",
     "scientific_promotion_authorized",
     "four_b_training_authorized", "requeue",
 }
@@ -107,6 +108,10 @@ assert payload["only_training_order_changed"] is True
 assert payload["training_sequences_per_arm"] == 244_140
 assert payload["training_tokens_per_arm"] == 499_998_720
 assert payload["optimizer_steps_per_arm"] == 954
+assert payload["milestone_steps_per_arm"] == [191, 429, 715]
+assert payload["milestone_snapshot_scope"] == (
+    "model_only_evaluation_without_optimizer_or_rng"
+)
 quota = payload["quota_preflight"]
 assert set(quota) == {
     "used_kib", "hard_kib", "headroom_kib", "used_files", "hard_files",

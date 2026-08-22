@@ -143,6 +143,25 @@ def test_run_binding_changes_with_every_scientific_identity() -> None:
     assert receipt["four_b_training_authorized"] is False
     assert receipt["scientific_promotion_authorized"] is False
 
+    milestone_bindings, milestone_receipt = make_bindings(
+        config=config,
+        family="kda_mla_hybrid",
+        seed=7,
+        train_identity_sha256="1" * 64,
+        development_identity_sha256="2" * 64,
+        code_sha256="3" * 64,
+        environment_sha256="4" * 64,
+        optimizer=optimizer,
+        micro_batch_size=1,
+        sequences_per_update=2,
+        training_sequences=5,
+        training_utf8_bytes=100,
+        development_sequences=2,
+        milestone_steps=(1, 2),
+    )
+    assert milestone_receipt["milestone_steps"] == [1, 2]
+    assert milestone_bindings.run_sha256 != first.run_sha256
+
 
 def test_streams_must_be_source_disjoint_and_hashes_exact() -> None:
     config = _config()
@@ -183,6 +202,7 @@ def test_job_is_one_h100_no_requeue_and_has_no_retry_or_4b() -> None:
     assert 'test "$quota_headroom_kib" -ge "$MIN_QUOTA_HEADROOM_KIB"' in job
     assert 'test "$quota_headroom_files" -ge "$MIN_QUOTA_HEADROOM_FILES"' in job
     assert "MECHANICS_ONLY" in job
+    assert "MILESTONE_STEPS" in job
     assert "retry" not in job.lower()
     assert "4b" not in job.lower()
 

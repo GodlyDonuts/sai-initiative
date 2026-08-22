@@ -29,6 +29,13 @@ from sai.training.checkpoint import (
     save_mechanics_checkpoint,
 )
 from sai.training.evaluate import evaluate_nll
+from sai.training.milestone import (
+    MilestoneSnapshotError,
+    parse_milestone_steps,
+    prepare_milestone_root,
+    publish_or_validate_milestone,
+    validate_milestone_population,
+)
 from sai.training.runner import (
     TrainingRunConfig,
     build_adamw,
@@ -137,9 +144,18 @@ def make_bindings(
     mechanics_only: bool = False,
     scale: str = "100m",
     promotion_receipt_sha256: str | None = None,
+    milestone_steps: tuple[int, ...] = (),
 ) -> tuple[CheckpointBindings, dict[str, Any]]:
     """Derive every checkpoint identity from the complete immutable run spec."""
 
+    if milestone_steps:
+        try:
+            milestone_steps = parse_milestone_steps(
+                ",".join(str(step) for step in milestone_steps),
+                maximum_step=optimizer.optimizer_steps,
+            )
+        except MilestoneSnapshotError as error:
+            raise ShortScreenError("milestone steps differ") from error
     train_identity = _sha256(train_identity_sha256, "training stream identity")
     development_identity = _sha256(
         development_identity_sha256, "development stream identity"
@@ -209,6 +225,8 @@ def make_bindings(
                 "promotion_receipt_sha256": promotion_identity,
             }
         )
+    if milestone_steps:
+        specification["milestone_steps"] = list(milestone_steps)
     run_identity = canonical_sha256(specification)
     specification["run_sha256"] = run_identity
     return (
@@ -392,6 +410,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         raise ShortScreenError("run counts must be positive integers")
     if args.checkpoint_interval > args.optimizer_steps:
         raise ShortScreenError("checkpoint interval exceeds optimizer budget")
+    milestone_steps = tuple(getattr(args, "milestone_steps", ()))
+    if milestone_steps:
+        try:
+            encoded_milestones = ",".join(str(step) for step in milestone_steps)
+            milestone_steps = parse_milestone_steps(
+                encoded_milestones,
+                maximum_step=args.optimizer_steps,
+            )
+        except MilestoneSnapshotError as error:
+            raise ShortScreenError("milestone steps differ") from error
     expected_optimizer_steps = (
         args.training_sequences + args.sequences_per_update - 1
     ) // args.sequences_per_update
@@ -458,6 +486,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         mechanics_only=args.mechanics_only,
         scale=scale,
         promotion_receipt_sha256=getattr(args, "promotion_receipt_sha256", None),
+        milestone_steps=milestone_steps,
     )
     development_bytes = (
         None
@@ -509,6 +538,16 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         counters = TrainingCounters(0, 0, 0)
         cursor = None
 
+    milestone_directory = None
+    if milestone_steps:
+        try:
+            milestone_directory = prepare_milestone_root(
+                args.checkpoint,
+                resume=args.resume,
+            )
+        except MilestoneSnapshotError as error:
+            raise ShortScreenError("milestone root differs") from error
+
     if counters.optimizer_steps > args.optimizer_steps:
         raise ShortScreenError("checkpoint exceeds the optimizer budget")
     expected_completed_sequences = min(
@@ -517,6 +556,17 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     )
     if counters.sequences != expected_completed_sequences:
         raise ShortScreenError("checkpoint sequence and update budgets differ")
+    milestone_descriptors: list[dict[str, Any]] = []
+    if milestone_directory is not None:
+        try:
+            milestone_descriptors = validate_milestone_population(
+                milestone_directory,
+                expected_steps=milestone_steps,
+                expected_bindings=bindings,
+                maximum_completed_step=counters.optimizer_steps,
+            )
+        except MilestoneSnapshotError as error:
+            raise ShortScreenError("milestone population differs") from error
     required_sequences = args.training_sequences - counters.sequences
     if required_sequences < 0:
         raise ShortScreenError("checkpoint exceeds the sequence budget")
@@ -600,9 +650,11 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         )
         losses.append(update_loss_sum / update_targets)
         gradient_norms.append(float(gradient_norm.detach()))
+        is_milestone = global_step in milestone_steps
         if (
             global_step % args.checkpoint_interval == 0
             or global_step == args.optimizer_steps
+            or is_milestone
         ):
             save_mechanics_checkpoint(
                 args.checkpoint,
@@ -612,6 +664,21 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
                 counters=counters,
                 cursor=train_stream.cursor,
             )
+        if is_milestone:
+            if milestone_directory is None:
+                raise ShortScreenError("milestone root differs")
+            try:
+                milestone_descriptors.append(
+                    publish_or_validate_milestone(
+                        milestone_directory,
+                        model=model,
+                        bindings=bindings,
+                        counters=counters,
+                        cursor=train_stream.cursor,
+                    )
+                )
+            except MilestoneSnapshotError as error:
+                raise ShortScreenError("milestone publication differs") from error
 
     validation = None
     if not args.mechanics_only:
@@ -636,6 +703,19 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     checkpoint_manifest = json.loads(
         args.checkpoint.with_name(f"{args.checkpoint.name}.manifest.json").read_text()
     )
+    if milestone_steps:
+        if milestone_directory is None:
+            raise ShortScreenError("milestone root differs")
+        try:
+            milestone_descriptors = validate_milestone_population(
+                milestone_directory,
+                expected_steps=milestone_steps,
+                expected_bindings=bindings,
+                maximum_completed_step=counters.optimizer_steps,
+            )
+        except MilestoneSnapshotError as error:
+            raise ShortScreenError("milestone population differs") from error
+
     payload: dict[str, Any] = {
         **specification,
         "status": "complete",
@@ -660,6 +740,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
             "architecture promotion, scaling claim, or 4B authorization."
         ),
     }
+    if milestone_steps:
+        payload["milestone_checkpoints"] = milestone_descriptors
     payload["receipt_sha256"] = canonical_sha256(payload)
     _atomic_json(args.output, payload)
     return payload
@@ -691,8 +773,16 @@ def main() -> int:
     parser.add_argument("--checkpoint", type=Path, required=True)
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--mechanics-only", action="store_true")
+    parser.add_argument("--milestone-steps", default="")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+    try:
+        args.milestone_steps = parse_milestone_steps(
+            args.milestone_steps,
+            maximum_step=args.optimizer_steps,
+        )
+    except MilestoneSnapshotError as error:
+        parser.error(str(error))
     payload = run(args)
     print(
         json.dumps(

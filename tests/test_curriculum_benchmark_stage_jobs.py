@@ -29,6 +29,7 @@ def test_continuation_extracts_live_ids_and_dependency_stages_benchmarks() -> No
     assert "#SBATCH --no-requeue" in job
     assert 'payload["schema"] == "sai-curriculum-order-screen-dispatch-v1"' in job
     assert 'payload["training_tokens_per_arm"] == 499_998_720' in job
+    assert 'payload["milestone_steps_per_arm"] == [191, 429, 715]' in job
     assert 'quota["minimum_headroom_kib"] == 25_165_824' in job
     assert 'quota["minimum_headroom_files"] == 10_000' in job
     assert 'dependency="$comparison_job"' in job
