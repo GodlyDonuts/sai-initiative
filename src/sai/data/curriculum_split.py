@@ -5,8 +5,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import multiprocessing
 import os
 from collections import Counter
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -29,6 +31,32 @@ class CurriculumSplitError(RuntimeError):
 
 def _is_development(identity: str) -> bool:
     return int(identity[:16], 16) % DEVELOPMENT_MODULUS == DEVELOPMENT_BUCKET
+
+
+def _score_split_candidate(
+    line: str,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None]:
+    """Parse and score one row without changing its ordered split position."""
+
+    try:
+        row = normalize_document(json.loads(line))
+    except (json.JSONDecodeError, RuntimeError):
+        return None, None
+    return row, document_signals(row["text"])
+
+
+def _candidate_iterator(handle: TextIO, workers: int) -> tuple[
+    Iterator[tuple[dict[str, Any] | None, dict[str, Any] | None]],
+    multiprocessing.pool.Pool | None,
+]:
+    if workers == 1:
+        return iter(map(_score_split_candidate, handle)), None
+    if os.name != "posix":
+        raise CurriculumSplitError(
+            "parallel curriculum split requires a POSIX fork runtime"
+        )
+    pool = multiprocessing.get_context("fork").Pool(processes=workers)
+    return iter(pool.imap(_score_split_candidate, handle, chunksize=64)), pool
 
 
 def _empty_phase(index: int) -> dict[str, Any]:
@@ -122,31 +150,31 @@ def build_curriculum_split(
         "development": hashlib.sha256(),
     }
     handles: dict[str, TextIO] = {}
+    pool = None
     try:
         handles = {
             "train": train_stage.open("w"),
             "development": development_stage.open("w"),
         }
         with source.open() as source_handle:
+            candidates, pool = _candidate_iterator(source_handle, curriculum_workers)
             for phase in PHASES:
                 declared = curriculum["phases"][phase]["documents"]
                 for _ in range(declared):
-                    line = source_handle.readline()
-                    if not line:
-                        raise CurriculumSplitError("curriculum source ended early")
                     try:
-                        row = normalize_document(json.loads(line))
-                    except (json.JSONDecodeError, RuntimeError) as error:
+                        row, signals = next(candidates)
+                    except StopIteration as error:
                         raise CurriculumSplitError(
-                            "curriculum split row differs"
+                            "curriculum source ended early"
                         ) from error
+                    if row is None or signals is None:
+                        raise CurriculumSplitError("curriculum split row differs")
                     identity = row["identity_sha256"]
                     population = "development" if _is_development(identity) else "train"
                     encoded = (
                         json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
                     )
                     handles[population].write(encoded)
-                    signals = document_signals(row["text"])
                     phase_row = phase_rows[population][phase]
                     phase_row["documents"] += 1
                     phase_row["by_band"][signals["band"]] += 1
@@ -155,8 +183,16 @@ def build_curriculum_split(
                     phase_row["identity"].update(identity_bytes)
                     population_identities[population].update(identity_bytes)
                     population_counts[population] += 1
-            if source_handle.read(1):
+            try:
+                next(candidates)
+            except StopIteration:
+                pass
+            else:
                 raise CurriculumSplitError("curriculum source has undeclared rows")
+        if pool is not None:
+            pool.close()
+            pool.join()
+            pool = None
         for handle in handles.values():
             handle.flush()
             os.fsync(handle.fileno())
@@ -248,6 +284,9 @@ def build_curriculum_split(
         os.replace(receipt_stage, receipt)
         return payload
     except BaseException:
+        if pool is not None:
+            pool.terminate()
+            pool.join()
         for handle in handles.values():
             handle.close()
         train_stage.unlink(missing_ok=True)
@@ -312,13 +351,20 @@ def validate_curriculum_split(
     }
     replay_counts = Counter()
     replay_identities = {name: hashlib.sha256() for name in outputs}
+    pool = None
     try:
         with source.open() as source_handle:
+            candidates, pool = _candidate_iterator(source_handle, curriculum_workers)
             for phase in PHASES:
                 for _ in range(curriculum["phases"][phase]["documents"]):
-                    source_value = normalize_document(
-                        json.loads(source_handle.readline())
-                    )
+                    try:
+                        source_value, signals = next(candidates)
+                    except StopIteration as error:
+                        raise CurriculumSplitError(
+                            "curriculum split source ended early"
+                        ) from error
+                    if source_value is None or signals is None:
+                        raise CurriculumSplitError("curriculum split source differs")
                     identity = source_value["identity_sha256"]
                     population = "development" if _is_development(identity) else "train"
                     candidate = handles[population].readline()
@@ -329,7 +375,6 @@ def validate_curriculum_split(
                         raise CurriculumSplitError(
                             "curriculum split assignment differs"
                         )
-                    signals = document_signals(source_value["text"])
                     phase_row = replay_phases[population][phase]
                     phase_row["documents"] += 1
                     phase_row["by_band"][signals["band"]] += 1
@@ -338,12 +383,28 @@ def validate_curriculum_split(
                     phase_row["identity"].update(identity_bytes)
                     replay_identities[population].update(identity_bytes)
                     replay_counts[population] += 1
-            if source_handle.read(1):
+            try:
+                next(candidates)
+            except StopIteration:
+                pass
+            else:
                 raise CurriculumSplitError("curriculum split source replay differs")
+        if pool is not None:
+            pool.close()
+            pool.join()
+            pool = None
         if any(handle.read(1) for handle in handles.values()):
             raise CurriculumSplitError("curriculum split output has extra rows")
     except (json.JSONDecodeError, RuntimeError) as error:
+        if pool is not None:
+            pool.terminate()
+            pool.join()
         raise CurriculumSplitError("curriculum split replay differs") from error
+    except BaseException:
+        if pool is not None:
+            pool.terminate()
+            pool.join()
+        raise
     finally:
         for handle in handles.values():
             handle.close()

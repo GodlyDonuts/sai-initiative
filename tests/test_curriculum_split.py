@@ -132,6 +132,28 @@ def test_split_tamper_fails_closed(
         validate_curriculum_split(receipt)
 
 
+def test_parallel_split_preserves_exact_population_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, serial = _fixture(tmp_path, monkeypatch)
+    parallel_train = tmp_path / "parallel.train.jsonl"
+    parallel_development = tmp_path / "parallel.development.jsonl"
+    parallel = build_curriculum_split(
+        Path(serial["source_curriculum"]["receipt_path"]),
+        parallel_train,
+        parallel_development,
+        tmp_path / "parallel.split.receipt.json",
+        curriculum_workers=2,
+    )
+    assert parallel_train.read_bytes() == Path(serial["train"]["path"]).read_bytes()
+    assert (
+        parallel_development.read_bytes()
+        == Path(serial["development"]["path"]).read_bytes()
+    )
+    assert parallel["train"]["sha256"] == serial["train"]["sha256"]
+    assert parallel["development"]["sha256"] == serial["development"]["sha256"]
+
+
 def test_split_and_development_stream_jobs_are_cpu_only_and_create_only() -> None:
     root = Path(__file__).resolve().parents[1]
     split = (root / "jobs" / "sai-split-500m-curriculum-cpu.sbatch").read_text()
