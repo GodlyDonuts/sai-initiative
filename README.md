@@ -37,7 +37,19 @@ benchmark evidence selects an architecture.
   `5e234e56d3df101c668beb49d4582740d6bc3fbe723448231c73a6d4e6e57dda`;
   its receipt file is SHA-256
   `a396590cc253fb208c276fb004c53b5dd50bca651811c9f1c315cd69c7c8cb5f`.
-  Curriculum scoring job `769780` is now running over that exact source.
+  Curriculum builder `769780` atomically published a `9,469,603,720`-byte
+  curriculum and receipt before entering its original single-core replay. It
+  scanned `2,153,160` documents, admitted `2,125,835`, rejected `27,325`, and
+  emitted every admitted identity exactly once. The admitted bands contain
+  `33,220` foundation, `360,044` composition, `1,660,568` reasoning, and
+  `72,003` specialization documents. Phase mean difficulty rises monotonically
+  from `0.23614` to `0.27084`, `0.29141`, and `0.30431`; grounding contains no
+  specialization and later phases retain foundation rehearsal. Independent
+  eight-worker replay `770001` completed in `1,351` seconds with zero restarts,
+  empty stderr, exact receipt SHA-256
+  `b575bebb18509c13848ac34146ac9b8a7d4be54e83e4d66f43100eb717545c1b`,
+  and status `qualified`. The redundant single-core replay was then cancelled;
+  no published artifact was removed or changed.
 - A second audit found that the legacy development stream was produced from an
   earlier corpus slice and could not prove disjointness from the new admitted
   population. Dependency-held freeze/control jobs `769787` and `769788` were
@@ -55,6 +67,13 @@ benchmark evidence selects an architecture.
   initialization, optimizer, updates, and compute. Held-out NLL/UTF-8 byte and
   source-disjoint real capability must improve or remain nonnegative without a
   domain regression. Tokenizer, filtering, and ordering remain separate factors.
+- Source-disjoint split `770024` is now running from that independently
+  qualified receipt with four ordered validation workers and a four-hour
+  fail-closed wall limit. Development stream `770025`, update-aligned 500M-token
+  training stream `770026`, exact sequence-multiset order control `770027`, and
+  matched GQA launcher `770028` are dependency-staged. The first three
+  curriculum boundaries occur exactly after optimizer updates 191, 429, and
+  715, so no gradient accumulation window mixes adjacent difficulty phases.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
 
