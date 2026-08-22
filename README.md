@@ -384,10 +384,13 @@ benchmark evidence selects an architecture.
   `sai-stack-v2-current-python-snapshot-v1` boundary requires the complete
   Python metadata shard set from `bigcode/the-stack-v2` revision
   `e565caa3…90e47` (`v2.2.0`, opt-outs enacted through `2026-07-29`) plus the
-  exact dataset card and self-hashed access evidence. Alignment retains an old
-  candidate only when the exact `(repo_name, path, blob_id)` still exists and
-  the current row is permissive, non-vendor, and non-generated. Missing rows
-  are treated as removed. This closes current opt-out drift only; content-byte
+  exact dataset card and self-hashed access evidence. The freezer queries the
+  authenticated Hub API at that commit and verifies every local file against
+  its remote Git or LFS identity; caller-chosen local hashes are insufficient.
+  Alignment retains an old candidate only when the exact
+  `(repo_name, path, blob_id)` still exists and the current row is permissive,
+  non-vendor, and non-generated. Missing rows are treated as removed. This
+  closes current opt-out drift only; content-byte
   verification, attribution, secret/PII/malware scanning, global exact and near
   deduplication, benchmark decontamination, and semantic curriculum review all
   remain mandatory. See `docs/SAI_STACK_V2_CURRENT_ALIGNMENT_CONTRACT.md`.

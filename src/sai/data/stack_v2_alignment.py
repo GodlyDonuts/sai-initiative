@@ -17,6 +17,7 @@ import re
 import stat
 import uuid
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -64,12 +65,21 @@ _SNAPSHOT_KEYS = {
     "release",
     "opt_out_cutoff",
     "language",
+    "hub",
     "dataset_card",
     "access_evidence",
     "files",
     "summary",
     "limitations",
     "receipt_sha256",
+}
+_REMOTE_KEYS = {
+    "path",
+    "size",
+    "blob_id",
+    "lfs_sha256",
+    "lfs_size",
+    "xet_hash",
 }
 _ALIGNMENT_KEYS = {
     "schema",
@@ -152,6 +162,129 @@ def _artifact(path: Path, label: str) -> dict[str, Any]:
         "bytes": metadata.st_size,
         "sha256": sha256_file(path),
     }
+
+
+def _git_blob_sha1(path: Path) -> str:
+    data = path.read_bytes()
+    return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+
+
+def _default_remote_lookup(paths: list[str]) -> dict[str, Any]:
+    try:
+        from huggingface_hub import HfApi
+        from huggingface_hub.hf_api import RepoFile
+    except ImportError as error:
+        raise StackV2AlignmentError(
+            "Hugging Face Hub is required for current snapshot provenance"
+        ) from error
+    api = HfApi()
+    try:
+        repository = api.repo_info(
+            CURRENT_DATASET,
+            repo_type="dataset",
+            revision=CURRENT_REVISION,
+        )
+        information = api.get_paths_info(
+            CURRENT_DATASET,
+            paths,
+            repo_type="dataset",
+            revision=CURRENT_REVISION,
+            expand=True,
+        )
+    except Exception as error:
+        raise StackV2AlignmentError(
+            "current Stack v2 remote metadata query failed"
+        ) from error
+    if repository.sha != CURRENT_REVISION:
+        raise StackV2AlignmentError("current Stack v2 resolved revision differs")
+    rows = {}
+    for item in information:
+        if not isinstance(item, RepoFile) or item.path in rows:
+            raise StackV2AlignmentError("current Stack v2 remote member differs")
+        lfs = item.lfs
+        rows[item.path] = {
+            "path": item.path,
+            "size": item.size,
+            "blob_id": item.blob_id,
+            "lfs_sha256": None if lfs is None else lfs.sha256,
+            "lfs_size": None if lfs is None else lfs.size,
+            "xet_hash": item.xet_hash,
+        }
+    return {
+        "resolved_commit_sha": repository.sha,
+        "queried_at_utc": dt.datetime.now(dt.UTC).isoformat().replace("+00:00", "Z"),
+        "files": rows,
+    }
+
+
+def _validate_remote_descriptor(
+    path: Path, value: Any, expected_path: str, label: str
+) -> dict[str, Any]:
+    if not isinstance(value, dict) or set(value) != _REMOTE_KEYS:
+        raise StackV2AlignmentError(f"{label} remote identity differs")
+    size = value.get("size")
+    blob_id = value.get("blob_id")
+    lfs_sha256 = value.get("lfs_sha256")
+    lfs_size = value.get("lfs_size")
+    xet_hash = value.get("xet_hash")
+    if (
+        value.get("path") != expected_path
+        or isinstance(size, bool)
+        or not isinstance(size, int)
+        or size <= 0
+        or path.stat(follow_symlinks=False).st_size != size
+        or not isinstance(blob_id, str)
+        or re.fullmatch(r"[0-9a-f]{40}", blob_id) is None
+        or (xet_hash is not None and not isinstance(xet_hash, str))
+    ):
+        raise StackV2AlignmentError(f"{label} remote identity differs")
+    if lfs_sha256 is None:
+        if lfs_size is not None or _git_blob_sha1(path) != blob_id:
+            raise StackV2AlignmentError(f"{label} remote identity differs")
+    elif (
+        not isinstance(lfs_sha256, str)
+        or re.fullmatch(r"[0-9a-f]{64}", lfs_sha256) is None
+        or isinstance(lfs_size, bool)
+        or not isinstance(lfs_size, int)
+        or lfs_size != size
+        or sha256_file(path) != lfs_sha256
+    ):
+        raise StackV2AlignmentError(f"{label} remote identity differs")
+    return value
+
+
+def _remote_population(
+    paths: list[str], remote_lookup: Callable[[list[str]], dict[str, Any]]
+) -> tuple[dict[str, Any], dict[str, dict[str, Any]]]:
+    remote = remote_lookup(paths)
+    if not isinstance(remote, dict) or set(remote) != {
+        "resolved_commit_sha",
+        "queried_at_utc",
+        "files",
+    }:
+        raise StackV2AlignmentError("current Stack v2 remote metadata differs")
+    queried_at = remote.get("queried_at_utc")
+    try:
+        parsed = dt.datetime.fromisoformat(queried_at.replace("Z", "+00:00"))
+    except (AttributeError, ValueError) as error:
+        raise StackV2AlignmentError(
+            "current Stack v2 remote metadata differs"
+        ) from error
+    files = remote.get("files")
+    if (
+        remote.get("resolved_commit_sha") != CURRENT_REVISION
+        or parsed.tzinfo is None
+        or not isinstance(files, dict)
+        or set(files) != set(paths)
+    ):
+        raise StackV2AlignmentError("current Stack v2 remote metadata differs")
+    hub = {
+        "api": "huggingface_hub.HfApi",
+        "repo_type": "dataset",
+        "resolved_commit_sha": CURRENT_REVISION,
+        "queried_at_utc": queried_at,
+    }
+    return hub, files
 
 
 def _validate_dataset_card(path: Path) -> dict[str, Any]:
@@ -325,12 +458,21 @@ def freeze_current_snapshot(
     access_evidence: Path,
     sources: list[tuple[str, Path]],
     receipt_output: Path,
+    remote_lookup: Callable[[list[str]], dict[str, Any]] = _default_remote_lookup,
 ) -> dict[str, Any]:
     """Freeze exact current-release Python metadata files after authorized download."""
 
     if not sources:
         raise StackV2AlignmentError("current Stack v2 source set is empty")
+    source_paths = [source_file for source_file, _path in sources]
+    hub, remote_files = _remote_population(["README.md", *source_paths], remote_lookup)
     card = _validate_dataset_card(Path(dataset_card))
+    card["remote"] = _validate_remote_descriptor(
+        Path(dataset_card),
+        remote_files["README.md"],
+        "README.md",
+        "Stack v2 dataset card",
+    )
     access = _validate_access_evidence(Path(access_evidence), card["sha256"])
     pq = _import_parquet()
     members = []
@@ -358,6 +500,12 @@ def freeze_current_snapshot(
                 "bytes": metadata.st_size,
                 "sha256": sha256_file(path),
                 "rows": parquet.metadata.num_rows,
+                "remote": _validate_remote_descriptor(
+                    path,
+                    remote_files[source_file],
+                    source_file,
+                    "current Stack v2 source",
+                ),
             }
         )
     if len(counts) != 1:
@@ -376,6 +524,7 @@ def freeze_current_snapshot(
         "release": CURRENT_RELEASE,
         "opt_out_cutoff": CURRENT_OPT_OUT_CUTOFF,
         "language": "Python",
+        "hub": hub,
         "dataset_card": card,
         "access_evidence": access,
         "files": members,
@@ -414,14 +563,47 @@ def validate_current_snapshot(receipt: Path) -> dict[str, Any]:
         or payload.get("limitations") != _SNAPSHOT_LIMITATIONS
     ):
         raise StackV2AlignmentError("current Stack v2 snapshot receipt differs")
-    card_path = _validate_artifact(payload.get("dataset_card"), "Stack v2 dataset card")
+    card_value = payload.get("dataset_card")
+    if not isinstance(card_value, dict) or set(card_value) != {
+        "path",
+        "bytes",
+        "sha256",
+        "remote",
+    }:
+        raise StackV2AlignmentError("Stack v2 dataset card differs")
+    card_path = _validate_artifact(
+        {key: card_value[key] for key in ("path", "bytes", "sha256")},
+        "Stack v2 dataset card",
+    )
     card = _validate_dataset_card(card_path)
+    _validate_remote_descriptor(
+        card_path, card_value["remote"], "README.md", "Stack v2 dataset card"
+    )
     access_path = _validate_artifact(
         payload.get("access_evidence"), "Stack v2 access evidence"
     )
     _validate_access_evidence(access_path, card["sha256"])
     files = payload.get("files")
     summary = payload.get("summary")
+    hub = payload.get("hub")
+    if (
+        not isinstance(hub, dict)
+        or set(hub) != {"api", "repo_type", "resolved_commit_sha", "queried_at_utc"}
+        or hub.get("api") != "huggingface_hub.HfApi"
+        or hub.get("repo_type") != "dataset"
+        or hub.get("resolved_commit_sha") != CURRENT_REVISION
+    ):
+        raise StackV2AlignmentError("current Stack v2 Hub provenance differs")
+    try:
+        hub_time = dt.datetime.fromisoformat(
+            hub["queried_at_utc"].replace("Z", "+00:00")
+        )
+    except (AttributeError, ValueError) as error:
+        raise StackV2AlignmentError(
+            "current Stack v2 Hub provenance differs"
+        ) from error
+    if hub_time.tzinfo is None:
+        raise StackV2AlignmentError("current Stack v2 Hub provenance differs")
     if (
         not isinstance(files, list)
         or not files
@@ -443,6 +625,7 @@ def validate_current_snapshot(receipt: Path) -> dict[str, Any]:
             "bytes",
             "sha256",
             "rows",
+            "remote",
         }:
             raise StackV2AlignmentError("current Stack v2 snapshot member differs")
         index, count = _source_member(row.get("source_file"))
@@ -461,6 +644,12 @@ def validate_current_snapshot(receipt: Path) -> dict[str, Any]:
             or parquet.metadata.num_rows != row.get("rows")
         ):
             raise StackV2AlignmentError("current Stack v2 snapshot member differs")
+        _validate_remote_descriptor(
+            path,
+            row["remote"],
+            row["source_file"],
+            "current Stack v2 source",
+        )
         counts.add(count)
         indices.add(index)
         inodes.add(inode)

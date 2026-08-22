@@ -23,8 +23,16 @@ attribution requirements remain binding.
 - the exact downloaded dataset card containing the release, cutoff, update,
   and Software Heritage terms;
 - a self-hashed access-evidence receipt binding the same card and revision;
+- an authenticated Hugging Face Hub API response that resolves the requested
+  revision to the exact pinned commit and supplies every card/shard Git, LFS,
+  and Xet object identity;
 - regular, single-link files whose bytes, SHA-256 hashes, row counts, shard
   indices, and required columns replay exactly.
+
+For LFS members, the local SHA-256 and byte size must equal the remote LFS
+object identity. For ordinary Git members, the local `blob <length>\0<bytes>`
+SHA-1 must equal the remote Git object ID. A caller-chosen local filename and
+hash cannot substitute for remote revision provenance.
 
 The resulting `sai-stack-v2-current-python-snapshot-v1` receipt remains
 metadata-only and authorizes neither content retention nor training. A newer

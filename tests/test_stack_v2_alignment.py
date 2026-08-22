@@ -31,6 +31,36 @@ from sai.data.stack_v2_alignment import (
 from sai.data.token_stream import canonical_sha256
 
 
+def _remote_lookup(files: dict[str, Path]):
+    def lookup(paths: list[str]) -> dict:
+        assert set(paths) == set(files)
+        rows = {}
+        for name, path in files.items():
+            content = path.read_bytes()
+            is_lfs = name.endswith(".parquet")
+            rows[name] = {
+                "path": name,
+                "size": len(content),
+                "blob_id": (
+                    "1" * 40
+                    if is_lfs
+                    else hashlib.sha1(
+                        f"blob {len(content)}\0".encode() + content
+                    ).hexdigest()
+                ),
+                "lfs_sha256": hashlib.sha256(content).hexdigest() if is_lfs else None,
+                "lfs_size": len(content) if is_lfs else None,
+                "xet_hash": "synthetic-xet-hash" if is_lfs else None,
+            }
+        return {
+            "resolved_commit_sha": CURRENT_REVISION,
+            "queried_at_utc": "2026-08-22T15:00:01Z",
+            "files": rows,
+        }
+
+    return lookup
+
+
 def _stack_edu_row(
     identity: str,
     *,
@@ -156,6 +186,12 @@ def _snapshot(tmp_path: Path, rows: list[dict], *, bulk: bool = False) -> Path:
         access_evidence=access,
         sources=[("data/Python/train-00000-of-00001.parquet", source)],
         receipt_output=receipt,
+        remote_lookup=_remote_lookup(
+            {
+                "README.md": card,
+                "data/Python/train-00000-of-00001.parquet": source,
+            }
+        ),
     )
     return receipt
 
@@ -219,6 +255,17 @@ def test_snapshot_and_alignment_tamper_fail_closed(tmp_path: Path) -> None:
 
     snapshot.unlink()
     snapshot = _snapshot(tmp_path, [_current_row(rows[0])])
+    payload = json.loads(snapshot.read_text())
+    payload["files"][0]["remote"]["lfs_sha256"] = "0" * 64
+    payload["receipt_sha256"] = canonical_sha256(
+        {key: value for key, value in payload.items() if key != "receipt_sha256"}
+    )
+    snapshot.write_text(json.dumps(payload))
+    with pytest.raises(StackV2AlignmentError, match="remote identity differs"):
+        validate_current_snapshot(snapshot)
+
+    snapshot.unlink()
+    snapshot = _snapshot(tmp_path, [_current_row(rows[0])])
     output_root = tmp_path / "aligned"
     output_root.mkdir()
     receipt = output_root / "receipt.json"
@@ -266,6 +313,12 @@ def test_snapshot_requires_complete_current_release_shards(tmp_path: Path) -> No
             access_evidence=access,
             sources=[("data/Python/train-00000-of-00002.parquet", source)],
             receipt_output=tmp_path / "snapshot.json",
+            remote_lookup=_remote_lookup(
+                {
+                    "README.md": card,
+                    "data/Python/train-00000-of-00002.parquet": source,
+                }
+            ),
         )
 
 
