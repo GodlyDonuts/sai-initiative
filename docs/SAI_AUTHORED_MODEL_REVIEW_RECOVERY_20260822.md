@@ -68,3 +68,35 @@ absent before submission. The comparison can execute only after both complete
 and it remains a disagreement-ranking diagnostic for human review. Model-model
 agreement can never satisfy the independent human identity attestations or
 authorize a semantic curriculum.
+
+## Preserved second-attempt evidence and narrower normalization
+
+The `78db07e` execution improved observability and demonstrated that the
+repair acted on the intended boundary, but it did not complete:
+
+- Qwen job `770735` failed `1:0` after 304 seconds, zero restarts, on `evc42`.
+  Its three row-zero responses consistently supplied evidence-backed taught
+  concepts while duplicating those same identities in the ungrounded assumed
+  list. Its preserved failure artifact SHA-256 is
+  `d3d7fea2e47064e4cba499ce6757c7297dd2b72c6f519237b0e81390d44389fa`.
+- SmolLM3 job `770736` failed `1:0` after 260 seconds, zero restarts, on
+  `evc46`. It published two individually replayable candidate rows before row
+  2 repeatedly returned an empty taught set with recommendation `admit`. Its
+  preserved failure artifact SHA-256 is
+  `df240d7ec91f35e838fb085c120acdc12fcf9fd4dfc4bcae409771b6efd0b1b2`.
+- comparison `770738` was cancelled without execution. Neither reviewer
+  published a complete draft or result receipt.
+
+These preserved responses support two conservative deterministic rules. An
+explicitly quoted, confidence-qualified taught label takes precedence over the
+same ungrounded assumed label, so the duplicate is removed only from the
+assumed list. A row with no taught concepts is normalized from `admit` to
+`revise`; it can never enter an admitted population. Neither rule creates a
+concept, quote, confidence score, defect, or positive recommendation.
+
+The narrower normalization was added and pushed at
+`a14e6eae69ed592d8744f86e3f1b9648f4f5d387`. Full validation passed 616
+tests plus Black, Ruff, and all Slurm syntax checks. Fresh collision-safe
+review jobs are Qwen `770761` and SmolLM3 `770762`; CPU diagnostic comparison
+`770763` depends on both. All original and second-attempt artifacts remain
+immutable and are not reused as successful rows under the new runner identity.

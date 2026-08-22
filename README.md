@@ -521,9 +521,16 @@ benchmark evidence selects an architecture.
   The repaired runner now preserves every rejected response, constrains output
   complexity, canonicalizes list order and unique whitespace-equivalent source
   quotes, and retains every original evidence threshold. Fresh collision-safe
-  jobs `770735` and `770736` are running independently from pushed commit
-  `78db07e2…303b`; CPU comparison `770738` is dependency-staged and will rank
-  cross-family disagreements for human attention without qualifying labels.
+  jobs `770735` and `770736` preserved exact failures: Qwen repeatedly placed
+  evidence-backed taught concepts in both semantic roles; SmolLM3 completed two
+  candidate rows before repeatedly recommending `admit` with an empty taught
+  set. Neither published a complete result and comparison `770738` never ran.
+  Pushed commit `a14e6eae…d387` now gives explicit quoted taught evidence
+  precedence over an ungrounded duplicate assumption and conservatively maps
+  empty-taught `admit` to `revise`. All evidence thresholds remain unchanged.
+  Fresh jobs `770761` and `770762` are running independently; comparison
+  `770763` is dependency-staged and will rank cross-family disagreements for
+  human attention without qualifying labels.
   Exact failure and recovery evidence is in
   `docs/SAI_AUTHORED_MODEL_REVIEW_RECOVERY_20260822.md`. The final adjudicator now
   accepts neither arbitrary identity strings nor model-review identities: each
