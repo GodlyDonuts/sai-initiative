@@ -75,7 +75,8 @@ export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
   --decontamination-receipt "$DECONTAMINATION_RECEIPT" \
   --output "$CURRICULUM_OUTPUT" \
   --receipt "$CURRICULUM_RECEIPT" \
-  --minimum-documents-per-band 10000
+  --minimum-documents-per-band 10000 \
+  --workers "$SLURM_CPUS_PER_TASK"
 
 "$PYTHON" -P -s -B -m sai.data.curriculum validate \
   --receipt "$CURRICULUM_RECEIPT"

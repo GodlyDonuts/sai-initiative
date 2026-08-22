@@ -14,6 +14,7 @@ import argparse
 import hashlib
 import json
 import math
+import multiprocessing
 import os
 import re
 import shutil
@@ -34,6 +35,7 @@ BUCKETS_PER_BAND = 16
 SHINGLE_WIDTH = 5
 SKETCH_BUCKETS = 8
 NEAR_DUPLICATE_MATCHES = 6
+MAX_SKETCH_SHINGLES = 128
 _U256_MODULUS = 1 << 256
 
 # Fractions of each difficulty band's own population released in each phase.
@@ -193,13 +195,33 @@ def _near_duplicate_sketch(text: str) -> tuple[int, ...]:
     if len(words) < SHINGLE_WIDTH:
         return tuple()
     minima = [(1 << 64) - 1] * SKETCH_BUCKETS
-    for index in range(len(words) - SHINGLE_WIDTH + 1):
+    available = len(words) - SHINGLE_WIDTH + 1
+    if available <= MAX_SKETCH_SHINGLES:
+        positions = range(available)
+    else:
+        positions = (
+            index * (available - 1) // (MAX_SKETCH_SHINGLES - 1)
+            for index in range(MAX_SKETCH_SHINGLES)
+        )
+    for index in positions:
         shingle = "\x1f".join(words[index : index + SHINGLE_WIDTH]).encode()
         digest = int.from_bytes(hashlib.blake2b(shingle, digest_size=8).digest(), "big")
         bucket = digest & (SKETCH_BUCKETS - 1)
         if digest < minima[bucket]:
             minima[bucket] = digest
     return tuple(minima)
+
+
+def _score_candidate(
+    line: str,
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, tuple[int, ...] | None]:
+    """Compute expensive row-local evidence; safe for ordered process pools."""
+
+    try:
+        row = normalize_document(json.loads(line))
+    except (json.JSONDecodeError, RuntimeError):
+        return None, None, None
+    return row, document_signals(row["text"]), _near_duplicate_sketch(row["text"])
 
 
 def _is_near_duplicate(
@@ -307,6 +329,7 @@ def build_curriculum(
     receipt: Path,
     *,
     minimum_documents_per_band: int = 100,
+    workers: int = 1,
 ) -> dict[str, Any]:
     """Filter, deduplicate, stratify, and deterministically pace one corpus."""
 
@@ -318,8 +341,11 @@ def build_curriculum(
         isinstance(minimum_documents_per_band, bool)
         or not isinstance(minimum_documents_per_band, int)
         or minimum_documents_per_band <= 0
+        or isinstance(workers, bool)
+        or not isinstance(workers, int)
+        or not 1 <= workers <= 64
     ):
-        raise CurriculumError("curriculum population floor differs")
+        raise CurriculumError("curriculum population or worker geometry differs")
     decontamination = _validate_decontamination_receipt(source, decontamination_receipt)
     output.parent.mkdir(parents=True, exist_ok=True)
     receipt.parent.mkdir(parents=True, exist_ok=True)
@@ -335,23 +361,28 @@ def build_curriculum(
     scanned = 0
     accepted_identity_xor = 0
     accepted_identity_sum = 0
+    pool = None
     try:
         with source.open() as source_handle:
-            for line in source_handle:
-                if not line.strip():
-                    continue
+            lines = (line for line in source_handle if line.strip())
+            if workers == 1:
+                candidates = map(_score_candidate, lines)
+            else:
+                if os.name != "posix":
+                    raise CurriculumError(
+                        "parallel curriculum scoring requires a POSIX fork runtime"
+                    )
+                pool = multiprocessing.get_context("fork").Pool(processes=workers)
+                candidates = pool.imap(_score_candidate, lines, chunksize=64)
+            for row, signals, sketch in candidates:
                 scanned += 1
-                try:
-                    row = normalize_document(json.loads(line))
-                except (json.JSONDecodeError, RuntimeError):
+                if row is None or signals is None or sketch is None:
                     rejected["malformed_or_unverified"] += 1
                     continue
-                signals = document_signals(row["text"])
                 if not signals["quality_accepted"]:
                     for reason in signals["quality_reasons"]:
                         rejected[reason] += 1
                     continue
-                sketch = _near_duplicate_sketch(row["text"])
                 if _is_near_duplicate(sketch, sketches, sketch_index):
                     rejected["near_duplicate"] += 1
                     continue
@@ -375,6 +406,10 @@ def build_curriculum(
                 accepted_identity_sum = (
                     accepted_identity_sum + identity_integer
                 ) % _U256_MODULUS
+        if pool is not None:
+            pool.close()
+            pool.join()
+            pool = None
         for handle in handles.values():
             handle.close()
         handles.clear()
@@ -503,6 +538,7 @@ def build_curriculum(
                     "method": "five_word_shingle_eight_bucket_lsh_minima",
                     "shingle_width": SHINGLE_WIDTH,
                     "sketch_buckets": SKETCH_BUCKETS,
+                    "maximum_sampled_shingles": MAX_SKETCH_SHINGLES,
                     "matching_minima_required": NEAR_DUPLICATE_MATCHES,
                     "claim": "high_confidence_near_duplicate_filter_not_exhaustive",
                 },
@@ -550,6 +586,9 @@ def build_curriculum(
         os.replace(receipt_stage, receipt)
         return payload
     except BaseException:
+        if pool is not None:
+            pool.terminate()
+            pool.join()
         for handle in handles.values():
             handle.close()
         output_stage.unlink(missing_ok=True)
@@ -596,6 +635,7 @@ def validate_curriculum(receipt: Path) -> dict[str, Any]:
             "method": "five_word_shingle_eight_bucket_lsh_minima",
             "shingle_width": SHINGLE_WIDTH,
             "sketch_buckets": SKETCH_BUCKETS,
+            "maximum_sampled_shingles": MAX_SKETCH_SHINGLES,
             "matching_minima_required": NEAR_DUPLICATE_MATCHES,
             "claim": "high_confidence_near_duplicate_filter_not_exhaustive",
         },
@@ -727,6 +767,7 @@ def main() -> None:
     build.add_argument("--output", type=Path, required=True)
     build.add_argument("--receipt", type=Path, required=True)
     build.add_argument("--minimum-documents-per-band", type=int, default=100)
+    build.add_argument("--workers", type=int, default=1)
     validate = subparsers.add_parser("validate")
     validate.add_argument("--receipt", type=Path, required=True)
     args = parser.parse_args()
@@ -737,6 +778,7 @@ def main() -> None:
             args.output,
             args.receipt,
             minimum_documents_per_band=args.minimum_documents_per_band,
+            workers=args.workers,
         )
     else:
         payload = validate_curriculum(args.receipt)

@@ -145,6 +145,37 @@ def test_curriculum_builds_all_four_progressive_phases_and_replays(
     assert validate_curriculum(receipt) == payload
 
 
+def test_parallel_scoring_preserves_exact_curriculum_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source = tmp_path / "admitted.jsonl"
+    rows = [_row(index, band) for band in BANDS for index in range(10)]
+    source.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    decontamination = tmp_path / "decontamination.json"
+    _source_receipt(source, decontamination)
+    monkeypatch.setattr(curriculum, "document_signals", _patched_signals)
+    monkeypatch.setattr(curriculum, "_near_duplicate_sketch", _patched_sketch)
+    serial = tmp_path / "serial.jsonl"
+    parallel = tmp_path / "parallel.jsonl"
+    build_curriculum(
+        source,
+        decontamination,
+        serial,
+        tmp_path / "serial.receipt.json",
+        minimum_documents_per_band=10,
+        workers=1,
+    )
+    build_curriculum(
+        source,
+        decontamination,
+        parallel,
+        tmp_path / "parallel.receipt.json",
+        minimum_documents_per_band=10,
+        workers=2,
+    )
+    assert serial.read_bytes() == parallel.read_bytes()
+
+
 def test_high_confidence_near_duplicate_sketch_is_rejected() -> None:
     base = (
         "A careful lesson introduces one idea before combining it with another. "

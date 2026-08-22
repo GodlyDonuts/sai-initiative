@@ -14,6 +14,7 @@ def test_curriculum_job_is_cpu_only_dependency_bound_and_create_only() -> None:
     assert "sai.data.curriculum build" in job
     assert "sai.data.curriculum validate" in job
     assert "--minimum-documents-per-band 10000" in job
+    assert '--workers "$SLURM_CPUS_PER_TASK"' in job
     assert (
         "sbatch "
         not in "\n".join(
