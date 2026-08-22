@@ -228,7 +228,7 @@ def _descriptor(
     raw: Any,
     *,
     role: str,
-    evidence_root: Path | None,
+    evidence_root: Path,
     seen_paths: dict[str, dict[str, Any]],
     source_manifest_sha256: str | None = None,
 ) -> tuple[dict[str, Any], str]:
@@ -257,26 +257,23 @@ def _descriptor(
         ):
             raise DataMixtureEvidenceError(f"{role} non-receipt descriptor differs")
         shadow_hash = file_sha256
-    if evidence_root is not None:
-        encoded = _read_regular(evidence_root, relative)
-        if hashlib.sha256(encoded).hexdigest() != file_sha256:
-            raise DataMixtureEvidenceError(f"{role} file hash differs")
-        if role in _RECEIPT_ROLES:
-            if source_manifest_sha256 is None:
-                raise DataMixtureEvidenceError("source evidence lineage differs")
-            _receipt(
-                encoded,
-                descriptor,
-                role,
-                source_manifest_sha256=source_manifest_sha256,
-            )
+    encoded = _read_regular(evidence_root, relative)
+    if hashlib.sha256(encoded).hexdigest() != file_sha256:
+        raise DataMixtureEvidenceError(f"{role} file hash differs")
+    if role in _RECEIPT_ROLES:
+        if source_manifest_sha256 is None:
+            raise DataMixtureEvidenceError("source evidence lineage differs")
+        _receipt(
+            encoded,
+            descriptor,
+            role,
+            source_manifest_sha256=source_manifest_sha256,
+        )
     return descriptor, shadow_hash
 
 
-def validate_payload(
-    payload: Any, *, evidence_root: Path | None = None
-) -> dict[str, Any]:
-    """Validate v3 structure and optionally reopen every evidence artifact."""
+def validate_payload(payload: Any, *, evidence_root: Path) -> dict[str, Any]:
+    """Validate v3 structure by reopening every evidence artifact."""
 
     plan = _exact(payload, _TOP_KEYS, "evidenced mixture plan")
     unsigned = {key: value for key, value in plan.items() if key != "receipt_sha256"}

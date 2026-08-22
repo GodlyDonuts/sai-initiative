@@ -27,7 +27,9 @@ exact boolean decisions `license_approved`, `quality_qualified`,
 is permitted only when every source declares the identical descriptor and the
 receipt's canonical `covered_source_manifest_sha256s` explicitly contains each
 source manifest. This prevents a valid decision for one corpus from being
-reattached to another. No v3 mixture currently passes because the source
+reattached to another. V3 exposes no structure-only validation path: an explicit
+evidence root and complete artifact replay are mandatory. No v3 mixture
+currently passes because the source
 selection work is intentionally incomplete.
 
 ## Principle

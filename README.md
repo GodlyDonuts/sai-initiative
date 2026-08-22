@@ -279,7 +279,8 @@ benchmark evidence selects an architecture.
   missing evidence, and re-signed drift. Each receipt must also carry its exact
   role-specific positive decision; a generic `status: qualified` cannot admit a
   source. Each decision must also name the exact source-manifest hash it covers,
-  preventing cross-source receipt reuse. No v3 mixture passes yet.
+  preventing cross-source receipt reuse. There is no structure-only v3 mode;
+  every validation reopens the evidence root. No v3 mixture passes yet.
 
 ## Live scratchpad — 2026-08-21
 
