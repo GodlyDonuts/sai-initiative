@@ -88,6 +88,11 @@ def test_full_delta_mixer_mapping_matches_reference_for_all_boundaries() -> None
         (family, length) for family in ("gdn", "kda") for length in (1, 63, 64, 65)
     }
     assert all(case["passed"] for case in report["cases"])
+    assert all(
+        len(case["causal_convolution_forward"]) == 3
+        and all(metric["passed"] for metric in case["causal_convolution_forward"])
+        for case in report["cases"]
+    )
     assert all(case["forward"]["elements_compared"] > 0 for case in report["cases"])
     assert all(
         case["forward"]["elements_outside_tolerance"] == 0 for case in report["cases"]

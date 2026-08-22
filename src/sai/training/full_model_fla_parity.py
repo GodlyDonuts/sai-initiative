@@ -48,6 +48,7 @@ class _RecordedOperators:
     operators: FlaBackendOperators
     delta_calls: list[dict[str, Any]]
     conv_calls: list[dict[str, Any]]
+    conv_metrics: list[dict[str, Any]]
 
 
 def _tiny_config(family: str) -> SaiModelConfig:
@@ -140,6 +141,7 @@ def _metric(
 def _recording_operators(base: FlaBackendOperators) -> _RecordedOperators:
     delta_calls: list[dict[str, Any]] = []
     conv_calls: list[dict[str, Any]] = []
+    conv_metrics: list[dict[str, Any]] = []
 
     def record_delta(
         operator: Callable[..., tuple[torch.Tensor, torch.Tensor | None]],
@@ -185,7 +187,32 @@ def _recording_operators(base: FlaBackendOperators) -> _RecordedOperators:
                 "bias": kwargs.get("bias"),
             }
         )
-        return base.causal_conv1d(**kwargs)
+        result = base.causal_conv1d(**kwargs)
+        observed = result[0] if isinstance(result, tuple) else result
+        if not isinstance(observed, torch.Tensor):
+            raise FullModelFlaParityError("FLA convolution output differs")
+        offsets = (
+            [0, kwargs["x"].shape[1]]
+            if kwargs.get("cu_seqlens") is None
+            else kwargs["cu_seqlens"].detach().cpu().tolist()
+        )
+        with torch.no_grad():
+            expected_segments = []
+            weight = kwargs["weight"].unsqueeze(1)
+            for start, stop in zip(offsets[:-1], offsets[1:], strict=True):
+                segment = kwargs["x"][:, start:stop]
+                convolved = torch.nn.functional.conv1d(
+                    segment.transpose(1, 2),
+                    weight,
+                    padding=weight.shape[-1] - 1,
+                    groups=segment.shape[-1],
+                )[..., : stop - start]
+                expected_segments.append(
+                    torch.nn.functional.silu(convolved.transpose(1, 2))
+                )
+            expected = torch.cat(expected_segments, dim=1)
+        conv_metrics.append(_metric(observed, expected, _THRESHOLDS["forward"]))
+        return result
 
     return _RecordedOperators(
         FlaBackendOperators(
@@ -196,6 +223,7 @@ def _recording_operators(base: FlaBackendOperators) -> _RecordedOperators:
         ),
         delta_calls,
         conv_calls,
+        conv_metrics,
     )
 
 
@@ -281,7 +309,11 @@ def _run_case(
             _THRESHOLDS["parameter_gradient"],
         )
 
-    if len(recorded.delta_calls) != 1 or len(recorded.conv_calls) != 3:
+    if (
+        len(recorded.delta_calls) != 1
+        or len(recorded.conv_calls) != 3
+        or len(recorded.conv_metrics) != 3
+    ):
         raise FullModelFlaParityError("DeltaMixer FLA dispatch count differs")
     delta_call = recorded.delta_calls[0]
     total_tokens = 2 * sequence_length
@@ -332,6 +364,7 @@ def _run_case(
     passed = (
         mapping_passed
         and gradients_complete
+        and all(bool(metric["passed"]) for metric in recorded.conv_metrics)
         and bool(forward_metric["passed"])
         and bool(input_metric["passed"])
         and all(bool(metric["passed"]) for metric in parameter_metrics.values())
@@ -346,6 +379,7 @@ def _run_case(
         ),
         "dtype": "torch.bfloat16" if use_bf16 else "torch.float32",
         "forward": forward_metric,
+        "causal_convolution_forward": recorded.conv_metrics,
         "input_gradient": input_metric,
         "parameter_gradients": parameter_metrics,
         "expected_parameter_names": list(reference_names),
