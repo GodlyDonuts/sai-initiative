@@ -217,6 +217,7 @@ def test_taxonomy_and_progression_pass_with_prior_exposure() -> None:
     assert report["concepts"]["technical.color-mixing"] == {
         "confident_documents": 1,
         "first_document_index": 3,
+        "earliest_permitted_phase": "specialization",
         "phase_documents": {
             "grounding": 0,
             "integration": 0,
@@ -225,10 +226,57 @@ def test_taxonomy_and_progression_pass_with_prior_exposure() -> None:
         },
     }
     assert report["phase_coverage_violations"] == []
+    assert report["premature_exposure_violations"] == []
     assert report["ordered_document_identity_sha256"] == canonical_sha256(identities)
     assert report["annotations_sha256"] == canonical_sha256(annotations)
     assert report["training_authorized"] is False
     assert report["four_b_training_authorized"] is False
+
+
+def test_progression_rejects_advanced_concept_before_its_declared_phase() -> None:
+    taxonomy = _taxonomy()
+    identities = [f"{index + 200:064x}" for index in range(5)]
+    concepts = [
+        [_evidence("language.color", 0), _evidence("math.addition", 1)],
+        [_evidence("code.variable", 2)],
+        [_evidence("science.primary-colors", 3)],
+        [_evidence("technical.color-mixing", 4)],
+        [_evidence("technical.color-mixing", 5)],
+    ]
+    annotations = [
+        {
+            "schema": ANNOTATION_SCHEMA,
+            "document_identity_sha256": identity,
+            "phase": phase,
+            "concepts": evidence,
+        }
+        for identity, phase, evidence in zip(
+            identities,
+            ("grounding", "integration", "reasoning", "reasoning", "specialization"),
+            concepts,
+            strict=True,
+        )
+    ]
+
+    report = analyze_progression(
+        taxonomy,
+        annotations,
+        identities,
+        ["evidence"] * len(identities),
+    )
+
+    assert report["progression_qualified"] is False
+    assert report["violations"] == []
+    assert report["phase_coverage_violations"] == []
+    assert report["premature_exposure_violations"] == [
+        {
+            "document_index": 3,
+            "document_identity_sha256": identities[3],
+            "concept_id": "technical.color-mixing",
+            "observed_phase": "reasoning",
+            "earliest_permitted_phase": "specialization",
+        }
+    ]
 
 
 def test_builds_taxonomy_from_real_evidence_artifacts(

@@ -224,7 +224,10 @@ The prospective semantic boundary is executable. `sai-validate-prerequisites`
 validates `sai-semantic-prerequisite-taxonomy-v2`: all five Sai domains, a
 cycle-free concept graph, non-placeholder annotator/policy/audit identities,
 explicit minimum prior-document counts, and frozen per-concept minimum exposure
-counts for every curriculum phase. The progression analyzer consumes
+counts for every curriculum phase. The first phase with a nonzero exposure
+minimum is also the concept's earliest permitted phase: a confident advanced
+concept exposure before that phase is a terminal progression violation, even
+when its prerequisites have already appeared. The progression analyzer consumes
 annotations in the exact curriculum document order, counts only evidence above
 the frozen confidence floor, rehashes every claimed non-overlapping character
 span against the exact document text, and checks prerequisites before updating

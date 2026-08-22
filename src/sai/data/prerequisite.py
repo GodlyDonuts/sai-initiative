@@ -28,7 +28,7 @@ from sai.data.token_stream import (
 TAXONOMY_SCHEMA = "sai-semantic-prerequisite-taxonomy-v2"
 CONCEPT_LIST_SCHEMA = "sai-semantic-prerequisite-concept-list-v1"
 ANNOTATION_SCHEMA = "sai-prerequisite-document-annotation-v1"
-REPORT_SCHEMA = "sai-semantic-prerequisite-progression-report-v1"
+REPORT_SCHEMA = "sai-semantic-prerequisite-progression-report-v2"
 ANNOTATION_METHODS = {"deterministic", "model", "hybrid", "human"}
 _CONCEPT_ID = re.compile(r"[a-z0-9][a-z0-9._-]{1,95}")
 _MAX_TAXONOMY_BYTES = 8 << 20
@@ -426,6 +426,7 @@ class _ProgressionState:
         self.concept_phase_counts: Counter[tuple[str, str]] = Counter()
         self.first_exposure: dict[str, int] = {}
         self.violations: list[dict[str, Any]] = []
+        self.premature_exposure_violations: list[dict[str, Any]] = []
         self.previous_phase = -1
 
     def add(
@@ -492,6 +493,21 @@ class _ProgressionState:
             self.concept_phase_counts[(concept_id, phase)] += 1
             self.first_exposure.setdefault(concept_id, index)
             concept = self.concepts[concept_id]
+            earliest_phase = next(
+                candidate
+                for candidate in PHASES
+                if concept["minimum_phase_documents"][candidate] > 0
+            )
+            if phase_index < PHASES.index(earliest_phase):
+                self.premature_exposure_violations.append(
+                    {
+                        "document_index": index,
+                        "document_identity_sha256": identity,
+                        "concept_id": concept_id,
+                        "observed_phase": phase,
+                        "earliest_permitted_phase": earliest_phase,
+                    }
+                )
             minimum = concept["minimum_prior_documents"]
             for prerequisite in concept["prerequisites"]:
                 observed = self.prior_counts[prerequisite]
@@ -536,6 +552,7 @@ class _ProgressionState:
                     )
         progression_qualified = (
             not self.violations
+            and not self.premature_exposure_violations
             and not missing_concepts
             and not phase_coverage_violations
         )
@@ -551,6 +568,12 @@ class _ProgressionState:
                 concept_id: {
                     "confident_documents": self.concept_counts[concept_id],
                     "first_document_index": self.first_exposure.get(concept_id),
+                    "earliest_permitted_phase": next(
+                        phase
+                        for phase in PHASES
+                        if self.concepts[concept_id]["minimum_phase_documents"][phase]
+                        > 0
+                    ),
                     "phase_documents": {
                         phase: self.concept_phase_counts[(concept_id, phase)]
                         for phase in PHASES
@@ -560,6 +583,7 @@ class _ProgressionState:
             },
             "missing_concepts": missing_concepts,
             "violations": self.violations,
+            "premature_exposure_violations": self.premature_exposure_violations,
             "phase_coverage_violations": phase_coverage_violations,
             "progression_qualified": progression_qualified,
             "training_authorized": False,
