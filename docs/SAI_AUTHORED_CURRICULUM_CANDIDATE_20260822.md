@@ -95,6 +95,13 @@ two identity-attestation hashes must differ. These attestations still require
 external identity verification, but model-model agreement can no longer be
 misreported as a qualified independent human audit.
 
+`sai.data.authored_review_model_compare` replays both sealed model-review trees
+and publishes a CPU-only cross-family triage report. It measures taught-concept,
+assumed-prerequisite, quality, admission, and defect-category disagreement for
+all 127 blind rows and ranks disagreements for human attention. Its output
+retains `human_review_completed=false`, `audit_qualified=false`, and all
+training/4B authorization flags false regardless of model agreement.
+
 ## Progression semantics
 
 The Rust Book begins with installation, hello-world programs, a guessing-game
