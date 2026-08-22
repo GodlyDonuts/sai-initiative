@@ -33,6 +33,7 @@ set -euo pipefail
 
 EVALUATOR_JOB="$SAI_ROOT/jobs/sai-short-screen-development-mc-single-h100.sbatch"
 EVALUATOR_RUNTIME="$EVALUATOR_JOB"
+MERGE_JOB="$SAI_ROOT/jobs/sai-merge-development-mc-shards-cpu.sbatch"
 
 require_absolute() {
   case "$1" in
@@ -45,7 +46,7 @@ for path in \
   "$SAI_ROOT" "$PYTHON" "$FLA_ROOT" "$ENVIRONMENT_RECEIPT" "$LOG_ROOT" \
   "$GEOMETRY" "$SHORT_SCREEN_RESULT" "$CHECKPOINT" "$CHECKPOINT_MANIFEST" \
   "$TRAINING_STREAM" "$TOKENIZER_ROOT" "$POPULATION_AGGREGATE" \
-  "$OUTPUT_ROOT" "$DISPATCH" "$EVALUATOR_JOB"; do
+  "$OUTPUT_ROOT" "$DISPATCH" "$EVALUATOR_JOB" "$MERGE_JOB"; do
   require_absolute "$path"
 done
 
@@ -66,7 +67,8 @@ test -d "$OUTPUT_ROOT"
 test ! -L "$OUTPUT_ROOT"
 for path in \
   "$ENVIRONMENT_RECEIPT" "$GEOMETRY" "$SHORT_SCREEN_RESULT" "$CHECKPOINT" \
-  "$CHECKPOINT_MANIFEST" "$POPULATION_AGGREGATE" "$EVALUATOR_JOB"; do
+  "$CHECKPOINT_MANIFEST" "$POPULATION_AGGREGATE" "$EVALUATOR_JOB" \
+  "$MERGE_JOB"; do
   test -f "$path"
   test ! -L "$path"
 done
@@ -96,6 +98,7 @@ test "$population_state" = "COMPLETED"
 
 MMLU_OUTPUT="$OUTPUT_ROOT/${FAMILY}.mmlu_pro.development_mc.json"
 MUSR_OUTPUT="$OUTPUT_ROOT/${FAMILY}.musr.development_mc.json"
+MMLU_SHARD_ROOT="$OUTPUT_ROOT/${FAMILY}.mmlu_pro.shards"
 for path in "$MMLU_OUTPUT" "$MUSR_OUTPUT"; do
   test ! -e "$path"
   test ! -L "$path"
@@ -316,6 +319,18 @@ MUSR_TRAINING_SOURCE_SHA256="${validated[20]}"
 MUSR_EXPECTED_ROWS="${validated[21]}"
 MUSR_IDENTITY_ORDER_SHA256="${validated[22]}"
 
+"$PYTHON" -P -s -B -m sai.evaluation.development_mc_shards build \
+  --benchmark mmlu_pro \
+  --source "$MMLU_SOURCE" \
+  --full-disjoint-receipt "$MMLU_DISJOINT" \
+  --training-source-sha256 "$MMLU_TRAINING_SOURCE_SHA256" \
+  --shard-count 8 \
+  --output-root "$MMLU_SHARD_ROOT"
+MMLU_SHARD_MANIFEST="$MMLU_SHARD_ROOT/manifest.json"
+test -f "$MMLU_SHARD_MANIFEST"
+test ! -L "$MMLU_SHARD_MANIFEST"
+MMLU_SHARD_MANIFEST_SHA256="$(sha256sum "$MMLU_SHARD_MANIFEST" | cut -d ' ' -f 1)"
+
 submitted=()
 cancel_partial_fanout() {
   for job_id in "${submitted[@]}"; do
@@ -326,15 +341,37 @@ trap cancel_partial_fanout EXIT
 
 common_export="SAI_ROOT=$SAI_ROOT,EXPECTED_COMMIT=$EXPECTED_COMMIT,PYTHON=$PYTHON,FLA_ROOT=$FLA_ROOT,ENVIRONMENT_RECEIPT=$ENVIRONMENT_RECEIPT,LOG_ROOT=$LOG_ROOT,GEOMETRY=$GEOMETRY,GEOMETRY_SHA256=$GEOMETRY_SHA256,FAMILY=$FAMILY,SHORT_SCREEN_RESULT=$SHORT_SCREEN_RESULT,SHORT_SCREEN_RESULT_SHA256=$SHORT_SCREEN_RESULT_SHA256,CHECKPOINT=$CHECKPOINT,CHECKPOINT_MANIFEST=$CHECKPOINT_MANIFEST,TRAINING_STREAM=$TRAINING_STREAM,TRAINING_STREAM_IDENTITY=$TRAINING_STREAM_IDENTITY,TOKENIZER_ROOT=$TOKENIZER_ROOT,TOKENIZER_SHA256=$TOKENIZER_SHA256,RUNTIME_PATH=$EVALUATOR_RUNTIME"
 
-mmlu_job_id="$(env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin sbatch --parsable \
-  --chdir="$SAI_ROOT" \
-  --job-name="sai-${FAMILY}-mmlu" \
-  --output="$LOG_ROOT/sai_${FAMILY}_mmlu_%j.out" \
-  --error="$LOG_ROOT/sai_${FAMILY}_mmlu_%j.err" \
-  --export="$common_export,BENCHMARK=mmlu_pro,BENCHMARK_SOURCE=$MMLU_SOURCE,BENCHMARK_SOURCE_SHA256=$MMLU_SOURCE_SHA256,DISJOINT_RECEIPT=$MMLU_DISJOINT,DISJOINT_RECEIPT_SHA256=$MMLU_DISJOINT_SHA256,TRAINING_SOURCE_SHA256=$MMLU_TRAINING_SOURCE_SHA256,EXPECTED_ROWS=$MMLU_EXPECTED_ROWS,EXPECTED_IDENTITY_ORDER_SHA256=$MMLU_IDENTITY_ORDER_SHA256,MAX_SEQUENCE_TOKENS=2048,OUTPUT=$MMLU_OUTPUT" \
-  "$EVALUATOR_JOB")"
-[[ "$mmlu_job_id" =~ ^[0-9]+$ ]]
-submitted+=("$mmlu_job_id")
+mmlu_job_ids=()
+mmlu_result_paths=()
+while IFS=$'\t' read -r index source source_sha256 disjoint \
+  disjoint_sha256 rows identity_order_sha256; do
+  mmlu_result="$OUTPUT_ROOT/${FAMILY}.mmlu_pro.shard_${index}.development_mc.json"
+  test ! -e "$mmlu_result"
+  test ! -L "$mmlu_result"
+  mmlu_job_id="$(env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin sbatch --parsable \
+    --chdir="$SAI_ROOT" \
+    --job-name="sai-${FAMILY}-mmlu-${index}" \
+    --output="$LOG_ROOT/sai_${FAMILY}_mmlu_${index}_%j.out" \
+    --error="$LOG_ROOT/sai_${FAMILY}_mmlu_${index}_%j.err" \
+    --export="$common_export,BENCHMARK=mmlu_pro,BENCHMARK_SOURCE=$source,BENCHMARK_SOURCE_SHA256=$source_sha256,DISJOINT_RECEIPT=$disjoint,DISJOINT_RECEIPT_SHA256=$disjoint_sha256,TRAINING_SOURCE_SHA256=$MMLU_TRAINING_SOURCE_SHA256,EXPECTED_ROWS=$rows,EXPECTED_IDENTITY_ORDER_SHA256=$identity_order_sha256,MAX_SEQUENCE_TOKENS=2048,OUTPUT=$mmlu_result" \
+    "$EVALUATOR_JOB")"
+  [[ "$mmlu_job_id" =~ ^[0-9]+$ ]]
+  submitted+=("$mmlu_job_id")
+  mmlu_job_ids+=("$mmlu_job_id")
+  mmlu_result_paths+=("$mmlu_result")
+done < <("$PYTHON" -P -s -B - "$MMLU_SHARD_MANIFEST" <<'PY'
+import json
+import sys
+
+for shard in json.load(open(sys.argv[1]))["shards"]:
+    print(
+        shard["index"], shard["source"], shard["source_sha256"],
+        shard["disjoint_receipt"], shard["disjoint_receipt_sha256"],
+        shard["rows"], shard["identity_order_sha256"], sep="\t",
+    )
+PY
+)
+test "${#mmlu_job_ids[@]}" = 8
 
 musr_job_id="$(env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin sbatch --parsable \
   --chdir="$SAI_ROOT" \
@@ -345,6 +382,20 @@ musr_job_id="$(env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin sbatch --parsab
   "$EVALUATOR_JOB")"
 [[ "$musr_job_id" =~ ^[0-9]+$ ]]
 submitted+=("$musr_job_id")
+
+mmlu_dependency="$(IFS=:; printf '%s' "${mmlu_job_ids[*]}")"
+mmlu_results="$(IFS=:; printf '%s' "${mmlu_result_paths[*]}")"
+mmlu_merge_job_id="$(env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin sbatch --parsable \
+  --chdir="$SAI_ROOT" \
+  --dependency="afterok:$mmlu_dependency" \
+  --kill-on-invalid-dep=yes \
+  --job-name="sai-${FAMILY}-mmlu-merge" \
+  --output="$LOG_ROOT/sai_${FAMILY}_mmlu_merge_%j.out" \
+  --error="$LOG_ROOT/sai_${FAMILY}_mmlu_merge_%j.err" \
+  --export=SAI_ROOT="$SAI_ROOT",EXPECTED_COMMIT="$EXPECTED_COMMIT",PYTHON="$PYTHON",MANIFEST="$MMLU_SHARD_MANIFEST",RESULT_PATHS="$mmlu_results",EXPECTED_RESULT_COUNT=8,OUTPUT="$MMLU_OUTPUT" \
+  "$MERGE_JOB")"
+[[ "$mmlu_merge_job_id" =~ ^[0-9]+$ ]]
+submitted+=("$mmlu_merge_job_id")
 
 "$PYTHON" -P -s -B - \
   "$DISPATCH" "$EXPECTED_COMMIT" "$FAMILY" \
@@ -357,14 +408,16 @@ submitted+=("$musr_job_id")
   "$EVALUATOR_RUNTIME" "$EVALUATOR_RUNTIME_SHA256" \
   "$POPULATION_JOB_ID" "$POPULATION_AGGREGATE" \
   "$POPULATION_AGGREGATE_SHA256" \
-  "$mmlu_job_id" "$MMLU_OUTPUT" "$MMLU_SOURCE" "$MMLU_SOURCE_SHA256" \
+  "$mmlu_merge_job_id" "$MMLU_OUTPUT" "$MMLU_SOURCE" "$MMLU_SOURCE_SHA256" \
   "$MMLU_DISJOINT" "$MMLU_DISJOINT_SHA256" \
   "$MMLU_TRAINING_SOURCE_SHA256" "$MMLU_EXPECTED_ROWS" \
   "$MMLU_IDENTITY_ORDER_SHA256" \
   "$musr_job_id" "$MUSR_OUTPUT" "$MUSR_SOURCE" "$MUSR_SOURCE_SHA256" \
   "$MUSR_DISJOINT" "$MUSR_DISJOINT_SHA256" \
   "$MUSR_TRAINING_SOURCE_SHA256" "$MUSR_EXPECTED_ROWS" \
-  "$MUSR_IDENTITY_ORDER_SHA256" <<'PY'
+  "$MUSR_IDENTITY_ORDER_SHA256" "$MMLU_SHARD_MANIFEST" \
+  "$MMLU_SHARD_MANIFEST_SHA256" "${mmlu_job_ids[*]}" \
+  "${mmlu_result_paths[*]}" <<'PY'
 import hashlib
 import json
 import os
@@ -416,7 +469,12 @@ payload = {
             "training_source_sha256": values[30],
             "expected_rows": int(values[31]),
             "identity_order_sha256": values[32],
-            "h100s": 1,
+            "h100s": 0,
+            "cpu_merge": True,
+            "shard_count": 8,
+            "shard_manifest": {"path": values[42], "sha256": values[43]},
+            "shard_job_ids": [int(value) for value in values[44].split()],
+            "shard_result_paths": values[45].split(),
         },
         {
             "benchmark": "musr",
@@ -430,8 +488,10 @@ payload = {
             "h100s": 1,
         },
     ],
-    "gpu_jobs_submitted": 2,
-    "maximum_concurrent_single_h100_jobs": 2,
+    "gpu_jobs_submitted": 9,
+    "cpu_merge_jobs_submitted": 1,
+    "total_jobs_submitted": 10,
+    "maximum_concurrent_single_h100_jobs": 9,
     "retry": False,
     "requeue": False,
 }
@@ -457,4 +517,5 @@ except BaseException:
 PY
 
 trap - EXIT
-printf '%s\n' "$mmlu_job_id" "$musr_job_id"
+printf 'mmlu_shards=%s\nmusr_job=%s\nmmlu_merge=%s\n' \
+  "$mmlu_dependency" "$musr_job_id" "$mmlu_merge_job_id"

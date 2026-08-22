@@ -81,29 +81,50 @@ for family, launcher_id in zip(families, launcher_ids, strict=True):
     assert payload["family"] == family
     assert payload["development_only"] is True
     assert payload["four_b_training_authorized"] is False
-    assert payload["gpu_jobs_submitted"] == 2
-    assert payload["maximum_concurrent_single_h100_jobs"] == 2
+    assert payload["gpu_jobs_submitted"] == 9
+    assert payload["cpu_merge_jobs_submitted"] == 1
+    assert payload["total_jobs_submitted"] == 10
+    assert payload["maximum_concurrent_single_h100_jobs"] == 9
     assert payload["retry"] is False and payload["requeue"] is False
     assert payload["populations"]["job_id"] > 0
     assert claimed == canonical_sha256(unsigned)
     jobs = payload["jobs"]
     assert [job["benchmark"] for job in jobs] == ["mmlu_pro", "musr"]
-    assert all(job["h100s"] == 1 for job in jobs)
     assert all(isinstance(job["job_id"], int) and job["job_id"] > 0 for job in jobs)
-    assert all(not pathlib.Path(job["output"]).exists() for job in jobs)
+    mmlu, musr = jobs
+    assert mmlu["h100s"] == 0 and mmlu["cpu_merge"] is True
+    assert mmlu["shard_count"] == 8
+    assert len(mmlu["shard_job_ids"]) == 8
+    assert len(set(mmlu["shard_job_ids"])) == 8
+    assert all(isinstance(job_id, int) and job_id > 0 for job_id in mmlu["shard_job_ids"])
+    assert len(mmlu["shard_result_paths"]) == 8
+    shard_manifest = pathlib.Path(mmlu["shard_manifest"]["path"])
+    assert shard_manifest.is_file() and not shard_manifest.is_symlink()
+    assert hashlib.sha256(shard_manifest.read_bytes()).hexdigest() == mmlu["shard_manifest"]["sha256"]
+    assert musr["h100s"] == 1
+    for job in jobs:
+        output = pathlib.Path(job["output"])
+        assert output.is_absolute()
+        # Evaluators publish atomically. A fast, already-complete output is valid;
+        # the dependent comparator performs the immutable content validation.
+        assert not output.is_symlink()
+        if output.exists():
+            assert output.is_file()
     print(f"{family}\t{launcher_id}\t{dispatch_path}\t{claimed}\t"
           f"{jobs[0]['job_id']}\t{jobs[0]['output']}\t"
-          f"{jobs[1]['job_id']}\t{jobs[1]['output']}")
+          f"{jobs[1]['job_id']}\t{jobs[1]['output']}\t"
+          f"{' '.join(str(value) for value in mmlu['shard_job_ids'])}")
 PY
 )"
 mapfile -t rows <<< "$validated_lines"
 test "${#rows[@]}" = 3
 
 evaluation_job_ids=()
+h100_evaluation_job_ids=()
 comparison_args=()
 for row in "${rows[@]}"; do
   IFS=$'\t' read -r family launcher_id family_dispatch family_receipt \
-    mmlu_job mmlu_output musr_job musr_output <<< "$row"
+    mmlu_job mmlu_output musr_job musr_output mmlu_shard_jobs <<< "$row"
   case "$family" in gated_gqa|gdn_hybrid|kda_mla_hybrid) ;; *) exit 2 ;; esac
   [[ "$launcher_id" =~ ^[0-9]+$ ]]
   [[ "$mmlu_job" =~ ^[0-9]+$ ]]
@@ -111,12 +132,17 @@ for row in "${rows[@]}"; do
   launcher_state="$(sacct -j "$launcher_id" -X -n -P -o State | sed -n '1p')"
   test "$launcher_state" = "COMPLETED"
   evaluation_job_ids+=("$mmlu_job" "$musr_job")
+  read -r -a family_mmlu_shard_jobs <<< "$mmlu_shard_jobs"
+  test "${#family_mmlu_shard_jobs[@]}" = 8
+  h100_evaluation_job_ids+=("${family_mmlu_shard_jobs[@]}" "$musr_job")
   comparison_args+=("--${family//_/-}-mmlu-pro" "$mmlu_output")
   comparison_args+=("--${family//_/-}-musr" "$musr_output")
 done
 
 test "${#evaluation_job_ids[@]}" = 6
 test "$(printf '%s\n' "${evaluation_job_ids[@]}" | sort -u | wc -l | tr -d ' ')" = 6
+test "${#h100_evaluation_job_ids[@]}" = 27
+test "$(printf '%s\n' "${h100_evaluation_job_ids[@]}" | sort -u | wc -l | tr -d ' ')" = 27
 dependency="$(IFS=:; printf '%s' "${evaluation_job_ids[*]}")"
 comparison_job_id="$(env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin sbatch --parsable \
   --chdir="$SAI_ROOT" \
@@ -124,12 +150,12 @@ comparison_job_id="$(env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin sbatch --
   --kill-on-invalid-dep=yes \
   --output="$LOG_ROOT/sai_100m_development_mc_compare_%j.out" \
   --error="$LOG_ROOT/sai_100m_development_mc_compare_%j.err" \
-  --export=SAI_ROOT="$SAI_ROOT",EXPECTED_COMMIT="$EXPECTED_COMMIT",PYTHON="$PYTHON",OUTPUT="$OUTPUT",EVALUATION_JOB_IDS="${evaluation_job_ids[*]}",COMPARISON_ARGUMENTS="${comparison_args[*]}" \
+  --export=SAI_ROOT="$SAI_ROOT",EXPECTED_COMMIT="$EXPECTED_COMMIT",PYTHON="$PYTHON",OUTPUT="$OUTPUT",EVALUATION_JOB_IDS="${evaluation_job_ids[*]}",H100_EVALUATION_JOB_IDS="${h100_evaluation_job_ids[*]}",COMPARISON_ARGUMENTS="${comparison_args[*]}" \
   "$COMPARISON_JOB")"
 [[ "$comparison_job_id" =~ ^[0-9]+$ ]]
 
 "$PYTHON" -P -s -B - "$DISPATCH" "$EXPECTED_COMMIT" "$comparison_job_id" \
-  "${evaluation_job_ids[*]}" "${rows[@]}" <<'PY'
+  "${evaluation_job_ids[*]}" "${h100_evaluation_job_ids[*]}" "${rows[@]}" <<'PY'
 import hashlib
 import json
 import os
@@ -145,25 +171,32 @@ def canonical_sha256(value):
 
 
 output = pathlib.Path(sys.argv[1])
-rows = [row.split("\t") for row in sys.argv[5:]]
+rows = [row.split("\t") for row in sys.argv[6:]]
 payload = {
     "schema": "sai-short-screen-development-mc-comparison-dispatch-v1",
     "status": "submitted",
     "source_commit": sys.argv[2],
     "comparison_job_id": int(sys.argv[3]),
-    "evaluation_job_ids": [int(value) for value in sys.argv[4].split()],
+    "terminal_dependency_job_ids": [int(value) for value in sys.argv[4].split()],
+    "evaluation_h100_job_ids": [int(value) for value in sys.argv[5].split()],
     "families": [
         {
             "family": row[0],
             "launcher_job_id": int(row[1]),
             "dispatch": {"path": row[2], "receipt_sha256": row[3]},
-            "mmlu_pro": {"job_id": int(row[4]), "output": row[5]},
+            "mmlu_pro": {
+                "merge_job_id": int(row[4]),
+                "output": row[5],
+                "shard_job_ids": [int(value) for value in row[8].split()],
+            },
             "musr": {"job_id": int(row[6]), "output": row[7]},
         }
         for row in rows
     ],
     "gpu_jobs_submitted": 0,
-    "expected_completed_single_h100_evaluations": 6,
+    "expected_completed_single_h100_evaluations": 27,
+    "expected_cpu_merges": 3,
+    "comparison_terminal_dependencies": 6,
     "retry": False,
     "requeue": False,
     "development_only": True,

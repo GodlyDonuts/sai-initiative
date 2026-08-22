@@ -1,8 +1,8 @@
-"""Read-only development-MC evaluation of one completed Sai short screen.
+"""Read-only development-MC evaluation of one completed Sai scale checkpoint.
 
-This runner reconstructs an exact frozen 100M model and loads only its
-validated model state.  It never constructs an optimizer, runs backward, or
-authorizes a 4B experiment or a public benchmark claim.
+This runner reconstructs an exact frozen 100M, 300M, or 1B model and loads
+only its validated model state.  It never constructs an optimizer, runs
+backward, or authorizes a 4B experiment or a public benchmark claim.
 """
 
 from __future__ import annotations
@@ -32,6 +32,7 @@ from sai.evaluation.development_mc import (
     evaluate_development_mc,
     write_development_mc,
 )
+from sai.evaluation.scale_checkpoint import EVALUATION_SCALES, load_evaluation_config
 from sai.model.initialization import POLICY_SHA256
 from sai.model.reference import SaiCausalLM, exact_parameter_count
 from sai.training.checkpoint import (
@@ -42,8 +43,9 @@ from sai.training.checkpoint import (
     TrainingCounters,
 )
 from sai.training.short_screen import SCHEMA as SHORT_SCREEN_SCHEMA
-from sai.training.short_screen import load_bounded_config
 from sai.training.stream import StreamCursor, TrainingStreamError
+
+SCALE_TRAINING_SCHEMA = "sai-sub-4b-scale-training-v1"
 
 
 class ShortScreenMCError(RuntimeError):
@@ -123,7 +125,9 @@ def _state_sha256(model: nn.Module) -> str:
     return digest.hexdigest()
 
 
-def _short_screen_specification(result: dict[str, Any]) -> dict[str, Any]:
+def _short_screen_specification(
+    result: dict[str, Any], *, scale: str
+) -> dict[str, Any]:
     fields = {
         "schema",
         "evidence_class",
@@ -150,6 +154,8 @@ def _short_screen_specification(result: dict[str, Any]) -> dict[str, Any]:
         "checkpoint_interval_steps",
         "mechanics_only",
     }
+    if scale != "100m":
+        fields.update({"scale", "promotion_receipt_sha256"})
     if not fields.issubset(result):
         raise ShortScreenMCError("short-screen specification is incomplete")
     return {field: result[field] for field in fields}
@@ -162,9 +168,12 @@ def validate_short_screen_result(
     config: Any,
     family: str,
     geometry_parameter_count: int,
+    scale: str = "100m",
 ) -> tuple[dict[str, Any], CheckpointBindings]:
     """Validate the immutable terminal receipt and derive checkpoint bindings."""
 
+    if scale not in EVALUATION_SCALES:
+        raise ShortScreenMCError("evaluation scale must be 100m, 300m, or 1b")
     result, observed_sha256 = _load_json(result_path, "short-screen result")
     if observed_sha256 != _sha256(expected_sha256, "short-screen result SHA256"):
         raise ShortScreenMCError("short-screen result bytes differ")
@@ -182,8 +191,14 @@ def validate_short_screen_result(
             "initialization_seed": result.get("initialization_seed"),
         }
     )
+    expected_schema = SHORT_SCREEN_SCHEMA if scale == "100m" else SCALE_TRAINING_SCHEMA
+    if scale != "100m":
+        _sha256(
+            result.get("promotion_receipt_sha256"),
+            "scale promotion receipt SHA256",
+        )
     if (
-        result.get("schema") != SHORT_SCREEN_SCHEMA
+        result.get("schema") != expected_schema
         or result.get("status") != "complete"
         or result.get("config") != config.as_dict()
         or result.get("config_sha256") != config_sha256
@@ -193,9 +208,14 @@ def validate_short_screen_result(
         or result.get("parameter_count") != geometry_parameter_count
         or result.get("scientific_promotion_authorized") is not False
         or result.get("four_b_training_authorized") is not False
+        or (scale != "100m" and result.get("scale") != scale)
+        or (
+            scale == "100m"
+            and ("scale" in result or "promotion_receipt_sha256" in result)
+        )
     ):
         raise ShortScreenMCError("short-screen model identity differs")
-    specification = _short_screen_specification(result)
+    specification = _short_screen_specification(result, scale=scale)
     run_sha256 = canonical_sha256(specification)
     if result.get("run_sha256") != run_sha256:
         raise ShortScreenMCError("short-screen run identity differs")
@@ -341,7 +361,9 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         args.disjoint_receipt_sha256, "disjoint receipt SHA256"
     ):
         raise ShortScreenMCError("benchmark or disjoint receipt bytes differ")
-    config, geometry_row = load_bounded_config(args.geometry, args.family)
+    config, geometry_row = load_evaluation_config(
+        args.geometry, args.family, args.scale
+    )
     if sha256_file(args.geometry) != _sha256(args.geometry_sha256, "geometry SHA256"):
         raise ShortScreenMCError("geometry bytes differ")
     result, bindings = validate_short_screen_result(
@@ -350,6 +372,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         config=config,
         family=args.family,
         geometry_parameter_count=geometry_row["parameter_ledger"]["total"],
+        scale=args.scale,
     )
     try:
         training_stream = validate_frozen_stream(
@@ -443,6 +466,7 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     ):
         raise ShortScreenMCError("development output binding differs")
     payload["short_screen_lineage"] = {
+        "scale": args.scale,
         "run_sha256": result["run_sha256"],
         "result_sha256": args.short_screen_result_sha256,
         "model_sha256": result["model_sha256"],
@@ -460,6 +484,7 @@ def main() -> int:
     parser.add_argument("--geometry", type=Path, required=True)
     parser.add_argument("--geometry-sha256", required=True)
     parser.add_argument("--family", required=True)
+    parser.add_argument("--scale", choices=EVALUATION_SCALES, default="100m")
     parser.add_argument("--short-screen-result", type=Path, required=True)
     parser.add_argument("--short-screen-result-sha256", required=True)
     parser.add_argument("--checkpoint", type=Path, required=True)

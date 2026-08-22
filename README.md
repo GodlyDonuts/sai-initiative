@@ -140,9 +140,13 @@ benchmark evidence selects an architecture.
   a mixer in advance nor authorizes 4B. The real-benchmark continuation is now
   executable rather than aspirational: after those three checkpoint jobs and
   the refreshed decontamination population close, a CPU-only stager submits
-  exactly one independent H100 MMLU-Pro job and one independent H100 MuSR job
-  per family. A final CPU job reopens all six row-complete receipts and emits
-  exact paired family deltas. The benchmark launchers require the population's
+  eight independent one-H100 MMLU-Pro shards plus one independent one-H100
+  MuSR job per family, followed by one deterministic CPU merge per family's
+  MMLU-Pro shards. That is 27 single-H100 evaluation jobs, three CPU merges,
+  and six terminal comparison dependencies across the three families. A final
+  CPU job reopens the six row-complete terminal receipts, verifies all 27 H100
+  jobs completed cleanly, and emits exact paired family deltas. The benchmark
+  launchers require the population's
   admitted-source SHA-256 to equal the sole source SHA-256 recorded by the
   trained checkpoint's token stream. The chain contains no arrays, retries,
   requeues, implicit substitutions, architecture promotion, or 4B authority.

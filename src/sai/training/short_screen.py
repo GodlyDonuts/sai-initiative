@@ -43,6 +43,8 @@ SCHEMA = "sai-sub-4b-short-screen-v1"
 # only catches a maliciously relabeled larger geometry.
 MAX_PARAMETERS = 101_000_000
 FAMILIES = ("gated_gqa", "gdn_hybrid", "kda_mla_hybrid")
+SUB4B_SCALES = ("300m", "1b")
+_SCALE_TARGETS = {"100m": 100_000_000, "300m": 300_000_000, "1b": 1_000_000_000}
 
 
 class ShortScreenError(RuntimeError):
@@ -67,12 +69,16 @@ def _regular_file(path: Path, field: str) -> Path:
     return path
 
 
-def load_bounded_config(path: Path, family: str) -> tuple[SaiModelConfig, dict]:
-    """Load one immutable 100M row and enforce its narrow geometry envelope."""
+def load_bounded_config(
+    path: Path, family: str, scale: str = "100m"
+) -> tuple[SaiModelConfig, dict]:
+    """Load one immutable sub-4B row and enforce its narrow scale envelope."""
 
     _regular_file(path, "geometry artifact")
     if family not in FAMILIES:
         raise ShortScreenError("mixer family differs")
+    if scale not in _SCALE_TARGETS:
+        raise ShortScreenError("training scale differs")
     try:
         payload = json.loads(path.read_text())
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
@@ -84,11 +90,11 @@ def load_bounded_config(path: Path, family: str) -> tuple[SaiModelConfig, dict]:
         row
         for row in rows
         if isinstance(row, dict)
-        and row.get("scale") == "100m"
+        and row.get("scale") == scale
         and row.get("mixer_family") == family
     ]
     if len(matches) != 1 or not isinstance(matches[0].get("config"), dict):
-        raise ShortScreenError("100M family geometry is not unique")
+        raise ShortScreenError(f"{scale} family geometry is not unique")
     row = matches[0]
     config = SaiModelConfig(**row["config"])
     if config.mixer_family != family:
@@ -96,9 +102,17 @@ def load_bounded_config(path: Path, family: str) -> tuple[SaiModelConfig, dict]:
     ledger = parameter_ledger(config)
     if row.get("parameter_ledger") != ledger:
         raise ShortScreenError("geometry parameter ledger differs")
-    if ledger["total"] > MAX_PARAMETERS:
+    target = _SCALE_TARGETS[scale]
+    if row.get("target_parameters") != target:
+        raise ShortScreenError("geometry target parameter identity differs")
+    if scale == "100m":
+        if ledger["total"] > MAX_PARAMETERS:
+            raise ShortScreenError(
+                "exact parameter count exceeds the frozen 100M geometry envelope"
+            )
+    elif abs(ledger["total"] - target) > target // 100:
         raise ShortScreenError(
-            "exact parameter count exceeds the frozen 100M geometry envelope"
+            "exact parameter count exceeds the frozen scale envelope"
         )
     return config, row
 
@@ -121,6 +135,8 @@ def make_bindings(
     development_batch_size: int = 1,
     checkpoint_interval: int = 1,
     mechanics_only: bool = False,
+    scale: str = "100m",
+    promotion_receipt_sha256: str | None = None,
 ) -> tuple[CheckpointBindings, dict[str, Any]]:
     """Derive every checkpoint identity from the complete immutable run spec."""
 
@@ -132,6 +148,18 @@ def make_bindings(
         raise ShortScreenError("training and development streams must differ")
     code_identity = _sha256(code_sha256, "code identity")
     environment_identity = _sha256(environment_sha256, "environment identity")
+    if scale not in _SCALE_TARGETS:
+        raise ShortScreenError("training scale differs")
+    if scale == "100m":
+        if promotion_receipt_sha256 is not None:
+            raise ShortScreenError("100M screen cannot bind a promotion receipt")
+        promotion_identity = None
+    else:
+        if promotion_receipt_sha256 is None:
+            raise ShortScreenError("scale promotion receipt is required")
+        promotion_identity = _sha256(
+            promotion_receipt_sha256, "scale promotion receipt identity"
+        )
     backend = "fla" if family in {"gdn_hybrid", "kda_mla_hybrid"} else "reference"
     config_identity = canonical_sha256(config.as_dict())
     model_identity = canonical_sha256(
@@ -173,6 +201,14 @@ def make_bindings(
         "checkpoint_interval_steps": checkpoint_interval,
         "mechanics_only": mechanics_only,
     }
+    if scale != "100m":
+        specification.update(
+            {
+                "schema": "sai-sub-4b-scale-training-v1",
+                "scale": scale,
+                "promotion_receipt_sha256": promotion_identity,
+            }
+        )
     run_identity = canonical_sha256(specification)
     specification["run_sha256"] = run_identity
     return (
@@ -351,7 +387,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
     ):
         raise ShortScreenError("short-screen streams must use 2,048-token sequences")
 
-    config, geometry_row = load_bounded_config(args.geometry, args.family)
+    scale = getattr(args, "scale", "100m")
+    config, geometry_row = load_bounded_config(args.geometry, args.family, scale)
     if (
         train_report["vocab_size"] != config.vocab_size
         or development_report["vocab_size"] != config.vocab_size
@@ -383,6 +420,8 @@ def run(args: argparse.Namespace) -> dict[str, Any]:
         development_batch_size=args.development_batch_size,
         checkpoint_interval=args.checkpoint_interval,
         mechanics_only=args.mechanics_only,
+        scale=scale,
+        promotion_receipt_sha256=getattr(args, "promotion_receipt_sha256", None),
     )
     development_bytes = (
         None

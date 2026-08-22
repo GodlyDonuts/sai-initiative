@@ -17,6 +17,7 @@ set -euo pipefail
 : "${PYTHON:?PYTHON is required}"
 : "${OUTPUT:?OUTPUT is required}"
 : "${EVALUATION_JOB_IDS:?EVALUATION_JOB_IDS is required}"
+: "${H100_EVALUATION_JOB_IDS:?H100_EVALUATION_JOB_IDS is required}"
 : "${COMPARISON_ARGUMENTS:?COMPARISON_ARGUMENTS is required}"
 
 test -n "${SLURM_JOB_ID:-}"
@@ -37,6 +38,19 @@ read -r -a evaluation_job_ids <<< "$EVALUATION_JOB_IDS"
 test "${#evaluation_job_ids[@]}" = 6
 test "$(printf '%s\n' "${evaluation_job_ids[@]}" | sort -u | wc -l | tr -d ' ')" = 6
 for job_id in "${evaluation_job_ids[@]}"; do
+  [[ "$job_id" =~ ^[0-9]+$ ]]
+  state="$(sacct -j "$job_id" -X -n -P -o State | sed -n '1p')"
+  exit_code="$(sacct -j "$job_id" -X -n -P -o ExitCode | sed -n '1p')"
+  restarts="$(sacct -j "$job_id" -X -n -P -o Restarts | sed -n '1p')"
+  test "$state" = "COMPLETED"
+  test "$exit_code" = "0:0"
+  test "$restarts" = "0"
+done
+
+read -r -a h100_evaluation_job_ids <<< "$H100_EVALUATION_JOB_IDS"
+test "${#h100_evaluation_job_ids[@]}" = 27
+test "$(printf '%s\n' "${h100_evaluation_job_ids[@]}" | sort -u | wc -l | tr -d ' ')" = 27
+for job_id in "${h100_evaluation_job_ids[@]}"; do
   [[ "$job_id" =~ ^[0-9]+$ ]]
   state="$(sacct -j "$job_id" -X -n -P -o State | sed -n '1p')"
   exit_code="$(sacct -j "$job_id" -X -n -P -o ExitCode | sed -n '1p')"

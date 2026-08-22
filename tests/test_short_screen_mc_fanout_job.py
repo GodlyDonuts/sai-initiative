@@ -25,21 +25,27 @@ def test_fanout_is_cpu_only_bounded_and_waits_for_exact_completed_inputs() -> No
     assert '"$LOG_ROOT"/*' in job
 
 
-def test_fanout_submits_exactly_two_independent_single_h100_evaluators() -> None:
+def test_fanout_submits_eight_mmlu_shards_one_musr_and_one_cpu_merge() -> None:
     job = _job()
-    assert job.count("sbatch --parsable") == 2
-    assert job.count("env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin") == 2
-    assert job.count('--chdir="$SAI_ROOT"') == 2
+    assert job.count("sbatch --parsable") == 3
+    assert job.count("env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin") == 3
+    assert job.count('--chdir="$SAI_ROOT"') == 3
     assert "ALL,SAI_ROOT=" not in job
     assert job.count('"$EVALUATOR_JOB")') == 2
+    assert "sai.evaluation.development_mc_shards build" in job
+    assert "--shard-count 8" in job
+    assert '"$MERGE_JOB")' in job
     assert "BENCHMARK=mmlu_pro" in job
     assert "BENCHMARK=musr" in job
     assert "--array" not in job
-    assert "--dependency" not in job
+    assert 'test "${#mmlu_job_ids[@]}" = 8' in job
+    assert '--dependency="afterok:$mmlu_dependency"' in job
     assert "scancel" in job
     assert "trap cancel_partial_fanout EXIT" in job
-    assert '"gpu_jobs_submitted": 2' in job
-    assert '"maximum_concurrent_single_h100_jobs": 2' in job
+    assert '"gpu_jobs_submitted": 9' in job
+    assert '"cpu_merge_jobs_submitted": 1' in job
+    assert '"total_jobs_submitted": 10' in job
+    assert '"maximum_concurrent_single_h100_jobs": 9' in job
     assert '"retry": False' in job
     assert '"requeue": False' in job
 

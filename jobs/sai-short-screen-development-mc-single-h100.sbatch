@@ -43,6 +43,12 @@ set -euo pipefail
 : "${RUNTIME_PATH:?RUNTIME_PATH is required}"
 : "${OUTPUT:?OUTPUT is required}"
 
+SCALE="${SCALE:-100m}"
+case "$SCALE" in
+  100m|300m|1b) ;;
+  *) echo "evaluation scale must be 100m, 300m, or 1b" >&2; exit 2 ;;
+esac
+
 require_absolute() {
   case "$1" in
     /*) ;;
@@ -116,6 +122,7 @@ exec "$PYTHON" -P -s -B -m sai.evaluation.short_screen_mc \
   --geometry "$GEOMETRY" \
   --geometry-sha256 "$GEOMETRY_SHA256" \
   --family "$FAMILY" \
+  --scale "$SCALE" \
   --short-screen-result "$SHORT_SCREEN_RESULT" \
   --short-screen-result-sha256 "$SHORT_SCREEN_RESULT_SHA256" \
   --checkpoint "$CHECKPOINT" \
