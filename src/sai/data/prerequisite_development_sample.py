@@ -11,6 +11,8 @@ from typing import Any
 
 from sai.data.curriculum import BANDS, PHASES
 from sai.data.prerequisite_sample import (
+    ACTIVE_STRATA,
+    EXCLUDED_STRATA,
     SELECTION_SALT,
     PrerequisiteSampleError,
     _encoded_rows,
@@ -114,6 +116,15 @@ def _load_split(path: Path) -> tuple[dict[str, Any], dict[str, Any]]:
             "development phase geometry differs",
         )
         total += row["documents"]
+    grounding = phases["grounding"]
+    _require(
+        isinstance(grounding.get("by_band"), dict)
+        and grounding["by_band"].get("specialization") == 0
+        and isinstance(development.get("progression_checks"), dict)
+        and development["progression_checks"].get("grounding_has_no_specialization")
+        is True,
+        "development excluded stratum is not structurally empty",
+    )
     _require(
         total == development.get("documents"), "development document total differs"
     )
@@ -156,7 +167,11 @@ def build_development_audit_population(
     )
     split, curriculum_view = _load_split(split_receipt)
     try:
-        rows, candidates = _select(curriculum_view, per_stratum=per_stratum)
+        rows, candidates = _select(
+            curriculum_view,
+            per_stratum=per_stratum,
+            active_strata=ACTIVE_STRATA,
+        )
     except PrerequisiteSampleError as error:
         raise PrerequisiteDevelopmentSampleError(
             "development audit stratum differs"
@@ -182,8 +197,11 @@ def build_development_audit_population(
                 "salt_sha256": hashlib.sha256(SELECTION_SALT).hexdigest(),
                 "phases": list(PHASES),
                 "surface_bands": list(BANDS),
+                "excluded_structurally_empty_strata": [
+                    f"{phase}:{band}" for phase, band in EXCLUDED_STRATA
+                ],
                 "per_stratum": per_stratum,
-                "strata": len(PHASES) * len(BANDS),
+                "strata": len(ACTIVE_STRATA),
                 "selected_documents": len(rows),
                 "candidate_documents": candidates,
             },
@@ -252,7 +270,11 @@ def validate_development_audit_population(receipt: Path) -> dict[str, Any]:
     _require(isinstance(selection, dict), "audit selection differs")
     per_stratum = selection.get("per_stratum")
     try:
-        rows, candidates = _select(curriculum_view, per_stratum=per_stratum)
+        rows, candidates = _select(
+            curriculum_view,
+            per_stratum=per_stratum,
+            active_strata=ACTIVE_STRATA,
+        )
     except PrerequisiteSampleError as error:
         raise PrerequisiteDevelopmentSampleError(
             "development audit stratum differs"
@@ -263,8 +285,11 @@ def validate_development_audit_population(receipt: Path) -> dict[str, Any]:
         "salt_sha256": hashlib.sha256(SELECTION_SALT).hexdigest(),
         "phases": list(PHASES),
         "surface_bands": list(BANDS),
+        "excluded_structurally_empty_strata": [
+            f"{phase}:{band}" for phase, band in EXCLUDED_STRATA
+        ],
         "per_stratum": per_stratum,
-        "strata": len(PHASES) * len(BANDS),
+        "strata": len(ACTIVE_STRATA),
         "selected_documents": len(rows),
         "candidate_documents": candidates,
     }

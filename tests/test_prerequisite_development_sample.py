@@ -14,6 +14,7 @@ from sai.data.prerequisite_development_sample import (
     build_development_audit_population,
     validate_development_audit_population,
 )
+from sai.data.prerequisite_review import _population_descriptor, _validate_population
 from sai.data.token_stream import (
     ROW_SCHEMA,
     canonical_sha256,
@@ -22,7 +23,7 @@ from sai.data.token_stream import (
 )
 
 
-def _split(tmp_path: Path) -> Path:
+def _split(tmp_path: Path, *, items_per_stratum: int = 3) -> Path:
     development = tmp_path / "development.jsonl"
     rows = []
     phases = {}
@@ -30,7 +31,10 @@ def _split(tmp_path: Path) -> Path:
     for phase_index, phase in enumerate(PHASES):
         by_band = Counter()
         for band in BANDS:
-            for item in range(3):
+            if phase == "grounding" and band == "specialization":
+                by_band[band] = 0
+                continue
+            for item in range(items_per_stratum):
                 row = normalize_document(
                     {
                         "schema": ROW_SCHEMA,
@@ -53,7 +57,7 @@ def _split(tmp_path: Path) -> Path:
                 index += 1
         phases[phase] = {
             "index": phase_index,
-            "documents": len(BANDS) * 3,
+            "documents": sum(by_band.values()),
             "by_band": dict(by_band),
             "mean_difficulty": float(phase_index),
             "identity_sha256": f"{phase_index + 1:064x}",
@@ -79,6 +83,7 @@ def _split(tmp_path: Path) -> Path:
             "identity_sha256": "a" * 64,
             "curriculum_qualified": True,
             "phases": phases,
+            "progression_checks": {"grounding_has_no_specialization": True},
         },
     }
     payload["receipt_sha256"] = canonical_sha256(payload)
@@ -100,11 +105,18 @@ def test_selects_and_replays_source_disjoint_development_sample(
     receipt = tmp_path / "sample.receipt.json"
     payload = build_development_audit_population(split, output, receipt, per_stratum=2)
     assert validate_development_audit_population(receipt) == payload
-    assert payload["selection"]["selected_documents"] == 32
+    assert payload["selection"]["selected_documents"] == 30
     rows = [json.loads(line) for line in output.read_text().splitlines()]
     assert Counter((row["phase"], row["surface_band"]) for row in rows) == {
-        (phase, band): 2 for phase in PHASES for band in BANDS
+        (phase, band): 2
+        for phase in PHASES
+        for band in BANDS
+        if not (phase == "grounding" and band == "specialization")
     }
+    assert payload["selection"]["strata"] == 15
+    assert payload["selection"]["excluded_structurally_empty_strata"] == [
+        "grounding:specialization"
+    ]
     assert payload["limitations"][1] == (
         "development_split_is_source_disjoint_from_training"
     )
@@ -144,3 +156,27 @@ def test_rejects_resigned_split_or_incomplete_stratum(
             tmp_path / "too-many.receipt.json",
             per_stratum=4,
         )
+
+
+def test_review_boundary_accepts_exact_120_row_development_geometry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    split = _split(tmp_path, items_per_stratum=8)
+    monkeypatch.setattr(
+        sample_module,
+        "document_signals",
+        lambda text: {"band": next(band for band in BANDS if f"band={band}" in text)},
+    )
+    output = tmp_path / "review-sample.jsonl"
+    receipt = tmp_path / "review-sample.receipt.json"
+    payload = build_development_audit_population(split, output, receipt)
+    assert len(output.read_text().splitlines()) == 120
+    assert _validate_population(receipt, curriculum_workers=1) == payload
+    descriptor, population = _population_descriptor(
+        receipt, payload, receipt.read_bytes()
+    )
+    assert len(population) == 120
+    assert (
+        descriptor["ordered_population_sha256"]
+        == payload["output"]["ordered_population_sha256"]
+    )

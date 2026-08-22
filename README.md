@@ -164,8 +164,11 @@ benchmark evidence selects an architecture.
   An advanced low-loss record therefore cannot jump ahead of missing
   prerequisites. The output retains the identical token-and-boundary multiset
   and remains unauthorized for training or 4B until a matched comparison wins.
-- The semantic gate now freezes exactly 128 review documents, balanced across
-  all four phases and four surface bands, before any labels are produced. A
+- The semantic gate now freezes exactly 120 review documents: eight from each
+  of the 15 pedagogically valid phase/band cells before any labels are produced.
+  `grounding:specialization` is excluded because qualified progression requires
+  that cell to remain empty; demanding examples there would contradict the
+  curriculum being audited. A
   separate replay compares the prospective annotator with an independently
   identified reviewer, validates every cited evidence span against immutable
   source text, and computes concept-set disagreement directly. The taxonomy
@@ -403,7 +406,7 @@ benchmark evidence selects an architecture.
   source-disjoint development split. The selector preserves the same frozen
   salt, four phases, four surface bands, and eight documents per stratum while
   re-reading 94 MB rather than repeatedly replaying the 9.5 GB training
-  curriculum. Its 128 selected documents remain an unreviewed audit packet; the
+  curriculum. Its 120 selected documents remain an unreviewed audit packet; the
   speedup changes no label, threshold, or training byte.
 - The authored-curriculum prerequisite lane now has two exact blind candidate
   reviewers. CPU context jobs `770444` (Qwen3.5-9B) and `770445` (SmolLM3-3B)

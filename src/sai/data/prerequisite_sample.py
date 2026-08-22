@@ -17,6 +17,13 @@ from sai.data.token_stream import canonical_sha256, normalize_document, sha256_f
 SCHEMA = "sai-semantic-prerequisite-audit-population-v1"
 ROW_SCHEMA = "sai-semantic-prerequisite-audit-document-v1"
 SELECTION_SALT = b"sai-semantic-prerequisite-audit-population-v1"
+EXCLUDED_STRATA = (("grounding", "specialization"),)
+ACTIVE_STRATA = tuple(
+    (phase, band)
+    for phase in PHASES
+    for band in BANDS
+    if (phase, band) not in EXCLUDED_STRATA
+)
 _TOP_KEYS = {
     "schema",
     "status",
@@ -35,7 +42,10 @@ class PrerequisiteSampleError(RuntimeError):
 
 
 def _select(
-    curriculum: dict[str, Any], *, per_stratum: int
+    curriculum: dict[str, Any],
+    *,
+    per_stratum: int,
+    active_strata: tuple[tuple[str, str], ...] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
     if (
         isinstance(per_stratum, bool)
@@ -44,8 +54,19 @@ def _select(
     ):
         raise PrerequisiteSampleError("audit population geometry differs")
     source = Path(curriculum["output"]["path"])
+    strata = (
+        tuple((phase, band) for phase in PHASES for band in BANDS)
+        if active_strata is None
+        else active_strata
+    )
+    if (
+        not strata
+        or len(strata) != len(set(strata))
+        or any(phase not in PHASES or band not in BANDS for phase, band in strata)
+    ):
+        raise PrerequisiteSampleError("audit population strata differ")
     heaps: dict[tuple[str, str], list[tuple[int, int, dict[str, Any]]]] = {
-        (phase, band): [] for phase in PHASES for band in BANDS
+        key: [] for key in strata
     }
     candidates: Counter[str] = Counter()
     document_index = 0
@@ -78,6 +99,9 @@ def _select(
                     }
                     key = (phase, band)
                     candidates[f"{phase}:{band}"] += 1
+                    if key not in heaps:
+                        document_index += 1
+                        continue
                     item = (-rank, -document_index, sample)
                     if len(heaps[key]) < per_stratum:
                         heapq.heappush(heaps[key], item)
@@ -89,21 +113,20 @@ def _select(
     except (json.JSONDecodeError, RuntimeError) as error:
         raise PrerequisiteSampleError("curriculum row differs") from error
     selected = []
-    for phase in PHASES:
-        for band in BANDS:
-            values = heaps[(phase, band)]
-            if len(values) != per_stratum:
-                raise PrerequisiteSampleError("audit population stratum is incomplete")
-            selected.extend(
-                item[2]
-                for item in sorted(
-                    values,
-                    key=lambda item: (
-                        -item[0],
-                        -item[1],
-                    ),
-                )
+    for phase, band in strata:
+        values = heaps[(phase, band)]
+        if len(values) != per_stratum:
+            raise PrerequisiteSampleError("audit population stratum is incomplete")
+        selected.extend(
+            item[2]
+            for item in sorted(
+                values,
+                key=lambda item: (
+                    -item[0],
+                    -item[1],
+                ),
             )
+        )
     return selected, dict(sorted(candidates.items()))
 
 
@@ -132,7 +155,11 @@ def build_audit_population(
     if any(path.exists() or path.is_symlink() for path in (output, receipt)):
         raise PrerequisiteSampleError("audit output already exists")
     curriculum = validate_curriculum(curriculum_receipt, workers=curriculum_workers)
-    rows, candidates = _select(curriculum, per_stratum=per_stratum)
+    rows, candidates = _select(
+        curriculum,
+        per_stratum=per_stratum,
+        active_strata=ACTIVE_STRATA,
+    )
     encoded = _encoded_rows(rows)
     output.parent.mkdir(parents=True, exist_ok=True)
     suffix = f"partial.{os.getpid()}"
@@ -159,8 +186,11 @@ def build_audit_population(
                 "salt_sha256": hashlib.sha256(SELECTION_SALT).hexdigest(),
                 "phases": list(PHASES),
                 "surface_bands": list(BANDS),
+                "excluded_structurally_empty_strata": [
+                    f"{phase}:{band}" for phase, band in EXCLUDED_STRATA
+                ],
                 "per_stratum": per_stratum,
-                "strata": len(PHASES) * len(BANDS),
+                "strata": len(ACTIVE_STRATA),
                 "selected_documents": len(rows),
                 "candidate_documents": candidates,
             },
@@ -229,7 +259,11 @@ def validate_audit_population(
         raise PrerequisiteSampleError("audit curriculum lineage differs")
     selection = payload.get("selection", {})
     per_stratum = selection.get("per_stratum")
-    rows, candidates = _select(curriculum, per_stratum=per_stratum)
+    rows, candidates = _select(
+        curriculum,
+        per_stratum=per_stratum,
+        active_strata=ACTIVE_STRATA,
+    )
     encoded = _encoded_rows(rows)
     output = Path(payload.get("output", {}).get("path", ""))
     if (
@@ -239,8 +273,11 @@ def validate_audit_population(
             "salt_sha256": hashlib.sha256(SELECTION_SALT).hexdigest(),
             "phases": list(PHASES),
             "surface_bands": list(BANDS),
+            "excluded_structurally_empty_strata": [
+                f"{phase}:{band}" for phase, band in EXCLUDED_STRATA
+            ],
             "per_stratum": per_stratum,
-            "strata": len(PHASES) * len(BANDS),
+            "strata": len(ACTIVE_STRATA),
             "selected_documents": len(rows),
             "candidate_documents": candidates,
         }

@@ -11,6 +11,12 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.annotation_policy import validate_policy
+from sai.data.prerequisite_development_sample import (
+    SCHEMA as DEVELOPMENT_POPULATION_SCHEMA,
+)
+from sai.data.prerequisite_development_sample import (
+    validate_development_audit_population,
+)
 from sai.data.prerequisite_sample import validate_audit_population
 from sai.data.token_stream import canonical_sha256, sha256_file
 
@@ -231,15 +237,21 @@ def _population_descriptor(
     population_receipt: Path, payload: dict[str, Any], receipt_bytes: bytes
 ) -> tuple[dict[str, Any], list[Any]]:
     selection = payload.get("selection")
+    expected_strata = 15
+    expected_documents = 120
     if (
         not isinstance(selection, dict)
         or selection.get("per_stratum") != 8
-        or selection.get("strata") != 16
-        or selection.get("selected_documents") != 128
+        or selection.get("strata") != expected_strata
+        or selection.get("selected_documents") != expected_documents
+        or selection.get("excluded_structurally_empty_strata")
+        != ["grounding:specialization"]
     ):
         raise PrerequisiteReviewError("audit population geometry differs")
     output = Path(payload["output"]["path"])
     population, output_bytes = _jsonl(output, "audit population")
+    if len(population) != expected_documents:
+        raise PrerequisiteReviewError("audit population row count differs")
     descriptor = {
         "receipt_path": str(population_receipt.resolve()),
         "receipt_file_sha256": hashlib.sha256(receipt_bytes).hexdigest(),
@@ -257,6 +269,22 @@ def _population_descriptor(
     ):
         raise PrerequisiteReviewError("audit population descriptor differs")
     return descriptor, population
+
+
+def _validate_population(
+    population_receipt: Path, *, curriculum_workers: int
+) -> dict[str, Any]:
+    payload, _encoded = _json_file(population_receipt, "audit population receipt")
+    if not isinstance(payload, dict):
+        raise PrerequisiteReviewError("audit population receipt differs")
+    schema = payload.get("schema")
+    if schema == DEVELOPMENT_POPULATION_SCHEMA:
+        return validate_development_audit_population(population_receipt)
+    if schema == "sai-semantic-prerequisite-audit-population-v1":
+        return validate_audit_population(
+            population_receipt, curriculum_workers=curriculum_workers
+        )
+    raise PrerequisiteReviewError("audit population schema differs")
 
 
 def build_review_receipt(
@@ -284,7 +312,7 @@ def build_review_receipt(
     ):
         raise PrerequisiteReviewError("maximum disagreement differs")
     try:
-        population_payload = validate_audit_population(
+        population_payload = _validate_population(
             population_receipt, curriculum_workers=curriculum_workers
         )
     except Exception as error:
@@ -415,7 +443,7 @@ def validate_review_payload(
     population_row = _exact(receipt["population"], _POPULATION_KEYS, "population")
     population_receipt = Path(population_row["receipt_path"])
     try:
-        population_payload = validate_audit_population(
+        population_payload = _validate_population(
             population_receipt, curriculum_workers=curriculum_workers
         )
     except Exception as error:

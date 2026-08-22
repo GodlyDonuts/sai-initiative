@@ -368,23 +368,26 @@ and pass a prospectively capped disagreement rate no greater than five percent.
 The create-once output is validated before atomic publication and retains both
 training authorizations as false.
 `sai-select-prerequisite-audit` freezes the review population before annotation.
-It deterministically selects the eight lowest salted identity hashes from every
-combination of four curriculum phases and four surface bands: 128 documents in
-16 equal strata. The selector revalidates the parent curriculum, preserves full
-text and source identity, publishes create-once evidence, and can replay the
-selection exactly. Surface bands are used only to prevent an easy or late-phase
-sample from dominating review; they are not treated as semantic difficulty or
-domain labels.
+It deterministically selects the eight lowest salted identity hashes from each
+pedagogically valid combination of four curriculum phases and four surface
+bands: 120 documents in 15 equal strata. `grounding:specialization` is excluded
+because the qualified curriculum contract requires that cell to be empty; a
+review geometry that demanded rows from it would contradict the progression it
+audits. The selector revalidates the parent curriculum, preserves full text and
+source identity, publishes create-once evidence, and can replay the selection
+exactly. Surface bands are used only to prevent an easy or late-phase sample
+from dominating review; they are not treated as semantic difficulty or domain
+labels.
 `sai-select-prerequisite-development-audit` applies the identical salt,
 phase/band stratification, and eight-document geometry to the already-qualified
 source-disjoint development split. It reopens the split self-hash, exact
 development file hash, phase counts, and progression status, then recomputes
-the 128-row selection from only the development artifact. This avoids replaying
+the 120-row selection from only the development artifact. This avoids replaying
 the 9.5 GB training curriculum several times merely to form a review packet and
 prevents the reviewed sample from being part of optimizer training. The output
 remains unreviewed and authorizes no training.
 `sai-review-prerequisite-audit` then compares the prospective annotator against
-an independently identified reviewer on those exact 128 documents. Both sides
+an independently identified reviewer on those exact 120 documents. Both sides
 must provide canonical concept sets with nonempty evidence spans whose hashes
 reopen against the frozen source text. The receipt binds and reopens the sample,
 candidate concept list, identities, policy, and both annotation files; it

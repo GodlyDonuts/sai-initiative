@@ -33,13 +33,13 @@ def _artifacts(
     tmp_path.mkdir(parents=True, exist_ok=True)
     population = []
     phases = ("grounding", "integration", "reasoning", "specialization")
-    for index in range(128):
+    for index in range(120):
         text = f"Evidence token for semantic document {index}."
         population.append(
             {
                 "schema": "sai-semantic-prerequisite-audit-document-v1",
                 "document_index": index,
-                "phase": phases[index // 32],
+                "phase": phases[index // 30],
                 "surface_band": ("basic", "intermediate", "advanced", "specialized")[
                     index % 4
                 ],
@@ -58,11 +58,13 @@ def _artifacts(
     population_output = tmp_path / "population.jsonl"
     population_bytes = _write_jsonl(population_output, population)
     population_payload = {
+        "schema": "sai-semantic-prerequisite-audit-population-v1",
         "receipt_sha256": "a" * 64,
         "selection": {
             "per_stratum": 8,
-            "strata": 16,
-            "selected_documents": 128,
+            "strata": 15,
+            "selected_documents": 120,
+            "excluded_structurally_empty_strata": ["grounding:specialization"],
         },
         "output": {
             "path": str(population_output.resolve()),
@@ -147,9 +149,9 @@ def test_builds_replays_and_qualifies_independent_review(
     payload = _build(paths, output)
     assert payload["status"] == "passed"
     assert payload["audit_qualified"] is True
-    assert payload["reviewed_documents"] == 128
+    assert payload["reviewed_documents"] == 120
     assert payload["disagreement_documents"] == 6
-    assert payload["observed_disagreement_ppm"] == 46_875
+    assert payload["observed_disagreement_ppm"] == 50_000
     assert payload["training_authorized"] is False
     assert payload["four_b_training_authorized"] is False
     assert (

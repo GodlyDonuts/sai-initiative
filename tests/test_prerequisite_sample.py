@@ -94,11 +94,17 @@ def test_selects_replays_and_rejects_tamper(
         curriculum_workers=3,
     )
     assert validate_audit_population(receipt, curriculum_workers=3) == payload
-    assert payload["selection"]["selected_documents"] == 32
-    assert payload["selection"]["strata"] == 16
+    assert payload["selection"]["selected_documents"] == 30
+    assert payload["selection"]["strata"] == 15
+    assert payload["selection"]["excluded_structurally_empty_strata"] == [
+        "grounding:specialization"
+    ]
     rows = [json.loads(line) for line in output.read_text().splitlines()]
     assert Counter((row["phase"], row["surface_band"]) for row in rows) == {
-        (phase, band): 2 for phase in PHASES for band in BANDS
+        (phase, band): 2
+        for phase in PHASES
+        for band in BANDS
+        if not (phase == "grounding" and band == "specialization")
     }
     assert payload["training_authorized"] is False
     assert payload["four_b_training_authorized"] is False
