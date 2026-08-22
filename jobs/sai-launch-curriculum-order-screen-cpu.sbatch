@@ -160,7 +160,7 @@ control_job="$({
 job_ids+=("$control_job")
 
 compare_job="$({
-  env -u SLURM_OVERLAP -u SLURM_WHOLE sbatch --parsable \
+  env -u SLURM_OVERLAP -u SLURM_WHOLE sbatch --parsable --time=04:00:00 \
     --chdir="$SAI_ROOT" --dependency="afterok:$curriculum_job:$control_job" \
     --kill-on-invalid-dep=yes \
     --output="$LOG_ROOT/sai_compare_curriculum_order_%j.out" \

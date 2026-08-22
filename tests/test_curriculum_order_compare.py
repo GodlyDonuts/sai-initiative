@@ -198,6 +198,7 @@ def test_launcher_is_matched_independent_single_h100_and_nonretrying() -> None:
     assert "validate_order_control" in launcher
     assert "validate_curriculum_split" in launcher
     assert "curriculum_workers=curriculum_workers" in launcher
+    assert "sbatch --parsable --time=04:00:00" in launcher
     assert "FAMILY=gated_gqa" in launcher
     assert "TRAINING_SEQUENCES=244140" in launcher
     assert "OPTIMIZER_STEPS=954" in launcher
