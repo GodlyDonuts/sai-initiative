@@ -534,8 +534,10 @@ benchmark evidence selects an architecture.
   ambiguous, or sub-minimum evidence strings. Pushed commit `2aaf0f3…af5bd9`
   conservatively discards those unsupported strings, retains only unchanged
   unique literal 16-codepoint evidence, and never upgrades a recommendation.
-  A new collision-safe execution may rank cross-family disagreements for human
-  attention, but model output still cannot qualify labels.
+  Fresh collision-safe jobs `770785` (Qwen) and `770786` (SmolLM3) are staged
+  independently, with CPU comparison `770787` dependent on both. They may rank
+  cross-family disagreements for human attention, but model output still
+  cannot qualify labels.
   Exact failure and recovery evidence is in
   `docs/SAI_AUTHORED_MODEL_REVIEW_RECOVERY_20260822.md`. The final adjudicator now
   accepts neither arbitrary identity strings nor model-review identities: each

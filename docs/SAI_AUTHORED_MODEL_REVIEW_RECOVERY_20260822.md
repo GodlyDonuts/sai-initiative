@@ -130,3 +130,10 @@ is discarded and an empty-taught `admit` remains downgraded to `revise`.
 Unknown fields, invented concepts, confidence thresholds, defect validation,
 and human qualification requirements remain unchanged. Full validation passed
 617 tests plus Black, Ruff, every Slurm syntax check, and the whitespace check.
+
+Fresh collision-safe diagnostic jobs use sealed runtime
+`sai-initiative-runtime-8346674-r1`: Qwen `770785`, SmolLM3 `770786`, and CPU
+comparison `770787` with dependency `afterok:770785:770786`. Both GPU jobs are
+independent single-H100, no-requeue requests. Their output roots and the
+comparison output were absent before submission. They cannot qualify labels or
+authorize data; a successful comparison only prioritizes later human review.
