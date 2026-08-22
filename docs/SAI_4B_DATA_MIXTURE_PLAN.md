@@ -212,6 +212,20 @@ compute unless that item is the declared changed factor.
 6. **Mixture ratios:** only after source classes independently pass, compare
    prospectively frozen ratios; never tune them on terminal benchmark answers.
 
+`sai-compare-source-addition` is the executable held-out-likelihood boundary
+for steps 1 and 2. It reopens both token streams and terminal training receipts,
+requires the same GQA model, initialization, optimizer, tokenizer, sequence
+length, training-token count, update geometry, development population, and
+evaluation contract, and requires distinct source-qualification evidence. It
+reports both target-normalized and admitted-UTF-8-byte-normalized likelihood
+for every frozen development stratum. A regression in either normalization in
+any stratum vetoes the source addition. Even a complete likelihood pass records
+`source_addition_retained=false`: the source is retained only after the same
+checkpoints pass the predeclared real source-disjoint benchmark comparison.
+This prevents a source with unusually tokenization-friendly text or narrow
+specialist gains from entering the mixture on an aggregate training-loss
+story.
+
 The ladder begins with one matched approximately 100M-parameter model because
 data must be selected before architecture. A positive one-seed result is
 provisional. Promotion requires repeated seeds, held-out likelihood normalized

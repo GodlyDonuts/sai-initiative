@@ -344,6 +344,13 @@ benchmark evidence selects an architecture.
   source. Each decision must also name the exact source-manifest hash it covers,
   preventing cross-source receipt reuse. There is no structure-only v3 mode;
   every validation reopens the evidence root. No v3 mixture passes yet.
+- The source-addition gate is now executable rather than a prospective table.
+  `sai-compare-source-addition` requires equal training tokens and compute,
+  identical model/initialization/optimizer/tokenizer/development evidence, and
+  distinct replayed source qualifications. It compares target-normalized and
+  UTF-8-byte-normalized held-out likelihood in every development stratum; any
+  stratum regression vetoes the source. A likelihood pass still retains
+  nothing until real source-disjoint benchmark confirmation completes.
 - The matched curriculum-order experiment is now live. CPU launcher `770136`
   completed at `0:0` after replaying the split and all three streams and
   published dispatch SHA-256 `4d682933…7ee`. Its create-only wall-time receipt
