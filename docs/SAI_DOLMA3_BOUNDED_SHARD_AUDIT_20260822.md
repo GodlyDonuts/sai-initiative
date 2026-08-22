@@ -91,6 +91,35 @@ The 110 members cover 21 low-band, 24 middle-band, and 24 high-band Common
 Crawl topics; 23 science-PDF topics; 15 Stack-Edu languages; and one member
 each from FineMath, the arXiv partition, and the English encyclopedia
 partition. Their total compressed size is 2,583,644,891 bytes. This is a
-selection plan only: no member was downloaded, no content was admitted, and
-no training was authorized. Content inspection will be streamed or performed
-only after current run artifacts release enough storage headroom.
+selection plan only and never authorizes source admission or training.
+
+The planned audit has now completed by streaming every member one at a time,
+verifying its inventory-bound size and SHA-256, emitting a metadata-only
+receipt, and deleting the compressed member before downloading the next. The
+aggregate receipt is
+`234db5341dbcf0c6615712139c64bc1dec1357584bad565feca4f6b1964f790f`;
+its local file SHA-256 is
+`788048c54e167714112d3ff43200799fc7e169e29ddff201d18ada6464d9ca4b`.
+
+| Prospective stratum | Shards | Physical rows | Within-shard repeated-ID rows | Fraction |
+|---|---:|---:|---:|---:|
+| Common Crawl low band | 21 | 151,600 | 33,631 | 22.1840% |
+| Common Crawl middle band | 24 | 302,508 | 55,443 | 18.3278% |
+| Common Crawl high band | 24 | 1,309,099 | 735,952 | 56.2182% |
+| science PDFs | 23 | 10,562 | 1,233 | 11.6739% |
+| Stack-Edu languages | 15 | 180,044 | 131,119 | 72.8261% |
+| FineMath 3+ | 1 | 20,089 | 15,602 | 77.6644% |
+| arXiv | 1 | 3,885 | 2,231 | 57.4260% |
+| English encyclopedia | 1 | 2,431 | 0 | 0.0000% |
+| **Total** | **110** | **1,980,218** | **975,211** | **49.2477%** |
+
+The unique-document sum is only within shards; the audit deliberately does not
+claim cross-shard deduplication, so 1,005,007 is an upper bound on unique IDs in
+this sample. It also found 980,761 repeated-text rows and two empty science-PDF
+rows. License metadata was absent on 1,800,174 rows. Stack-Edu reported 136,873
+`no_license` rows and only 43,171 `permissive` rows.
+
+This result changes the mixture design: Sai will construct one canonical
+document population first, then attach explicit, auditable exposure weights.
+Physical repetitions in the wrapper cannot count as source diversity or
+silently determine the curriculum. No audited source is admitted yet.
