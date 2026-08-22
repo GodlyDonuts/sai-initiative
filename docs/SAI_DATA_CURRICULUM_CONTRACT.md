@@ -74,10 +74,16 @@ larger admitted corpus:
 
 | Phase | Sequences | Tokens | Share |
 |---|---:|---:|---:|
-| grounding | 48,828 | 99,999,744 | 20% |
-| integration | 61,035 | 124,999,680 | 25% |
-| reasoning | 73,242 | 149,999,616 | 30% |
-| specialization | 61,035 | 124,999,680 | 25% |
+| grounding | 48,896 | 100,139,008 | 20.03% |
+| integration | 60,928 | 124,780,544 | 24.96% |
+| reasoning | 73,216 | 149,946,368 | 29.99% |
+| specialization | 61,100 | 125,132,800 | 25.03% |
+
+The first three cumulative phase boundaries are 48,896, 109,824, and 183,040
+sequences: exactly optimizer updates 191, 429, and 715 at 256 sequences per
+update. No gradient accumulation window therefore mixes examples from adjacent
+difficulty phases. The final 244,140-sequence boundary ends with the declared
+172-sequence partial update and preserves the exact 499,998,720-token budget.
 
 The receipt records documents skipped after each phase budget, at most one
 truncated tail document per phase, exact emitted phase sequences/tokens/bytes,

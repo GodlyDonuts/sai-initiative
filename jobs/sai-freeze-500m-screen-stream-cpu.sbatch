@@ -112,16 +112,17 @@ export TOKENIZERS_PARALLELISM=false
   --output "$TRAIN_STREAM" \
   --sequence-length 2048 \
   --prefix-sequences 256 \
-  --prefix-sequences 48828 \
+  --prefix-sequences 48896 \
   --prefix-sequences 61035 \
-  --prefix-sequences 109863 \
+  --prefix-sequences 109824 \
   --prefix-sequences 122070 \
+  --prefix-sequences 183040 \
   --prefix-sequences 183105 \
   --prefix-sequences 244140 \
-  --curriculum-phase-sequences grounding=48828 \
-  --curriculum-phase-sequences integration=61035 \
-  --curriculum-phase-sequences reasoning=73242 \
-  --curriculum-phase-sequences specialization=61035 \
+  --curriculum-phase-sequences grounding=48896 \
+  --curriculum-phase-sequences integration=60928 \
+  --curriculum-phase-sequences reasoning=73216 \
+  --curriculum-phase-sequences specialization=61100 \
   --require-all-curriculum-phases-at-prefix 244140
 
 "$PYTHON" -P -s -B - "$TRAIN_STREAM" "$tokenizer_sha256" "$curriculum_sha256" <<'PY'
@@ -138,10 +139,11 @@ assert stream["sequences"] == 244_140
 assert stream["valid_tokens"] == 499_998_720
 assert set(stream["prefix_utf8_bytes"]) == {
     "256",
-    "48828",
+    "48896",
     "61035",
-    "109863",
+    "109824",
     "122070",
+    "183040",
     "183105",
     "244140",
 }
@@ -154,14 +156,24 @@ assert stream["curriculum"]["all_required_prefixes_cover_every_phase"] is True
 assert stream["curriculum"]["phase_order_contiguous_at_every_prefix"] is True
 assert stream["curriculum"]["phase_token_budget_enforced"] is True
 assert stream["curriculum"]["phase_sequence_targets"] == {
-    "grounding": 48_828,
-    "integration": 61_035,
-    "reasoning": 73_242,
-    "specialization": 61_035,
+    "grounding": 48_896,
+    "integration": 60_928,
+    "reasoning": 73_216,
+    "specialization": 61_100,
 }
 assert stream["curriculum"]["phase_sequences_emitted"] == stream["curriculum"][
     "phase_sequence_targets"
 ]
+phase_targets = stream["curriculum"]["phase_sequence_targets"]
+phase_boundaries = [
+    phase_targets["grounding"],
+    phase_targets["grounding"] + phase_targets["integration"],
+    phase_targets["grounding"]
+    + phase_targets["integration"]
+    + phase_targets["reasoning"],
+]
+assert phase_boundaries == [48_896, 109_824, 183_040]
+assert all(boundary % 256 == 0 for boundary in phase_boundaries)
 phase_order = stream["curriculum"]["phase_order"]
 for evidence in stream["curriculum"]["prefixes"].values():
     active = [phase for phase in phase_order if evidence[phase]["tokens"] > 0]
