@@ -47,4 +47,5 @@ exec "$PYTHON" -P -s -B -m sai.data.decontamination build \
   --source "$SOURCE" \
   "${boundary_args[@]}" \
   --output "$OUTPUT" \
-  --receipt "$RECEIPT"
+  --receipt "$RECEIPT" \
+  --workers "$SLURM_CPUS_PER_TASK"

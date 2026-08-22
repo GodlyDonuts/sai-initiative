@@ -89,6 +89,62 @@ def test_boundary_source_or_output_tampering_fails_replay(tmp_path: Path) -> Non
         validate(receipt)
 
 
+def test_parallel_build_is_byte_exact_and_replays_sequentially(tmp_path: Path) -> None:
+    boundary = write_jsonl(
+        tmp_path / "boundary.jsonl",
+        [
+            {
+                "prompt": (
+                    "one two three four five six seven eight nine ten eleven twelve "
+                    "thirteen"
+                )
+            }
+        ],
+    )
+    source = write_jsonl(
+        tmp_path / "source.jsonl",
+        [
+            raw(index, f"Unique clean scientific document number {index} about tensors")
+            for index in range(150)
+        ]
+        + [raw(150, "Unique clean scientific document number 17 about tensors")],
+    )
+    sequential_output = tmp_path / "sequential.jsonl"
+    sequential_receipt = tmp_path / "sequential.receipt.json"
+    parallel_output = tmp_path / "parallel.jsonl"
+    parallel_receipt = tmp_path / "parallel.receipt.json"
+    sequential = build(
+        source,
+        [boundary],
+        sequential_output,
+        sequential_receipt,
+        workers=1,
+    )
+    parallel = build(
+        source,
+        [boundary],
+        parallel_output,
+        parallel_receipt,
+        workers=3,
+    )
+    assert parallel_output.read_bytes() == sequential_output.read_bytes()
+    assert parallel["output"]["sha256"] == sequential["output"]["sha256"]
+    for key in (
+        "source",
+        "boundaries",
+        "boundary_manifest_sha256",
+        "policy",
+        "policy_sha256",
+        "scanned",
+        "accepted",
+        "dropped",
+        "accepted_identity_sha256",
+        "dropped_evidence_sha256",
+    ):
+        assert parallel[key] == sequential[key]
+    assert validate(parallel_receipt) == parallel
+
+
 def test_empty_or_malformed_boundary_fails_closed(tmp_path: Path) -> None:
     source = write_jsonl(tmp_path / "source.jsonl", [raw(0, "clean text")])
     boundary = tmp_path / "boundary.jsonl"
@@ -104,6 +160,7 @@ def test_cpu_decontamination_job_requires_exact_twenty_boundaries() -> None:
     assert "--no-requeue" in job
     assert "--gres=" not in job
     assert "EXPECTED_COMMIT" in job
+    assert '--workers "$SLURM_CPUS_PER_TASK"' in job
 
 
 def test_shingle_index_uses_compact_byte_exact_sha256_keys() -> None:

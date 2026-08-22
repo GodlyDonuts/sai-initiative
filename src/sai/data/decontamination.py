@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import multiprocessing
 import os
 import re
 import unicodedata
@@ -27,6 +28,8 @@ _WORD = re.compile(r"[^\W_]+(?:['’-][^\W_]+)*", re.UNICODE)
 _CODE = re.compile(
     r"[A-Za-z_]\w*|\d+(?:\.\d+)?|==|!=|<=|>=|:=|->|\*\*|//|<<|>>|&&|\|\||\S"
 )
+_WORKER_WORD_BOUNDARY: set[bytes] | None = None
+_WORKER_CODE_BOUNDARY: set[bytes] | None = None
 
 
 class DecontaminationError(RuntimeError):
@@ -153,12 +156,55 @@ def _raw_row(row: Any, *, source_path_sha256: str, line_number: int) -> dict[str
     return {"text": text, "source": source, "raw_identity_sha256": identity}
 
 
+def _candidate(
+    item: tuple[int, str, str],
+) -> tuple[dict[str, Any], bytes, int, int]:
+    """Compute the expensive per-row evidence without changing source order."""
+
+    line_number, line, source_sha256 = item
+    if _WORKER_WORD_BOUNDARY is None or _WORKER_CODE_BOUNDARY is None:
+        raise DecontaminationError("decontamination worker boundary is unavailable")
+    try:
+        raw = _raw_row(
+            json.loads(line),
+            source_path_sha256=source_sha256,
+            line_number=line_number,
+        )
+    except json.JSONDecodeError as error:
+        raise DecontaminationError("raw source JSONL is malformed") from error
+    normalized_text = _normalize(raw["text"])
+    normalized_text_sha256 = hashlib.sha256(normalized_text.encode()).digest()
+    word_shingles, code_shingles = _text_shingles(raw["text"])
+    word_overlap_count = sum(
+        shingle in _WORKER_WORD_BOUNDARY for shingle in word_shingles
+    )
+    code_overlap_count = sum(
+        shingle in _WORKER_CODE_BOUNDARY for shingle in code_shingles
+    )
+    return raw, normalized_text_sha256, word_overlap_count, code_overlap_count
+
+
+def _source_items(source: Path, source_sha256: str):
+    with source.open() as handle:
+        for line_number, line in enumerate(handle, start=1):
+            if line.strip():
+                yield line_number, line, source_sha256
+
+
 def _compute(
     source: Path,
     boundaries: list[Path],
     on_accepted: Callable[[dict[str, Any]], None],
+    *,
+    workers: int = 1,
 ) -> dict[str, Any]:
-    if not source.is_file() or source.is_symlink():
+    if (
+        not source.is_file()
+        or source.is_symlink()
+        or isinstance(workers, bool)
+        or not isinstance(workers, int)
+        or not 1 <= workers <= 64
+    ):
         raise DecontaminationError("raw source is missing or unsafe")
     source_sha256 = sha256_file(source)
     words, code, boundary_receipts = boundary_index(boundaries)
@@ -168,36 +214,41 @@ def _compute(
     accepted_identity_digest = hashlib.sha256()
     dropped_evidence_digest = hashlib.sha256()
     scanned = accepted = dropped = 0
-    with source.open() as handle:
-        for line_number, line in enumerate(handle, start=1):
-            if not line.strip():
-                continue
-            scanned += 1
-            try:
-                raw = _raw_row(
-                    json.loads(line),
-                    source_path_sha256=source_sha256,
-                    line_number=line_number,
+    global _WORKER_WORD_BOUNDARY, _WORKER_CODE_BOUNDARY
+    _WORKER_WORD_BOUNDARY = words
+    _WORKER_CODE_BOUNDARY = code
+    items = _source_items(source, source_sha256)
+    pool = None
+    try:
+        if workers == 1:
+            candidates = map(_candidate, items)
+        else:
+            if os.name != "posix":
+                raise DecontaminationError(
+                    "parallel decontamination requires a POSIX fork runtime"
                 )
-            except json.JSONDecodeError as error:
-                raise DecontaminationError("raw source JSONL is malformed") from error
-            normalized_text = _normalize(raw["text"])
-            normalized_text_sha256 = hashlib.sha256(normalized_text.encode()).digest()
-            word_shingles, code_shingles = _text_shingles(raw["text"])
-            word_overlap = words.intersection(word_shingles)
-            code_overlap = code.intersection(code_shingles)
+            context = multiprocessing.get_context("fork")
+            pool = context.Pool(processes=workers)
+            candidates = pool.imap(_candidate, items, chunksize=64)
+        for (
+            raw,
+            normalized_text_sha256,
+            word_overlap_count,
+            code_overlap_count,
+        ) in candidates:
+            scanned += 1
             duplicate = normalized_text_sha256 in seen_text
             seen_text.add(normalized_text_sha256)
             decision = {
                 "raw_identity_sha256": raw["raw_identity_sha256"],
                 "boundary_manifest_sha256": boundary_manifest_sha256,
                 "policy_sha256": policy_sha256,
-                "word_overlap_count": len(word_overlap),
-                "code_overlap_count": len(code_overlap),
+                "word_overlap_count": word_overlap_count,
+                "code_overlap_count": code_overlap_count,
                 "normalized_exact_duplicate": duplicate,
             }
             evidence_sha256 = canonical_sha256(decision)
-            if word_overlap or code_overlap or duplicate:
+            if word_overlap_count or code_overlap_count or duplicate:
                 dropped += 1
                 dropped_evidence_digest.update(bytes.fromhex(evidence_sha256))
                 continue
@@ -227,6 +278,17 @@ def _compute(
             accepted += 1
             accepted_identity_digest.update(bytes.fromhex(identity))
             on_accepted({**output, "identity_sha256": identity})
+        if pool is not None:
+            pool.close()
+            pool.join()
+    except BaseException:
+        if pool is not None:
+            pool.terminate()
+            pool.join()
+        raise
+    finally:
+        _WORKER_WORD_BOUNDARY = None
+        _WORKER_CODE_BOUNDARY = None
     if not scanned or not accepted:
         raise DecontaminationError("decontamination admitted no documents")
     return {
@@ -249,7 +311,12 @@ def _compute(
 
 
 def build(
-    source: Path, boundaries: list[Path], output: Path, receipt: Path
+    source: Path,
+    boundaries: list[Path],
+    output: Path,
+    receipt: Path,
+    *,
+    workers: int = 1,
 ) -> dict[str, Any]:
     if output.exists() or receipt.exists():
         raise DecontaminationError("decontamination output already exists")
@@ -265,6 +332,7 @@ def build(
                 lambda row: output_handle.write(
                     json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
                 ),
+                workers=workers,
             )
     except BaseException:
         stage.unlink(missing_ok=True)
@@ -335,11 +403,18 @@ def main() -> None:
     build_parser.add_argument("--boundary", type=Path, action="append", required=True)
     build_parser.add_argument("--output", type=Path, required=True)
     build_parser.add_argument("--receipt", type=Path, required=True)
+    build_parser.add_argument("--workers", type=int, default=1)
     validate_parser = subparsers.add_parser("validate")
     validate_parser.add_argument("--receipt", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "build":
-        payload = build(args.source, args.boundary, args.output, args.receipt)
+        payload = build(
+            args.source,
+            args.boundary,
+            args.output,
+            args.receipt,
+            workers=args.workers,
+        )
     else:
         payload = validate(args.receipt)
     print(
