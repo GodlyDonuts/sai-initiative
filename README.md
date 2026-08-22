@@ -123,7 +123,12 @@ benchmark evidence selects an architecture.
   the original population builder. The immutable 12,032-row MMLU-Pro and
   756-row MuSR sources are reconverted against the current decontamination
   receipt; a refresh-only schema can no longer strand an otherwise valid
-  evaluation before submission.
+  evaluation before submission. Recovery job `770126` completed at `0:0` in
+  60 seconds with zero restarts and empty stderr. Its canonical aggregate file
+  is SHA-256
+  `dbbbeb2904a7d6d9c5e9fdc06017b97cdf5befaa70c0dba3622bd179386f43f1`
+  with self-hash
+  `a6df423a114c2611ce6b3af16df1303278225c354fd9bd14e6a9db5d36a93f68`.
 - The real-development decision is frozen before scores exist. Both matched
   checkpoints must complete all 12,032 MMLU-Pro rows and all 756 MuSR rows.
   Curriculum order is retained only with nonnegative deltas on both boards, a
@@ -141,7 +146,8 @@ benchmark evidence selects an architecture.
   that handoff against the exact comparison and canonical population jobs.
   This removes the manual gap between a clean NLL decision and real-board
   measurement without reserving an idle GPU or pre-authorizing a favorable
-  result.
+  result. Job `770127` is held on launcher `770106`; it requests no GPU and
+  submits the real-board graph only through the frozen positive-NLL condition.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
 
