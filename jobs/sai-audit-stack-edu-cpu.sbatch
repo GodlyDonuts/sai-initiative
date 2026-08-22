@@ -39,6 +39,10 @@ test -d "$LOG_ROOT" && test ! -L "$LOG_ROOT"
 
 export PYTHONPATH="$SAI_ROOT/src"
 export PYTHONDONTWRITEBYTECODE=1
+export OPENBLAS_NUM_THREADS=1
+export OMP_NUM_THREADS=1
+export MKL_NUM_THREADS=1
+export NUMEXPR_NUM_THREADS=1
 
 "$PYTHON" -P -s -B -m sai.data.stack_edu_audit audit \
   --source "$SOURCE" \
