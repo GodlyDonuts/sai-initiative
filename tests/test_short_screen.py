@@ -212,9 +212,20 @@ def test_250m_token_launcher_is_matched_independent_and_fail_closed() -> None:
     ).read_text()
     assert "#SBATCH --gres" not in launcher
     assert "#SBATCH --no-requeue" in launcher
-    assert "for family in gated_gqa gdn_hybrid kda_mla_hybrid" in launcher
-    assert 'gpu_jobs_submitted": 3' in launcher
-    assert 'maximum_concurrent_gpu_jobs": 3' in launcher
+    assert "SCREEN_SCOPE:?SCREEN_SCOPE is required" in launcher
+    assert "gqa_only)" in launcher
+    assert "three_family)" in launcher
+    assert "families=(gated_gqa)" in launcher
+    assert "families=(gated_gqa gdn_hybrid kda_mla_hybrid)" in launcher
+    assert (
+        'comparison_class="single_family_reference_baseline_not_tournament"' in launcher
+    )
+    assert "FULL_MODEL_PARITY_RECEIPT" in launcher
+    assert "FULL_MODEL_PARITY_SHA256" in launcher
+    assert 'receipt["status"] == "production_cuda_qualified"' in launcher
+    assert 'for family in "${families[@]}"' in launcher
+    assert '"gpu_jobs_submitted": len(sys.argv[10].split())' in launcher
+    assert '"maximum_concurrent_gpu_jobs": len(sys.argv[10].split())' in launcher
     assert '"training_tokens": 249_999_360' in launcher
     assert '"training_sequences": 122_070' in launcher
     assert '"optimizer_steps": 477' in launcher

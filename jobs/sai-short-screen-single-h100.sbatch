@@ -67,6 +67,31 @@ assert receipt["operators"]["version"] == "0.4.2"
 assert receipt["operators"]["mock"] is False
 PY
 
+if [[ "$FAMILY" != gated_gqa ]]; then
+  : "${FULL_MODEL_PARITY_RECEIPT:?FULL_MODEL_PARITY_RECEIPT is required for hybrid families}"
+  : "${FULL_MODEL_PARITY_SHA256:?FULL_MODEL_PARITY_SHA256 is required for hybrid families}"
+  test -f "$FULL_MODEL_PARITY_RECEIPT"
+  test ! -L "$FULL_MODEL_PARITY_RECEIPT"
+  test "$(sha256sum "$FULL_MODEL_PARITY_RECEIPT" | cut -d ' ' -f 1)" = "$FULL_MODEL_PARITY_SHA256"
+  "$PYTHON" -P -s -B - "$FULL_MODEL_PARITY_RECEIPT" <<'PY'
+import json
+import pathlib
+import sys
+
+receipt = json.loads(pathlib.Path(sys.argv[1]).read_text())
+assert receipt["schema"] == "sai-full-delta-mixer-fla-parity-v1"
+assert receipt["status"] == "production_cuda_qualified"
+assert receipt["production_cuda_qualified"] is True
+assert receipt["fla_version"] == "0.4.2"
+assert receipt["optimizer_steps"] == 0
+assert receipt["training_authorized"] is False
+assert receipt["architecture_promoted"] is False
+assert len(receipt["cases"]) == 8
+assert all(row["passed"] is True for row in receipt["cases"])
+PY
+  environment_sha256="$(printf 'operator=%s\nfull_model=%s\n' "$environment_sha256" "$FULL_MODEL_PARITY_SHA256" | sha256sum | cut -d ' ' -f 1)"
+fi
+
 gpu_count="$(nvidia-smi --query-gpu=uuid --format=csv,noheader | wc -l | tr -d ' ')"
 test "$gpu_count" = 1
 
