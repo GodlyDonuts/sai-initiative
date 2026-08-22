@@ -76,9 +76,10 @@ benchmark evidence selects an architecture.
   was written. Corrected job `768891` then scanned exactly 21,855,000 documents
   and admitted 2,661,644 into a 14,491,695,743-byte source whose SHA-256 is
   `2f908f5f225de109a21f66fb9fb31baa1f35b4a57f1d6d2a3f60fa95a98ea7e6`.
-  Exact decontamination `768892` is running. At 19:30 EDT its live source file
-  descriptor was at `4,442,947,584 / 14,491,695,743` bytes (`30.66%`), its
-  maximum RSS remained flat at `65,195,780 KiB`, and it had zero restarts. A
+  Exact decontamination `768892` is running. At 20:05 EDT its live source file
+  descriptor was at `5,854,330,880 / 14,491,695,743` bytes (`40.40%`), its
+  maximum RSS was `66,099,084 KiB`, and it had zero restarts. Recent scan
+  throughput projected completion before the job's 00:48 EDT deadline. A
   disk-read heuristic initially overstated progress; the process file
   descriptor is the authoritative scan measurement. Newton rejected a running
   wall-time extension, so conditional CPU fallback `769225` is held on
@@ -158,6 +159,15 @@ benchmark evidence selects an architecture.
   modeled workspace FLOPs across arms. The sole changed factor remains reactor
   state carry. This host will be used only if the 0.8B recurrent factor passes;
   preparing it is not a result and does not consume the terminal 4B boundary.
+  Commits `29c1e1c`, `dfa4150`, and `b1980fa` now complete the unscheduled Smol
+  execution path: two independent canaries, two matched full training arms,
+  eight independent MMLU-Pro shards plus MuSR per arm, deterministic merges,
+  and a paired terminal comparison. The cross-family comparator must reopen a
+  passing, hash-valid Qwen factor receipt before it can describe a Smol pass as
+  cross-family confirmation. The graph is fail-closed against partial launcher
+  submission, uses one H100 per scientific job, and still records both
+  `four_b_training_executed=false` and `four_b_training_authorized=false`.
+  This is executable preparation only; no Smol GPU job has been submitted.
 - Thirteen obsolete Q36 score jobs (`759843`, `759860`, `760174`, `760180`,
   `760185`, `760187`, `760194`, `760201`, `760206`, `760208`, `760215`,
   `760216`, and `760217`) were terminally cancelled after each was proven held
