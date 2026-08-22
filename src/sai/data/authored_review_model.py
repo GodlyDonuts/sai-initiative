@@ -39,6 +39,7 @@ from sai.data.token_stream import canonical_sha256
 
 SCHEMA = "sai-authored-curriculum-model-review-draft-receipt-v1"
 RAW_SCHEMA = "sai-authored-curriculum-model-review-raw-row-v1"
+FAILURE_SCHEMA = "sai-authored-curriculum-model-review-failure-v1"
 PACKET_RECEIPT_SCHEMA = "sai-authored-curriculum-review-packet-receipt-v1"
 MAX_INPUT_TOKENS = 24_576
 MAX_NEW_TOKENS = 2_048
@@ -98,6 +99,19 @@ _ATTEMPT_KEYS = {
     "response_sha256",
     "accepted",
     "rejection",
+}
+_FAILURE_KEYS = {
+    "schema",
+    "status",
+    "index",
+    "review_identity_sha256",
+    "source_text_sha256",
+    "attempts",
+    "human_review_completed",
+    "audit_qualified",
+    "training_authorized",
+    "four_b_training_authorized",
+    "receipt_sha256",
 }
 _IDENTITY_KEYS = {
     "schema",
@@ -555,30 +569,28 @@ def _raw_path(root: Path, index: int) -> Path:
     return root / "raw" / f"{index:03d}.json"
 
 
-def _validate_raw(
-    raw: Any,
+def _failure_path(root: Path, index: int) -> Path:
+    return root / "raw" / f"{index:03d}.failure.json"
+
+
+def _validate_attempts(
+    attempts: Any,
     *,
     source: dict[str, Any],
-    index: int,
     concept_ids: set[str],
     concept_prompt: str,
     policy: dict[str, Any],
-) -> dict[str, Any]:
+    require_accepted_final: bool,
+) -> dict[str, Any] | None:
     if (
-        not isinstance(raw, dict)
-        or set(raw) != _RAW_KEYS
-        or raw["schema"] != RAW_SCHEMA
-        or raw["index"] != index
-        or raw["review_identity_sha256"] != source["review_identity_sha256"]
-        or raw["source_text_sha256"] != source["text_sha256"]
-        or not isinstance(raw["attempts"], list)
-        or not 1 <= len(raw["attempts"]) <= MAX_ATTEMPTS
-        or not isinstance(raw["draft"], dict)
+        not isinstance(attempts, list)
+        or not 1 <= len(attempts) <= MAX_ATTEMPTS
+        or (not require_accepted_final and len(attempts) != MAX_ATTEMPTS)
     ):
-        raise AuthoredModelReviewError("resumed raw review differs")
+        raise AuthoredModelReviewError("resumed raw attempts differ")
     repair = None
     accepted_draft = None
-    for offset, attempt in enumerate(raw["attempts"], 1):
+    for offset, attempt in enumerate(attempts, 1):
         if (
             not isinstance(attempt, dict)
             or set(attempt) != _ATTEMPT_KEYS
@@ -607,9 +619,10 @@ def _validate_raw(
             error = str(caught)
         if attempt["accepted"]:
             if (
-                error is not None
+                not require_accepted_final
+                or error is not None
                 or attempt["rejection"] is not None
-                or offset != len(raw["attempts"])
+                or offset != len(attempts)
             ):
                 raise AuthoredModelReviewError("resumed accepted attempt differs")
             accepted_draft = candidate
@@ -617,10 +630,103 @@ def _validate_raw(
             if (
                 error is None
                 or attempt["rejection"] != error
-                or offset == len(raw["attempts"])
+                or (require_accepted_final and offset == len(attempts))
             ):
                 raise AuthoredModelReviewError("resumed rejected attempt differs")
             repair = error
+    if require_accepted_final and accepted_draft is None:
+        raise AuthoredModelReviewError("resumed accepted attempt differs")
+    if not require_accepted_final and accepted_draft is not None:
+        raise AuthoredModelReviewError("resumed failure attempt differs")
+    return accepted_draft
+
+
+def _failure_payload(
+    *,
+    source: dict[str, Any],
+    index: int,
+    attempts: list[dict[str, Any]],
+) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "schema": FAILURE_SCHEMA,
+        "status": "exhausted_frozen_attempts",
+        "index": index,
+        "review_identity_sha256": source["review_identity_sha256"],
+        "source_text_sha256": source["text_sha256"],
+        "attempts": attempts,
+        "human_review_completed": False,
+        "audit_qualified": False,
+        "training_authorized": False,
+        "four_b_training_authorized": False,
+    }
+    payload["receipt_sha256"] = canonical_sha256(payload)
+    return payload
+
+
+def _validate_failure(
+    failure: Any,
+    *,
+    source: dict[str, Any],
+    index: int,
+    concept_ids: set[str],
+    concept_prompt: str,
+    policy: dict[str, Any],
+) -> None:
+    if (
+        not isinstance(failure, dict)
+        or set(failure) != _FAILURE_KEYS
+        or failure["schema"] != FAILURE_SCHEMA
+        or failure["status"] != "exhausted_frozen_attempts"
+        or failure["index"] != index
+        or failure["review_identity_sha256"] != source["review_identity_sha256"]
+        or failure["source_text_sha256"] != source["text_sha256"]
+        or failure["human_review_completed"] is not False
+        or failure["audit_qualified"] is not False
+        or failure["training_authorized"] is not False
+        or failure["four_b_training_authorized"] is not False
+        or failure["receipt_sha256"]
+        != canonical_sha256(
+            {key: value for key, value in failure.items() if key != "receipt_sha256"}
+        )
+    ):
+        raise AuthoredModelReviewError("preserved review failure differs")
+    _validate_attempts(
+        failure["attempts"],
+        source=source,
+        concept_ids=concept_ids,
+        concept_prompt=concept_prompt,
+        policy=policy,
+        require_accepted_final=False,
+    )
+
+
+def _validate_raw(
+    raw: Any,
+    *,
+    source: dict[str, Any],
+    index: int,
+    concept_ids: set[str],
+    concept_prompt: str,
+    policy: dict[str, Any],
+) -> dict[str, Any]:
+    if (
+        not isinstance(raw, dict)
+        or set(raw) != _RAW_KEYS
+        or raw["schema"] != RAW_SCHEMA
+        or raw["index"] != index
+        or raw["review_identity_sha256"] != source["review_identity_sha256"]
+        or raw["source_text_sha256"] != source["text_sha256"]
+        or not isinstance(raw["draft"], dict)
+    ):
+        raise AuthoredModelReviewError("resumed raw review differs")
+    accepted_draft = _validate_attempts(
+        raw["attempts"],
+        source=source,
+        concept_ids=concept_ids,
+        concept_prompt=concept_prompt,
+        policy=policy,
+        require_accepted_final=True,
+    )
     if accepted_draft is None or raw["draft"] != accepted_draft:
         raise AuthoredModelReviewError("resumed raw draft differs")
     return accepted_draft
@@ -933,6 +1039,20 @@ def run(
     raw_hashes = []
     for index, source in enumerate(inputs.packet):
         path = _raw_path(output_root, index)
+        failure_path = _failure_path(output_root, index)
+        if failure_path.exists():
+            failure, _ = _json(failure_path, "preserved review failure", 8 << 20)
+            _validate_failure(
+                failure,
+                source=source,
+                index=index,
+                concept_ids=concept_ids,
+                concept_prompt=concept_prompt,
+                policy=inputs.policy,
+            )
+            raise AuthoredModelReviewError(
+                f"review row {index} has a preserved exhausted-attempt failure"
+            )
         if path.exists():
             raw, raw_encoded = _json(path, "resumed raw review", 8 << 20)
             draft = _validate_raw(
@@ -974,8 +1094,19 @@ def run(
                     attempts.append(record)
                     repair = str(error)
             if draft is None:
+                failure = _failure_payload(
+                    source=source,
+                    index=index,
+                    attempts=attempts,
+                )
+                failure_encoded = (
+                    json.dumps(failure, sort_keys=True, indent=2).encode() + b"\n"
+                )
+                _write_create_only(failure_path, failure_encoded)
+                os.chmod(failure_path, 0o400)
                 raise AuthoredModelReviewError(
-                    f"review row {index} exhausted frozen attempts"
+                    f"review row {index} exhausted frozen attempts; "
+                    f"evidence preserved at {failure_path}"
                 )
             raw = {
                 "schema": RAW_SCHEMA,

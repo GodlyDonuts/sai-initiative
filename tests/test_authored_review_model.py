@@ -11,11 +11,13 @@ from sai.data.authored_review_model import (
     AuthoredModelReviewError,
     _blind_inputs,
     _draft_from_response,
+    _failure_payload,
     _identity_payload,
     _input_ids,
     _prompt,
     _response_object,
     _result_payload,
+    _validate_failure,
     _validate_raw,
     validate_result,
 )
@@ -225,6 +227,62 @@ def test_raw_resume_replays_repair_chain_and_rejects_tamper() -> None:
     with pytest.raises(AuthoredModelReviewError, match="rejected attempt differs"):
         _validate_raw(
             raw,
+            source=source,
+            index=0,
+            concept_ids=concept_ids,
+            concept_prompt=concept_prompt,
+            policy=inputs.policy,
+        )
+
+
+def test_exhausted_failure_preserves_and_replays_every_rejected_attempt() -> None:
+    inputs = _inputs()
+    source = inputs.packet[0]
+    concept_ids = {item["concept_id"] for item in inputs.concept_payload["concepts"]}
+    concept_prompt = model_review._concept_prompt(inputs.concept_payload)
+    attempts = []
+    repair = None
+    for attempt in range(model_review.MAX_ATTEMPTS):
+        prompt = _prompt(source, concept_prompt, repair)
+        response = "not JSON"
+        repair = "model response is not exact JSON"
+        attempts.append(
+            {
+                "attempt": attempt + 1,
+                "prompt_sha256": hashlib.sha256(prompt.encode()).hexdigest(),
+                "input_tokens": 100,
+                "output_tokens": 2,
+                "response": response,
+                "response_sha256": hashlib.sha256(response.encode()).hexdigest(),
+                "accepted": False,
+                "rejection": repair,
+            }
+        )
+    failure = _failure_payload(source=source, index=0, attempts=attempts)
+    _validate_failure(
+        failure,
+        source=source,
+        index=0,
+        concept_ids=concept_ids,
+        concept_prompt=concept_prompt,
+        policy=inputs.policy,
+    )
+    failure["attempts"][0]["response"] = "mutated"
+    with pytest.raises(AuthoredModelReviewError, match="failure differs"):
+        _validate_failure(
+            failure,
+            source=source,
+            index=0,
+            concept_ids=concept_ids,
+            concept_prompt=concept_prompt,
+            policy=inputs.policy,
+        )
+    failure["receipt_sha256"] = model_review.canonical_sha256(
+        {key: value for key, value in failure.items() if key != "receipt_sha256"}
+    )
+    with pytest.raises(AuthoredModelReviewError, match="attempt differs"):
+        _validate_failure(
+            failure,
             source=source,
             index=0,
             concept_ids=concept_ids,
