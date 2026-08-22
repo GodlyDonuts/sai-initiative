@@ -399,6 +399,12 @@ benchmark evidence selects an architecture.
   was taught. This is only a minimum evidence guard; independent annotation
   review, prerequisite order, concept-density, and later-rehearsal gates remain
   conjunctive. No semantic curriculum has passed yet.
+- Semantic audit selection can now run against the already-qualified,
+  source-disjoint development split. The selector preserves the same frozen
+  salt, four phases, four surface bands, and eight documents per stratum while
+  re-reading 94 MB rather than repeatedly replaying the 9.5 GB training
+  curriculum. Its 128 selected documents remain an unreviewed audit packet; the
+  speedup changes no label, threshold, or training byte.
 - The authored-curriculum prerequisite lane now has two exact blind candidate
   reviewers. CPU context jobs `770444` (Qwen3.5-9B) and `770445` (SmolLM3-3B)
   completed with zero restarts and verified all 127 prompts against the same

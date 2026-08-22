@@ -375,6 +375,14 @@ text and source identity, publishes create-once evidence, and can replay the
 selection exactly. Surface bands are used only to prevent an easy or late-phase
 sample from dominating review; they are not treated as semantic difficulty or
 domain labels.
+`sai-select-prerequisite-development-audit` applies the identical salt,
+phase/band stratification, and eight-document geometry to the already-qualified
+source-disjoint development split. It reopens the split self-hash, exact
+development file hash, phase counts, and progression status, then recomputes
+the 128-row selection from only the development artifact. This avoids replaying
+the 9.5 GB training curriculum several times merely to form a review packet and
+prevents the reviewed sample from being part of optimizer training. The output
+remains unreviewed and authorizes no training.
 `sai-review-prerequisite-audit` then compares the prospective annotator against
 an independently identified reviewer on those exact 128 documents. Both sides
 must provide canonical concept sets with nonempty evidence spans whose hashes
