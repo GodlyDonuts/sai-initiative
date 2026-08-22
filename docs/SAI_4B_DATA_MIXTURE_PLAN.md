@@ -3,14 +3,26 @@
 Status: prospective and data-first. This plan authorizes no 4B training. It
 defines the evidence required before a final Sai corpus can exist.
 
-`sai-validate-data-mixture <plan.json>` enforces the prospective
-`sai-4b-data-mixture-plan-v2` schema. It requires immutable revisions and
-manifests plus separate title/source-level license review, quality audit,
-selection policy, decontamination, and pedagogical-progression receipts. It also
-requires all five Sai domains, exact per-source and per-phase token budgets,
-minimum-phase admission, mandatory rehearsal, optimizer-aligned phase
+`sai-validate-data-mixture <plan.json>` enforces the structural prospective
+`sai-4b-data-mixture-plan-v2` schema. It checks immutable-looking revisions and
+hash identities, all five Sai domains, exact per-source and per-phase token
+budgets, minimum-phase admission, mandatory rehearsal, optimizer-aligned phase
 boundaries, factor-isolated controls, and both training authorization fields set
-to false.
+to false. V2 alone is not final evidence: it cannot prove that a syntactically
+valid hash resolves to the claimed artifact.
+
+`sai-validate-data-mixture-evidence <plan-v3.json> --evidence-root <root>` is
+the required final prospective boundary. Its relocation-safe
+`sai-4b-data-mixture-plan-v3` descriptors reopen every source manifest,
+selection policy, title/source license decision, quality audit,
+decontamination receipt, and pedagogical-progression receipt. Every file must
+be a single-link regular file reached through non-symlink directories; its
+bytes must match the declared SHA-256. Receipt roles additionally require the
+declared schema/status and a replayed canonical self-hash. Missing evidence,
+bare invented hashes, unsafe paths, re-signed content drift, and status drift
+all fail. Shared global evidence is permitted only when every source declares
+the identical descriptor. No v3 mixture currently passes because the source
+selection work is intentionally incomplete.
 
 ## Principle
 

@@ -271,6 +271,12 @@ benchmark evidence selects an architecture.
   evidence spans are complete. The two-reviewer adjudicator now verifies all
   evidence spans and preserves separate concept, prerequisite, quality,
   admission, and defect disagreement; no completed labels or PASS exist yet.
+- The final 4B mixture boundary can no longer be satisfied by plausible-looking
+  64-character hashes. The new relocation-safe v3 validator reopens every
+  source manifest, selection policy, license decision, quality audit,
+  decontamination receipt, and pedagogical progression receipt; validates exact
+  file bytes plus canonical receipt schema/status/self-hash; and rejects links,
+  missing evidence, and re-signed drift. No v3 mixture passes yet.
 
 ## Live scratchpad — 2026-08-21
 
