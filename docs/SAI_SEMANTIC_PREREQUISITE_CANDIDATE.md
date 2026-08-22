@@ -15,7 +15,10 @@ Every later concept has declared prerequisites. Dependent concepts require at
 least 32 prior confident documents for each prerequisite. Each concept also has
 prospectively declared per-phase exposure minima; the primitive concepts must
 remain represented through grounding, integration, reasoning, and
-specialization rather than disappearing after first exposure.
+specialization rather than disappearing after first exposure. Taxonomy
+construction must additionally freeze the maximum number of concepts that may
+be encountered for the first time in one document; the candidate has not yet
+earned a value for that limit.
 
 ## What this proves
 

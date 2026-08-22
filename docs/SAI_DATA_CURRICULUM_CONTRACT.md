@@ -240,7 +240,10 @@ explicit minimum prior-document counts, and frozen per-concept minimum exposure
 counts for every curriculum phase. The first phase with a nonzero exposure
 minimum is also the concept's earliest permitted phase: a confident advanced
 concept exposure before that phase is a terminal progression violation, even
-when its prerequisites have already appeared. The progression analyzer consumes
+when its prerequisites have already appeared. The taxonomy also freezes a
+maximum number of first-time concept exposures per document; exceeding it is a
+separate concept-density violation, preventing a single advanced example from
+compressing an entire conceptual layer. The progression analyzer consumes
 annotations in the exact curriculum document order, counts only evidence above
 the frozen confidence floor, rehashes every claimed non-overlapping character
 span against the exact document text, and checks prerequisites before updating

@@ -28,7 +28,7 @@ from sai.data.token_stream import (
 TAXONOMY_SCHEMA = "sai-semantic-prerequisite-taxonomy-v2"
 CONCEPT_LIST_SCHEMA = "sai-semantic-prerequisite-concept-list-v1"
 ANNOTATION_SCHEMA = "sai-prerequisite-document-annotation-v1"
-REPORT_SCHEMA = "sai-semantic-prerequisite-progression-report-v2"
+REPORT_SCHEMA = "sai-semantic-prerequisite-progression-report-v3"
 ANNOTATION_METHODS = {"deterministic", "model", "hybrid", "human"}
 _CONCEPT_ID = re.compile(r"[a-z0-9][a-z0-9._-]{1,95}")
 _MAX_TAXONOMY_BYTES = 8 << 20
@@ -38,6 +38,7 @@ _TAXONOMY_KEYS = {
     "training_authorized",
     "four_b_training_authorized",
     "minimum_annotation_confidence_ppm",
+    "maximum_new_concepts_per_document",
     "annotation_method",
     "concepts",
     "receipt_sha256",
@@ -108,6 +109,7 @@ def build_taxonomy(
     *,
     annotation_method: str,
     minimum_annotation_confidence_ppm: int,
+    maximum_new_concepts_per_document: int,
 ) -> dict[str, Any]:
     """Create one immutable prospective taxonomy from real evidence artifacts."""
 
@@ -135,6 +137,12 @@ def build_taxonomy(
         "minimum annotation confidence",
         positive=True,
     )
+    maximum_new_concepts_per_document = _nonnegative_int(
+        maximum_new_concepts_per_document,
+        "maximum new concepts per document",
+    )
+    if not 1 <= maximum_new_concepts_per_document <= 64:
+        raise PrerequisiteError("maximum new concepts per document differs")
     annotator_hash = hashlib.sha256(
         _read_small_regular(annotator_identity_path, "annotator identity")
     ).hexdigest()
@@ -177,6 +185,7 @@ def build_taxonomy(
         "training_authorized": False,
         "four_b_training_authorized": False,
         "minimum_annotation_confidence_ppm": minimum_annotation_confidence_ppm,
+        "maximum_new_concepts_per_document": maximum_new_concepts_per_document,
         "annotation_method": {
             "method": annotation_method,
             "annotator_identity_sha256": evidence_hashes[0],
@@ -263,6 +272,12 @@ def validate_taxonomy_payload(payload: Any) -> dict[str, Any]:
         "minimum annotation confidence",
         positive=True,
     )
+    maximum_new_concepts_per_document = _nonnegative_int(
+        taxonomy["maximum_new_concepts_per_document"],
+        "maximum new concepts per document",
+    )
+    if not 1 <= maximum_new_concepts_per_document <= 64:
+        raise PrerequisiteError("maximum new concepts per document differs")
 
     method = _exact_keys(taxonomy["annotation_method"], _METHOD_KEYS, "annotation")
     if method["method"] not in ANNOTATION_METHODS:
@@ -420,6 +435,9 @@ class _ProgressionState:
         self.taxonomy = taxonomy
         self.concepts = {item["concept_id"]: item for item in taxonomy["concepts"]}
         self.minimum_confidence = taxonomy["minimum_annotation_confidence_ppm"]
+        self.maximum_new_concepts_per_document = taxonomy[
+            "maximum_new_concepts_per_document"
+        ]
         self.prior_counts: Counter[str] = Counter()
         self.phase_counts: Counter[str] = Counter()
         self.concept_counts: Counter[str] = Counter()
@@ -427,6 +445,7 @@ class _ProgressionState:
         self.first_exposure: dict[str, int] = {}
         self.violations: list[dict[str, Any]] = []
         self.premature_exposure_violations: list[dict[str, Any]] = []
+        self.concept_density_violations: list[dict[str, Any]] = []
         self.previous_phase = -1
 
     def add(
@@ -461,6 +480,7 @@ class _ProgressionState:
             raise PrerequisiteError("annotation concepts differ")
         seen: set[str] = set()
         confident: list[str] = []
+        new_concepts: list[str] = []
         for raw_item in raw_evidence:
             item = _exact_keys(raw_item, _EVIDENCE_KEYS, "concept evidence")
             concept_id = item["concept_id"]
@@ -489,6 +509,8 @@ class _ProgressionState:
             if confidence < self.minimum_confidence:
                 continue
             confident.append(concept_id)
+            if concept_id not in self.first_exposure:
+                new_concepts.append(concept_id)
             self.concept_counts[concept_id] += 1
             self.concept_phase_counts[(concept_id, phase)] += 1
             self.first_exposure.setdefault(concept_id, index)
@@ -523,6 +545,17 @@ class _ProgressionState:
                             "observed_prior_documents": observed,
                         }
                     )
+        if len(new_concepts) > self.maximum_new_concepts_per_document:
+            self.concept_density_violations.append(
+                {
+                    "document_index": index,
+                    "document_identity_sha256": identity,
+                    "phase": phase,
+                    "new_concepts": sorted(new_concepts),
+                    "observed_new_concepts": len(new_concepts),
+                    "maximum_new_concepts": self.maximum_new_concepts_per_document,
+                }
+            )
         self.prior_counts.update(confident)
 
     def report(
@@ -553,6 +586,7 @@ class _ProgressionState:
         progression_qualified = (
             not self.violations
             and not self.premature_exposure_violations
+            and not self.concept_density_violations
             and not missing_concepts
             and not phase_coverage_violations
         )
@@ -584,6 +618,7 @@ class _ProgressionState:
             "missing_concepts": missing_concepts,
             "violations": self.violations,
             "premature_exposure_violations": self.premature_exposure_violations,
+            "concept_density_violations": self.concept_density_violations,
             "phase_coverage_violations": phase_coverage_violations,
             "progression_qualified": progression_qualified,
             "training_authorized": False,
@@ -815,6 +850,7 @@ def main() -> None:
         "--annotation-method", choices=sorted(ANNOTATION_METHODS), required=True
     )
     build.add_argument("--minimum-confidence-ppm", type=int, required=True)
+    build.add_argument("--maximum-new-concepts-per-document", type=int, required=True)
     build.add_argument("--output", type=Path, required=True)
     validate = subparsers.add_parser("validate-taxonomy")
     validate.add_argument("--taxonomy", type=Path, required=True)
@@ -834,6 +870,7 @@ def main() -> None:
             args.output,
             annotation_method=args.annotation_method,
             minimum_annotation_confidence_ppm=args.minimum_confidence_ppm,
+            maximum_new_concepts_per_document=(args.maximum_new_concepts_per_document),
         )
         result = {
             "schema": payload["schema"],

@@ -103,6 +103,7 @@ def _taxonomy() -> dict:
         "training_authorized": False,
         "four_b_training_authorized": False,
         "minimum_annotation_confidence_ppm": 800_000,
+        "maximum_new_concepts_per_document": 2,
         "annotation_method": {
             "method": "hybrid",
             "annotator_identity_sha256": "1" * 64,
@@ -227,10 +228,33 @@ def test_taxonomy_and_progression_pass_with_prior_exposure() -> None:
     }
     assert report["phase_coverage_violations"] == []
     assert report["premature_exposure_violations"] == []
+    assert report["concept_density_violations"] == []
     assert report["ordered_document_identity_sha256"] == canonical_sha256(identities)
     assert report["annotations_sha256"] == canonical_sha256(annotations)
     assert report["training_authorized"] is False
     assert report["four_b_training_authorized"] is False
+
+
+def test_progression_rejects_too_many_first_exposures_in_one_document() -> None:
+    taxonomy = _taxonomy()
+    taxonomy["maximum_new_concepts_per_document"] = 1
+    _resign(taxonomy)
+    annotations, identities, texts = _annotations()
+
+    report = analyze_progression(taxonomy, annotations, identities, texts)
+
+    assert report["progression_qualified"] is False
+    assert report["violations"] == []
+    assert report["concept_density_violations"] == [
+        {
+            "document_index": 0,
+            "document_identity_sha256": identities[0],
+            "phase": "grounding",
+            "new_concepts": ["language.color", "math.addition"],
+            "observed_new_concepts": 2,
+            "maximum_new_concepts": 1,
+        }
+    ]
 
 
 def test_progression_rejects_advanced_concept_before_its_declared_phase() -> None:
@@ -314,6 +338,7 @@ def test_builds_taxonomy_from_real_evidence_artifacts(
         output,
         annotation_method="hybrid",
         minimum_annotation_confidence_ppm=800_000,
+        maximum_new_concepts_per_document=2,
     )
     assert _read_taxonomy(output) == payload
     assert payload["annotation_method"] == {
@@ -333,6 +358,7 @@ def test_builds_taxonomy_from_real_evidence_artifacts(
             output,
             annotation_method="hybrid",
             minimum_annotation_confidence_ppm=800_000,
+            maximum_new_concepts_per_document=2,
         )
     duplicate_audit = tmp_path / "duplicate-audit.json"
     duplicate_audit.write_text(json.dumps(audit_payload) + "\n")
@@ -345,6 +371,7 @@ def test_builds_taxonomy_from_real_evidence_artifacts(
             tmp_path / "duplicate-evidence-taxonomy.json",
             annotation_method="hybrid",
             minimum_annotation_confidence_ppm=800_000,
+            maximum_new_concepts_per_document=2,
         )
 
 

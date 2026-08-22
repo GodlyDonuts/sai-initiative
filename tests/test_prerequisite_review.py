@@ -170,6 +170,7 @@ def test_builds_replays_and_qualifies_independent_review(
         tmp_path / "taxonomy.json",
         annotation_method="hybrid",
         minimum_annotation_confidence_ppm=800_000,
+        maximum_new_concepts_per_document=2,
     )
     assert taxonomy["annotation_method"]["audit_sample_receipt_sha256"] == sha256_file(
         output
@@ -193,6 +194,7 @@ def test_failed_disagreement_receipt_cannot_build_taxonomy(
             tmp_path / "taxonomy.json",
             annotation_method="hybrid",
             minimum_annotation_confidence_ppm=800_000,
+            maximum_new_concepts_per_document=2,
         )
 
 
