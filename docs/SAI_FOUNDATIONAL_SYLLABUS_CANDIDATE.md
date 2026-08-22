@@ -46,3 +46,13 @@ reviewer must assess inventory verdict, name, granularity, earliest phase, each
 existing edge, missing prerequisites, and a written rationale. Complete JSONL
 can be exported only after every row is reviewed. The workspace is evidence
 collection; it cannot itself qualify or mutate the syllabus.
+
+`sai-compare-foundational-syllabus-reviews` then requires two complete files
+with distinct reviewer identities and exact file hashes. It compares concept
+verdicts, names, phase placement, granularity, every existing edge
+classification, and every proposed missing prerequisite. Narrative rationales
+are preserved but need not be textually identical. Any structured disagreement
+is published with both decisions and leaves subject review unqualified; neither
+reviewer is silently preferred. Even complete consensus still requires a final
+replay that applies the agreed graph and reruns acyclicity, phase, and coverage
+checks.
