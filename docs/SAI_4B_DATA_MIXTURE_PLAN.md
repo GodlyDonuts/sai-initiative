@@ -107,6 +107,12 @@ partitions. The file-manifest digest is
 the inventory receipt is
 `47611d6d92341aa8f1cc5c60e322499f3500a37c4a419d93d62073a6075d62d3`.
 This metadata receipt authorizes no download, source admission, or training.
+The first four exact compressed-shard diagnostics are recorded in
+[`SAI_DOLMA3_BOUNDED_SHARD_AUDIT_20260822.md`](SAI_DOLMA3_BOUNDED_SHARD_AUDIT_20260822.md).
+They found structured four-to-ninefold physical document repetition, five empty
+FineMath rows, and `960/1,201` sampled Stack-Edu rows labeled `no_license`.
+Therefore wrapper row counts, mixture weights, unique data, and per-file license
+admission are now explicitly separate Sai evidence.
 `sai-audit-stack-edu` now makes the first code-source step executable without
 downloading code content. It accepts only the exact Stack-Edu revision above and
 an exact Parquet shard hash, replays all metadata rows, and measures detected

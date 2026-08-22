@@ -46,6 +46,10 @@ revision `afa92bfb22366821c5e6cd427cdd036b34b713ef`, Dolmino 100B Mix revision
 `f23942ae8a8114af6e992efe8188ce8c531acd16`, and reconstruction-code revision
 `1a9daced81670e0fa768e47fbed32af6694a1865`. These freeze candidates for
 inspection; they do not admit their bytes.
+The first exact compressed-shard diagnostics show why this boundary matters:
+three sampled components physically repeat most document IDs four to nine
+times, and the sampled Stack-Edu shard is predominantly `no_license`. See
+[`SAI_DOLMA3_BOUNDED_SHARD_AUDIT_20260822.md`](SAI_DOLMA3_BOUNDED_SHARD_AUDIT_20260822.md).
 
 ### DataComp-LM
 
