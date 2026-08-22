@@ -74,6 +74,17 @@ or training. The downstream adjudicator also rejects blank `admit` labels,
 taught/assumed concept overlap, and sub-policy evidence spans; identical empty
 reviews therefore cannot manufacture a high agreement score.
 
+`sai-generate-authored-model-review` supplies a bounded candidate-annotation
+lane when independent human labels are not yet complete. Each invocation uses
+one of two exact, sealed, cross-family reviewers (Qwen3.5-9B or SmolLM3-3B) on
+one H100. The runner sees the blind packet, concept list, and policy only; the
+hidden review key is neither an input nor accessed. Greedy offline generation
+has a fixed context, output, and repair-attempt budget. Every accepted row must
+already pass the exact-quote compiler, and resumable raw rows are identity- and
+source-hash-bound. These model drafts can accelerate triage and quantify
+cross-family disagreement, but their receipts keep human review, audit
+qualification, training, and 4B authorization false.
+
 ## Progression semantics
 
 The Rust Book begins with installation, hello-world programs, a guessing-game
