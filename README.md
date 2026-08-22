@@ -336,6 +336,19 @@ benchmark evidence selects an architecture.
   was taught. This is only a minimum evidence guard; independent annotation
   review, prerequisite order, concept-density, and later-rehearsal gates remain
   conjunctive. No semantic curriculum has passed yet.
+- The authored-curriculum prerequisite lane now has two exact blind candidate
+  reviewers. CPU context jobs `770444` (Qwen3.5-9B) and `770445` (SmolLM3-3B)
+  completed with zero restarts and verified all 127 prompts against the same
+  hidden-key-free packet. Qwen observed 966–11,620 input tokens and SmolLM3
+  952–11,098, both below the frozen 24,576-token ceiling. Independent one-H100
+  review jobs `770450` and `770451` are pending separately; CPU comparison job
+  `770471` is dependency-staged and will rank cross-family disagreements for
+  human attention without qualifying the labels. The final adjudicator now
+  accepts neither arbitrary identity strings nor model-review identities: each
+  side must bind all 127 completed rows to a distinct human identity
+  attestation, exact packet and policy hashes, no model-generated labels, and
+  no hidden-key access before label freeze. Model-model agreement can therefore
+  accelerate review but cannot admit training data.
 
 ## Live scratchpad — 2026-08-21
 
