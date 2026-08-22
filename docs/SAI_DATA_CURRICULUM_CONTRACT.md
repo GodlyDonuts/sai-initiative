@@ -18,10 +18,12 @@ required order is:
 4. score every remaining document with the frozen, model-independent complexity
    rubric;
 5. build and replay the four-phase curriculum receipt;
-6. tokenize losslessly with the selected tokenizer and preserve document
+6. split train and development by frozen document identity only after the
+   global duplicate-family filter, preserving phase order in training;
+7. tokenize losslessly with the selected tokenizer and preserve document
    boundaries;
-7. compare the curriculum against a same-document order control at small scale;
-8. promote the data schedule only if held-out NLL and source-disjoint real
+8. compare the curriculum against a same-document order control at small scale;
+9. promote the data schedule only if held-out NLL and source-disjoint real
    capability measurements support it.
 
 The current FineWeb-Edu source is therefore only a candidate pool. Its upstream
@@ -59,6 +61,13 @@ material is rehearsed in every later phase, while specialized material is
 absent from grounding and concentrated only after composition and reasoning
 have been repeatedly presented.
 
+Token-stream receipts bind the actual token and UTF-8-byte contribution of each
+phase at every declared training prefix. Active phases at any prefix must form
+a contiguous prerequisite prefix: `grounding`, then `integration`, then
+`reasoning`, then `specialization`. The early 125M/250M/375M-token checkpoints
+are not required to contain advanced material prematurely. The complete 500M
+stream must contain all four phases.
+
 ## Quality and duplicate boundaries
 
 The second-pass quality floor rejects very short documents, low-Latin text in
@@ -73,6 +82,12 @@ rejection reasons, exact band populations, every phase's population and ordered
 identity digest, order-independent accepted/emitted identity fingerprints, and
 the output bytes. Validation reopens the source evidence and replays every
 output row, band, difficulty, duplicate decision, phase mean, and identity.
+
+The train/development split is performed after this global filter. Every
+accepted identity is assigned exactly once by a frozen hash modulus; validation
+replays the complete curriculum against both outputs. This prevents the model
+from being evaluated on an earlier corpus slice that may overlap the enlarged
+training pool.
 
 ## Empirical veto
 

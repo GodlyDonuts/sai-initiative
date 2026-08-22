@@ -183,8 +183,15 @@ def test_curriculum_phase_accounting_covers_the_actual_training_prefix(
         required_phase_complete_prefixes={4},
     )
     curriculum = report["curriculum"]
+    assert curriculum["phase_order"] == [
+        "grounding",
+        "integration",
+        "reasoning",
+        "specialization",
+    ]
     assert curriculum["required_all_phase_prefixes"] == [4]
     assert curriculum["all_required_prefixes_cover_every_phase"] is True
+    assert curriculum["phase_order_contiguous_at_every_prefix"] is True
     assert sum(curriculum["consumed_phase_tokens"].values()) == 16
     assert sum(curriculum["consumed_phase_utf8_bytes"].values()) == 12
     assert all(

@@ -533,6 +533,16 @@ def freeze(
                 "pretraining sources cannot fill every required prefix"
             )
         curriculum_phase_names = [phase for phase, _ in normalized_curriculum_phases]
+        for prefix, evidence in curriculum_prefixes.items():
+            active = [
+                phase
+                for phase in curriculum_phase_names
+                if evidence.get(phase, {}).get("tokens", 0) > 0
+            ]
+            if not active or active != curriculum_phase_names[: len(active)]:
+                raise TokenStreamError(
+                    f"curriculum prefix {prefix} skips a prerequisite phase"
+                )
         for prefix in required_phase_prefixes:
             evidence = curriculum_prefixes.get(str(prefix), {})
             if any(
@@ -574,6 +584,7 @@ def freeze(
         }
         if normalized_curriculum_phases:
             report_unsigned["curriculum"] = {
+                "phase_order": [phase for phase, _ in normalized_curriculum_phases],
                 "declared_phase_documents": {
                     phase: documents
                     for phase, documents in normalized_curriculum_phases
@@ -593,6 +604,7 @@ def freeze(
                 "prefixes": curriculum_prefixes,
                 "required_all_phase_prefixes": sorted(required_phase_prefixes),
                 "all_required_prefixes_cover_every_phase": True,
+                "phase_order_contiguous_at_every_prefix": True,
             }
         if source_qualification is not None:
             report_unsigned["source_qualification_sha256"] = source_qualification
@@ -733,6 +745,7 @@ def validate_frozen_stream(
     curriculum = report.get("curriculum")
     if curriculum is not None:
         if not isinstance(curriculum, dict) or set(curriculum) != {
+            "phase_order",
             "declared_phase_documents",
             "consumed_phase_documents",
             "consumed_phase_tokens",
@@ -740,6 +753,7 @@ def validate_frozen_stream(
             "prefixes",
             "required_all_phase_prefixes",
             "all_required_prefixes_cover_every_phase",
+            "phase_order_contiguous_at_every_prefix",
         }:
             raise TokenStreamError("token stream curriculum evidence differs")
         declared = curriculum["declared_phase_documents"]
@@ -747,8 +761,12 @@ def validate_frozen_stream(
         consumed_tokens = curriculum["consumed_phase_tokens"]
         consumed_bytes = curriculum["consumed_phase_utf8_bytes"]
         phase_names = set(declared) if isinstance(declared, dict) else set()
+        phase_order = curriculum["phase_order"]
         if (
             not phase_names
+            or not isinstance(phase_order, list)
+            or len(phase_order) != len(set(phase_order))
+            or set(phase_order) != phase_names
             or not all(
                 isinstance(mapping, dict) and set(mapping) == phase_names
                 for mapping in (consumed_documents, consumed_tokens, consumed_bytes)
@@ -811,6 +829,7 @@ def validate_frozen_stream(
             )
             or required != sorted(set(required))
             or curriculum["all_required_prefixes_cover_every_phase"] is not True
+            or curriculum["phase_order_contiguous_at_every_prefix"] is not True
         ):
             raise TokenStreamError("token stream curriculum requirement differs")
         for prefix in required:
@@ -820,6 +839,18 @@ def validate_frozen_stream(
                 for phase in phase_names
             ):
                 raise TokenStreamError("token stream curriculum phase is absent")
+        ordered_phase_names = phase_order
+        for prefix, phase_evidence in curriculum_prefixes.items():
+            active = [
+                phase
+                for phase in ordered_phase_names
+                if phase_evidence[phase]["tokens"] > 0
+            ]
+            if not active or active != ordered_phase_names[: len(active)]:
+                raise TokenStreamError(
+                    "token stream curriculum prefix "
+                    f"{prefix} skips a prerequisite phase"
+                )
     shards = report.get("shards")
     if not isinstance(shards, list) or not shards:
         raise TokenStreamError("token stream shards are missing")

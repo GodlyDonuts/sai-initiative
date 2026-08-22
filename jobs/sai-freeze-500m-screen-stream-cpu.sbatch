@@ -116,9 +116,6 @@ export TOKENIZERS_PARALLELISM=false
   --prefix-sequences 122070 \
   --prefix-sequences 183105 \
   --prefix-sequences 244140 \
-  --require-all-curriculum-phases-at-prefix 61035 \
-  --require-all-curriculum-phases-at-prefix 122070 \
-  --require-all-curriculum-phases-at-prefix 183105 \
   --require-all-curriculum-phases-at-prefix 244140
 
 "$PYTHON" -P -s -B - "$TRAIN_STREAM" "$tokenizer_sha256" "$curriculum_sha256" <<'PY'
@@ -143,12 +140,15 @@ assert set(stream["prefix_utf8_bytes"]) == {
 assert stream["benchmark_disjoint"] is True
 assert stream["cross_document_targets_masked"] is True
 assert stream["curriculum"]["required_all_phase_prefixes"] == [
-    61_035,
-    122_070,
-    183_105,
     244_140,
 ]
 assert stream["curriculum"]["all_required_prefixes_cover_every_phase"] is True
+assert stream["curriculum"]["phase_order_contiguous_at_every_prefix"] is True
+phase_order = stream["curriculum"]["phase_order"]
+for evidence in stream["curriculum"]["prefixes"].values():
+    active = [phase for phase in phase_order if evidence[phase]["tokens"] > 0]
+    assert active
+    assert active == phase_order[: len(active)]
 for prefix in stream["curriculum"]["required_all_phase_prefixes"]:
     assert all(
         row["tokens"] > 0 and row["utf8_bytes"] > 0

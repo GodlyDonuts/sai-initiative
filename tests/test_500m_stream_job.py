@@ -42,11 +42,15 @@ def test_stream_job_reopens_corpus_and_stream_evidence() -> None:
     assert 'train["sha256"] == sha256_file(corpus_path)' in job
     assert "--source-qualification-sha256" in job
     assert '--curriculum-receipt "$CURRICULUM_RECEIPT"' in job
-    for value in (61_035, 122_070, 183_105, 244_140):
-        assert f"--require-all-curriculum-phases-at-prefix {value}" in job
+    assert "--require-all-curriculum-phases-at-prefix 244140" in job
+    for value in (61_035, 122_070, 183_105):
+        assert f"--require-all-curriculum-phases-at-prefix {value}" not in job
     assert 'stream["source_qualification_sha256"] == sys.argv[3]' in job
     assert (
         'stream["curriculum"]["all_required_prefixes_cover_every_phase"] is True' in job
+    )
+    assert (
+        'stream["curriculum"]["phase_order_contiguous_at_every_prefix"] is True' in job
     )
     assert "validate_frozen_stream" in job
     assert "verify_sources=True" in job
