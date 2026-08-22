@@ -193,6 +193,14 @@ been introduced. Conversely, technical vocabulary does not prove that a
 document is pedagogically advanced. A positive or negative result for this
 schedule therefore cannot settle the broader data-order question.
 
+The governing data doctrine is therefore **quality, coverage, then pedagogy**.
+Quality removes incorrect, incoherent, contaminated, duplicated, commercial,
+and otherwise harmful examples. Coverage verifies the intended capability and
+domain mixture. Pedagogy orders the surviving material by actual conceptual
+dependency and preserves rehearsal. None of these stages may borrow a pass from
+another: a correct specialized proof can be pedagogically premature, and a
+simple-looking passage can still depend on unintroduced concepts.
+
 Two later hypotheses must remain separate factors:
 
 1. A **semantic-prerequisite curriculum** binds a frozen concept taxonomy and

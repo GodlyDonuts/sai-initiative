@@ -15,6 +15,24 @@ bad examples or for teaching dependent concepts before their primitives. No
 architecture is promoted on a data schedule that has not independently beaten
 an identical-document order control.
 
+Sai treats data admission as three separate scientific questions:
+
+1. **Quality:** is each example accurate, coherent, useful, legally and
+   operationally admissible, and free of benchmark contamination, spam, answer
+   farms, and high-confidence duplication?
+2. **Coverage:** does the mixture teach the English, mathematics, code, science,
+   technology, reasoning, and communication capabilities we intend to measure,
+   without allowing one abundant source to crowd out the rest?
+3. **Pedagogy:** are primitives taught before dependent concepts, are new ideas
+   composed gradually, and are foundations rehearsed after difficulty rises?
+
+These gates cannot substitute for one another. Clean advanced text is still a
+bad first lesson when its prerequisites are absent. A readable document is not
+necessarily foundational. A source with a high upstream quality score is not
+automatically a Sai training source. The target is not merely an easy-to-hard
+sort; it is a measured semantic learning progression whose exact records and
+ordering beat a same-record order control before scaling.
+
 **Execution status:** the user authorized sub-4B preparation and training on
 2026-08-21. The 4B run remains explicitly prohibited until smaller-scale real
 benchmark evidence selects an architecture.
@@ -75,6 +93,14 @@ benchmark evidence selects an architecture.
   initialization, optimizer, updates, and compute. Held-out NLL/UTF-8 byte and
   source-disjoint real capability must improve or remain nonnegative without a
   domain regression. Tokenizer, filtering, and ordering remain separate factors.
+- The current four-phase schedule remains explicitly a surface-complexity
+  falsification experiment, not the final semantic curriculum. It cannot prove
+  that a concept's prerequisites were learned. The next data gate must bind an
+  acyclic concept graph, evidence spans for every exposure, minimum prior
+  coverage before dependent exposure, first-exposure positions, phase-local
+  rehearsal, and unresolved violations. This is the executable version of the
+  rule that a model should encounter the concepts of yellow and blue before it
+  is expected to learn their composition into green.
 - Source-disjoint split `770039` is now running from that independently
   qualified receipt with four ordered workers across both receipt validation
   and exact split reconstruction, plus a four-hour fail-closed wall limit.
