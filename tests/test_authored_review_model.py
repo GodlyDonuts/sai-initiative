@@ -95,6 +95,44 @@ def test_response_compiles_exact_quote() -> None:
     assert draft["taught_concepts"][0]["evidence_quotes"] == [quote]
 
 
+def test_response_mechanically_canonicalizes_order_but_not_duplicates() -> None:
+    inputs = _inputs()
+    source = inputs.packet[0]
+    concepts = {item["concept_id"] for item in inputs.concept_payload["concepts"]}
+    quote = next(
+        line
+        for line in source["text"].splitlines()
+        if len(line) >= 24 and source["text"].count(line) == 1
+    )
+    payload = {
+        "instructional_quality_ppm": 900_000,
+        "assumed_prior_concepts": ["technical.system", "code.variable"],
+        "taught_concepts": [
+            {
+                "concept_id": "technical.safety-constraints",
+                "confidence_ppm": 900_000,
+                "evidence_quotes": [quote],
+            },
+            {
+                "concept_id": "code.literal",
+                "confidence_ppm": 900_000,
+                "evidence_quotes": [quote],
+            },
+        ],
+        "defects": [],
+        "admission_recommendation": "admit",
+    }
+    draft = _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+    assert draft["assumed_prior_concepts"] == ["code.variable", "technical.system"]
+    assert [item["concept_id"] for item in draft["taught_concepts"]] == [
+        "code.literal",
+        "technical.safety-constraints",
+    ]
+    payload["assumed_prior_concepts"] = ["code.variable", "code.variable"]
+    with pytest.raises(AuthoredModelReviewError, match="assumed concepts differ"):
+        _draft_from_response(source, json.dumps(payload), concepts, inputs.policy)
+
+
 def test_input_ids_accepts_exact_tensor_or_input_only_mapping() -> None:
     import torch
 

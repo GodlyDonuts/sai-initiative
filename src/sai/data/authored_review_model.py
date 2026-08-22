@@ -396,6 +396,15 @@ def _draft_from_response(
         )
     ):
         raise AuthoredModelReviewError("model response exceeds review evidence limits")
+    if all(isinstance(value, str) for value in assumed):
+        payload["assumed_prior_concepts"] = sorted(assumed)
+    if all(
+        isinstance(value, dict) and isinstance(value.get("concept_id"), str)
+        for value in taught
+    ):
+        payload["taught_concepts"] = sorted(
+            taught, key=lambda value: value["concept_id"]
+        )
     draft = {
         "schema": DRAFT_SCHEMA,
         "review_identity_sha256": source["review_identity_sha256"],
