@@ -235,6 +235,12 @@ Its self-hashed report binds the taxonomy, ordered document identities, entire
 annotation population, first exposure, per-phase coverage, missing concepts,
 every prerequisite violation, and every missing rehearsal obligation. It
 remains prospective and cannot authorize training.
+`sai-validate-prerequisites build-taxonomy` creates that taxonomy only from a
+candidate concept list plus real, immutable annotator-identity, annotation-
+policy, and audited-sample artifacts. Their file hashes become the annotation
+identities; callers cannot satisfy the production path with invented digest
+strings. The create-once output is validated before atomic publication and
+retains both training authorizations as false.
 `sai-validate-prerequisites audit-curriculum` performs this audit as a streaming
 replay: it first revalidates the curriculum receipt, then rereads the exact
 curriculum and annotation files in lockstep, derives phase membership from the

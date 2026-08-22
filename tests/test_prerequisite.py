@@ -10,11 +10,13 @@ import pytest
 import sai.data.prerequisite as prerequisite
 from sai.data.prerequisite import (
     ANNOTATION_SCHEMA,
+    CONCEPT_LIST_SCHEMA,
     TAXONOMY_SCHEMA,
     PrerequisiteError,
     _read_taxonomy,
     analyze_curriculum_annotation_files,
     analyze_progression,
+    build_taxonomy,
     validate_taxonomy_payload,
 )
 from sai.data.token_stream import (
@@ -183,6 +185,65 @@ def test_taxonomy_and_progression_pass_with_prior_exposure() -> None:
     assert report["annotations_sha256"] == canonical_sha256(annotations)
     assert report["training_authorized"] is False
     assert report["four_b_training_authorized"] is False
+
+
+def test_builds_taxonomy_from_real_evidence_artifacts(tmp_path: Path) -> None:
+    concepts = tmp_path / "concepts.json"
+    concepts.write_text(
+        json.dumps(
+            {
+                "schema": CONCEPT_LIST_SCHEMA,
+                "status": "candidate",
+                "concepts": _taxonomy()["concepts"],
+            }
+        )
+        + "\n"
+    )
+    annotator = tmp_path / "annotator.json"
+    policy = tmp_path / "policy.json"
+    audit = tmp_path / "audit.json"
+    annotator.write_text('{"model":"frozen-annotator"}\n')
+    policy.write_text('{"policy":"frozen-semantic-evidence-v1"}\n')
+    audit.write_text('{"status":"audited"}\n')
+    output = tmp_path / "taxonomy.json"
+    payload = build_taxonomy(
+        concepts,
+        annotator,
+        policy,
+        audit,
+        output,
+        annotation_method="hybrid",
+        minimum_annotation_confidence_ppm=800_000,
+    )
+    assert _read_taxonomy(output) == payload
+    assert payload["annotation_method"] == {
+        "method": "hybrid",
+        "annotator_identity_sha256": sha256_file(annotator),
+        "policy_sha256": sha256_file(policy),
+        "audit_sample_receipt_sha256": sha256_file(audit),
+    }
+    assert payload["training_authorized"] is False
+    assert payload["four_b_training_authorized"] is False
+    with pytest.raises(PrerequisiteError, match="already exists"):
+        build_taxonomy(
+            concepts,
+            annotator,
+            policy,
+            audit,
+            output,
+            annotation_method="hybrid",
+            minimum_annotation_confidence_ppm=800_000,
+        )
+    with pytest.raises(PrerequisiteError, match="not distinct"):
+        build_taxonomy(
+            concepts,
+            policy,
+            policy,
+            policy,
+            tmp_path / "duplicate-evidence-taxonomy.json",
+            annotation_method="hybrid",
+            minimum_annotation_confidence_ppm=800_000,
+        )
 
 
 def test_same_document_prerequisites_do_not_count_as_prior() -> None:

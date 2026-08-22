@@ -14,9 +14,14 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.curriculum import PHASES, validate_curriculum
-from sai.data.token_stream import ALLOWED_DOMAINS, canonical_sha256, normalize_document
+from sai.data.token_stream import (
+    ALLOWED_DOMAINS,
+    canonical_sha256,
+    normalize_document,
+)
 
 TAXONOMY_SCHEMA = "sai-semantic-prerequisite-taxonomy-v2"
+CONCEPT_LIST_SCHEMA = "sai-semantic-prerequisite-concept-list-v1"
 ANNOTATION_SCHEMA = "sai-prerequisite-document-annotation-v1"
 REPORT_SCHEMA = "sai-semantic-prerequisite-progression-report-v1"
 ANNOTATION_METHODS = {"deterministic", "model", "hybrid", "human"}
@@ -53,6 +58,113 @@ _SPAN_KEYS = {"start", "end", "text_sha256"}
 
 class PrerequisiteError(RuntimeError):
     """A taxonomy, annotation, document identity, or prerequisite order differs."""
+
+
+def _read_small_regular(path: Path, label: str) -> bytes:
+    descriptor, before = _open_regular(path, label)
+    try:
+        if before.st_size <= 0 or before.st_size > _MAX_TAXONOMY_BYTES:
+            raise PrerequisiteError(f"{label} size differs")
+        chunks = []
+        remaining = _MAX_TAXONOMY_BYTES + 1
+        while remaining:
+            chunk = os.read(descriptor, min(1 << 20, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        encoded = b"".join(chunks)
+        after = os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+    if len(encoded) != before.st_size or (
+        before.st_dev,
+        before.st_ino,
+        before.st_nlink,
+        before.st_size,
+        before.st_mtime_ns,
+    ) != (
+        after.st_dev,
+        after.st_ino,
+        after.st_nlink,
+        after.st_size,
+        after.st_mtime_ns,
+    ):
+        raise PrerequisiteError(f"{label} changed while reading")
+    return encoded
+
+
+def build_taxonomy(
+    concepts_path: Path,
+    annotator_identity_path: Path,
+    annotation_policy_path: Path,
+    audit_sample_receipt_path: Path,
+    output_path: Path,
+    *,
+    annotation_method: str,
+    minimum_annotation_confidence_ppm: int,
+) -> dict[str, Any]:
+    """Create one immutable prospective taxonomy from real evidence artifacts."""
+
+    try:
+        concept_source = json.loads(
+            _read_small_regular(concepts_path, "concept list").decode("utf-8")
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise PrerequisiteError("concept list JSON differs") from error
+    concept_source = _exact_keys(
+        concept_source,
+        {"schema", "status", "concepts"},
+        "concept list",
+    )
+    if (
+        concept_source["schema"] != CONCEPT_LIST_SCHEMA
+        or concept_source["status"] != "candidate"
+        or not isinstance(concept_source["concepts"], list)
+        or not concept_source["concepts"]
+    ):
+        raise PrerequisiteError("concept list differs")
+    if annotation_method not in ANNOTATION_METHODS:
+        raise PrerequisiteError("annotation method differs")
+    _ppm(
+        minimum_annotation_confidence_ppm,
+        "minimum annotation confidence",
+        positive=True,
+    )
+    evidence_paths = (
+        annotator_identity_path,
+        annotation_policy_path,
+        audit_sample_receipt_path,
+    )
+    evidence_hashes = []
+    for path, label in zip(
+        evidence_paths,
+        ("annotator identity", "annotation policy", "audit sample receipt"),
+        strict=True,
+    ):
+        evidence_hashes.append(
+            hashlib.sha256(_read_small_regular(path, label)).hexdigest()
+        )
+    if len(set(evidence_hashes)) != len(evidence_hashes):
+        raise PrerequisiteError("taxonomy evidence artifacts are not distinct")
+    payload: dict[str, Any] = {
+        "schema": TAXONOMY_SCHEMA,
+        "status": "prospective",
+        "training_authorized": False,
+        "four_b_training_authorized": False,
+        "minimum_annotation_confidence_ppm": minimum_annotation_confidence_ppm,
+        "annotation_method": {
+            "method": annotation_method,
+            "annotator_identity_sha256": evidence_hashes[0],
+            "policy_sha256": evidence_hashes[1],
+            "audit_sample_receipt_sha256": evidence_hashes[2],
+        },
+        "concepts": concept_source["concepts"],
+    }
+    payload["receipt_sha256"] = canonical_sha256(payload)
+    validate_taxonomy_payload(payload)
+    _atomic_write_report(output_path, payload)
+    return payload
 
 
 def _exact_keys(value: Any, expected: set[str], label: str) -> dict[str, Any]:
@@ -646,6 +758,16 @@ def analyze_curriculum_annotation_files(
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
+    build = subparsers.add_parser("build-taxonomy")
+    build.add_argument("--concepts", type=Path, required=True)
+    build.add_argument("--annotator-identity", type=Path, required=True)
+    build.add_argument("--annotation-policy", type=Path, required=True)
+    build.add_argument("--audit-sample-receipt", type=Path, required=True)
+    build.add_argument(
+        "--annotation-method", choices=sorted(ANNOTATION_METHODS), required=True
+    )
+    build.add_argument("--minimum-confidence-ppm", type=int, required=True)
+    build.add_argument("--output", type=Path, required=True)
     validate = subparsers.add_parser("validate-taxonomy")
     validate.add_argument("--taxonomy", type=Path, required=True)
     audit = subparsers.add_parser("audit-curriculum")
@@ -655,7 +777,24 @@ def main() -> None:
     audit.add_argument("--output", type=Path, required=True)
     audit.add_argument("--workers", type=int, default=1)
     args = parser.parse_args()
-    if args.command == "validate-taxonomy":
+    if args.command == "build-taxonomy":
+        payload = build_taxonomy(
+            args.concepts,
+            args.annotator_identity,
+            args.annotation_policy,
+            args.audit_sample_receipt,
+            args.output,
+            annotation_method=args.annotation_method,
+            minimum_annotation_confidence_ppm=args.minimum_confidence_ppm,
+        )
+        result = {
+            "schema": payload["schema"],
+            "status": "created_prospective",
+            "receipt_sha256": payload["receipt_sha256"],
+            "training_authorized": False,
+            "four_b_training_authorized": False,
+        }
+    elif args.command == "validate-taxonomy":
         payload = _read_taxonomy(args.taxonomy)
         result = {
             "schema": payload["schema"],
