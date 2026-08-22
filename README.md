@@ -181,6 +181,16 @@ benchmark evidence selects an architecture.
   cancelled with zero elapsed time and zero restarts. Every target was absent at
   submission; a mechanics failure cancels all scientific descendants before
   allocation.
+- Fresh parent mechanics `769422` completed 0:0 on known-good evc44 in 97
+  seconds with zero restarts. The 1,845-byte receipt file SHA-256 is
+  `e1767a706d3e7aafefb2707cdfcdd8b4af55699efb81c9997f0ea0ee13268ffb`;
+  its canonical internal receipt is
+  `d94e62c84be0625b3479b671fcd63a264b3358d7713975fb0718c6bfc25ee8a0`.
+  Independent replay against the sealed snapshot passes. It binds
+  Transformers `5.15.0.dev0`, Torch `2.6.0+cu124`, CUDA 12.4, H100 capability
+  9.0, all 320 parameter tensors and two buffers on CUDA:0, finite
+  `[1,1,248320]` logits with argmax 279, peak allocation 1,807,927,296 bytes,
+  unchanged model state, zero backward/optimizer calls, and no 4B execution.
 - The Qwen factor consumes exactly `61,035 × 2,048 = 124,999,680` ordered
   training tokens. A dedicated 125M-token freezer now materializes only that
   exact prefix plus the 256-sequence canary prefix instead of spending CPU,
