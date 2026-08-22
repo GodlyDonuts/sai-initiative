@@ -34,11 +34,12 @@ def test_stream_job_freezes_every_declared_budget_prefix() -> None:
 def test_stream_job_reopens_corpus_and_stream_evidence() -> None:
     job = _job()
     assert "CURRICULUM_RECEIPT" in job
-    assert 'receipt["schema"] == "sai-curriculum-order-receipt-v1"' in job
+    assert "validate_curriculum_split" in job
     assert 'receipt["status"] == "qualified"' in job
-    assert 'receipt["curriculum_qualified"] is True' in job
-    assert 'all(receipt["progression_checks"].values())' in job
-    assert 'receipt["output"]["sha256"] == hashlib.sha256' in job
+    assert 'receipt["split_qualified"] is True' in job
+    assert 'train["curriculum_qualified"] is True' in job
+    assert 'all(train["progression_checks"].values())' in job
+    assert 'train["sha256"] == sha256_file(corpus_path)' in job
     assert "--source-qualification-sha256" in job
     assert '--curriculum-receipt "$CURRICULUM_RECEIPT"' in job
     for value in (61_035, 122_070, 183_105, 244_140):

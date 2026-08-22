@@ -60,12 +60,17 @@ stderr_path="$(printf '%s\n' "$job_record" | tr ' ' '\n' | sed -n 's/^StdErr=//p
 case "$stdout_path" in "$LOG_ROOT"/*) ;; *) exit 2 ;; esac
 case "$stderr_path" in "$LOG_ROOT"/*) ;; *) exit 2 ;; esac
 
+export PYTHONPATH="$SAI_ROOT/src"
+export PYTHONDONTWRITEBYTECODE=1
+
 tokenizer_sha256="$("$PYTHON" -P -s -B - \
   "$SELECTED_RECEIPT" "$TRAIN_CORPUS" "$CURRICULUM_RECEIPT" <<'PY'
-import hashlib
 import json
 import pathlib
 import sys
+
+from sai.data.curriculum_split import validate_curriculum_split
+from sai.data.token_stream import sha256_file
 
 selected_path, corpus_path, corpus_receipt_path = map(pathlib.Path, sys.argv[1:])
 selected = json.loads(selected_path.read_text())
@@ -75,26 +80,18 @@ assert selected["vocab_size"] == 48_000
 assert selected["byte_fallback"] is True
 assert selected["roundtrip_failures"] == 0
 assert selected["special_tokens_preserved"] is True
-receipt = json.loads(corpus_receipt_path.read_text())
-unsigned = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
-canonical = hashlib.sha256(
-    json.dumps(
-        unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")
-    ).encode()
-).hexdigest()
-assert receipt["schema"] == "sai-curriculum-order-receipt-v1"
+receipt = validate_curriculum_split(corpus_receipt_path)
+train = receipt["train"]
 assert receipt["status"] == "qualified"
-assert receipt["curriculum_qualified"] is True
+assert receipt["split_qualified"] is True
 assert receipt["training_authorized"] is False
-assert receipt["receipt_sha256"] == canonical
-assert receipt["documents"]["accepted"] >= 40_000
-assert receipt["documents"]["all_accepted_emitted_once"] is True
-assert all(receipt["progression_checks"].values())
-assert receipt["output"]["path"] == str(corpus_path.resolve())
-assert receipt["output"]["bytes"] == corpus_path.stat().st_size
-assert receipt["output"]["sha256"] == hashlib.sha256(
-    corpus_path.read_bytes()
-).hexdigest()
+assert receipt["four_b_training_authorized"] is False
+assert train["documents"] >= 40_000
+assert train["curriculum_qualified"] is True
+assert all(train["progression_checks"].values())
+assert train["path"] == str(corpus_path.resolve())
+assert train["bytes"] == corpus_path.stat().st_size
+assert train["sha256"] == sha256_file(corpus_path)
 print(selected["tokenizer_identity_sha256"])
 PY
 )"
@@ -102,8 +99,6 @@ test "${#tokenizer_sha256}" = 64
 curriculum_sha256="$(sha256sum "$CURRICULUM_RECEIPT" | cut -d ' ' -f 1)"
 test "${#curriculum_sha256}" = 64
 
-export PYTHONPATH="$SAI_ROOT/src"
-export PYTHONDONTWRITEBYTECODE=1
 export OPENBLAS_NUM_THREADS=1
 export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
 export TOKENIZERS_PARALLELISM=false

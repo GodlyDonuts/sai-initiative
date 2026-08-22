@@ -31,6 +31,24 @@ benchmark evidence selects an architecture.
   material, and rehearses foundational material in every later phase. Its
   validator reopens source/decontamination evidence and replays every output
   row, band, duplicate decision, phase mean, and identity fingerprint.
+- Recovery job `769626` completed the exact twenty-boundary decontamination
+  pass without retries. It published a `9,541,423,202`-byte admitted corpus
+  with SHA-256
+  `5e234e56d3df101c668beb49d4582740d6bc3fbe723448231c73a6d4e6e57dda`;
+  its receipt file is SHA-256
+  `a396590cc253fb208c276fb004c53b5dd50bca651811c9f1c315cd69c7c8cb5f`.
+  Curriculum scoring job `769780` is now running over that exact source.
+- A second audit found that the legacy development stream was produced from an
+  earlier corpus slice and could not prove disjointness from the new admitted
+  population. Dependency-held freeze/control jobs `769787` and `769788` were
+  cancelled with zero elapsed time, zero restarts, and no node before they could
+  publish a stream. `sai.data.curriculum_split` now performs the train/development
+  separation only after the global quality and high-confidence near-duplicate
+  pass. It preserves the four phase boundaries in training, assigns every
+  accepted identity exactly once by a frozen hash modulus, and replays the full
+  source against both outputs. New training and development token streams must
+  bind that split receipt; the legacy development stream is not admissible for
+  the curriculum experiment.
 - A valid curriculum receipt is still not proof that the order helps. Before
   using it for a larger model, Sai will compare it against a same-document
   deterministic order control at small scale, with matched tokenizer,

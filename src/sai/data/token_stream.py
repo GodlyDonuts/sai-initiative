@@ -930,6 +930,66 @@ def validate_frozen_stream(
     return report
 
 
+def load_curriculum_phase_contract(
+    receipt_path: Path,
+    sources: list[Path],
+    source_qualification_sha256: str | None,
+) -> list[tuple[str, int]]:
+    """Validate either a full curriculum or its qualified training split."""
+
+    if not receipt_path.is_file() or receipt_path.is_symlink():
+        raise TokenStreamError("curriculum receipt is missing or unsafe")
+    try:
+        payload = json.loads(receipt_path.read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise TokenStreamError("curriculum receipt is unreadable") from error
+    if len(sources) != 1 or source_qualification_sha256 != sha256_file(receipt_path):
+        raise TokenStreamError("curriculum receipt differs")
+    schema = payload.get("schema")
+    if schema == "sai-curriculum-order-receipt-v1":
+        from sai.data.curriculum import validate_curriculum
+
+        validated = validate_curriculum(receipt_path)
+        source_row = validated.get("output", {})
+        phases = validated.get("phases")
+        qualified = validated.get("curriculum_qualified") is True
+    elif schema == "sai-curriculum-train-development-split-v1":
+        from sai.data.curriculum_split import validate_curriculum_split
+
+        validated = validate_curriculum_split(receipt_path)
+        source_row = validated.get("train", {})
+        phases = source_row.get("phases")
+        qualified = bool(
+            validated.get("split_qualified") is True
+            and source_row.get("curriculum_qualified") is True
+        )
+    else:
+        raise TokenStreamError("curriculum receipt schema differs")
+    source = sources[0]
+    if (
+        validated.get("status") != "qualified"
+        or validated.get("training_authorized") is not False
+        or not qualified
+        or not isinstance(phases, dict)
+        or source_row.get("path") != str(source.resolve())
+        or source_row.get("bytes") != source.stat().st_size
+        or source_row.get("sha256") != sha256_file(source)
+    ):
+        raise TokenStreamError("curriculum receipt differs")
+    ordered_phases = sorted(phases.items(), key=lambda item: item[1].get("index", -1))
+    if [row.get("index") for _, row in ordered_phases] != list(
+        range(len(ordered_phases))
+    ):
+        raise TokenStreamError("curriculum phase order differs")
+    result = [(name, row.get("documents")) for name, row in ordered_phases]
+    if any(
+        not isinstance(documents, int) or isinstance(documents, bool) or documents <= 0
+        for _, documents in result
+    ):
+        raise TokenStreamError("curriculum phase geometry differs")
+    return result
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--tokenizer-root", type=Path, required=True)
@@ -966,39 +1026,11 @@ def main() -> int:
         raise TokenStreamError("a fast tokenizer with offsets is required")
     curriculum_phases = None
     if args.curriculum_receipt is not None:
-        path = args.curriculum_receipt
-        if not path.is_file() or path.is_symlink():
-            raise TokenStreamError("curriculum receipt is missing or unsafe")
-        curriculum = json.loads(path.read_text())
-        unsigned = {
-            key: value for key, value in curriculum.items() if key != "receipt_sha256"
-        }
-        phases = curriculum.get("phases")
-        if (
-            curriculum.get("schema") != "sai-curriculum-order-receipt-v1"
-            or curriculum.get("status") != "qualified"
-            or curriculum.get("curriculum_qualified") is not True
-            or curriculum.get("training_authorized") is not False
-            or curriculum.get("receipt_sha256") != canonical_sha256(unsigned)
-            or not isinstance(phases, dict)
-            or len(args.source) != 1
-            or curriculum.get("output", {}).get("path") != str(args.source[0].resolve())
-            or curriculum.get("output", {}).get("bytes")
-            != args.source[0].stat().st_size
-            or curriculum.get("output", {}).get("sha256") != sha256_file(args.source[0])
-            or args.source_qualification_sha256 != sha256_file(path)
-        ):
-            raise TokenStreamError("curriculum receipt differs")
-        ordered_phases = sorted(
-            phases.items(), key=lambda item: item[1].get("index", -1)
+        curriculum_phases = load_curriculum_phase_contract(
+            args.curriculum_receipt,
+            args.source,
+            args.source_qualification_sha256,
         )
-        if [row.get("index") for _, row in ordered_phases] != list(
-            range(len(ordered_phases))
-        ):
-            raise TokenStreamError("curriculum phase order differs")
-        curriculum_phases = [
-            (name, row.get("documents")) for name, row in ordered_phases
-        ]
     report = freeze(
         tokenizer,
         args.source,
