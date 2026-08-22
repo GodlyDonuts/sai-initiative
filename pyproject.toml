@@ -53,6 +53,7 @@ sai-compare-curriculum-benchmarks = "sai.evaluation.curriculum_benchmark_compare
 sai-evaluate-curriculum-milestones = "sai.evaluation.curriculum_milestone_nll:main"
 sai-compare-curriculum-milestones = "sai.evaluation.curriculum_milestone_compare:main"
 sai-compare-source-addition = "sai.evaluation.source_addition_compare:main"
+sai-confirm-source-addition-benchmarks = "sai.evaluation.source_addition_benchmark_compare:main"
 sai-readiness = "sai.readiness:main"
 sai-qwen08-workspace-screen = "sai.training.hf_workspace_screen:main"
 sai-evaluate-qwen08-workspace-mc = "sai.evaluation.hf_workspace_mc:main"

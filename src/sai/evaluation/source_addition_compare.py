@@ -13,6 +13,7 @@ from typing import Any
 from sai.data.token_stream import canonical_sha256, sha256_file, validate_frozen_stream
 from sai.model.config import SaiModelConfig, parameter_ledger
 from sai.model.initialization import POLICY_SHA256
+from sai.training.checkpoint import MANIFEST_SCHEMA
 
 SCHEMA = "sai-source-addition-nll-comparison-v1"
 RESULT_SCHEMA = "sai-sub-4b-short-screen-v1"
@@ -146,6 +147,65 @@ def _load_result(path: Path) -> tuple[dict[str, Any], str]:
     ):
         raise SourceAdditionComparisonError("training result receipt differs")
     return payload, file_sha256
+
+
+def _checkpoint_bundle(result_path: Path, result: dict[str, Any]) -> dict[str, Any]:
+    """Reproduce the exact checkpoint identity consumed by benchmark evaluation."""
+
+    descriptor = result.get("checkpoint")
+    if (
+        not isinstance(descriptor, dict)
+        or set(descriptor) != {"path", "bytes", "sha256"}
+        or not isinstance(descriptor["path"], str)
+        or Path(descriptor["path"]).name != descriptor["path"]
+        or isinstance(descriptor["bytes"], bool)
+        or not isinstance(descriptor["bytes"], int)
+        or descriptor["bytes"] <= 0
+        or not isinstance(descriptor["sha256"], str)
+        or len(descriptor["sha256"]) != 64
+    ):
+        raise SourceAdditionComparisonError("checkpoint descriptor differs")
+    checkpoint = result_path.parent / descriptor["path"]
+    manifest = checkpoint.with_name(f"{checkpoint.name}.manifest.json")
+    if (
+        not checkpoint.is_file()
+        or checkpoint.is_symlink()
+        or checkpoint.stat().st_size != descriptor["bytes"]
+        or sha256_file(checkpoint) != descriptor["sha256"]
+        or not manifest.is_file()
+        or manifest.is_symlink()
+    ):
+        raise SourceAdditionComparisonError("checkpoint artifact differs")
+    try:
+        manifest_payload = json.loads(manifest.read_text())
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise SourceAdditionComparisonError(
+            "checkpoint manifest is unreadable"
+        ) from error
+    if (
+        not isinstance(manifest_payload, dict)
+        or manifest_payload.get("schema") != MANIFEST_SCHEMA
+        or manifest_payload.get("checkpoint") != descriptor
+    ):
+        raise SourceAdditionComparisonError("checkpoint manifest differs")
+    manifest_sha256 = sha256_file(manifest)
+    rows = [
+        {
+            "name": checkpoint.name,
+            "bytes": descriptor["bytes"],
+            "sha256": descriptor["sha256"],
+        },
+        {
+            "name": manifest.name,
+            "bytes": manifest.stat().st_size,
+            "sha256": manifest_sha256,
+        },
+    ]
+    return {
+        "checkpoint_file_sha256": descriptor["sha256"],
+        "checkpoint_manifest_file_sha256": manifest_sha256,
+        "checkpoint_bundle_sha256": canonical_sha256(rows),
+    }
 
 
 def _positive_number(value: Any, field: str) -> float:
@@ -374,12 +434,45 @@ def compare_paths(
     treatment_stream: Path,
     control_stream: Path,
     development_stream: Path,
+    treatment_training_source_sha256: str,
+    control_training_source_sha256: str,
 ) -> dict[str, Any]:
     treatment, treatment_result_sha256 = _load_result(treatment_result)
     control, control_result_sha256 = _load_result(control_result)
+    treatment_checkpoint = _checkpoint_bundle(treatment_result, treatment)
+    control_checkpoint = _checkpoint_bundle(control_result, control)
+    if (
+        treatment_checkpoint["checkpoint_bundle_sha256"]
+        == control_checkpoint["checkpoint_bundle_sha256"]
+    ):
+        raise SourceAdditionComparisonError(
+            "source-addition checkpoints are duplicated"
+        )
     treatment_report = validate_frozen_stream(treatment_stream, verify_sources=True)
     control_report = validate_frozen_stream(control_stream, verify_sources=True)
     development_report = validate_frozen_stream(development_stream, verify_sources=True)
+    for value, label in (
+        (treatment_training_source_sha256, "treatment training source"),
+        (control_training_source_sha256, "control training source"),
+    ):
+        if (
+            not isinstance(value, str)
+            or len(value) != 64
+            or any(character not in "0123456789abcdef" for character in value)
+        ):
+            raise SourceAdditionComparisonError(f"{label} SHA256 differs")
+    if (
+        len(treatment_report.get("source_receipts", [])) != 1
+        or len(control_report.get("source_receipts", [])) != 1
+        or treatment_report["source_receipts"][0].get("sha256")
+        != treatment_training_source_sha256
+        or control_report["source_receipts"][0].get("sha256")
+        != control_training_source_sha256
+        or treatment_training_source_sha256 == control_training_source_sha256
+    ):
+        raise SourceAdditionComparisonError(
+            "benchmark-ready training source lineage differs"
+        )
     comparison = compare_payloads(
         treatment,
         control,
@@ -396,11 +489,13 @@ def compare_paths(
                 "file_sha256": treatment_result_sha256,
                 "receipt_sha256": treatment["receipt_sha256"],
             },
+            "treatment_checkpoint": treatment_checkpoint,
             "control_result": {
                 "path": Path(control_result).name,
                 "file_sha256": control_result_sha256,
                 "receipt_sha256": control["receipt_sha256"],
             },
+            "control_checkpoint": control_checkpoint,
             "treatment_stream_identity_sha256": treatment_report[
                 "ordered_stream_identity_sha256"
             ],
@@ -410,6 +505,8 @@ def compare_paths(
             "development_stream_identity_sha256": development_report[
                 "ordered_stream_identity_sha256"
             ],
+            "treatment_training_source_sha256": treatment_training_source_sha256,
+            "control_training_source_sha256": control_training_source_sha256,
         },
         **comparison,
         "optimizer_steps": 0,
@@ -433,6 +530,8 @@ def main() -> int:
     parser.add_argument("--treatment-stream", type=Path, required=True)
     parser.add_argument("--control-stream", type=Path, required=True)
     parser.add_argument("--development-stream", type=Path, required=True)
+    parser.add_argument("--treatment-training-source-sha256", required=True)
+    parser.add_argument("--control-training-source-sha256", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     payload = compare_paths(
@@ -441,6 +540,8 @@ def main() -> int:
         treatment_stream=args.treatment_stream,
         control_stream=args.control_stream,
         development_stream=args.development_stream,
+        treatment_training_source_sha256=args.treatment_training_source_sha256,
+        control_training_source_sha256=args.control_training_source_sha256,
     )
     _atomic_json(args.output, payload)
     print(

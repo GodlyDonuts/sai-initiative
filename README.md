@@ -350,7 +350,14 @@ benchmark evidence selects an architecture.
   distinct replayed source qualifications. It compares target-normalized and
   UTF-8-byte-normalized held-out likelihood in every development stratum; any
   stratum regression vetoes the source. A likelihood pass still retains
-  nothing until real source-disjoint benchmark confirmation completes.
+  nothing until real source-disjoint benchmark confirmation completes. The NLL
+  receipt now binds each terminal checkpoint plus manifest using the exact
+  bundle identity consumed by evaluation. `sai-confirm-source-addition-benchmarks`
+  then requires paired complete MMLU-Pro and MuSR development evidence, exact
+  checkpoint lineage, a positive 95-percent paired macro lower bound, no
+  negative benchmark delta, and no domain regression below one percentage
+  point. Only that terminal receipt can retain a source, and it still cannot
+  promote an architecture or authorize 4B training.
 - The matched curriculum-order experiment is now live. CPU launcher `770136`
   completed at `0:0` after replaying the split and all three streams and
   published dispatch SHA-256 `4d682933…7ee`. Its create-only wall-time receipt

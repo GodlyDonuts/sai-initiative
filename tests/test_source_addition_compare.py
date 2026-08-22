@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
 
 import pytest
@@ -8,6 +9,7 @@ import pytest
 from sai.data.token_stream import canonical_sha256
 from sai.evaluation.source_addition_compare import (
     SourceAdditionComparisonError,
+    _checkpoint_bundle,
     _load_result,
     compare_payloads,
 )
@@ -241,3 +243,47 @@ def test_terminal_loader_recomputes_model_and_run_identity(tmp_path) -> None:
     path.write_text(json.dumps(payload))
     with pytest.raises(SourceAdditionComparisonError, match="receipt differs"):
         _load_result(path)
+
+
+def test_checkpoint_bundle_matches_benchmark_evaluator_identity(tmp_path) -> None:
+    checkpoint = tmp_path / "model.checkpoint.pt"
+    checkpoint.write_bytes(b"checkpoint-state")
+    descriptor = {
+        "path": checkpoint.name,
+        "bytes": checkpoint.stat().st_size,
+        "sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+    }
+    manifest = checkpoint.with_name(f"{checkpoint.name}.manifest.json")
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema": "sai-mechanics-checkpoint-manifest-v1",
+                "checkpoint": descriptor,
+                "bindings": {},
+                "counters": {},
+                "cursor": {},
+            },
+            sort_keys=True,
+        )
+    )
+    result = tmp_path / "result.json"
+    bundle = _checkpoint_bundle(result, {"checkpoint": descriptor})
+    expected = canonical_sha256(
+        [
+            {
+                "name": checkpoint.name,
+                "bytes": checkpoint.stat().st_size,
+                "sha256": descriptor["sha256"],
+            },
+            {
+                "name": manifest.name,
+                "bytes": manifest.stat().st_size,
+                "sha256": hashlib.sha256(manifest.read_bytes()).hexdigest(),
+            },
+        ]
+    )
+    assert bundle["checkpoint_bundle_sha256"] == expected
+
+    checkpoint.write_bytes(b"tampered-state")
+    with pytest.raises(SourceAdditionComparisonError, match="artifact differs"):
+        _checkpoint_bundle(result, {"checkpoint": descriptor})

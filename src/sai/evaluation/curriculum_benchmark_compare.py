@@ -134,12 +134,14 @@ def _percentile(values: list[float], probability: float) -> float:
 
 def _paired_bootstrap(
     paired: dict[str, list[tuple[str, int]]],
+    *,
+    seed: int = BOOTSTRAP_SEED,
 ) -> dict[str, Any]:
     strata: dict[tuple[str, str], list[int]] = defaultdict(list)
     for benchmark, values in paired.items():
         for domain, delta in values:
             strata[(benchmark, domain)].append(delta)
-    generator = random.Random(BOOTSTRAP_SEED)
+    generator = random.Random(seed)
     samples: list[float] = []
     for _ in range(BOOTSTRAP_REPLICATES):
         benchmark_deltas = []
@@ -157,7 +159,7 @@ def _paired_bootstrap(
         samples.append(sum(benchmark_deltas) / len(benchmark_deltas))
     return {
         "method": "paired_domain_stratified_nonparametric_bootstrap",
-        "seed": BOOTSTRAP_SEED,
+        "seed": seed,
         "replicates": BOOTSTRAP_REPLICATES,
         "macro_delta_lcb_95": _percentile(samples, 0.025),
         "macro_delta_median": _percentile(samples, 0.5),

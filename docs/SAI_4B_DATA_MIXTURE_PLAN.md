@@ -226,6 +226,21 @@ This prevents a source with unusually tokenization-friendly text or narrow
 specialist gains from entering the mixture on an aggregate training-loss
 story.
 
+`sai-confirm-source-addition-benchmarks` is the mandatory second half of that
+gate. The NLL comparison now reopens the terminal checkpoint and manifest for
+each arm and publishes the same canonical two-file bundle identity consumed by
+benchmark evaluation. Each arm must first be materialized as one immutable
+benchmark-decontaminated training-source artifact, even when that artifact was
+assembled from several qualified sources; its exact file hash is carried from
+the token stream into that arm's separate disjointness receipt. The confirmer
+requires exact checkpoint and source lineage, paired
+row identities, identical evaluator/scorer/decoding/tokenizer bindings, complete
+MMLU-Pro and MuSR development populations, a positive paired macro bootstrap
+lower confidence bound, no negative benchmark delta, and no domain regression
+below one percentage point. Only this receipt may set
+`source_addition_retained=true`; it still cannot authorize architecture
+promotion or 4B training.
+
 The ladder begins with one matched approximately 100M-parameter model because
 data must be selected before architecture. A positive one-seed result is
 provisional. Promotion requires repeated seeds, held-out likelihood normalized
