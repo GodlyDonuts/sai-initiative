@@ -62,6 +62,18 @@ away by agreement elsewhere. Even a pass authorizes only taxonomy/progression
 analysis, not training. No completed human labels or pass receipt currently
 exist.
 
+`sai-compile-authored-review` removes a fragile annotation ambiguity before
+adjudication. Reviewers submit exact verbatim evidence quotes instead of
+hand-computed offsets. The compiler accepts only quotes that occur exactly once
+in the immutable blind chapter, resolves them to Unicode-codepoint half-open
+spans, and rejects missing, repeated, short, overlapping, unknown-concept, or
+below-confidence evidence. Its receipt is explicitly candidate-only: compiling
+model-assisted or human draft labels does not establish reviewer independence,
+does not count as completed human review, and cannot authorize data admission
+or training. The downstream adjudicator also rejects blank `admit` labels,
+taught/assumed concept overlap, and sub-policy evidence spans; identical empty
+reviews therefore cannot manufacture a high agreement score.
+
 ## Progression semantics
 
 The Rust Book begins with installation, hello-world programs, a guessing-game

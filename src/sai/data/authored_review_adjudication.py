@@ -106,6 +106,7 @@ def _validate_spans(spans: Any, text: str, label: str) -> None:
             or not isinstance(end, int)
             or start < 0
             or start >= end
+            or end - start < 16
             or end > len(text)
             or start < previous_end
             or span["text_sha256"]
@@ -155,6 +156,12 @@ def _validate_reviews(
             taught_ids.append(concept_id)
         if taught_ids != sorted(taught_ids):
             raise AuthoredReviewAdjudicationError(f"{label} concepts differ")
+        if set(taught_ids) & set(assumed):
+            raise AuthoredReviewAdjudicationError(f"{label} concept roles differ")
+        if row["admission_recommendation"] == "admit" and not taught_ids:
+            raise AuthoredReviewAdjudicationError(
+                f"{label} admitted row contains no taught concept"
+            )
         defects = row["defects"]
         if not isinstance(defects, list):
             raise AuthoredReviewAdjudicationError(f"{label} defects differ")

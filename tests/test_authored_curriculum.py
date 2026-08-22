@@ -13,7 +13,10 @@ from sai.data.authored_curriculum import (
     build,
     validate,
 )
-from sai.data.authored_review_adjudication import adjudicate
+from sai.data.authored_review_adjudication import (
+    AuthoredReviewAdjudicationError,
+    adjudicate,
+)
 from sai.data.authored_review_packet import (
     AuthoredReviewPacketError,
     validate_packet,
@@ -328,30 +331,42 @@ def _review_inputs(tmp_path: Path) -> dict[str, Path]:
     ]
     rows = []
     for source in packet:
-        span = source["text"][0]
+        span = next(
+            (
+                source["text"][start : start + 16]
+                for start in range(max(0, len(source["text"]) - 15))
+                if source["text"].count(source["text"][start : start + 16]) == 1
+            ),
+            None,
+        )
+        start = source["text"].index(span) if span is not None else None
         rows.append(
             {
                 "schema": "sai-authored-curriculum-completed-review-row-v1",
                 "review_identity_sha256": source["review_identity_sha256"],
                 "instructional_quality_ppm": 900_000,
                 "assumed_prior_concepts": [],
-                "taught_concepts": [
-                    {
-                        "concept_id": "code.symbols",
-                        "confidence_ppm": 900_000,
-                        "evidence_spans": [
-                            {
-                                "start": 0,
-                                "end": 1,
-                                "text_sha256": hashlib.sha256(
-                                    span.encode()
-                                ).hexdigest(),
-                            }
-                        ],
-                    }
-                ],
+                "taught_concepts": (
+                    [
+                        {
+                            "concept_id": "code.symbols",
+                            "confidence_ppm": 900_000,
+                            "evidence_spans": [
+                                {
+                                    "start": start,
+                                    "end": start + len(span),
+                                    "text_sha256": hashlib.sha256(
+                                        span.encode()
+                                    ).hexdigest(),
+                                }
+                            ],
+                        }
+                    ]
+                    if span is not None
+                    else []
+                ),
                 "defects": [],
-                "admission_recommendation": "admit",
+                "admission_recommendation": "admit" if span is not None else "revise",
             }
         )
     encoded = "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
@@ -373,8 +388,10 @@ def test_semantic_review_adjudication_preserves_measured_disagreement(
     reviewer_rows = [
         json.loads(line) for line in paths["reviewer_reviews"].read_text().splitlines()
     ]
-    for row in reviewer_rows[:7]:
+    labeled = [row for row in reviewer_rows if row["taught_concepts"]]
+    for row in labeled[:7]:
         row["taught_concepts"] = []
+        row["admission_recommendation"] = "revise"
     paths["reviewer_reviews"].write_text(
         "".join(json.dumps(row, sort_keys=True) + "\n" for row in reviewer_rows)
     )
@@ -382,3 +399,17 @@ def test_semantic_review_adjudication_preserves_measured_disagreement(
     assert failed["status"] == "failed"
     assert failed["audit_qualified"] is False
     assert failed["observed_disagreement_ppm"]["taught_concepts"] > 50_000
+
+
+def test_semantic_review_adjudication_rejects_blank_admit(tmp_path: Path) -> None:
+    paths = _review_inputs(tmp_path)
+    rows = [
+        json.loads(line) for line in paths["reviewer_reviews"].read_text().splitlines()
+    ]
+    row = next(value for value in rows if value["taught_concepts"])
+    row["taught_concepts"] = []
+    paths["reviewer_reviews"].write_text(
+        "".join(json.dumps(value, sort_keys=True) + "\n" for value in rows)
+    )
+    with pytest.raises(AuthoredReviewAdjudicationError, match="no taught concept"):
+        adjudicate(**paths, output=tmp_path / "blank-admit.json")
