@@ -198,6 +198,19 @@ benchmark evidence selects an architecture.
   are held in a separately sealed key. Reviewers therefore cannot infer the
   answer from the schedule they are auditing, and no packet can authorize
   training or 4B scaling.
+  CPU job `770533` executed the exact pushed implementation at commit
+  `d798e4edc48d06ff112c95d44872b0d123ad01ab`, completed in 224 seconds on
+  `evc21` with zero restarts, and replayed the packet twice. The blinded packet
+  SHA-256 is
+  `ae4ebe9721f2b2e156cb72aba9f46f73396f0cdcecd0480754784b32c0efba2d`,
+  the withheld key SHA-256 is
+  `f2986e52cedec2a5db8802c43505539d76b17210d7e1fac026e79ef2aa8aa3fa`,
+  and the canonical receipt SHA-256 is
+  `6a07e0e1fa8e5832f2b196cd65e1547f563a47d0f896278fcbb364a3626e347d`.
+  Independent inspection confirmed all 120 packet rows omit phase, surface
+  band, source, original index, and document identity; the separate key retains
+  all mappings. The packet is now ready for two independently identified blind
+  reviews, but contains no completed labels and authorizes no training.
 - Source-disjoint split `770039` is now running from that independently
   qualified receipt with four ordered workers across both receipt validation
   and exact split reconstruction, plus a four-hour fail-closed wall limit.
