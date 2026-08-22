@@ -281,6 +281,30 @@ benchmark evidence selects an architecture.
   source. Each decision must also name the exact source-manifest hash it covers,
   preventing cross-source receipt reuse. There is no structure-only v3 mode;
   every validation reopens the evidence root. No v3 mixture passes yet.
+- The matched curriculum-order experiment is now live. CPU launcher `770136`
+  completed at `0:0` after replaying the split and all three streams and
+  published dispatch SHA-256 `4d682933…7ee`. Its create-only wall-time receipt
+  `895fd3e3…2cc` extended both full arms to the predeclared 18-hour bound before
+  release. Exact-geometry canary `770153` completed on one H100 in 294 seconds,
+  with zero restarts and empty stderr; its terminal run receipt is
+  `f484fcf8…68b1`. Curriculum job `770154` and identical-record deterministic-
+  order control `770155` then started independently on `evc22` and `evc24`.
+  Both train exactly 499,998,720 tokens with the same model, initialization,
+  optimizer, seed, update count, tokenizer, and admitted record multiset.
+- Continuation `770137` failed in five CPU seconds before submitting work
+  because Slurm would not accept a new dependency on completed population job
+  `770126` after it aged out of the live controller table. The population and
+  split jobs remain exactly `COMPLETED|0:0|0` in accounting. Recovery stage
+  `770159` depends only on the still-live NLL comparison and will independently
+  reopen those completed receipts before any benchmark submission. No GPU job
+  was duplicated and no scientific identity changed. Source now avoids this
+  aged-dependency failure in future continuations.
+- Semantic annotation policy v2 and prerequisite taxonomy v3 now require every
+  accepted positive concept label to bind at least 16 exact source Unicode
+  codepoints. A bare term mention therefore cannot establish that a prerequisite
+  was taught. This is only a minimum evidence guard; independent annotation
+  review, prerequisite order, concept-density, and later-rehearsal gates remain
+  conjunctive. No semantic curriculum has passed yet.
 
 ## Live scratchpad — 2026-08-21
 
