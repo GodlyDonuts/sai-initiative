@@ -14,6 +14,12 @@ request. Browser state starts unlabeled. Every row must be explicitly marked
 reviewed before the page exports the exact quoted-review JSONL schema consumed
 by `sai-compile-authored-review`.
 
+Review may span multiple sessions. **Export progress** writes a local JSON file
+containing only this workspace identity, each salted review identity, the draft
+fields, and explicit reviewed flags. **Import progress** accepts only the same
+packet/concept/policy identity and revalidates every row already marked
+reviewed. No browser storage, server, account, or network request is used.
+
 The browser checks the frozen confidence floor, concept vocabulary, role
 disjointness, and unique literal evidence spans before marking a row complete.
 The Python compiler remains authoritative and reopens every quote against the

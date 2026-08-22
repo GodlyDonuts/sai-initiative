@@ -55,11 +55,15 @@ def test_builds_replayable_offline_blind_workspace(tmp_path: Path) -> None:
     assert match is not None
     embedded = json.loads(match.group(1))
     assert len(embedded["packet"]) == 127
+    assert re.fullmatch(r"[0-9a-f]{64}", embedded["workspace_identity_sha256"])
+    assert embedded["workspace_identity_sha256"] == payload["workspace_identity_sha256"]
     assert set(embedded["packet"][0]) == {"review_identity_sha256", "text"}
     assert "source_id" not in match.group(1)
     assert "fetch(" not in page
     assert "XMLHttpRequest" not in page
     assert ".join('\\n')+'\\n'" in page
+    assert "sai-authored-curriculum-human-review-progress-v1" in page
+    assert 'id="progress-file" type="file"' in page
     assert validate(**inputs) == payload
 
 

@@ -39,8 +39,10 @@ def _html_document(
     packet: list[dict[str, Any]],
     concepts: list[dict[str, Any]],
     policy: dict[str, Any],
+    workspace_identity_sha256: str,
 ) -> bytes:
     data = {
+        "workspace_identity_sha256": workspace_identity_sha256,
         "packet": [
             {
                 "review_identity_sha256": row["review_identity_sha256"],
@@ -78,7 +80,7 @@ body{{margin:0;font:15px system-ui;color:#17202a;background:#f4f6f7}}header{{pad
 <header><strong>Sai blind human review</strong> — no curriculum phase, source identity, or provisional label is present. Select literal evidence directly from the chapter text.</header>
 <main><aside><div id="progress"></div><div id="rows"></div></aside>
 <section><h2 id="heading"></h2><pre id="source"></pre></section>
-<section><p>Complete the JSON fields, then mark this row reviewed. Export is disabled until every row has been explicitly reviewed.</p><textarea id="draft"></textarea><div><button id="save">Save row</button><button id="mark">Mark reviewed</button><button id="export">Export complete JSONL</button></div><p id="message"></p><details><summary>Frozen concept vocabulary</summary><div id="concepts"></div></details></section></main>
+<section><p>Complete the JSON fields, then mark this row reviewed. Export is disabled until every row has been explicitly reviewed.</p><textarea id="draft"></textarea><div><button id="save">Save row</button><button id="mark">Mark reviewed</button><button id="backup">Export progress</button><button id="restore">Import progress</button><input id="progress-file" type="file" accept="application/json,.json" hidden><button id="export">Export complete JSONL</button></div><p id="message"></p><details><summary>Frozen concept vocabulary</summary><div id="concepts"></div></details></section></main>
 <script id="sai-data" type="application/json">{encoded}</script>
 <script>
 'use strict';
@@ -114,13 +116,16 @@ function normalize(value,text){{
 }}
 function store(mark){{const row=data.packet[current];const value=normalize(JSON.parse($('draft').value),row.text);states[current].draft=value;if(mark)states[current].reviewed=true;render();message(mark?'Row marked reviewed':'Row saved',true)}}
 function message(text,ok){{$('message').textContent=text;$('message').className=ok?'ok':'error'}}
+function download(name,text,type){{const blob=new Blob([text],{{type}});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();URL.revokeObjectURL(a.href)}}
+function backup(){{try{{states[current].draft=JSON.parse($('draft').value);const payload={{schema:'sai-authored-curriculum-human-review-progress-v1',workspace_identity_sha256:data.workspace_identity_sha256,rows:states.map((state,index)=>({{review_identity_sha256:data.packet[index].review_identity_sha256,reviewed:state.reviewed,draft:state.draft}}))}};download('sai-authored-human-review-progress.json',JSON.stringify(payload,null,2)+'\\n','application/json');message('Offline progress exported',true)}}catch(e){{message(e.message,false)}}}}
+async function restore(file){{try{{const payload=JSON.parse(await file.text());if(!payload||payload.schema!=='sai-authored-curriculum-human-review-progress-v1'||payload.workspace_identity_sha256!==data.workspace_identity_sha256||!Array.isArray(payload.rows)||payload.rows.length!==data.packet.length)throw Error('Progress file belongs to a different workspace');const loaded=payload.rows.map((row,index)=>{{if(!row||row.review_identity_sha256!==data.packet[index].review_identity_sha256||typeof row.reviewed!=='boolean'||!row.draft||typeof row.draft!=='object'||Array.isArray(row.draft))throw Error('Progress row differs');if(row.reviewed)row.draft=normalize(row.draft,data.packet[index].text);return {{reviewed:row.reviewed,draft:row.draft}}}});states.splice(0,states.length,...loaded);current=0;render();message('Offline progress imported',true)}}catch(e){{message(e.message,false)}}finally{{$('progress-file').value=''}}}}
 function render(){{
  $('heading').textContent=`Row ${{current+1}} / ${{data.packet.length}}`; $('source').textContent=data.packet[current].text;$('draft').value=JSON.stringify(states[current].draft,null,2);
  $('rows').replaceChildren(...states.map((state,index)=>{{const b=document.createElement('button');b.textContent=String(index+1);b.className=state.reviewed?'done':'';b.onclick=()=>{{try{{store(false)}}catch(e){{message(e.message,false);return}}current=index;render()}};return b}}));
  const done=states.filter(x=>x.reviewed).length;$('progress').textContent=`Reviewed ${{done}} / ${{states.length}}`;$('export').disabled=done!==states.length;
 }}
-function exportRows(){{try{{store(false);if(states.some(x=>!x.reviewed))throw Error('Every row must be explicitly reviewed');const lines=states.map((state,index)=>JSON.stringify({{schema:'sai-authored-curriculum-quoted-review-draft-row-v1',review_identity_sha256:data.packet[index].review_identity_sha256,...state.draft}})).join('\\n')+'\\n';const blob=new Blob([lines],{{type:'application/jsonl'}});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='sai-authored-human-review.jsonl';a.click();URL.revokeObjectURL(a.href);message('Complete JSONL exported',true)}}catch(e){{message(e.message,false)}}}}
-$('save').onclick=()=>{{try{{store(false)}}catch(e){{message(e.message,false)}}}};$('mark').onclick=()=>{{try{{store(true)}}catch(e){{message(e.message,false)}}}};$('export').onclick=exportRows;
+function exportRows(){{try{{store(false);if(states.some(x=>!x.reviewed))throw Error('Every row must be explicitly reviewed');const lines=states.map((state,index)=>JSON.stringify({{schema:'sai-authored-curriculum-quoted-review-draft-row-v1',review_identity_sha256:data.packet[index].review_identity_sha256,...state.draft}})).join('\\n')+'\\n';download('sai-authored-human-review.jsonl',lines,'application/jsonl');message('Complete JSONL exported',true)}}catch(e){{message(e.message,false)}}}}
+$('save').onclick=()=>{{try{{store(false)}}catch(e){{message(e.message,false)}}}};$('mark').onclick=()=>{{try{{store(true)}}catch(e){{message(e.message,false)}}}};$('backup').onclick=backup;$('restore').onclick=()=>$('progress-file').click();$('progress-file').onchange=event=>{{const file=event.target.files[0];if(file)restore(file)}};$('export').onclick=exportRows;
 $('concepts').innerHTML=data.concepts.map(x=>`<p><code>${{x.concept_id}}</code> — ${{x.name}} (${{x.domain}}); prerequisites: ${{x.prerequisites.join(', ')||'none'}}</p>`).join('');render();
 </script></body></html>"""
     return document.encode()
@@ -146,10 +151,23 @@ def _prepare(
         )
     except Exception as error:
         raise AuthoredReviewWorkspaceError("blind review inputs differ") from error
+    workspace_identity_sha256 = canonical_sha256(
+        {
+            "schema": SCHEMA,
+            "blind_review_packet_sha256": hashlib.sha256(
+                inputs.packet_encoded
+            ).hexdigest(),
+            "concept_list_sha256": hashlib.sha256(inputs.concept_encoded).hexdigest(),
+            "annotation_policy_sha256": hashlib.sha256(
+                inputs.policy_encoded
+            ).hexdigest(),
+        }
+    )
     encoded = _html_document(
         packet=inputs.packet,
         concepts=inputs.concept_payload["concepts"],
         policy=inputs.policy,
+        workspace_identity_sha256=workspace_identity_sha256,
     )
     payload: dict[str, Any] = {
         "schema": SCHEMA,
@@ -161,6 +179,7 @@ def _prepare(
         "concept_list_sha256": hashlib.sha256(inputs.concept_encoded).hexdigest(),
         "annotation_policy_sha256": hashlib.sha256(inputs.policy_encoded).hexdigest(),
         "rows": len(inputs.packet),
+        "workspace_identity_sha256": workspace_identity_sha256,
         "workspace_html": {
             "bytes": len(encoded),
             "sha256": hashlib.sha256(encoded).hexdigest(),
