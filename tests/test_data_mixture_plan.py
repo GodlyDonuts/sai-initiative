@@ -140,6 +140,9 @@ def test_validates_exact_multisource_progressive_plan(tmp_path: Path) -> None:
         lambda value: value["controls"].update(
             terminal_benchmarks_used_for_tuning=True
         ),
+        lambda value: value["sources"][0].update(license="TBD"),
+        lambda value: value["sources"][0].update(revision="0" * 40),
+        lambda value: value["sources"][0].update(source_manifest_sha256="0" * 64),
         lambda value: value.update(four_b_training_authorized=True),
     ],
 )
@@ -163,3 +166,8 @@ def test_rejects_hash_tamper_and_unsafe_path(tmp_path: Path) -> None:
     link.symlink_to(target)
     with pytest.raises(DataMixturePlanError, match="unsafe"):
         validate_plan(link)
+
+    hardlink = tmp_path / "hardlink.json"
+    hardlink.hardlink_to(target)
+    with pytest.raises(DataMixturePlanError, match="unsafe"):
+        validate_plan(hardlink)

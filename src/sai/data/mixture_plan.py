@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +23,8 @@ SOURCE_CLASSES = {
     "science_technical",
 }
 _SOURCE_ID = re.compile(r"[a-z0-9][a-z0-9._-]{1,63}")
+_PLACEHOLDER_LICENSES = {"", "none", "pending", "tbd", "unknown", "unverified"}
+_MAX_PLAN_BYTES = 8 << 20
 _TOP_KEYS = {
     "schema",
     "status",
@@ -85,6 +89,8 @@ def _sha256(value: Any, label: str) -> str:
         bytes.fromhex(value)
     except ValueError as error:
         raise DataMixturePlanError(f"{label} differs") from error
+    if not any(bytes.fromhex(value)):
+        raise DataMixturePlanError(f"{label} is a placeholder")
     return value
 
 
@@ -95,7 +101,7 @@ def _revision(value: Any) -> str:
         bytes.fromhex(value)
     except ValueError as error:
         raise DataMixturePlanError("source revision differs") from error
-    if value != value.lower():
+    if value != value.lower() or not any(bytes.fromhex(value)):
         raise DataMixturePlanError("source revision differs")
     return value
 
@@ -143,7 +149,10 @@ def validate_payload(payload: Any) -> dict[str, Any]:
         if source["source_class"] not in SOURCE_CLASSES:
             raise DataMixturePlanError("source class differs")
         _revision(source["revision"])
-        if not isinstance(source["license"], str) or not source["license"].strip():
+        if (
+            not isinstance(source["license"], str)
+            or source["license"].strip().casefold() in _PLACEHOLDER_LICENSES
+        ):
             raise DataMixturePlanError("source license differs")
         if source["domain"] not in ALLOWED_DOMAINS:
             raise DataMixturePlanError("source domain differs")
@@ -233,21 +242,44 @@ def validate_payload(payload: Any) -> dict[str, Any]:
 def validate_plan(path: Path) -> dict[str, Any]:
     """Open and validate an immutable prospective mixture plan."""
 
-    if not path.is_file() or path.is_symlink():
-        raise DataMixturePlanError("data mixture plan is missing or unsafe")
-    before = path.stat()
     try:
-        payload = json.loads(path.read_text())
-    except json.JSONDecodeError as error:
-        raise DataMixturePlanError("data mixture plan JSON differs") from error
-    after = path.stat()
+        descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+    except OSError as error:
+        raise DataMixturePlanError("data mixture plan is missing or unsafe") from error
+    try:
+        before = os.fstat(descriptor)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or before.st_nlink != 1
+            or before.st_size <= 0
+            or before.st_size > _MAX_PLAN_BYTES
+        ):
+            raise DataMixturePlanError("data mixture plan is missing or unsafe")
+        with os.fdopen(descriptor, "rb", closefd=False) as handle:
+            encoded = handle.read(_MAX_PLAN_BYTES + 1)
+        after = os.fstat(descriptor)
+    finally:
+        os.close(descriptor)
+    if len(encoded) != before.st_size or len(encoded) > _MAX_PLAN_BYTES:
+        raise DataMixturePlanError("data mixture plan size differs")
     if (
         before.st_dev,
         before.st_ino,
+        before.st_nlink,
         before.st_size,
         before.st_mtime_ns,
-    ) != (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns):
+    ) != (
+        after.st_dev,
+        after.st_ino,
+        after.st_nlink,
+        after.st_size,
+        after.st_mtime_ns,
+    ):
         raise DataMixturePlanError("data mixture plan changed while reading")
+    try:
+        payload = json.loads(encoded.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise DataMixturePlanError("data mixture plan JSON differs") from error
     return validate_payload(payload)
 
 
