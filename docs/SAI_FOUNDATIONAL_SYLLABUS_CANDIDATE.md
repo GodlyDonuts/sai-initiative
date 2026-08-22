@@ -1,0 +1,32 @@
+# Sai Foundational Syllabus Candidate
+
+The original 50-concept semantic seed is intentionally preserved because the
+authored-source review artifacts already bind its exact bytes. It is too coarse
+to serve as Sai's final data syllabus: for example, it moves from numbers and
+arithmetic directly toward functions without separately representing place
+value, signed numbers, fractions and decimals, equations, or coordinates.
+
+`SAI_FOUNDATIONAL_SYLLABUS_ADDITIONS_CANDIDATE.json` adds 75 concepts without
+mutating that lineage. The deterministic composer produces a balanced
+125-concept candidate: 25 concepts in each of English, mathematics, code,
+science, and technical systems. New foundations include written word structure,
+clauses, negation, coreference, place value, fractions, equations, types,
+iteration, scientific classification, atoms, calibration, and procedures.
+Later composition includes calculus, matrices, concurrency, evolution,
+distributed systems, and machine learning only after their declared
+prerequisites.
+
+Every dependent addition requires 32 prior confident documents for each
+prerequisite. A concept's earliest phase cannot precede any prerequisite's
+earliest phase. Grounding concepts remain rehearsed in all four phases;
+integration and reasoning concepts also retain later rehearsal. The composed
+artifact is replayed through Sai's production taxonomy validator, proving exact
+fields, complete five-domain coverage, prerequisite existence, phase geometry,
+and acyclicity.
+
+This remains a candidate syllabus, not an accepted ontology. Its names, edges,
+granularity, omissions, and exposure counts require independent subject-matter
+review. A new annotation policy must bind the composed bytes, reviewers must
+calibrate on real source documents, and the admitted corpus must demonstrate
+coverage and zero premature exposure. The candidate authorizes no data
+reordering, optimizer work, architecture promotion, or 4B training.
