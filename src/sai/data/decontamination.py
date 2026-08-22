@@ -63,6 +63,20 @@ def _shingles(tokens: list[str], width: int) -> set[bytes]:
     }
 
 
+def _overlap_count(tokens: list[str], width: int, boundary: set[bytes]) -> int:
+    """Count unique matching shingles without retaining nonmatching source keys."""
+
+    if len(tokens) < width:
+        return 0
+    matches = {
+        digest
+        for index in range(len(tokens) - width + 1)
+        if (digest := bytes.fromhex(canonical_sha256(tokens[index : index + width])))
+        in boundary
+    }
+    return len(matches)
+
+
 def _text_shingles(text: str) -> tuple[set[bytes], set[bytes]]:
     normalized = _normalize(text)
     return (
@@ -174,12 +188,15 @@ def _candidate(
         raise DecontaminationError("raw source JSONL is malformed") from error
     normalized_text = _normalize(raw["text"])
     normalized_text_sha256 = hashlib.sha256(normalized_text.encode()).digest()
-    word_shingles, code_shingles = _text_shingles(raw["text"])
-    word_overlap_count = sum(
-        shingle in _WORKER_WORD_BOUNDARY for shingle in word_shingles
+    word_overlap_count = _overlap_count(
+        _WORD.findall(normalized_text),
+        POLICY["word_shingle_tokens"],
+        _WORKER_WORD_BOUNDARY,
     )
-    code_overlap_count = sum(
-        shingle in _WORKER_CODE_BOUNDARY for shingle in code_shingles
+    code_overlap_count = _overlap_count(
+        _CODE.findall(normalized_text),
+        POLICY["code_shingle_tokens"],
+        _WORKER_CODE_BOUNDARY,
     )
     return raw, normalized_text_sha256, word_overlap_count, code_overlap_count
 

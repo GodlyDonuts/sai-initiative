@@ -8,6 +8,7 @@ import pytest
 from sai.data.decontamination import (
     RAW_SCHEMA,
     DecontaminationError,
+    _overlap_count,
     _shingles,
     build,
     validate,
@@ -171,3 +172,11 @@ def test_shingle_index_uses_compact_byte_exact_sha256_keys() -> None:
         for index in range(3)
     }
     assert all(isinstance(value, bytes) and len(value) == 32 for value in observed)
+
+
+def test_streaming_overlap_count_is_exact_unique_intersection() -> None:
+    tokens = [str(index % 17) for index in range(250)]
+    source = _shingles(tokens, 8)
+    boundary = set(list(source)[::3]) | {b"x" * 32}
+    assert _overlap_count(tokens, 8, boundary) == len(source.intersection(boundary))
+    assert _overlap_count(tokens[:4], 8, boundary) == 0
