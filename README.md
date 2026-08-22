@@ -105,9 +105,16 @@ benchmark evidence selects an architecture.
   sequences from each of grounding, integration, reasoning, and specialization
   and binds those four token/byte strata in the stream receipt. Original jobs
   `770040` and `770050` were canceled at zero elapsed with no node, logs, or
-  outputs. Training-stream job `770041` is now freezing the update-aligned
-  training stream, and dependent job `770042` will build the exact
-  sequence-multiset order control.
+  outputs. Training-stream job `770041` completed at `0:0` in `5,386` seconds
+  with zero restarts and empty stderr. Its `60` shards contain exactly `244,140`
+  packed sequences and `499,998,720` tokens. The four emitted phase budgets are
+  `48,896 / 60,928 / 73,216 / 61,100` sequences, and their boundaries match the
+  declared optimizer updates. Receipt file SHA-256 is
+  `8de9780d4b5b873e668260ee2423c1536912163f9fb6696597663ac0c1e026b1`;
+  ordered-stream identity is
+  `c4c271f38b55ab277c7660719e3d36bc485063d440a3745b8f4d532545d51636`.
+  Dependent job `770042` is now constructing the exact sequence-multiset order
+  control; it has zero restarts.
 - The likelihood evaluator and terminal order comparator now retain all four
   development strata separately. A lower aggregate NLL cannot pass if
   grounding, integration, reasoning, or specialization regresses against the
