@@ -99,14 +99,23 @@ benchmark evidence selects an architecture.
   recovery `769345` is therefore held on `afternotok:769225` with the same
   compact commit, source, twenty ordered boundaries, output, and receipt, but a
   twelve-hour limit. It requests no resource while `769225` remains healthy.
-  The four direct CPU descendants use an OR dependency on successful completion
+  The three stream descendants use an OR dependency on successful completion
   of `769225` or `769345`, so exactly one decontamination lineage can release:
-  shared Sai stream `769226`, refreshed development populations `769227`, Qwen
-  stream `769228`, and SmolLM3 stream `769229`. This prevents a manual recovery
-  gap without requesting a GPU or duplicating healthy work. The mutually
-  exclusive downstream recovery graph is also complete: 100M/250M launcher
-  `769232`, parent benchmark launcher `769235`, workspace launcher `769236`,
-  workspace evaluation stage `769237`, and comparison stage `769238`. Two
+  shared Sai stream `769226`, Qwen stream `769228`, and SmolLM3 stream `769229`.
+  This prevents a manual recovery gap without requesting a GPU or duplicating
+  healthy work. A pre-execution audit found that the first refreshed-population
+  clone `769227` still checked terminal state for cancelled original job
+  `768892` inside its script even though its scheduler dependency had been
+  repaired. That clone and its three bound descendants `769235`, `769237`, and
+  `769238` were cancelled with zero elapsed time and zero restarts before they
+  could create any output. Exact mutually exclusive replacements now bind both
+  scheduler and in-script custody to the same lineage: population jobs
+  `769355`/`769356` follow primary/recovery corpus jobs `769225`/`769345`;
+  parent benchmark launchers are `769358`/`769359`; workspace evaluation stages
+  are `769360`/`769361`; and terminal comparisons are `769364`/`769365`. Each
+  pair targets the same collision-safe artifact and only the branch whose
+  corpus lineage completes can run. The unaffected 100M/250M launcher `769232`
+  and workspace launcher `769236` remain staged. Two
   malformed first launcher clones (`769233–769234`) were caught while still
   dependency-held and canceled with zero elapsed time and zero restarts; their
   corrected replacements bind the exact fallback population and stream job
