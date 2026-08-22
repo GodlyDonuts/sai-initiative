@@ -155,7 +155,11 @@ benchmark evidence selects an architecture.
   its empty loading-key collections as sets while the validator required the
   `unexpected_keys` container itself to be a list. CPU replay `769420` proved
   exact empty sets for missing, unexpected, and mismatched keys and an empty
-  error list. The validator now normalizes only list/set/tuple container form,
+  error list. Independent CPU geometry replay `769435` then proved the exact
+  loaded text host is `Qwen3_5ForCausalLM` with hidden size `1,024`, padded
+  model vocabulary `248,320`, 320 parameter tensors containing exactly
+  `752,393,024` parameters, two buffers, and no loading discrepancies. The
+  validator now normalizes only list/set/tuple container form,
   still rejects any non-string or disallowed key, and continues to require no
   missing, mismatched, or error entries. Full local regression is 354 passed;
   these are admission-code corrections before any Sai model result, not
