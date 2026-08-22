@@ -159,6 +159,12 @@ benchmark evidence selects an architecture.
   loaded text host is `Qwen3_5ForCausalLM` with hidden size `1,024`, padded
   model vocabulary `248,320`, 320 parameter tensors containing exactly
   `752,393,024` parameters, two buffers, and no loading discrepancies. The
+  exact CPU forward replay `769445` also completed in 38 seconds: the frozen
+  ten-token mechanics prompt produced finite logits of shape
+  `[1, 1, 248,320]`, FP32 sum `-324265.375`, maximum `18.125`, and argmax token
+  `279`. Thus tokenizer, loading, model-call, and logits contracts are all
+  exercised before the fresh H100 allocation; only CUDA residency and the
+  sealed mechanics receipt remain allocation-specific. The
   validator now normalizes only list/set/tuple container form,
   still rejects any non-string or disallowed key, and continues to require no
   missing, mismatched, or error entries. Full local regression is 354 passed;
