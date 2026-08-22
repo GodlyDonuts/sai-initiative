@@ -137,3 +137,31 @@ comparison `770787` with dependency `afterok:770785:770786`. Both GPU jobs are
 independent single-H100, no-requeue requests. Their output roots and the
 comparison output were absent before submission. They cannot qualify labels or
 authorize data; a successful comparison only prioritizes later human review.
+
+## Terminal fourth attempt and end of model-parser iteration
+
+The fourth attempt crossed the prior row-3 boundary but did not complete:
+
+- Qwen job `770785` failed `1:0` after 104 seconds, zero restarts, on `evc42`.
+  Four rows are individually replayable. Row 4 exhausted all three attempts on
+  unsupported or ambiguous defect quotations. Its failure artifact SHA-256 is
+  `ed4e7be97d325df1943c93217fe40630ee3c36f5346de74c23004ace43704dbb`.
+  Stdout/stderr SHA-256 values are respectively
+  `12da5e6bd425d7147764ca038a82cee7acefb7ab578bc7d82554055ff7bb2d92`
+  and `e5827b7bec294a2f89ca727870df72d52ca9db8007b80f0e3496c97b88dc4897`.
+- SmolLM3 job `770786` failed `1:0` after 74 seconds, zero restarts, on `evc46`.
+  Five rows are individually replayable. Row 5 first exceeded the frozen
+  evidence-list limits, then produced two non-JSON responses. Its failure
+  artifact SHA-256 is
+  `674a4c84b72b5c4fa81fead6f2d088e10b99c823077907e97b42e0ab7cd2ccde`.
+  Stdout/stderr SHA-256 values are respectively
+  `6409fd7714623b93a7c8342ee94891a03533f60f8392fb3e2e8b5eba795b344f`
+  and `1bc85f51d5c4e08a95e758c75d330e733127b11e2c835f74c04f9108c29d1f18`.
+- comparison `770787` was cancelled without execution.
+
+This closes the bounded model-parser recovery lane. No fifth model attempt will
+be created by relaxing quotation, evidence-count, JSON, confidence, or source
+span requirements. The preserved partial rows remain diagnostic-only and
+cannot be spliced into a completed review. The authored packet now returns to
+the already-frozen independent human-review path; only two complete human
+identity attestations can qualify its semantic labels.

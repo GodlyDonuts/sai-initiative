@@ -538,6 +538,12 @@ benchmark evidence selects an architecture.
   independently, with CPU comparison `770787` dependent on both. They may rank
   cross-family disagreements for human attention, but model output still
   cannot qualify labels.
+  Both reviewers crossed the former row-3 boundary but terminated at rows 4
+  and 5 respectively: Qwen could not ground defect quotes, while SmolLM3
+  exceeded evidence bounds and then returned non-JSON text. Comparison
+  `770787` never ran. This ends parser iteration rather than weakening the
+  evidence contract; the packet now proceeds only through the frozen two-human
+  review path.
   Exact failure and recovery evidence is in
   `docs/SAI_AUTHORED_MODEL_REVIEW_RECOVERY_20260822.md`. The final adjudicator now
   accepts neither arbitrary identity strings nor model-review identities: each
