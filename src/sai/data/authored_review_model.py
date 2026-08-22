@@ -500,10 +500,16 @@ def _input_ids(encoded: Any, torch: Any) -> Any:
         input_ids = encoded
     elif (
         isinstance(encoded, Mapping)
-        and set(encoded) == {"input_ids"}
+        and set(encoded) in ({"input_ids"}, {"input_ids", "attention_mask"})
         and isinstance(encoded["input_ids"], torch.Tensor)
     ):
         input_ids = encoded["input_ids"]
+        if "attention_mask" in encoded and (
+            not isinstance(encoded["attention_mask"], torch.Tensor)
+            or encoded["attention_mask"].shape != input_ids.shape
+            or not torch.equal(encoded["attention_mask"], torch.ones_like(input_ids))
+        ):
+            raise AuthoredModelReviewError("review prompt tokenization differs")
     else:
         raise AuthoredModelReviewError("review prompt tokenization differs")
     if input_ids.ndim != 2 or input_ids.shape[0] != 1 or input_ids.shape[1] <= 0:

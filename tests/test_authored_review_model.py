@@ -93,8 +93,21 @@ def test_input_ids_accepts_exact_tensor_or_input_only_mapping() -> None:
     tensor = torch.tensor([[1, 2, 3]])
     assert _input_ids(tensor, torch) is tensor
     assert _input_ids({"input_ids": tensor}, torch) is tensor
+    assert (
+        _input_ids(
+            {"input_ids": tensor, "attention_mask": torch.ones_like(tensor)}, torch
+        )
+        is tensor
+    )
     with pytest.raises(AuthoredModelReviewError, match="tokenization differs"):
-        _input_ids({"input_ids": tensor, "attention_mask": tensor}, torch)
+        _input_ids(
+            {"input_ids": tensor, "attention_mask": torch.tensor([[1, 1, 0]])},
+            torch,
+        )
+    with pytest.raises(AuthoredModelReviewError, match="tokenization differs"):
+        _input_ids(
+            {"input_ids": tensor, "attention_mask": tensor, "other": tensor}, torch
+        )
     with pytest.raises(AuthoredModelReviewError, match="tokenization differs"):
         _input_ids(torch.tensor([1, 2, 3]), torch)
 

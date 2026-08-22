@@ -30,7 +30,8 @@ class _Tokenizer:
 
 class _BatchEncodingTokenizer(_Tokenizer):
     def apply_chat_template(self, messages, **kwargs):
-        return {"input_ids": super().apply_chat_template(messages, **kwargs)}
+        input_ids = super().apply_chat_template(messages, **kwargs)
+        return {"input_ids": input_ids, "attention_mask": torch.ones_like(input_ids)}
 
 
 def _kwargs(tmp_path: Path) -> dict:
