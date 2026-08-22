@@ -28,6 +28,11 @@ class _Tokenizer:
         return torch.arange(100 + len(messages[1]["content"]) // 16).unsqueeze(0)
 
 
+class _BatchEncodingTokenizer(_Tokenizer):
+    def apply_chat_template(self, messages, **kwargs):
+        return {"input_ids": super().apply_chat_template(messages, **kwargs)}
+
+
 def _kwargs(tmp_path: Path) -> dict:
     packet = ARTIFACT / "authored-curriculum-blind-review.jsonl"
     receipt = ARTIFACT / "authored-curriculum-review-receipt.json"
@@ -77,6 +82,18 @@ def test_context_receipt_covers_all_blind_rows_and_replays(
     )
     with pytest.raises(AuthoredReviewContextError, match="receipt differs"):
         validate(**kwargs)
+
+
+def test_context_accepts_exact_input_only_batch_encoding(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        context, "validate_external_snapshot", lambda *a, **k: {"tree": "exact"}
+    )
+    monkeypatch.setattr(
+        context, "_tokenizer", lambda path: (_BatchEncodingTokenizer(), "test")
+    )
+    assert run(**_kwargs(tmp_path))["row_count"] == 127
 
 
 def test_context_rejects_over_budget_prompt(

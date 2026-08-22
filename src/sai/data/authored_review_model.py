@@ -16,6 +16,7 @@ import json
 import os
 import platform
 import stat
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -494,6 +495,22 @@ def _messages(prompt: str) -> list[dict[str, str]]:
     ]
 
 
+def _input_ids(encoded: Any, torch: Any) -> Any:
+    if isinstance(encoded, torch.Tensor):
+        input_ids = encoded
+    elif (
+        isinstance(encoded, Mapping)
+        and set(encoded) == {"input_ids"}
+        and isinstance(encoded["input_ids"], torch.Tensor)
+    ):
+        input_ids = encoded["input_ids"]
+    else:
+        raise AuthoredModelReviewError("review prompt tokenization differs")
+    if input_ids.ndim != 2 or input_ids.shape[0] != 1 or input_ids.shape[1] <= 0:
+        raise AuthoredModelReviewError("review prompt tokenization differs")
+    return input_ids
+
+
 def _generate(model: Any, tokenizer: Any, prompt: str) -> tuple[str, int, int]:
     import torch
 
@@ -504,12 +521,7 @@ def _generate(model: Any, tokenizer: Any, prompt: str) -> tuple[str, int, int]:
         return_tensors="pt",
         enable_thinking=False,
     )
-    if (
-        not isinstance(encoded, torch.Tensor)
-        or encoded.ndim != 2
-        or encoded.shape[0] != 1
-    ):
-        raise AuthoredModelReviewError("review prompt tokenization differs")
+    encoded = _input_ids(encoded, torch)
     input_tokens = int(encoded.shape[1])
     if input_tokens <= 0 or input_tokens > MAX_INPUT_TOKENS:
         raise AuthoredModelReviewError("review prompt exceeds frozen context budget")

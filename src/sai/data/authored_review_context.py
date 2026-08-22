@@ -15,6 +15,7 @@ from sai.data.authored_review_model import (
     REVIEWERS,
     _blind_inputs,
     _concept_prompt,
+    _input_ids,
     _messages,
     _prompt,
 )
@@ -96,13 +97,12 @@ def _payload(
             raise AuthoredReviewContextError(
                 "review prompt tokenization differs"
             ) from error
-        if (
-            not isinstance(encoded, torch.Tensor)
-            or encoded.ndim != 2
-            or encoded.shape[0] != 1
-            or encoded.shape[1] <= 0
-        ):
-            raise AuthoredReviewContextError("review prompt tokenization differs")
+        try:
+            encoded = _input_ids(encoded, torch)
+        except Exception as error:
+            raise AuthoredReviewContextError(
+                "review prompt tokenization differs"
+            ) from error
         rows.append(
             {
                 "index": index,

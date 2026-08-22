@@ -12,6 +12,7 @@ from sai.data.authored_review_model import (
     _blind_inputs,
     _draft_from_response,
     _identity_payload,
+    _input_ids,
     _prompt,
     _response_object,
     _result_payload,
@@ -84,6 +85,18 @@ def test_response_compiles_exact_quote() -> None:
     concepts = {item["concept_id"] for item in inputs.concept_payload["concepts"]}
     draft = _draft_from_response(source, response, concepts, inputs.policy)
     assert draft["taught_concepts"][0]["evidence_quotes"] == [quote]
+
+
+def test_input_ids_accepts_exact_tensor_or_input_only_mapping() -> None:
+    import torch
+
+    tensor = torch.tensor([[1, 2, 3]])
+    assert _input_ids(tensor, torch) is tensor
+    assert _input_ids({"input_ids": tensor}, torch) is tensor
+    with pytest.raises(AuthoredModelReviewError, match="tokenization differs"):
+        _input_ids({"input_ids": tensor, "attention_mask": tensor}, torch)
+    with pytest.raises(AuthoredModelReviewError, match="tokenization differs"):
+        _input_ids(torch.tensor([1, 2, 3]), torch)
 
 
 def test_response_rejects_commentary_and_missing_quote() -> None:
