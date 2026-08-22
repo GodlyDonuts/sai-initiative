@@ -96,14 +96,17 @@ benchmark evidence selects an architecture.
   sequences from each of grounding, integration, reasoning, and specialization
   and binds those four token/byte strata in the stream receipt. Original jobs
   `770040` and `770050` were canceled at zero elapsed with no node, logs, or
-  outputs. Corrected immutable runtime `6825dd8` is staged in jobs `770086`
-  (development) and `770087` (launcher); the independent training-stream and
-  exact-order-control jobs `770041` and `770042` remain reusable.
+  outputs. Corrected immutable runtime `6825dd8` is staged in development job
+  `770086`; the independent training-stream and exact-order-control jobs
+  `770041` and `770042` remain reusable.
 - The likelihood evaluator and terminal order comparator now retain all four
   development strata separately. A lower aggregate NLL cannot pass if
   grounding, integration, reasoning, or specialization regresses against the
   exact-order control. This closes the remaining possibility that easier rows
-  could hide curriculum damage to advanced material.
+  could hide curriculum damage to advanced material. Zero-runtime launcher
+  `770087` was replaced by `770088`, which binds immutable runtime `a532f49`
+  and waits on both stratified development job `770086` and control job
+  `770042`.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
 
