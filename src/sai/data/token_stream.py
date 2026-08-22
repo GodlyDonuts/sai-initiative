@@ -297,10 +297,16 @@ def freeze(
     sequence_length: int,
     prefix_sequences: set[int],
     sequences_per_shard: int = 4_096,
+    source_qualification_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Pack an explicit source order into uint32 tokens and boundary bitsets."""
 
     tokenizer_identity = _sha256(tokenizer_identity_sha256, "tokenizer identity")
+    source_qualification = (
+        None
+        if source_qualification_sha256 is None
+        else _sha256(source_qualification_sha256, "source qualification")
+    )
     if output.exists():
         raise TokenStreamError("token stream output already exists")
     if (
@@ -490,6 +496,8 @@ def freeze(
                 "accepted_by_domain": dict(sorted(domain_documents.items())),
             },
         }
+        if source_qualification is not None:
+            report_unsigned["source_qualification_sha256"] = source_qualification
         report_unsigned["ordered_stream_identity_sha256"] = canonical_sha256(
             report_unsigned
         )
@@ -557,6 +565,8 @@ def validate_frozen_stream(
         raise TokenStreamError("token stream geometry differs")
     _sha256(report.get("tokenizer_identity_sha256"), "tokenizer identity")
     _sha256(report.get("source_manifest_sha256"), "source manifest")
+    if "source_qualification_sha256" in report:
+        _sha256(report["source_qualification_sha256"], "source qualification")
     admitted_bytes = report.get("admitted_utf8_bytes")
     prefixes = report.get("prefix_utf8_bytes")
     if (
@@ -741,6 +751,7 @@ def main() -> int:
     parser.add_argument("--sequence-length", type=int, default=2_048)
     parser.add_argument("--prefix-sequences", type=int, action="append", required=True)
     parser.add_argument("--sequences-per-shard", type=int, default=4_096)
+    parser.add_argument("--source-qualification-sha256")
     args = parser.parse_args()
     observed_identity = sha256_tree(args.tokenizer_root)
     if observed_identity != _sha256(
@@ -769,6 +780,7 @@ def main() -> int:
         sequence_length=args.sequence_length,
         prefix_sequences=set(args.prefix_sequences),
         sequences_per_shard=args.sequences_per_shard,
+        source_qualification_sha256=args.source_qualification_sha256,
     )
     print(
         json.dumps(

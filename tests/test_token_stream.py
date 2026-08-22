@@ -121,9 +121,11 @@ def test_freeze_packs_exact_tokens_boundaries_and_utf8_prefixes(
         sequence_length=8,
         prefix_sequences={1, 2},
         sequences_per_shard=1,
+        source_qualification_sha256="2" * 64,
     )
     assert validate_frozen_stream(output) == report
     assert report["prefix_utf8_bytes"] == {"1": 6, "2": 12}
+    assert report["source_qualification_sha256"] == "2" * 64
     assert report["valid_tokens"] == 16
     assert report["documents"]["accepted"] == 4
 

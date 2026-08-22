@@ -11,6 +11,35 @@ equal-compute control on real, source-disjoint benchmarks.
 2026-08-21. The 4B run remains explicitly prohibited until smaller-scale real
 benchmark evidence selects an architecture.
 
+## Data-first reset — 2026-08-22
+
+- Data quality and presentation order are now the primary Sai admission gate.
+  The 30-file FineWeb-Edu prefix remains useful raw material, but passing its
+  upstream educational score, basic hygiene filter, and benchmark
+  decontamination is not sufficient to make it a training curriculum.
+- Audit found that the previous 500M-token freezer preserved upstream file/row
+  order. It had no prerequisite progression, difficulty strata, domain pacing,
+  or near-duplicate-cluster gate. Dependency-held stream job `769226` and GQA
+  launcher `769687` were therefore cancelled before execution: both recorded
+  zero elapsed time, zero restarts, no node, no child job, and no scientific
+  output. Parallel decontamination recovery `769626` continues because its
+  benchmark-disjoint admitted corpus is still required input evidence.
+- `sai.data.curriculum` now defines a create-only four-band, four-phase data
+  contract. It performs a second quality pass, removes high-confidence
+  five-word-shingle near duplicates, measures every document's surface
+  difficulty, excludes specialization from grounding, backloads advanced
+  material, and rehearses foundational material in every later phase. Its
+  validator reopens source/decontamination evidence and replays every output
+  row, band, duplicate decision, phase mean, and identity fingerprint.
+- A valid curriculum receipt is still not proof that the order helps. Before
+  using it for a larger model, Sai will compare it against a same-document
+  deterministic order control at small scale, with matched tokenizer,
+  initialization, optimizer, updates, and compute. Held-out NLL/UTF-8 byte and
+  source-disjoint real capability must improve or remain nonnegative without a
+  domain regression. Tokenizer, filtering, and ordering remain separate factors.
+- Architecture work is preparation-only behind this boundary. No Sai training
+  job is currently running, and the 4B prohibition remains unchanged.
+
 ## Live scratchpad — 2026-08-21
 
 - Exact FLA 0.4.2 Gated DeltaNet and KDA chunk mechanics remain qualified by

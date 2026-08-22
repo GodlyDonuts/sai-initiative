@@ -18,7 +18,7 @@ set -euo pipefail
 : "${TOKENIZER_ROOT:?TOKENIZER_ROOT is required}"
 : "${SELECTED_RECEIPT:?SELECTED_RECEIPT is required}"
 : "${TRAIN_CORPUS:?TRAIN_CORPUS is required}"
-: "${TRAIN_CORPUS_RECEIPT:?TRAIN_CORPUS_RECEIPT is required}"
+: "${CURRICULUM_RECEIPT:?CURRICULUM_RECEIPT is required}"
 : "${LOG_ROOT:?LOG_ROOT is required}"
 : "${TRAIN_STREAM:?TRAIN_STREAM is required}"
 : "${SLURM_JOB_ID:?SLURM_JOB_ID is required}"
@@ -31,7 +31,7 @@ require_absolute() {
 }
 
 for path in "$SAI_ROOT" "$PYTHON" "$TOKENIZER_ROOT" "$SELECTED_RECEIPT" \
-  "$TRAIN_CORPUS" "$TRAIN_CORPUS_RECEIPT" "$LOG_ROOT" "$TRAIN_STREAM"; do
+  "$TRAIN_CORPUS" "$CURRICULUM_RECEIPT" "$LOG_ROOT" "$TRAIN_STREAM"; do
   require_absolute "$path"
 done
 
@@ -46,7 +46,7 @@ test -z "$(git -C "$SAI_ROOT" status --short)"
 test -x "$PYTHON"
 test -d "$TOKENIZER_ROOT"
 test ! -L "$TOKENIZER_ROOT"
-for path in "$SELECTED_RECEIPT" "$TRAIN_CORPUS" "$TRAIN_CORPUS_RECEIPT"; do
+for path in "$SELECTED_RECEIPT" "$TRAIN_CORPUS" "$CURRICULUM_RECEIPT"; do
   test -f "$path"
   test ! -L "$path"
 done
@@ -61,7 +61,7 @@ case "$stdout_path" in "$LOG_ROOT"/*) ;; *) exit 2 ;; esac
 case "$stderr_path" in "$LOG_ROOT"/*) ;; *) exit 2 ;; esac
 
 tokenizer_sha256="$("$PYTHON" -P -s -B - \
-  "$SELECTED_RECEIPT" "$TRAIN_CORPUS" "$TRAIN_CORPUS_RECEIPT" <<'PY'
+  "$SELECTED_RECEIPT" "$TRAIN_CORPUS" "$CURRICULUM_RECEIPT" <<'PY'
 import hashlib
 import json
 import pathlib
@@ -76,11 +76,20 @@ assert selected["byte_fallback"] is True
 assert selected["roundtrip_failures"] == 0
 assert selected["special_tokens_preserved"] is True
 receipt = json.loads(corpus_receipt_path.read_text())
-assert receipt["schema"] == "sai-decontamination-receipt-v1"
-assert receipt["status"] == "passed"
-assert receipt["scanned"] == receipt["accepted"] + receipt["dropped"]
-assert receipt["accepted"] > 0
-assert len(receipt["boundaries"]) == 20
+unsigned = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+canonical = hashlib.sha256(
+    json.dumps(
+        unsigned, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+).hexdigest()
+assert receipt["schema"] == "sai-curriculum-order-receipt-v1"
+assert receipt["status"] == "qualified"
+assert receipt["curriculum_qualified"] is True
+assert receipt["training_authorized"] is False
+assert receipt["receipt_sha256"] == canonical
+assert receipt["documents"]["accepted"] >= 40_000
+assert receipt["documents"]["all_accepted_emitted_once"] is True
+assert all(receipt["progression_checks"].values())
 assert receipt["output"]["path"] == str(corpus_path.resolve())
 assert receipt["output"]["bytes"] == corpus_path.stat().st_size
 assert receipt["output"]["sha256"] == hashlib.sha256(
@@ -90,6 +99,8 @@ print(selected["tokenizer_identity_sha256"])
 PY
 )"
 test "${#tokenizer_sha256}" = 64
+curriculum_sha256="$(sha256sum "$CURRICULUM_RECEIPT" | cut -d ' ' -f 1)"
+test "${#curriculum_sha256}" = 64
 
 export PYTHONPATH="$SAI_ROOT/src"
 export PYTHONDONTWRITEBYTECODE=1
@@ -101,6 +112,7 @@ export TOKENIZERS_PARALLELISM=false
   --tokenizer-root "$TOKENIZER_ROOT" \
   --expected-tokenizer-sha256 "$tokenizer_sha256" \
   --source "$TRAIN_CORPUS" \
+  --source-qualification-sha256 "$curriculum_sha256" \
   --output "$TRAIN_STREAM" \
   --sequence-length 2048 \
   --prefix-sequences 256 \
@@ -109,7 +121,7 @@ export TOKENIZERS_PARALLELISM=false
   --prefix-sequences 183105 \
   --prefix-sequences 244140
 
-"$PYTHON" -P -s -B - "$TRAIN_STREAM" "$tokenizer_sha256" <<'PY'
+"$PYTHON" -P -s -B - "$TRAIN_STREAM" "$tokenizer_sha256" "$curriculum_sha256" <<'PY'
 import pathlib
 import sys
 
@@ -117,6 +129,7 @@ from sai.data.token_stream import validate_frozen_stream
 
 stream = validate_frozen_stream(pathlib.Path(sys.argv[1]), verify_sources=True)
 assert stream["tokenizer_identity_sha256"] == sys.argv[2]
+assert stream["source_qualification_sha256"] == sys.argv[3]
 assert stream["sequence_length"] == 2_048
 assert stream["sequences"] == 244_140
 assert stream["valid_tokens"] == 499_998_720
