@@ -68,6 +68,23 @@ a contiguous prerequisite prefix: `grounding`, then `integration`, then
 are not required to contain advanced material prematurely. The complete 500M
 stream must contain all four phases.
 
+For the first 499,998,720-token comparison, the freezer enforces exact phase
+budgets on sequence boundaries rather than taking a blind prefix of the much
+larger admitted corpus:
+
+| Phase | Sequences | Tokens | Share |
+|---|---:|---:|---:|
+| grounding | 48,828 | 99,999,744 | 20% |
+| integration | 61,035 | 124,999,680 | 25% |
+| reasoning | 73,242 | 149,999,616 | 30% |
+| specialization | 61,035 | 124,999,680 | 25% |
+
+The receipt records documents skipped after each phase budget, at most one
+truncated tail document per phase, exact emitted phase sequences/tokens/bytes,
+and every declared evaluation prefix. Without this budget, a 500M-token cutoff
+of the 2.1M-document curriculum could end before the late phases and would not
+constitute the intended experiment.
+
 ## Quality and duplicate boundaries
 
 The second-pass quality floor rejects very short documents, low-Latin text in

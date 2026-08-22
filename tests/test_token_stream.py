@@ -222,6 +222,43 @@ def test_curriculum_phase_gate_rejects_a_prefix_before_specialization(
         )
 
 
+def test_curriculum_phase_token_budget_fits_every_phase_inside_actual_run(
+    tmp_path: Path,
+) -> None:
+    phases = [
+        ("grounding", 1),
+        ("integration", 1),
+        ("reasoning", 1),
+        ("specialization", 1),
+    ]
+    output = tmp_path / "token-budgeted-curriculum"
+    curriculum_source = write_documents(
+        tmp_path / "token-budget-source.jsonl",
+        [
+            document(index, text)
+            for index, text in enumerate(("abc", "def", "ghi", "jkl"))
+        ],
+    )
+    report = freeze(
+        CharacterTokenizer(),
+        [curriculum_source],
+        output,
+        tokenizer_identity_sha256="1" * 64,
+        sequence_length=4,
+        prefix_sequences={1, 2, 3, 4},
+        curriculum_phases=phases,
+        curriculum_phase_sequence_targets=[(phase, 1) for phase, _ in phases],
+        required_phase_complete_prefixes={4},
+    )
+    curriculum = report["curriculum"]
+    assert curriculum["phase_token_budget_enforced"] is True
+    assert curriculum["phase_sequence_targets"] == {phase: 1 for phase, _ in phases}
+    assert curriculum["phase_sequences_emitted"] == {phase: 1 for phase, _ in phases}
+    assert curriculum["consumed_phase_tokens"] == {phase: 4 for phase, _ in phases}
+    assert sum(curriculum["phase_documents_truncated"].values()) <= 4
+    assert validate_frozen_stream(output) == report
+
+
 def test_freeze_accepts_hugging_face_style_mapping_output(tmp_path: Path) -> None:
     report = freeze(
         MappingTokenizer(),

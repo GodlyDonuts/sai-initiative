@@ -22,7 +22,7 @@ def test_stream_job_is_cpu_only_exact_and_nonretrying() -> None:
 
 def test_stream_job_freezes_every_declared_budget_prefix() -> None:
     job = _job()
-    expected = (256, 61_035, 122_070, 183_105, 244_140)
+    expected = (256, 48_828, 61_035, 109_863, 122_070, 183_105, 244_140)
     for value in expected:
         assert f"--prefix-sequences {value}" in job
         assert f'"{value}"' in job
@@ -42,6 +42,10 @@ def test_stream_job_reopens_corpus_and_stream_evidence() -> None:
     assert 'train["sha256"] == sha256_file(corpus_path)' in job
     assert "--source-qualification-sha256" in job
     assert '--curriculum-receipt "$CURRICULUM_RECEIPT"' in job
+    assert "--curriculum-phase-sequences grounding=48828" in job
+    assert "--curriculum-phase-sequences integration=61035" in job
+    assert "--curriculum-phase-sequences reasoning=73242" in job
+    assert "--curriculum-phase-sequences specialization=61035" in job
     assert "--require-all-curriculum-phases-at-prefix 244140" in job
     for value in (61_035, 122_070, 183_105):
         assert f"--require-all-curriculum-phases-at-prefix {value}" not in job
@@ -52,6 +56,7 @@ def test_stream_job_reopens_corpus_and_stream_evidence() -> None:
     assert (
         'stream["curriculum"]["phase_order_contiguous_at_every_prefix"] is True' in job
     )
+    assert 'stream["curriculum"]["phase_token_budget_enforced"] is True' in job
     assert "validate_frozen_stream" in job
     assert "verify_sources=True" in job
     assert 'stream["benchmark_disjoint"] is True' in job
