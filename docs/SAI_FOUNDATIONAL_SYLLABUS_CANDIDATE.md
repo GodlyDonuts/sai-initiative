@@ -30,3 +30,11 @@ review. A new annotation policy must bind the composed bytes, reviewers must
 calibrate on real source documents, and the admitted corpus must demonstrate
 coverage and zero premature exposure. The candidate authorizes no data
 reordering, optimizer work, architecture promotion, or 4B training.
+
+The first graph-risk replay found only two roots, 263 hard edges, 66 cross-domain
+hard edges, and a maximum hard-prerequisite depth of 12. These are diagnostics,
+not failures by themselves, but treating every helpful relationship as a hard
+gate could over-serialize the curriculum. `sai-audit-foundational-syllabus`
+therefore freezes direct and transitive depth, centrality, cross-domain edges,
+roots, leaves, and an exact review set. Every flagged edge must be classified as
+hard, supporting, or removed before document annotation begins.
