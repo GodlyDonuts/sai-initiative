@@ -208,7 +208,11 @@ benchmark evidence selects an architecture.
   manifest/receipt replay, exact Smol tokenizer identity (`128,256` vocabulary,
   EOS `128,012`), and no GPU exposure. This removes another 375M tokens of
   unnecessary preparation if Qwen earns promotion. Full regression is 356
-  passed.
+  passed. Exact commit `a74e1e6e54ad1c57842eafcedb1882348cb6d095`
+  is sealed on Newton with zero writable members. Superseded generic stream
+  `769229` was cancelled with zero elapsed time and zero restarts; accelerated
+  Smol stream `769455` is dependency-held on the same mutually exclusive
+  primary/recovery corpus lineage.
 - The first capable-host Sai factor is now fully executable at commit
   `cc7039d1e5a0653f4581cbe1a7b3ce509fff58e6`: a `19,938,304`-parameter,
   16-slot recurrent workspace attached to the frozen Qwen3.5-0.8B text parent.
