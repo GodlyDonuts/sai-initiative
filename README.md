@@ -173,6 +173,15 @@ benchmark evidence selects an architecture.
   and terminal comparisons `769431`/`769432`. Every target was absent at
   submission; a mechanics failure cancels all scientific descendants before
   allocation.
+- The Qwen factor consumes exactly `61,035 × 2,048 = 124,999,680` ordered
+  training tokens. A dedicated 125M-token freezer now materializes only that
+  exact prefix plus the 256-sequence canary prefix instead of spending CPU,
+  storage, and walltime on the unused 375M-token tail of the generic 500M
+  stream. It preserves tokenizer, source order, boundary masking, and every
+  byte consumed by training; its receipt explicitly rejects any extra prefix
+  or wrong total. Corpus hashing is streaming rather than a 14.49-GB
+  `read_bytes()` allocation. Full regression after this acceleration is 355
+  passed.
 - The first capable-host Sai factor is now fully executable at commit
   `cc7039d1e5a0653f4581cbe1a7b3ce509fff58e6`: a `19,938,304`-parameter,
   16-slot recurrent workspace attached to the frozen Qwen3.5-0.8B text parent.
