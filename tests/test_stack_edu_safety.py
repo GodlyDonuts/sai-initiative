@@ -18,6 +18,12 @@ from sai.data.stack_edu_safety import (
     scan_content,
     validate_safety_receipt,
 )
+from sai.data.stack_edu_safety_select import (
+    REVIEW_ROW_SCHEMA,
+    StackEduSafetySelectionError,
+    select_candidates,
+    validate_selection_receipt,
+)
 from sai.data.stack_v2_alignment import (
     ACCESS_SCHEMA,
     CURRENT_DATASET,
@@ -231,3 +237,142 @@ def test_safety_receipt_replays_findings_and_rejects_tamper(tmp_path: Path) -> N
     findings.chmod(0o444)
     with pytest.raises(StackEduSafetyError, match="replay differs"):
         validate_safety_receipt(receipt)
+
+
+def test_safety_selection_retains_clean_candidate_without_review(
+    tmp_path: Path,
+) -> None:
+    content = (
+        b"def add(left, right):\n    return left + right\n"
+        b"# documented arithmetic helper for an educational source\n" * 2
+    )
+    parent = _content_receipt(tmp_path, content)
+    safety_root = tmp_path / "safety"
+    safety_root.mkdir()
+    safety_receipt = safety_root / "receipt.json"
+    scan_content(parent, safety_root / "findings.jsonl", safety_receipt)
+    reviews = tmp_path / "reviews.jsonl"
+    reviews.write_bytes(b"")
+    reviews.chmod(0o444)
+    selected_root = tmp_path / "selected"
+    selected_root.mkdir()
+    selected = selected_root / "candidates.jsonl"
+    receipt = selected_root / "receipt.json"
+    payload = select_candidates(safety_receipt, reviews, selected, receipt)
+    assert payload["summary"] == {
+        "input_rows": 1,
+        "selected_rows": 1,
+        "excluded_rows": 0,
+        "safety_decision_counts": {"candidate_clean_by_bounded_scanner": 1},
+        "exclusion_counts": {},
+        "complete_population_decided": True,
+    }
+    assert (
+        json.loads(selected.read_text())["safety_decision"]
+        == "candidate_clean_by_bounded_scanner"
+    )
+    assert payload["training_authorized"] is False
+    assert validate_selection_receipt(receipt) == payload
+
+
+def test_safety_selection_requires_exact_manual_review_and_replays(
+    tmp_path: Path,
+) -> None:
+    content = (
+        b"# contact maintainer@real-domain.dev\n"
+        b"def add(left, right):\n    return left + right\n"
+        b"# documented arithmetic helper for an educational source\n" * 2
+    )
+    parent = _content_receipt(tmp_path, content)
+    safety_root = tmp_path / "safety"
+    safety_root.mkdir()
+    safety_receipt = safety_root / "receipt.json"
+    scan_content(parent, safety_root / "findings.jsonl", safety_receipt)
+    reviews = tmp_path / "reviews.jsonl"
+    reviews.write_bytes(b"")
+    reviews.chmod(0o444)
+    selected_root = tmp_path / "selected"
+    selected_root.mkdir()
+    with pytest.raises(StackEduSafetySelectionError, match="review population differs"):
+        select_candidates(
+            safety_receipt,
+            reviews,
+            selected_root / "missing.jsonl",
+            selected_root / "missing.receipt.json",
+        )
+
+    reviews.chmod(0o644)
+    finding = json.loads((safety_root / "findings.jsonl").read_text())
+    review = {
+        "schema": REVIEW_ROW_SCHEMA,
+        "ordinal": 0,
+        "content_sha256": finding["content_sha256"],
+        "disposition": "retain_candidate",
+        "rationale_codes": ["confirmed_public_non_sensitive_content"],
+        "reviewer_identity_sha256": "4" * 64,
+        "reviewed_at_utc": "2026-08-22T16:30:00Z",
+    }
+    review["review_sha256"] = canonical_sha256(review)
+    reviews.write_text(json.dumps(review, sort_keys=True) + "\n")
+    reviews.chmod(0o444)
+    selected = selected_root / "candidates.jsonl"
+    receipt = selected_root / "receipt.json"
+    payload = select_candidates(safety_receipt, reviews, selected, receipt)
+    assert payload["summary"]["selected_rows"] == 1
+    assert payload["reviews"]["rows"] == 1
+    assert validate_selection_receipt(receipt) == payload
+
+    reviews.chmod(0o644)
+    reviews.write_text(
+        reviews.read_text().replace("retain_candidate", "exclude_candidate")
+    )
+    reviews.chmod(0o444)
+    with pytest.raises(StackEduSafetySelectionError):
+        validate_selection_receipt(receipt)
+
+
+def test_safety_selection_never_overrides_high_confidence_reject(
+    tmp_path: Path,
+) -> None:
+    content = (
+        b"value = '''-----BEGIN PRIVATE KEY-----\nnot-a-real-key\n'''\n"
+        b"# synthetic high-confidence rejection fixture\n" * 2
+    )
+    parent = _content_receipt(tmp_path, content)
+    safety_root = tmp_path / "safety"
+    safety_root.mkdir()
+    safety_receipt = safety_root / "receipt.json"
+    scan_content(parent, safety_root / "findings.jsonl", safety_receipt)
+    reviews = tmp_path / "reviews.jsonl"
+    reviews.write_bytes(b"")
+    reviews.chmod(0o444)
+    selected_root = tmp_path / "selected"
+    selected_root.mkdir()
+    selected = selected_root / "candidates.jsonl"
+    receipt = selected_root / "receipt.json"
+    payload = select_candidates(safety_receipt, reviews, selected, receipt)
+    assert payload["summary"]["selected_rows"] == 0
+    assert payload["summary"]["exclusion_counts"] == {"high_confidence_reject": 1}
+    assert selected.read_bytes() == b""
+
+    reviews.chmod(0o644)
+    finding = json.loads((safety_root / "findings.jsonl").read_text())
+    override = {
+        "schema": REVIEW_ROW_SCHEMA,
+        "ordinal": 0,
+        "content_sha256": finding["content_sha256"],
+        "disposition": "retain_candidate",
+        "rationale_codes": ["confirmed_public_non_sensitive_content"],
+        "reviewer_identity_sha256": "5" * 64,
+        "reviewed_at_utc": "2026-08-22T16:40:00Z",
+    }
+    override["review_sha256"] = canonical_sha256(override)
+    reviews.write_text(json.dumps(override, sort_keys=True) + "\n")
+    reviews.chmod(0o444)
+    with pytest.raises(StackEduSafetySelectionError, match="review differs"):
+        select_candidates(
+            safety_receipt,
+            reviews,
+            selected_root / "override.jsonl",
+            selected_root / "override.receipt.json",
+        )

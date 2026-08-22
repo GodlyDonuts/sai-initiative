@@ -35,8 +35,16 @@ ordering beat a same-record order control before scaling.
 
 ### Sai data constitution
 
-Data decisions precede tokenizer, architecture, and scale decisions. Every
-training population must pass these gates in order:
+Data decisions precede tokenizer, architecture, and scale decisions.
+
+The latest open-recipe evidence is reconciled in
+[`docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md`](docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md).
+Sai uses progressive composition with continuous broad rehearsal, retains
+low-dose foundational code/math/science/technical exposure early, and measures
+specialist upsampling, reasoning mid-training, and long-context adaptation as
+separate factors rather than copying another model's ratios.
+
+Every training population must pass these gates in order:
 
 1. **Source truth:** reopen exact source bytes; reject corruption, spam,
    benchmark overlap, unsupported claims, and high-confidence duplicates.
@@ -336,8 +344,10 @@ benchmark evidence selects an architecture.
   measurement without reserving an idle GPU or pre-authorizing a favorable
   result. Job `770127` is held on launcher `770106`; it requests no GPU and
   submits the real-board graph only through the frozen positive-NLL condition.
-- Architecture work is preparation-only behind this boundary. No Sai training
-  job is currently running, and the 4B prohibition remains unchanged.
+- Architecture promotion remains behind this boundary. Two matched 100M GQA
+  jobs now measure curriculum ordering versus a deterministic order control on
+  the identical record multiset; they are a data-order falsification, not an
+  architecture result. The 4B prohibition remains unchanged.
 - A deterministic forty-document qualitative audit of the exact development
   population confirms that the frozen surface score is not semantic pedagogy:
   grounding can include electrostatics and engineering, reasoning can include
@@ -367,6 +377,16 @@ benchmark evidence selects an architecture.
   `0.90–0.95`, and `>=0.95`. The packet hides score and stratum; its separate
   key remains closed until labels are complete. Receipt
   `a17dcf57…d6d0` authorizes no training.
+- An offline workspace now exposes only the 192 row identities and texts, with
+  resumable evidence-backed labels and no external requests, URLs, language
+  scores, strata, or hidden key. The post-review decision was frozen before
+  labels: two independent reviewers, at least 90% consensus acceptance and an
+  80% Wilson 95% lower bound in every included stratum, then the lowest passing
+  floor among none, 0.90, and 0.95. If the `>=0.95` stratum fails, FineMath is
+  rejected rather than retrospectively relaxed. Any selected rows remain
+  non-training candidates pending global deduplication, benchmark
+  decontamination, provenance replay, and semantic prerequisite placement.
+  `docs/SAI_FINEMATH_HUMAN_REVIEW_WORKSPACE.md` freezes this boundary.
 - Bulk code admission now begins with an executable Stack-Edu metadata audit,
   not a download. It pins revision `eeec5caa…814c`, rejects every unlicensed or
   mixed-unallowlisted row, and measures quality score, encoding, length,
@@ -380,7 +400,14 @@ benchmark evidence selects an architecture.
   license. The independently replayed complete-language evidence is recorded
   in `docs/SAI_STACK_EDU_PYTHON_LANGUAGE_AUDIT_20260822.md`.
 - The complete Stack-Edu candidate identities are now frozen separately from
-  source content, and current-release alignment is executable. The new
+  source content. CPU job `770639` completed in `3,100` seconds with exit
+  `0:0`, zero restarts, and empty stderr. It froze 514,566 unique blob
+  identities spanning 127,672 repositories and 514,559 unique repository/path
+  pairs; the candidate JSONL SHA-256 is `7429c9d4…07c5` and canonical receipt
+  identity is `ec6b0aa9…0762`. Exact execution, hash, and population evidence is
+  in `docs/SAI_STACK_EDU_CANDIDATE_IDENTITY_AGGREGATE_20260822.md`. This remains
+  metadata-only and authorizes no content retention or training.
+  Current-release alignment is executable. The new
   `sai-stack-v2-current-python-snapshot-v1` boundary requires the complete
   Python metadata shard set from `bigcode/the-stack-v2` revision
   `e565caa3…90e47` (`v2.2.0`, opt-outs enacted through `2026-07-29`) plus the
@@ -409,6 +436,14 @@ benchmark evidence selects an architecture.
   scanner cannot prove the absence of novel secrets, malware, dependency
   hazards, or subtle benchmark-derived code. The exact policy and limitations
   are frozen in `docs/SAI_STACK_EDU_CONTENT_SAFETY_CONTRACT.md`.
+- A separate create-only selector now resolves those bounded findings without
+  pretending they constitute source admission. High-confidence rejects cannot
+  be overridden; every manual-review row requires one exact hashed
+  adjudication; bounded-clean rows remain candidates. The selected population
+  retains training and 4B authorization false until accuracy, usefulness,
+  duplication, contamination, semantic placement, and matched source-addition
+  evidence pass. Its contract is
+  `docs/SAI_STACK_EDU_SAFETY_SELECTION_CONTRACT.md`.
 - An authored programming-curriculum candidate now preserves 111 Rust Book
   chapters and 16 CPython tutorial chapters at exact pinned revisions, in
   publisher order with byte-exact code and license evidence. Its 127-row
@@ -500,9 +535,45 @@ benchmark evidence selects an architecture.
   completed with zero restarts and verified all 127 prompts against the same
   hidden-key-free packet. Qwen observed 966–11,620 input tokens and SmolLM3
   952–11,098, both below the frozen 24,576-token ceiling. Independent one-H100
-  review jobs `770450` and `770451` are pending separately; CPU comparison job
-  `770471` is dependency-staged and will rank cross-family disagreements for
-  human attention without qualifying the labels. The final adjudicator now
+  review jobs `770450` and `770451` both loaded their models but failed on row
+  zero after exhausting three invalid structured-response attempts; no label,
+  draft, or review receipt was published, and comparison `770471` never ran.
+  The repaired runner now preserves every rejected response, constrains output
+  complexity, canonicalizes list order and unique whitespace-equivalent source
+  quotes, and retains every original evidence threshold. Fresh collision-safe
+  jobs `770735` and `770736` preserved exact failures: Qwen repeatedly placed
+  evidence-backed taught concepts in both semantic roles; SmolLM3 completed two
+  candidate rows before repeatedly recommending `admit` with an empty taught
+  set. Neither published a complete result and comparison `770738` never ran.
+  Pushed commit `a14e6eae…d387` now gives explicit quoted taught evidence
+  precedence over an ungrounded duplicate assumption and conservatively maps
+  empty-taught `admit` to `revise`. All evidence thresholds remain unchanged.
+  Fresh jobs `770761` and `770762` each completed three replayable rows before
+  failing on row 3; comparison `770763` never ran. Their immutable failure
+  artifacts show only redundant nested quality fields and unsupported,
+  ambiguous, or sub-minimum evidence strings. Pushed commit `2aaf0f3…af5bd9`
+  conservatively discards those unsupported strings, retains only unchanged
+  unique literal 16-codepoint evidence, and never upgrades a recommendation.
+  Fresh collision-safe jobs `770785` (Qwen) and `770786` (SmolLM3) are staged
+  independently, with CPU comparison `770787` dependent on both. They may rank
+  cross-family disagreements for human attention, but model output still
+  cannot qualify labels.
+  Both reviewers crossed the former row-3 boundary but terminated at rows 4
+  and 5 respectively: Qwen could not ground defect quotes, while SmolLM3
+  exceeded evidence bounds and then returned non-JSON text. Comparison
+  `770787` never ran. This ends parser iteration rather than weakening the
+  evidence contract; the packet now proceeds only through the frozen two-human
+  review path.
+  `sai-build-authored-review-workspace` now makes that path operational through
+  a self-contained offline form. It exposes only salted review identities,
+  exact chapter text, the candidate vocabulary, and frozen evidence rules;
+  requires every row to be explicitly reviewed; supports packet-bound local
+  progress export/import; and emits exactly the existing compiler's JSONL
+  schema. It performs no network request and includes neither the hidden key nor
+  provisional phase labels. Its receipt still records human review, training,
+  and 4B authorization as false.
+  Exact failure and recovery evidence is in
+  `docs/SAI_AUTHORED_MODEL_REVIEW_RECOVERY_20260822.md`. The final adjudicator now
   accepts neither arbitrary identity strings nor model-review identities: each
   side must bind all 127 completed rows to a distinct human identity
   attestation, exact packet and policy hashes, no model-generated labels, and
@@ -521,9 +592,15 @@ benchmark evidence selects an architecture.
 - Exact FLA 0.4.2 Gated DeltaNet and KDA chunk mechanics remain qualified by
   Newton job `768134`. The environment receipt file is SHA-256
   `778d137224671a44acdcc923270dc7478cded5437780a0ea37e19b764a219f29`.
-- The benchmark-decontaminated training corpus, lossless 48K tokenizer, and
-  exact binary streams are complete. The selected tokenizer tree is SHA-256
+- The benchmark-decontaminated training corpus, mechanically qualified lossless
+  48K fixed-geometry tokenizer, and exact binary streams are complete. The
+  qualified default tokenizer tree is SHA-256
   `cf4879ee5b3914b4af187abcc93be5678e41ff942e0b0a14f6eeb1a089f6f76d`.
+  It is not an empirical tokenizer-capacity winner: the completed tournament
+  measured `459,376` English-labeled documents but no representative code,
+  math, science, or technical corpus strata. The exact compression tradeoffs
+  and the required capability selection boundary are documented in
+  [`docs/SAI_TOKENIZER_EVIDENCE_AUDIT.md`](docs/SAI_TOKENIZER_EVIDENCE_AUDIT.md).
   The shared 48,828-sequence training stream identity is
   `b50bb94bc4ada3c5949430222d5551b6dc60423378cacd1f80a57641b1546b22`;
   the source-disjoint 1,024-sequence development stream identity is

@@ -420,16 +420,45 @@ def _draft_from_response(
         payload["taught_concepts"] = sorted(
             taught, key=lambda value: value["concept_id"]
         )
-    for value in taught:
+    normalized_taught = []
+    minimum_span_codepoints = policy["evidence_span_contract"][
+        "minimum_codepoints_per_positive_label"
+    ]
+    for value in payload["taught_concepts"]:
+        if (
+            isinstance(value, dict)
+            and set(value)
+            == {
+                "concept_id",
+                "confidence_ppm",
+                "evidence_quotes",
+                "instructional_quality_ppm",
+            }
+            and value["instructional_quality_ppm"]
+            == payload["instructional_quality_ppm"]
+        ):
+            value = {
+                key: item
+                for key, item in value.items()
+                if key != "instructional_quality_ppm"
+            }
         if isinstance(value, dict) and isinstance(value.get("evidence_quotes"), list):
-            value["evidence_quotes"] = [
-                (
-                    _canonical_quote(source["text"], quote)
-                    if isinstance(quote, str)
-                    else quote
-                )
-                for quote in value["evidence_quotes"]
-            ]
+            quotes = []
+            for quote in value["evidence_quotes"]:
+                if not isinstance(quote, str):
+                    continue
+                exact = _canonical_quote(source["text"], quote)
+                if (
+                    len(exact) >= minimum_span_codepoints
+                    and source["text"].count(exact) == 1
+                    and exact not in quotes
+                ):
+                    quotes.append(exact)
+            value["evidence_quotes"] = quotes
+            if not quotes:
+                continue
+        normalized_taught.append(value)
+    payload["taught_concepts"] = normalized_taught
     for value in defects:
         if isinstance(value, dict) and isinstance(value.get("evidence_quote"), str):
             value["evidence_quote"] = _canonical_quote(
@@ -439,12 +468,14 @@ def _draft_from_response(
         isinstance(value, dict) and isinstance(value.get("concept_id"), str)
         for value in taught
     ):
-        overlap = sorted(set(assumed) & {value["concept_id"] for value in taught})
-        if overlap:
-            raise AuthoredModelReviewError(
-                "concept roles differ; remove taught concepts from "
-                "assumed_prior_concepts: " + ",".join(overlap)
-            )
+        taught_ids = {value["concept_id"] for value in payload["taught_concepts"]}
+        payload["assumed_prior_concepts"] = [
+            concept_id
+            for concept_id in payload["assumed_prior_concepts"]
+            if concept_id not in taught_ids
+        ]
+        if not taught_ids and payload.get("admission_recommendation") == "admit":
+            payload["admission_recommendation"] = "revise"
     draft = {
         "schema": DRAFT_SCHEMA,
         "review_identity_sha256": source["review_identity_sha256"],
