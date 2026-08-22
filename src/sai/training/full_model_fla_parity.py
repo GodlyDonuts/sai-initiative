@@ -43,12 +43,43 @@ class FullModelFlaParityError(RuntimeError):
     """A full DeltaMixer parity invariant differs or is incomplete."""
 
 
+def _mapped_delta_recurrence(
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    alpha: torch.Tensor,
+    beta: torch.Tensor,
+) -> torch.Tensor:
+    """Reference recurrence for already-normalized FLA q/k inputs."""
+
+    batch, sequence, heads, key_dim = query.shape
+    state = torch.zeros(
+        batch,
+        heads,
+        key_dim,
+        value.shape[-1],
+        device=query.device,
+        dtype=torch.float32,
+    )
+    outputs = []
+    for index in range(sequence):
+        q_t = query[:, index].float()
+        k_t = key[:, index].float()
+        state = alpha[:, index].float().unsqueeze(-1) * state
+        prediction = torch.einsum("bhk,bhkv->bhv", k_t, state)
+        error = beta[:, index].float() * (value[:, index].float() - prediction)
+        state = state + torch.einsum("bhk,bhv->bhkv", k_t, error)
+        outputs.append(torch.einsum("bhk,bhkv->bhv", q_t, state))
+    return torch.stack(outputs, dim=1).to(value.dtype)
+
+
 @dataclass
 class _RecordedOperators:
     operators: FlaBackendOperators
     delta_calls: list[dict[str, Any]]
     conv_calls: list[dict[str, Any]]
     conv_metrics: list[dict[str, Any]]
+    recurrence_metrics: list[dict[str, Any]]
 
 
 def _tiny_config(family: str) -> SaiModelConfig:
@@ -98,6 +129,10 @@ def _metric(
     allowance = threshold["absolute"] + threshold["relative"] * expected_float.abs()
     max_absolute = float(difference.max().item())
     max_normalized = float((difference / allowance).max().item())
+    expected_root_mean_square = float(expected_float.square().mean().sqrt().item())
+    relative_root_mean_square_error = float(
+        difference.square().mean().sqrt().item() / (expected_root_mean_square + 1e-8)
+    )
     flattened_difference = difference.reshape(-1)
     flattened_actual = actual_float.reshape(-1)
     flattened_expected = expected_float.reshape(-1)
@@ -124,6 +159,8 @@ def _metric(
         "max_normalized_error": max_normalized,
         "mean_absolute_error": float(difference.mean().item()),
         "root_mean_square_error": float(difference.square().mean().sqrt().item()),
+        "expected_root_mean_square": expected_root_mean_square,
+        "relative_root_mean_square_error": relative_root_mean_square_error,
         "absolute_error_quantiles": {
             "p50": float(quantiles[0].item()),
             "p95": float(quantiles[1].item()),
@@ -142,6 +179,7 @@ def _recording_operators(base: FlaBackendOperators) -> _RecordedOperators:
     delta_calls: list[dict[str, Any]] = []
     conv_calls: list[dict[str, Any]] = []
     conv_metrics: list[dict[str, Any]] = []
+    recurrence_metrics: list[dict[str, Any]] = []
 
     def record_delta(
         operator: Callable[..., tuple[torch.Tensor, torch.Tensor | None]],
@@ -169,7 +207,34 @@ def _recording_operators(base: FlaBackendOperators) -> _RecordedOperators:
                     "beta_shape": list(kwargs["beta"].shape),
                 }
             )
-            return operator(**kwargs)
+            result = operator(**kwargs)
+            observed = result[0]
+            if not isinstance(observed, torch.Tensor):
+                raise FullModelFlaParityError("FLA recurrence output differs")
+            offsets = (
+                [0, kwargs["q"].shape[1]]
+                if kwargs.get("cu_seqlens") is None
+                else kwargs["cu_seqlens"].detach().cpu().tolist()
+            )
+            with torch.no_grad():
+                expected_segments = []
+                for start, stop in zip(offsets[:-1], offsets[1:], strict=True):
+                    alpha = kwargs["g"][:, start:stop].float().exp()
+                    if alpha.ndim == 3:
+                        alpha = alpha.unsqueeze(-1)
+                    expected = _mapped_delta_recurrence(
+                        kwargs["q"][:, start:stop],
+                        kwargs["k"][:, start:stop],
+                        kwargs["v"][:, start:stop],
+                        alpha,
+                        kwargs["beta"][:, start:stop].unsqueeze(-1),
+                    )
+                    expected_segments.append(expected)
+                expected_output = torch.cat(expected_segments, dim=1)
+            recurrence_metrics.append(
+                _metric(observed, expected_output, _THRESHOLDS["forward"])
+            )
+            return result
 
         return wrapped
 
@@ -224,6 +289,7 @@ def _recording_operators(base: FlaBackendOperators) -> _RecordedOperators:
         delta_calls,
         conv_calls,
         conv_metrics,
+        recurrence_metrics,
     )
 
 
@@ -313,6 +379,7 @@ def _run_case(
         len(recorded.delta_calls) != 1
         or len(recorded.conv_calls) != 3
         or len(recorded.conv_metrics) != 3
+        or len(recorded.recurrence_metrics) != 1
     ):
         raise FullModelFlaParityError("DeltaMixer FLA dispatch count differs")
     delta_call = recorded.delta_calls[0]
@@ -365,6 +432,7 @@ def _run_case(
         mapping_passed
         and gradients_complete
         and all(bool(metric["passed"]) for metric in recorded.conv_metrics)
+        and bool(recorded.recurrence_metrics[0]["passed"])
         and bool(forward_metric["passed"])
         and bool(input_metric["passed"])
         and all(bool(metric["passed"]) for metric in parameter_metrics.values())
@@ -380,6 +448,7 @@ def _run_case(
         "dtype": "torch.bfloat16" if use_bf16 else "torch.float32",
         "forward": forward_metric,
         "causal_convolution_forward": recorded.conv_metrics,
+        "recurrence_forward": recorded.recurrence_metrics[0],
         "input_gradient": input_metric,
         "parameter_gradients": parameter_metrics,
         "expected_parameter_names": list(reference_names),

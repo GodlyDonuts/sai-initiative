@@ -8,9 +8,9 @@ import torch
 import torch.nn.functional as F
 
 from sai.model.fla_backend import FLA_VERSION, FlaBackendOperators
-from sai.model.reference import causal_delta_recurrence
 from sai.training.full_model_fla_parity import (
     FullModelFlaParityError,
+    _mapped_delta_recurrence,
     run_full_delta_mixer_parity,
 )
 
@@ -52,7 +52,7 @@ def _oracle_delta(*, perturb: float = 0.0) -> Callable[..., tuple[torch.Tensor, 
             alpha = log_decay[:, start:stop].exp()
             if alpha.ndim == 3:
                 alpha = alpha.unsqueeze(-1)
-            output, _ = causal_delta_recurrence(
+            output = _mapped_delta_recurrence(
                 query[:, start:stop],
                 key[:, start:stop],
                 value[:, start:stop],
@@ -88,6 +88,11 @@ def test_full_delta_mixer_mapping_matches_reference_for_all_boundaries() -> None
         (family, length) for family in ("gdn", "kda") for length in (1, 63, 64, 65)
     }
     assert all(case["passed"] for case in report["cases"])
+    assert all(case["recurrence_forward"]["passed"] for case in report["cases"])
+    assert all(
+        0.0 <= case["forward"]["relative_root_mean_square_error"] < 1.0
+        for case in report["cases"]
+    )
     assert all(
         len(case["causal_convolution_forward"]) == 3
         and all(metric["passed"] for metric in case["causal_convolution_forward"])
