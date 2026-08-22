@@ -100,3 +100,33 @@ tests plus Black, Ruff, and all Slurm syntax checks. Fresh collision-safe
 review jobs are Qwen `770761` and SmolLM3 `770762`; CPU diagnostic comparison
 `770763` depends on both. All original and second-attempt artifacts remain
 immutable and are not reused as successful rows under the new runner identity.
+
+## Preserved third-attempt evidence and unsupported-evidence discard
+
+The `a14e6ea` execution advanced both reviewers through three independently
+replayable rows, then stopped on row 3 without publishing a complete review:
+
+- Qwen job `770761` failed `1:0` after 110 seconds, zero restarts, on `evc42`.
+  Its preserved row-3 failure artifact SHA-256 is
+  `1483701116ef55291f70a010689926db9ecb5edb5faf272deae85c8acf3e4751`.
+  One response supplied an ambiguous second quote; two responses repeated the
+  top-level instructional-quality value inside each taught-concept object.
+- SmolLM3 job `770762` failed `1:0` after 42 seconds, zero restarts, on `evc46`.
+  Its preserved row-3 failure artifact SHA-256 is
+  `8ae9d8accfc272070e826072417ffa569b18d80cf2ac2ed6107738b38496d84c`.
+  Its three responses respectively included a short unsupported token,
+  a placeholder sentence absent from the source, or both alongside a literal
+  evidence span.
+- comparison `770763` was cancelled without execution. Neither reviewer
+  published a complete draft or result receipt.
+
+Commit `2aaf0f3384d8e53661ff95c24687875748af5bd9` adds only conservative
+normalization supported by these exact failures. A nested instructional-quality
+field is removed only when it exactly repeats the row-level value. Evidence
+quotes are retained only when they canonicalize to a unique literal source span
+meeting the unchanged 16-codepoint minimum; unsupported, ambiguous, duplicate,
+or shorter strings are discarded. A taught concept with no surviving evidence
+is discarded and an empty-taught `admit` remains downgraded to `revise`.
+Unknown fields, invented concepts, confidence thresholds, defect validation,
+and human qualification requirements remain unchanged. Full validation passed
+617 tests plus Black, Ruff, every Slurm syntax check, and the whitespace check.

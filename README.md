@@ -528,9 +528,14 @@ benchmark evidence selects an architecture.
   Pushed commit `a14e6eae…d387` now gives explicit quoted taught evidence
   precedence over an ungrounded duplicate assumption and conservatively maps
   empty-taught `admit` to `revise`. All evidence thresholds remain unchanged.
-  Fresh jobs `770761` and `770762` are running independently; comparison
-  `770763` is dependency-staged and will rank cross-family disagreements for
-  human attention without qualifying labels.
+  Fresh jobs `770761` and `770762` each completed three replayable rows before
+  failing on row 3; comparison `770763` never ran. Their immutable failure
+  artifacts show only redundant nested quality fields and unsupported,
+  ambiguous, or sub-minimum evidence strings. Pushed commit `2aaf0f3…af5bd9`
+  conservatively discards those unsupported strings, retains only unchanged
+  unique literal 16-codepoint evidence, and never upgrades a recommendation.
+  A new collision-safe execution may rank cross-family disagreements for human
+  attention, but model output still cannot qualify labels.
   Exact failure and recovery evidence is in
   `docs/SAI_AUTHORED_MODEL_REVIEW_RECOVERY_20260822.md`. The final adjudicator now
   accepts neither arbitrary identity strings nor model-review identities: each
