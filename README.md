@@ -515,9 +515,17 @@ benchmark evidence selects an architecture.
   completed with zero restarts and verified all 127 prompts against the same
   hidden-key-free packet. Qwen observed 966–11,620 input tokens and SmolLM3
   952–11,098, both below the frozen 24,576-token ceiling. Independent one-H100
-  review jobs `770450` and `770451` are pending separately; CPU comparison job
-  `770471` is dependency-staged and will rank cross-family disagreements for
-  human attention without qualifying the labels. The final adjudicator now
+  review jobs `770450` and `770451` both loaded their models but failed on row
+  zero after exhausting three invalid structured-response attempts; no label,
+  draft, or review receipt was published, and comparison `770471` never ran.
+  The repaired runner now preserves every rejected response, constrains output
+  complexity, canonicalizes list order and unique whitespace-equivalent source
+  quotes, and retains every original evidence threshold. Fresh collision-safe
+  jobs `770735` and `770736` are running independently from pushed commit
+  `78db07e2…303b`; CPU comparison `770738` is dependency-staged and will rank
+  cross-family disagreements for human attention without qualifying labels.
+  Exact failure and recovery evidence is in
+  `docs/SAI_AUTHORED_MODEL_REVIEW_RECOVERY_20260822.md`. The final adjudicator now
   accepts neither arbitrary identity strings nor model-review identities: each
   side must bind all 127 completed rows to a distinct human identity
   attestation, exact packet and policy hashes, no model-generated labels, and
