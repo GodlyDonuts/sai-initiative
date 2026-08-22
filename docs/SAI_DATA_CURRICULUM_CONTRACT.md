@@ -239,8 +239,11 @@ remains prospective and cannot authorize training.
 candidate concept list plus real, immutable annotator-identity, annotation-
 policy, and audited-sample artifacts. Their file hashes become the annotation
 identities; callers cannot satisfy the production path with invented digest
-strings. The create-once output is validated before atomic publication and
-retains both training authorizations as false.
+strings. The audited-sample receipt must bind the exact annotator and policy,
+cover at least 100 reviewed documents, reproduce its disagreement arithmetic,
+and pass a prospectively capped disagreement rate no greater than five percent.
+The create-once output is validated before atomic publication and retains both
+training authorizations as false.
 `sai-validate-prerequisites audit-curriculum` performs this audit as a streaming
 replay: it first revalidates the curriculum receipt, then rereads the exact
 curriculum and annotation files in lockstep, derives phase membership from the

@@ -10,6 +10,7 @@ import pytest
 import sai.data.prerequisite as prerequisite
 from sai.data.prerequisite import (
     ANNOTATION_SCHEMA,
+    AUDIT_SAMPLE_SCHEMA,
     CONCEPT_LIST_SCHEMA,
     TAXONOMY_SCHEMA,
     PrerequisiteError,
@@ -204,7 +205,21 @@ def test_builds_taxonomy_from_real_evidence_artifacts(tmp_path: Path) -> None:
     audit = tmp_path / "audit.json"
     annotator.write_text('{"model":"frozen-annotator"}\n')
     policy.write_text('{"policy":"frozen-semantic-evidence-v1"}\n')
-    audit.write_text('{"status":"audited"}\n')
+    audit_payload = {
+        "schema": AUDIT_SAMPLE_SCHEMA,
+        "status": "passed",
+        "training_authorized": False,
+        "four_b_training_authorized": False,
+        "annotator_identity_sha256": sha256_file(annotator),
+        "annotation_policy_sha256": sha256_file(policy),
+        "sample_population_sha256": "4" * 64,
+        "reviewed_documents": 200,
+        "disagreement_documents": 4,
+        "observed_disagreement_ppm": 20_000,
+        "maximum_disagreement_ppm": 50_000,
+    }
+    audit_payload["receipt_sha256"] = canonical_sha256(audit_payload)
+    audit.write_text(json.dumps(audit_payload) + "\n")
     output = tmp_path / "taxonomy.json"
     payload = build_taxonomy(
         concepts,
@@ -234,12 +249,18 @@ def test_builds_taxonomy_from_real_evidence_artifacts(tmp_path: Path) -> None:
             annotation_method="hybrid",
             minimum_annotation_confidence_ppm=800_000,
         )
+    duplicate_audit = tmp_path / "duplicate-audit.json"
+    duplicate_audit_payload = deepcopy(audit_payload)
+    duplicate_audit_payload["annotator_identity_sha256"] = sha256_file(policy)
+    duplicate_audit_payload["annotation_policy_sha256"] = sha256_file(policy)
+    _resign(duplicate_audit_payload)
+    duplicate_audit.write_text(json.dumps(duplicate_audit_payload) + "\n")
     with pytest.raises(PrerequisiteError, match="not distinct"):
         build_taxonomy(
             concepts,
             policy,
             policy,
-            policy,
+            duplicate_audit,
             tmp_path / "duplicate-evidence-taxonomy.json",
             annotation_method="hybrid",
             minimum_annotation_confidence_ppm=800_000,
