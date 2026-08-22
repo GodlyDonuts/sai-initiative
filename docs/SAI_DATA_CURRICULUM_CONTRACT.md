@@ -235,6 +235,14 @@ Its self-hashed report binds the taxonomy, ordered document identities, entire
 annotation population, first exposure, per-phase coverage, missing concepts,
 every prerequisite violation, and every missing rehearsal obligation. It
 remains prospective and cannot authorize training.
+`sai-validate-annotation-policy` prevents the policy hash from naming an empty
+or permissive artifact. The exact prospective policy binds the candidate
+concept list; requires explicit instruction or demonstrated use with a
+source-verifiable Unicode-codepoint span; omits ambiguous or unsupported
+labels; sets the confidence floor to 0.8; forbids a concept introduced in the
+same document from satisfying its own prerequisite; derives phase only from
+the curriculum receipt; and requires blind independent review with the frozen
+five-percent disagreement ceiling. It authorizes neither training nor 4B.
 `sai-validate-prerequisites build-taxonomy` creates that taxonomy only from a
 candidate concept list plus real, immutable annotator-identity, annotation-
 policy, and audited-sample artifacts. Their file hashes become the annotation

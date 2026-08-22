@@ -81,10 +81,9 @@ def _artifacts(
 
     concepts = ROOT / "docs" / "SAI_SEMANTIC_PREREQUISITE_CONCEPTS_CANDIDATE.json"
     annotator_identity = tmp_path / "annotator-identity.json"
-    policy = tmp_path / "annotation-policy.json"
+    policy = ROOT / "docs" / "SAI_SEMANTIC_ANNOTATION_POLICY.json"
     reviewer_identity = tmp_path / "reviewer-identity.json"
     annotator_identity.write_text('{"identity":"prospective-annotator-v1"}\n')
-    policy.write_text('{"policy":"positive-concepts-require-source-span-v1"}\n')
     reviewer_identity.write_text('{"identity":"independent-human-reviewer-v1"}\n')
 
     proposed = []

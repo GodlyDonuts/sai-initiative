@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 import sai.data.prerequisite as prerequisite
+from sai.data.annotation_policy import SCHEMA as ANNOTATION_POLICY_SCHEMA
 from sai.data.prerequisite import (
     ANNOTATION_SCHEMA,
     CONCEPT_LIST_SCHEMA,
@@ -163,6 +164,48 @@ def _resign(payload: dict) -> dict:
     return payload
 
 
+def _write_annotation_policy(path: Path, concept_list_sha256: str) -> None:
+    payload = {
+        "schema": ANNOTATION_POLICY_SCHEMA,
+        "status": "prospective",
+        "training_authorized": False,
+        "four_b_training_authorized": False,
+        "concept_list_sha256": concept_list_sha256,
+        "annotation_unit": "document_concept_presence",
+        "positive_label_rule": (
+            "explicit_instruction_or_demonstrated_use_with_verifiable_source_span"
+        ),
+        "negative_label_rule": (
+            "omit_when_direct_source_evidence_is_absent_or_ambiguous"
+        ),
+        "evidence_span_contract": {
+            "coordinate_system": "unicode_codepoint_half_open",
+            "minimum_spans_per_positive_label": 1,
+            "source_hash_required": True,
+            "exact_text_match_required": True,
+        },
+        "confidence_contract": {
+            "minimum_confidence_ppm": 800_000,
+            "confidence_is_probability_of_policy_compliance": True,
+            "below_threshold_action": "omit_and_flag_for_review",
+        },
+        "prerequisite_contract": {
+            "same_document_exposure_counts_as_prior": False,
+            "phase_source": "bound_curriculum_receipt_only",
+            "unmet_prerequisite_action": "record_violation_and_reject_progression",
+        },
+        "review_contract": {
+            "blind_independent_review": True,
+            "disagreement_unit": "unordered_unique_concept_identity_set_per_document",
+            "minimum_reviewed_documents": 100,
+            "maximum_disagreement_ppm": 50_000,
+            "adjudication_may_not_change_measured_disagreement": True,
+        },
+    }
+    _resign(payload)
+    path.write_text(json.dumps(payload) + "\n")
+
+
 def test_taxonomy_and_progression_pass_with_prior_exposure() -> None:
     taxonomy = _taxonomy()
     annotations, identities, texts = _annotations()
@@ -206,7 +249,7 @@ def test_builds_taxonomy_from_real_evidence_artifacts(
     policy = tmp_path / "policy.json"
     audit = tmp_path / "audit.json"
     annotator.write_text('{"model":"frozen-annotator"}\n')
-    policy.write_text('{"policy":"frozen-semantic-evidence-v1"}\n')
+    _write_annotation_policy(policy, sha256_file(concepts))
     audit_payload = {"schema": AUDIT_SAMPLE_SCHEMA, "evidence": "replayed elsewhere"}
     audit.write_text(json.dumps(audit_payload) + "\n")
     monkeypatch.setattr(

@@ -13,6 +13,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from sai.data.annotation_policy import AnnotationPolicyError, validate_policy
 from sai.data.curriculum import PHASES, validate_curriculum
 from sai.data.prerequisite_review import (
     PrerequisiteReviewError,
@@ -140,6 +141,13 @@ def build_taxonomy(
     policy_hash = hashlib.sha256(
         _read_small_regular(annotation_policy_path, "annotation policy")
     ).hexdigest()
+    try:
+        validate_policy(
+            annotation_policy_path,
+            expected_concept_list_sha256=hashlib.sha256(concept_bytes).hexdigest(),
+        )
+    except AnnotationPolicyError as error:
+        raise PrerequisiteError("annotation policy differs") from error
     audit_bytes = _read_small_regular(audit_sample_receipt_path, "audit sample receipt")
     try:
         audit_payload = json.loads(audit_bytes.decode("utf-8"))

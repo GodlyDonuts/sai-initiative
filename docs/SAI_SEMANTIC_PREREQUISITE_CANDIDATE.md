@@ -31,8 +31,12 @@ specialization rather than disappearing after first exposure.
 - The 50 concepts are not a complete ontology for a strong 4B model.
 - Names, edges, and thresholds have not yet passed subject-matter review.
 - No curriculum document has been mapped to these concepts.
-- No annotator, annotation policy, calibration population, or human audit has
-  yet been accepted for this list.
+- The prospective annotation policy is now explicit and hash-bound: positive
+  labels require verifiable source spans, ambiguous labels are omitted and
+  flagged, same-document exposure never satisfies a prior prerequisite, and
+  blind concept-set disagreement is capped at five percent. No annotator
+  identity, completed calibration population, or human audit has yet been
+  accepted for this list.
 - Surface curriculum job results cannot validate or waive this semantic gate.
 
 Before the list becomes a prospective taxonomy, it must be expanded and audited

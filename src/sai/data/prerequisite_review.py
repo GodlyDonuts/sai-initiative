@@ -10,6 +10,7 @@ import stat
 from pathlib import Path
 from typing import Any
 
+from sai.data.annotation_policy import validate_policy
 from sai.data.prerequisite_sample import validate_audit_population
 from sai.data.token_stream import canonical_sha256, sha256_file
 
@@ -295,6 +296,10 @@ def build_review_receipt(
         population_receipt, population_payload, population_receipt_bytes
     )
     concepts, concept_bytes = _load_concepts(concept_list)
+    validate_policy(
+        annotation_policy,
+        expected_concept_list_sha256=hashlib.sha256(concept_bytes).hexdigest(),
+    )
     annotator_identity_bytes = _read_regular(annotator_identity, "annotator identity")
     policy_bytes = _read_regular(annotation_policy, "annotation policy")
     reviewer_identity_bytes = _read_regular(reviewer_identity, "reviewer identity")
@@ -551,6 +556,10 @@ def main() -> None:
             curriculum_workers=args.curriculum_workers,
         )
     else:
+        validate_policy(
+            args.annotation_policy,
+            expected_concept_list_sha256=sha256_file(args.concept_list),
+        )
         payload = validate_review_receipt(
             args.receipt,
             expected_annotator_identity_sha256=sha256_file(args.annotator_identity),
