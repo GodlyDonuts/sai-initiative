@@ -141,6 +141,15 @@ An aggregate improvement is vetoed if any phase's target-normalized or
 byte-normalized NLL regresses against the exact-order control; easier grounding
 examples cannot conceal damage to reasoning or specialization.
 
+Real development benchmark evaluation must preserve the same source-disjoint
+boundary after curriculum selection. The evaluator accepts either the original
+decontaminated source directly or an exact, completed lineage:
+decontaminated source -> qualified curriculum -> qualified train/development
+split -> frozen training stream. The split job, receipt file hash, receipt self
+hash, parent curriculum receipt, train output identity, and stream source
+identity must all agree. A derived training subset is never treated as an
+unrelated source merely because its file hash differs from its parent.
+
 The implemented primary control permutes the exact packed 2,048-token sequence
 records after the curriculum stream is frozen. Each record includes both token
 IDs and its document-boundary bitset, so this construction preserves the exact

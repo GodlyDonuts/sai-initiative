@@ -31,6 +31,20 @@ set -euo pipefail
 : "${OUTPUT_ROOT:?OUTPUT_ROOT is required}"
 : "${DISPATCH:?DISPATCH is required}"
 
+CURRICULUM_SPLIT_JOB_ID="${CURRICULUM_SPLIT_JOB_ID:-}"
+CURRICULUM_SPLIT_RECEIPT="${CURRICULUM_SPLIT_RECEIPT:-}"
+CURRICULUM_SPLIT_RECEIPT_SHA256="${CURRICULUM_SPLIT_RECEIPT_SHA256:-}"
+if test -n "$CURRICULUM_SPLIT_JOB_ID$CURRICULUM_SPLIT_RECEIPT$CURRICULUM_SPLIT_RECEIPT_SHA256"; then
+  if test -z "$CURRICULUM_SPLIT_JOB_ID" || \
+     test -z "$CURRICULUM_SPLIT_RECEIPT" || \
+     test -z "$CURRICULUM_SPLIT_RECEIPT_SHA256"; then
+    echo "curriculum split lineage requires job, receipt, and SHA256 together" >&2
+    exit 2
+  fi
+  [[ "$CURRICULUM_SPLIT_JOB_ID" =~ ^[0-9]+$ ]]
+  [[ "$CURRICULUM_SPLIT_RECEIPT_SHA256" =~ ^[0-9a-f]{64}$ ]]
+fi
+
 EVALUATOR_JOB="$SAI_ROOT/jobs/sai-short-screen-development-mc-single-h100.sbatch"
 EVALUATOR_RUNTIME="$EVALUATOR_JOB"
 MERGE_JOB="$SAI_ROOT/jobs/sai-merge-development-mc-shards-cpu.sbatch"
@@ -49,6 +63,9 @@ for path in \
   "$OUTPUT_ROOT" "$DISPATCH" "$EVALUATOR_JOB" "$MERGE_JOB"; do
   require_absolute "$path"
 done
+if test -n "$CURRICULUM_SPLIT_RECEIPT"; then
+  require_absolute "$CURRICULUM_SPLIT_RECEIPT"
+fi
 
 test -n "${SLURM_JOB_ID:-}"
 case "${CUDA_VISIBLE_DEVICES:-}" in
@@ -72,6 +89,12 @@ for path in \
   test -f "$path"
   test ! -L "$path"
 done
+if test -n "$CURRICULUM_SPLIT_RECEIPT"; then
+  test -f "$CURRICULUM_SPLIT_RECEIPT"
+  test ! -L "$CURRICULUM_SPLIT_RECEIPT"
+  split_state="$(sacct -j "$CURRICULUM_SPLIT_JOB_ID" -X -n -P -o State | sed -n '1p')"
+  test "$split_state" = "COMPLETED"
+fi
 test -d "$TRAINING_STREAM"
 test ! -L "$TRAINING_STREAM"
 test -d "$TOKENIZER_ROOT"
@@ -112,7 +135,8 @@ export OMP_NUM_THREADS="$SLURM_CPUS_PER_TASK"
 validated_lines="$("$PYTHON" -P -s -B - \
   "$GEOMETRY" "$FAMILY" "$SHORT_SCREEN_RESULT" "$CHECKPOINT" \
   "$CHECKPOINT_MANIFEST" "$TRAINING_STREAM" "$TOKENIZER_ROOT" \
-  "$POPULATION_AGGREGATE" "$ENVIRONMENT_RECEIPT" "$EVALUATOR_RUNTIME" <<'PY'
+  "$POPULATION_AGGREGATE" "$ENVIRONMENT_RECEIPT" "$EVALUATOR_RUNTIME" \
+  "$CURRICULUM_SPLIT_RECEIPT" "$CURRICULUM_SPLIT_RECEIPT_SHA256" <<'PY'
 import hashlib
 import json
 import pathlib
@@ -123,6 +147,7 @@ from sai.evaluation.short_screen_mc import (
     load_validated_model_state,
     validate_short_screen_result,
 )
+from sai.evaluation.training_source_lineage import validate_training_source_lineage
 from sai.model.reference import SaiCausalLM, exact_parameter_count
 from sai.training.short_screen import load_bounded_config
 
@@ -197,6 +222,8 @@ tokenizer_root = pathlib.Path(sys.argv[7])
 aggregate_path = pathlib.Path(sys.argv[8])
 environment_receipt_path = pathlib.Path(sys.argv[9])
 evaluator_runtime_path = pathlib.Path(sys.argv[10])
+split_receipt_value = sys.argv[11]
+split_receipt_expected_sha256 = sys.argv[12]
 
 config, geometry_row = load_bounded_config(geometry, family)
 assert geometry_row["scale"] == "100m"
@@ -252,9 +279,15 @@ assert mmlu["decontamination_receipt_sha256"] == decontamination["sha256"]
 assert musr["decontamination_receipt_sha256"] == decontamination["sha256"]
 assert mmlu["training_source_sha256"] == musr["training_source_sha256"]
 assert len(training_stream["source_receipts"]) == 1
-assert training_stream["source_receipts"][0]["sha256"] == mmlu[
-    "training_source_sha256"
-]
+stream_source = training_stream["source_receipts"][0]
+training_source_lineage = validate_training_source_lineage(
+    stream_source=stream_source,
+    benchmark_training_source_sha256=mmlu["training_source_sha256"],
+    split_receipt=(pathlib.Path(split_receipt_value) if split_receipt_value else None),
+    split_receipt_file_sha256=(
+        split_receipt_expected_sha256 if split_receipt_value else None
+    ),
+)
 
 environment_receipt = load_json(environment_receipt_path)
 assert environment_receipt["schema"] == "sai-fla-parity-receipt-v1"
@@ -288,13 +321,14 @@ for population in (mmlu, musr):
             population["identity_order_sha256"],
         ]
     )
+values.append(training_source_lineage["source_lineage_sha256"])
 assert all("\n" not in value for value in values)
 print("\n".join(values))
 PY
 )"
 
 mapfile -t validated <<< "$validated_lines"
-test "${#validated[@]}" = 23
+test "${#validated[@]}" = 24
 GEOMETRY_SHA256="${validated[0]}"
 SHORT_SCREEN_RESULT_SHA256="${validated[1]}"
 TRAINING_STREAM_IDENTITY="${validated[2]}"
@@ -318,6 +352,7 @@ MUSR_DISJOINT_SHA256="${validated[19]}"
 MUSR_TRAINING_SOURCE_SHA256="${validated[20]}"
 MUSR_EXPECTED_ROWS="${validated[21]}"
 MUSR_IDENTITY_ORDER_SHA256="${validated[22]}"
+TRAINING_SOURCE_LINEAGE_SHA256="${validated[23]}"
 
 "$PYTHON" -P -s -B -m sai.evaluation.development_mc_shards build \
   --benchmark mmlu_pro \
@@ -417,7 +452,7 @@ submitted+=("$mmlu_merge_job_id")
   "$MUSR_TRAINING_SOURCE_SHA256" "$MUSR_EXPECTED_ROWS" \
   "$MUSR_IDENTITY_ORDER_SHA256" "$MMLU_SHARD_MANIFEST" \
   "$MMLU_SHARD_MANIFEST_SHA256" "${mmlu_job_ids[*]}" \
-  "${mmlu_result_paths[*]}" <<'PY'
+  "${mmlu_result_paths[*]}" "$TRAINING_SOURCE_LINEAGE_SHA256" <<'PY'
 import hashlib
 import json
 import os
@@ -450,7 +485,11 @@ payload = {
         "checkpoint_manifest": {"path": values[8], "sha256": values[9]},
     },
     "geometry": {"path": values[10], "sha256": values[11], "scale": "100m"},
-    "training_stream": {"path": values[12], "identity_sha256": values[13]},
+    "training_stream": {
+        "path": values[12],
+        "identity_sha256": values[13],
+        "source_lineage_sha256": values[46],
+    },
     "tokenizer": {"path": values[14], "tree_sha256": values[15]},
     "fla_root": {"path": values[16], "version": "0.4.2"},
     "environment_receipt": {"path": values[17], "sha256": values[18]},

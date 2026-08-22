@@ -74,6 +74,8 @@ def test_fanout_binds_all_scientific_and_runtime_identities() -> None:
     assert "load_validated_model_state" in job
     assert "validate_short_screen_result" in job
     assert 'len(training_stream["source_receipts"]) == 1' in job
-    assert 'training_stream["source_receipts"][0]["sha256"]' in job
+    assert "validate_training_source_lineage" in job
+    assert 'split_state" = "COMPLETED"' in job
+    assert '"source_lineage_sha256": values[46]' in job
     assert 'test ! -e "$DISPATCH"' in job
     assert "sai-short-screen-development-mc-dispatch-v1" in job

@@ -107,6 +107,12 @@ benchmark evidence selects an architecture.
   `770087` was replaced by `770088`, which binds immutable runtime `a532f49`
   and waits on both stratified development job `770086` and control job
   `770042`.
+- Source-disjoint MMLU-Pro and MuSR evaluation now admits curriculum-derived
+  streams only through the exact completed lineage from the benchmark-audited
+  decontaminated source, through the qualified curriculum and split receipts,
+  to the frozen train stream. Direct-source evaluation remains unchanged;
+  missing, partial, parent-drifted, or train-drifted lineage fails before
+  benchmark GPU submission.
 - Architecture work is preparation-only behind this boundary. No Sai training
   job is currently running, and the 4B prohibition remains unchanged.
 
