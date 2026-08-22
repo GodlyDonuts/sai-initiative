@@ -33,6 +33,35 @@ automatically a Sai training source. The target is not merely an easy-to-hard
 sort; it is a measured semantic learning progression whose exact records and
 ordering beat a same-record order control before scaling.
 
+### Sai data constitution
+
+Data decisions precede tokenizer, architecture, and scale decisions. Every
+training population must pass these gates in order:
+
+1. **Source truth:** reopen exact source bytes; reject corruption, spam,
+   benchmark overlap, unsupported claims, and high-confidence duplicates.
+2. **Semantic foundations:** bind each lesson to the concepts it teaches and
+   assumes. A dependent concept cannot appear confidently before its declared
+   prerequisites have accumulated enough independent prior exposure.
+3. **Learnable progression:** move from grounding to composition, reasoning,
+   and specialization. Surface complexity may break ties, but it cannot
+   overrule the semantic prerequisite graph.
+4. **Rehearsal and retention:** keep foundational material in every later
+   phase. Evaluate the same phase-stratified held-out population at
+   prospectively fixed phase boundaries so acquisition and forgetting are both
+   visible.
+5. **Matched falsification:** compare the proposed order with the identical
+   record multiset under a frozen order control, with the same tokenizer,
+   initialization, optimizer, token budget, and observation schedule. Require
+   held-out likelihood and real source-disjoint capability evidence; any
+   prerequisite-phase regression vetoes promotion.
+
+Specialized data is therefore not automatically "better" data. It becomes
+useful only after the learner has the language, symbols, primitives, and
+compositions needed to extract its signal. Sai will not compensate for a bad
+curriculum by adding parameters, inference-time reasoning, or architectural
+machinery.
+
 **Execution status:** the user authorized sub-4B preparation and training on
 2026-08-21. The 4B run remains explicitly prohibited until smaller-scale real
 benchmark evidence selects an architecture.
