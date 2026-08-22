@@ -130,7 +130,15 @@ benchmark evidence selects an architecture.
   matched three-family screen over the exact 249,999,360-token prefix using
   three independent one-H100 jobs. This tests whether the near-chance 100M
   results reflect data starvation or the mixers themselves; it neither selects
-  a mixer in advance nor authorizes 4B.
+  a mixer in advance nor authorizes 4B. The real-benchmark continuation is now
+  executable rather than aspirational: after those three checkpoint jobs and
+  the refreshed decontamination population close, a CPU-only stager submits
+  exactly one independent H100 MMLU-Pro job and one independent H100 MuSR job
+  per family. A final CPU job reopens all six row-complete receipts and emits
+  exact paired family deltas. The benchmark launchers require the population's
+  admitted-source SHA-256 to equal the sole source SHA-256 recorded by the
+  trained checkpoint's token stream. The chain contains no arrays, retries,
+  requeues, implicit substitutions, architecture promotion, or 4B authority.
 - The exact pretrained capable-host control is now restored at
   `Qwen/Qwen3.5-0.8B@2fc06364715b967f1860aea9cf38778875588b17` without using a
   GPU. CPU attempts `769141` and `769144` failed before publication on a Bash

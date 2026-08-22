@@ -248,6 +248,10 @@ assert sha256_file(decontamination_path) == decontamination["sha256"]
 assert mmlu["decontamination_receipt_sha256"] == decontamination["sha256"]
 assert musr["decontamination_receipt_sha256"] == decontamination["sha256"]
 assert mmlu["training_source_sha256"] == musr["training_source_sha256"]
+assert len(training_stream["source_receipts"]) == 1
+assert training_stream["source_receipts"][0]["sha256"] == mmlu[
+    "training_source_sha256"
+]
 
 environment_receipt = load_json(environment_receipt_path)
 assert environment_receipt["schema"] == "sai-fla-parity-receipt-v1"
