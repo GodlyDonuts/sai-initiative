@@ -153,7 +153,10 @@ for value in "$curriculum_job" "$control_job" "$comparison_job"; do
 done
 [[ "$screen_dispatch_sha256" =~ ^[0-9a-f]{64}$ ]]
 
-dependency="$comparison_job:$POPULATION_JOB_ID"
+# The population job was already revalidated above from immutable accounting and
+# may have aged out of Slurm's live dependency table. Only the still-live order
+# comparison belongs in the newly submitted dependency expression.
+dependency="$comparison_job"
 stage_job_id="$(env -i PATH=/apps/slurm/current/bin:/usr/bin:/bin sbatch --parsable \
   --chdir="$SAI_ROOT" --dependency="afterok:$dependency" \
   --kill-on-invalid-dep=yes \

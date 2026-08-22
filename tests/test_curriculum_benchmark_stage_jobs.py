@@ -31,7 +31,9 @@ def test_continuation_extracts_live_ids_and_dependency_stages_benchmarks() -> No
     assert 'payload["training_tokens_per_arm"] == 499_998_720' in job
     assert 'quota["minimum_headroom_kib"] == 25_165_824' in job
     assert 'quota["minimum_headroom_files"] == 10_000' in job
-    assert 'dependency="$comparison_job:$POPULATION_JOB_ID"' in job
+    assert 'dependency="$comparison_job"' in job
+    assert 'sacct -X -j "$job_id"' in job
+    assert 'dependency="$comparison_job:$POPULATION_JOB_ID"' not in job
     assert job.count("sbatch --parsable") == 1
     assert "sai-stage-curriculum-development-mc-cpu.sbatch" in job
     assert (
