@@ -139,8 +139,14 @@ benchmark evidence selects an architecture.
   `8de9780d4b5b873e668260ee2423c1536912163f9fb6696597663ac0c1e026b1`;
   ordered-stream identity is
   `c4c271f38b55ab277c7660719e3d36bc485063d440a3745b8f4d532545d51636`.
-  Dependent job `770042` is now constructing the exact sequence-multiset order
-  control; it has zero restarts.
+  Dependent job `770042` completed the exact sequence-multiset order control at
+  `0:0` with zero restarts. It contains the identical `244,140` packed records,
+  `499,998,720` tokens, boundary masks, tokenizer, source, and admitted UTF-8
+  bytes, but applies frozen permutation seed `2026082201` with zero fixed
+  points. Its receipt file is SHA-256
+  `a8481d767a6e468a5c46a69331ebe33fca80ff3d382bfd014b6e7ffa62c05ad0`;
+  ordered-stream identity is
+  `0d40a828e83b7cda52fcf77489dbe2a223761fe70f8972f2d3e66297d4439513`.
 - The likelihood evaluator and terminal order comparator now retain all four
   development strata separately. A lower aggregate NLL cannot pass if
   grounding, integration, reasoning, or specialization regresses against the
@@ -159,10 +165,15 @@ benchmark evidence selects an architecture.
   its ordered-stream identity is
   `232f68b380db1cbfa75aeda8c8bb3a878f9afe1551528b6efcbccbb4c6e6a34a`.
   Its exact train/development split receipt and development source hashes match
-  the independently qualified lineage. Replacement launcher `770106` now
-  waits only on order-control job `770042`. The trainer, evaluator, comparator,
-  and development-freezer bytes are unchanged from their previously reviewed
-  versions.
+  the independently qualified lineage. Launcher `770106` then failed before
+  submission because its export omitted the literal `_stream_` component of the
+  completed training-stream path. It ran for four seconds on CPU, emitted no
+  output, and submitted no GPU child; continuation `770127` was dependency-
+  cancelled without work. Recovery launcher `770136` uses the corrected exact
+  path and is currently replaying the split and all three streams with zero
+  restarts. It has not yet submitted a GPU child. Continuation `770137` remains
+  dependency-held. The trainer, evaluator, comparator, data bytes, model
+  geometry, seed, optimizer, and evaluation rows are unchanged.
 - Source-disjoint MMLU-Pro and MuSR evaluation now admits curriculum-derived
   streams only through the exact completed lineage from the benchmark-audited
   decontaminated source, through the qualified curriculum and split receipts,
