@@ -44,6 +44,10 @@ PACKET_RECEIPT_SCHEMA = "sai-authored-curriculum-review-packet-receipt-v1"
 MAX_INPUT_TOKENS = 24_576
 MAX_NEW_TOKENS = 2_048
 MAX_ATTEMPTS = 3
+MAX_ASSUMED_CONCEPTS = 12
+MAX_TAUGHT_CONCEPTS = 8
+MAX_EVIDENCE_QUOTES_PER_CONCEPT = 2
+MAX_DEFECTS = 4
 REVIEWERS = {
     "qwen35_9b": ExternalSnapshotSpec(
         repository="Qwen/Qwen3.5-9B",
@@ -279,7 +283,10 @@ def _prompt(source: dict[str, Any], concept_prompt: str, repair: str | None) -> 
     repair_text = (
         "\nYour prior response was rejected for this exact reason: "
         + repair
-        + "\nReturn a corrected object from the original chapter."
+        + "\nDiscard that response and return a smaller corrected object from the "
+        "original chapter. If a quote or evidence label was rejected, remove every "
+        "label whose quote is not a literal chapter substring. Do not explain the "
+        "correction."
         if repair is not None
         else ""
     )
@@ -308,12 +315,26 @@ def _prompt(source: dict[str, Any], concept_prompt: str, repair: str | None) -> 
         "at least one EXACT VERBATIM quote copied from the chapter.",
         "- Every quote must contain at least 16 Unicode codepoints and occur only "
         "once in the chapter.",
+        "- Evidence quotes may only be copied from between CHAPTER START and CHAPTER "
+        "END. Never quote the title, policy, JSON shape, concept IDs, or allowed "
+        "concept descriptions. Never paraphrase.",
         "- assumed_prior_concepts are concepts the chapter relies upon without "
         "teaching.",
         "- A concept cannot be both taught and assumed.",
+        f"- Include at most {MAX_ASSUMED_CONCEPTS} assumed concepts and at most "
+        f"{MAX_TAUGHT_CONCEPTS} taught concepts. Select the smallest direct set; "
+        "do not list every background concept that a reader might know.",
+        "- Copy concept IDs exactly from the allowed list. Never invent an ID, "
+        "change its namespace, repeat an ID, or repeat a list item.",
+        "- Sort both assumed_prior_concepts and taught_concepts by exact concept_id.",
+        f"- Use at most {MAX_EVIDENCE_QUOTES_PER_CONCEPT} nonoverlapping evidence "
+        "quotes per taught concept and at most "
+        f"{MAX_DEFECTS} defects.",
         "- confidence_ppm must be 800000..1000000.",
         "- instructional_quality_ppm must be 0..1000000.",
         "- If no concept is taught, recommendation cannot be admit.",
+        "- If you cannot produce a supported taught label, use an empty taught list "
+        "and recommend exclude or revise.",
         "- Defect category is one of extraction, factual, pedagogical, licensing "
         "and also requires one exact quote.",
         "- Do not infer facts from the title or from outside knowledge.",
@@ -322,7 +343,8 @@ def _prompt(source: dict[str, Any], concept_prompt: str, repair: str | None) -> 
         concept_prompt,
         "",
         "Return exactly one JSON object and no commentary using this shape. Sort "
-        "taught_concepts by concept_id:",
+        "taught_concepts by concept_id. End immediately after the final closing "
+        "brace:",
         json.dumps(schema, sort_keys=True, separators=(",", ":")),
         "",
         f"Review identity: {source['review_identity_sha256']}",
@@ -356,6 +378,24 @@ def _draft_from_response(
     policy: dict[str, Any],
 ) -> dict[str, Any]:
     payload = _response_object(response)
+    assumed = payload["assumed_prior_concepts"]
+    taught = payload["taught_concepts"]
+    defects = payload["defects"]
+    if (
+        not isinstance(assumed, list)
+        or len(assumed) > MAX_ASSUMED_CONCEPTS
+        or not isinstance(taught, list)
+        or len(taught) > MAX_TAUGHT_CONCEPTS
+        or not isinstance(defects, list)
+        or len(defects) > MAX_DEFECTS
+        or any(
+            not isinstance(item, dict)
+            or not isinstance(item.get("evidence_quotes"), list)
+            or len(item["evidence_quotes"]) > MAX_EVIDENCE_QUOTES_PER_CONCEPT
+            for item in taught
+        )
+    ):
+        raise AuthoredModelReviewError("model response exceeds review evidence limits")
     draft = {
         "schema": DRAFT_SCHEMA,
         "review_identity_sha256": source["review_identity_sha256"],
@@ -503,7 +543,11 @@ def _messages(prompt: str) -> list[dict[str, str]]:
     return [
         {
             "role": "system",
-            "content": "Return only exact JSON grounded in verbatim supplied text.",
+            "content": (
+                "Return exactly one JSON object grounded only in verbatim chapter "
+                "text. End immediately after its closing brace. Never add analysis, "
+                "notes, markdown, or commentary."
+            ),
         },
         {"role": "user", "content": prompt},
     ]
@@ -610,8 +654,12 @@ def _validate_attempts(
         if attempt["prompt_sha256"] != _sha256(prompt.encode()):
             raise AuthoredModelReviewError("resumed raw prompt differs")
         try:
-            candidate = _draft_from_response(
-                source, attempt["response"], concept_ids, policy
+            candidate = _draft_attempt(
+                source,
+                attempt["response"],
+                attempt["output_tokens"],
+                concept_ids,
+                policy,
             )
             error = None
         except AuthoredModelReviewError as caught:
@@ -639,6 +687,24 @@ def _validate_attempts(
     if not require_accepted_final and accepted_draft is not None:
         raise AuthoredModelReviewError("resumed failure attempt differs")
     return accepted_draft
+
+
+def _draft_attempt(
+    source: dict[str, Any],
+    response: str,
+    output_tokens: int,
+    concept_ids: set[str],
+    policy: dict[str, Any],
+) -> dict[str, Any]:
+    try:
+        return _draft_from_response(source, response, concept_ids, policy)
+    except AuthoredModelReviewError as error:
+        if output_tokens == MAX_NEW_TOKENS:
+            raise AuthoredModelReviewError(
+                "model response exhausted the frozen output budget; return a much "
+                "smaller exact JSON object with only direct concepts"
+            ) from error
+        raise
 
 
 def _failure_payload(
@@ -1081,8 +1147,12 @@ def run(
                     "response_sha256": _sha256(response.encode()),
                 }
                 try:
-                    draft = _draft_from_response(
-                        source, response, concept_ids, inputs.policy
+                    draft = _draft_attempt(
+                        source,
+                        response,
+                        output_tokens,
+                        concept_ids,
+                        inputs.policy,
                     )
                     record["accepted"] = True
                     record["rejection"] = None

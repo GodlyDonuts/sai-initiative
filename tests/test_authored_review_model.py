@@ -10,6 +10,7 @@ import sai.data.authored_review_model as model_review
 from sai.data.authored_review_model import (
     AuthoredModelReviewError,
     _blind_inputs,
+    _draft_attempt,
     _draft_from_response,
     _failure_payload,
     _identity_payload,
@@ -59,6 +60,11 @@ def test_prompt_contains_blind_text_and_no_hidden_metadata() -> None:
     assert "source_path" not in prompt
     assert "candidate_stage" not in prompt
     assert "required_prior_concepts" not in prompt
+    assert "Select the smallest direct set" in prompt
+    assert "Copy concept IDs exactly" in prompt
+    assert "Sort both assumed_prior_concepts and taught_concepts" in prompt
+    assert "Never quote the title, policy, JSON shape" in prompt
+    assert "End immediately after the final closing brace" in prompt
 
 
 def test_response_compiles_exact_quote() -> None:
@@ -137,6 +143,32 @@ def test_response_rejects_commentary_and_missing_quote() -> None:
     )
     with pytest.raises(AuthoredModelReviewError, match="missing or ambiguous"):
         _draft_from_response(source, response, concepts, inputs.policy)
+
+
+def test_response_bounds_lists_and_reports_output_budget_exhaustion() -> None:
+    inputs = _inputs()
+    source = inputs.packet[0]
+    concepts = {item["concept_id"] for item in inputs.concept_payload["concepts"]}
+    response = json.dumps(
+        {
+            "instructional_quality_ppm": 900_000,
+            "assumed_prior_concepts": ["code.literal"]
+            * (model_review.MAX_ASSUMED_CONCEPTS + 1),
+            "taught_concepts": [],
+            "defects": [],
+            "admission_recommendation": "exclude",
+        }
+    )
+    with pytest.raises(AuthoredModelReviewError, match="evidence limits"):
+        _draft_from_response(source, response, concepts, inputs.policy)
+    with pytest.raises(AuthoredModelReviewError, match="output budget"):
+        _draft_attempt(
+            source,
+            '{"assumed_prior_concepts": [',
+            model_review.MAX_NEW_TOKENS,
+            concepts,
+            inputs.policy,
+        )
 
 
 def test_blind_inputs_reject_packet_hash_mismatch() -> None:
