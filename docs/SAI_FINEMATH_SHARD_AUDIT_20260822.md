@@ -65,6 +65,16 @@ shard contains failure modes which upstream `4plus` admission does not remove.
 FineMath 4+ is a **raw mathematics candidate pool**, not a qualified Sai source.
 No unfiltered FineMath row may enter the curriculum or a training stream.
 
+`sai-filter-finemath` now implements the first conservative candidate selector.
+It requires upstream score 5 and `found_math=true`, English confidence of at
+least 0.98, a valid non-denied source host, at least 160 words, two distinct
+mathematical-signal classes, two distinct explanatory-structure classes, and
+no declared answer-farm, essay-service, gambling, or SEO patterns. It preserves
+URL/WARC/crawl provenance and creates a deterministic balanced accepted/rejected
+review packet. Passing this selector is deliberately **not** admission: every
+accepted row still requires independent human quality review, global near-
+deduplication, and benchmark decontamination before a source-addition screen.
+
 Before a matched source-addition screen, Sai must:
 
 1. manifest and audit every selected shard rather than extrapolate from this
@@ -84,4 +94,3 @@ Before a matched source-addition screen, Sai must:
 
 This is a rejection of blind admission, not of the entire candidate. A filtered
 subset may still be valuable, but it must earn that conclusion empirically.
-
