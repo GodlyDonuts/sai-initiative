@@ -19,14 +19,15 @@ sai_bridge_verifier_candidates=artifacts/sai_grounded_bridge_verification_popula
 sai_bridge_verifier_judgments=artifacts/sai_grounded_bridge_verification_population_20260826_r1/judgments
 
 wait_for_file() {
-  local path=$1
+  local sai_dependency_path=$1
   for sai_wait_index in {1..34560}; do
-    if [[ -f "${path}" ]]; then
+    if [[ -f "${sai_dependency_path}" ]]; then
       return 0
     fi
     sleep 10
   done
-  printf 'dependency did not complete within ninety-six hours: %s\n' "${path}" >&2
+  printf 'dependency did not complete within ninety-six hours: %s\n' \
+    "${sai_dependency_path}" >&2
   return 1
 }
 
