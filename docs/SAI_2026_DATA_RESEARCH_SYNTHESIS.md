@@ -92,6 +92,17 @@ The prospective subdocument comparison must include unchanged, keep-one, and
 frequency/length-aware controls under identical data and compute. It must also
 preserve code structure and prevent isolated deletions from fragmenting prose.
 
+Sai now has an executable implementation in
+`sai.data.frequency_length_subdocument_deduplication`. It uses bounded
+external-memory aggregation; exact source replay; the reported `tau_seg=32`,
+`tau_del=100`, `L0=512`, `N=100/3` defaults; boundary-document protection; and
+coherence-aware contiguous deletion. Fenced code is exact and indivisible.
+Code-domain documents fail closed as indivisible pending a qualified
+language-aware structural parser. Every transformed document receives a new
+content-bound identity and a text-free parent/output receipt. Implementation is
+not empirical validation: unchanged/keep-one/adaptive training evidence remains
+required before promotion.
+
 Primary source:
 [“Scalable Frequency- and Length-Aware Subdocument Deduplication for Large Language Model Pretraining”](https://arxiv.org/abs/2608.03089).
 

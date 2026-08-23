@@ -402,6 +402,34 @@ manifest preserves custody; temporary indexes are removed. This gate does not
 claim semantic or near-duplicate completion and does not itself admit data to
 training.
 
+`sai.data.frequency_length_subdocument_deduplication` implements the distinct
+subdocument layer. It losslessly divides natural-language documents at
+paragraph, line, and sentence boundaries, forward-merges units below the
+configured character floor, and preserves Markdown fenced code as indivisible
+exact text. Full code-domain documents are conservatively indivisible until a
+language-aware structural parser is qualified. Natural-language matching uses
+NFKC, casefolding, whitespace collapse, and numeric placeholders; code matching
+uses identity normalization.
+
+Fixed-width external-sort records make global frequency independent of physical
+sharding. For each group the compiler evaluates
+`g_N(C)=C(1-1/N)^(C-1)`, applies
+`T(C,L)=ceil(1+(g_N(C)-1) max(0,1-L/L0))`, and clamps the result to `[1,C]`.
+Occurrence ordering is by immutable document identity. If the budget boundary
+falls within multiple occurrences from one document, the whole document group
+is retained. Candidate deletions are reconstructed in original document order
+and removed only when a maximal contiguous run reaches `tau_del`; shorter runs
+are restored to prevent fragmentation. Changed documents receive new
+content-bound identities, while a text-free manifest maps each parent to its
+output and records every group frequency, budget, span, and final outcome.
+
+The defaults mirror the paper's reported geometry: `tau_seg=32` characters,
+`tau_del=100` characters, `L0=512`, and effective `N=100/3`. They are
+experimental priors, not frozen Sai winners. The output cannot advance until
+unchanged, keep-one, and adaptive controls are compared with equal source bytes,
+tokens, compute, and source-disjoint evaluation. This layer also does not claim
+semantic near-duplicate completion or training admission.
+
 ## Institutional Books lane
 
 The Harvard Library Institutional Books release is now a pinned, separate

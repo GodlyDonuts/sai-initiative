@@ -527,10 +527,28 @@ apparent collision against the full normalized source text before dropping it.
 Outputs are deterministic across input order, temporary indexes are removed,
 and the duplicate manifest contains identities and byte locators rather than
 source text. This closes normalized exact duplicates only; scalable semantic
-near-duplicate filtering remains a separate unresolved gate. Sai will not reuse
-keep-one at subdocument granularity: [August 2026 matched evidence](https://arxiv.org/abs/2608.03089)
-favors frequency- and length-aware retention, so that policy requires its own
-unchanged/keep-one/adaptive source-disjoint comparison before corpus promotion.
+near-duplicate filtering remains a separate unresolved gate.
+
+The second exact layer is now executable as
+`sai-deduplicate-subdocuments`. It follows the August 2026
+[frequency/length-aware method](https://arxiv.org/abs/2608.03089): natural-boundary
+segmentation with short forward merges, normalized global exact counting, the
+explicit `T(C,L)` copy budget, document-identity ordering, whole-boundary-document
+retention, and deletion only for sufficiently long contiguous candidate runs.
+It uses bounded external-sort fan-in, replays every indexed occurrence against
+the immutable source before trusting a hash, recalculates identities for changed
+documents, and writes a text-free parent-to-output transformation manifest.
+Numeric template normalization is restricted to natural-language chunks;
+fenced code is indivisible and exact, while full code-domain documents
+currently fail closed as indivisible. This is deliberately safer than
+pretending a language-agnostic brace parser preserves every programming
+language.
+
+The implementation does not turn the paper's result into a Sai result. Corpus
+promotion still requires an identical-token, identical-compute,
+source-disjoint comparison of unchanged, keep-one, and adaptive retention.
+Semantic near-duplicates remain a separate measured gate, and every receipt
+keeps `training_ready=false` and `four_b_training_authorized=false`.
 
 NVIDIA's organic/translated Nemotron-CC v2.1, CC-Code v1, and Code v2
 repositories were investigated but are not counted: metadata is visible while
