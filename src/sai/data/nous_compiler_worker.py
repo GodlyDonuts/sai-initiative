@@ -1,0 +1,332 @@
+"""Run persistent Nous/Hermes data-compiler judgments over exact source rows."""
+
+from __future__ import annotations
+
+import argparse
+import concurrent.futures
+import json
+import os
+import time
+import urllib.error
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+from sai.data.agent_labeling import _atomic_create
+from sai.data.data_compiler_labeling import (
+    RUBRIC_SHA256,
+    build_messages,
+    normalize_model_judgment,
+)
+from sai.data.nous_label_worker import (
+    DEFAULT_BASE_URL,
+    DEFAULT_MODEL,
+    RETRYABLE_STATUS,
+    NousLabelWorkerError,
+    _assigned,
+    _json_object,
+    _load_jsonl,
+    _post_json,
+    _validate_endpoint,
+)
+from sai.data.token_stream import canonical_sha256
+
+RECEIPT_SCHEMA = "sai-nous-data-compiler-receipt-v2"
+SUMMARY_SCHEMA = "sai-nous-data-compiler-shard-summary-v2"
+
+
+def execute_one(
+    candidate: dict[str, Any],
+    *,
+    model: str,
+    base_url: str,
+    api_key: str,
+    timeout_seconds: float,
+    maximum_attempts: int,
+    request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
+    sleep_function: Callable[[float], None] = time.sleep,
+) -> dict[str, Any]:
+    """Compile one source into a source-bound transformation plan."""
+
+    base_url = _validate_endpoint(base_url)
+    body = {
+        "model": model,
+        "messages": build_messages(candidate),
+        "temperature": 0,
+        "max_tokens": 2400,
+        "stream": False,
+    }
+    request_sha256 = canonical_sha256(body)
+    attempts = []
+    response = None
+    raw_judgment = None
+    judgment = None
+    choice = None
+    for attempt in range(1, maximum_attempts + 1):
+        try:
+            response, status = request_function(
+                base_url=base_url,
+                api_key=api_key,
+                body=body,
+                timeout_seconds=timeout_seconds,
+            )
+            if status != 200:
+                raise NousLabelWorkerError("successful request returned non-200")
+            choices = response.get("choices")
+            if not isinstance(choices, list) or len(choices) != 1:
+                raise NousLabelWorkerError("model response choices differ")
+            choice = choices[0]
+            if not isinstance(choice, dict) or not isinstance(
+                choice.get("message"), dict
+            ):
+                raise NousLabelWorkerError("model response message differs")
+            raw_judgment = _json_object(choice["message"].get("content"))
+            judgment = normalize_model_judgment(raw_judgment, candidate)
+            attempts.append(
+                {"attempt": attempt, "http_status": status, "outcome": "valid"}
+            )
+            break
+        except urllib.error.HTTPError as error:
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "http_status": error.code,
+                    "outcome": "transient_http_error",
+                }
+            )
+            if error.code not in RETRYABLE_STATUS or attempt == maximum_attempts:
+                raise NousLabelWorkerError(
+                    f"Nous request failed with HTTP {error.code}"
+                ) from error
+        except (TimeoutError, urllib.error.URLError) as error:
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "http_status": None,
+                    "outcome": "transient_transport_error",
+                }
+            )
+            if attempt == maximum_attempts:
+                raise NousLabelWorkerError(
+                    "Nous request exhausted transient retries"
+                ) from error
+        except (NousLabelWorkerError, RuntimeError):
+            attempts.append(
+                {
+                    "attempt": attempt,
+                    "http_status": 200,
+                    "outcome": "invalid_model_output",
+                }
+            )
+            if attempt == maximum_attempts:
+                raise
+        sleep_function(min(30.0, float(2 ** (attempt - 1))))
+    if response is None or judgment is None or choice is None or raw_judgment is None:
+        raise NousLabelWorkerError("Nous request produced no compiler response")
+    usage = response.get("usage")
+    if not isinstance(usage, dict):
+        usage = {}
+    usage_receipt = {
+        field: (
+            usage.get(field)
+            if isinstance(usage.get(field), int)
+            and not isinstance(usage.get(field), bool)
+            and usage[field] >= 0
+            else None
+        )
+        for field in ("prompt_tokens", "completion_tokens", "total_tokens")
+    }
+    receipt = {
+        "schema": RECEIPT_SCHEMA,
+        "status": "complete",
+        "candidate_identity_sha256": candidate["candidate_identity_sha256"],
+        "rubric_sha256": RUBRIC_SHA256,
+        "endpoint_origin": base_url.rstrip("/"),
+        "credential_transport": (
+            "hermes_loopback_proxy"
+            if base_url == "http://127.0.0.1:8645/v1"
+            else "direct_portal_bearer"
+        ),
+        "requested_model": model,
+        "request_sha256": request_sha256,
+        "attempts": attempts,
+        "response_identity": {
+            "id": response.get("id") if isinstance(response.get("id"), str) else None,
+            "model": (
+                response.get("model")
+                if isinstance(response.get("model"), str)
+                else None
+            ),
+            "provider": (
+                response.get("provider")
+                if isinstance(response.get("provider"), str)
+                else None
+            ),
+            "created": (
+                response.get("created")
+                if isinstance(response.get("created"), int)
+                else None
+            ),
+            "finish_reason": (
+                choice.get("finish_reason")
+                if isinstance(choice.get("finish_reason"), str)
+                else None
+            ),
+        },
+        "usage": usage_receipt,
+        "raw_model_json_sha256": canonical_sha256(raw_judgment),
+        "judgment": judgment,
+        "api_key_persisted": False,
+        "tools_enabled": False,
+        "raw_source_is_training_data": False,
+        "training_ready": False,
+    }
+    receipt["receipt_sha256"] = canonical_sha256(receipt)
+    return receipt
+
+
+def run_shard(
+    candidates_path: Path,
+    output_root: Path,
+    *,
+    model: str,
+    base_url: str,
+    api_key: str,
+    logical_shards: int,
+    shard_index: int,
+    concurrency: int,
+    timeout_seconds: float,
+    maximum_attempts: int,
+    execute_function: Callable[..., dict[str, Any]] = execute_one,
+) -> dict[str, Any]:
+    """Run one persistent compiler shard while isolating individual failures."""
+
+    if (
+        isinstance(logical_shards, bool)
+        or not 1 <= logical_shards <= 10_000
+        or isinstance(shard_index, bool)
+        or not 0 <= shard_index < logical_shards
+        or isinstance(concurrency, bool)
+        or not 1 <= concurrency <= 64
+        or not api_key
+    ):
+        raise NousLabelWorkerError("compiler worker geometry or credential differs")
+    candidates = [
+        row
+        for row in _load_jsonl(candidates_path)
+        if _assigned(row["candidate_identity_sha256"], logical_shards, shard_index)
+    ]
+    base_url = _validate_endpoint(base_url)
+    output_root.mkdir(parents=True, exist_ok=True)
+    pending = []
+    skipped = 0
+    for row in candidates:
+        target = output_root / f"{row['candidate_identity_sha256']}.compiler.json"
+        if target.exists():
+            skipped += 1
+        else:
+            pending.append((row, target))
+
+    def work(item: tuple[dict[str, Any], Path]) -> str:
+        row, target = item
+        receipt = execute_function(
+            row,
+            model=model,
+            base_url=base_url,
+            api_key=api_key,
+            timeout_seconds=timeout_seconds,
+            maximum_attempts=maximum_attempts,
+        )
+        _atomic_create(target, receipt)
+        return receipt["receipt_sha256"]
+
+    hashes = []
+    failures = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
+        futures = {pool.submit(work, item): item for item in pending}
+        for future in concurrent.futures.as_completed(futures):
+            row, _target = futures[future]
+            try:
+                hashes.append(future.result())
+            except Exception as error:  # noqa: BLE001 - isolate remote row failure
+                failures.append(
+                    {
+                        "candidate_identity_sha256": row["candidate_identity_sha256"],
+                        "error_type": type(error).__name__,
+                        "error": str(error)[:512],
+                    }
+                )
+            completed = len(hashes) + len(failures)
+            if completed % 100 == 0 or completed == len(pending):
+                print(
+                    json.dumps(
+                        {
+                            "event": "compiler_progress",
+                            "shard_index": shard_index,
+                            "created": len(hashes),
+                            "failed": len(failures),
+                            "pending": len(pending) - completed,
+                        },
+                        sort_keys=True,
+                    ),
+                    flush=True,
+                )
+    if failures:
+        raise NousLabelWorkerError(
+            f"{len(failures)} compiler judgment(s) failed; receipts are resumable; "
+            f"first={json.dumps(failures[0], sort_keys=True)}"
+        )
+    summary = {
+        "schema": SUMMARY_SCHEMA,
+        "status": "complete",
+        "model": model,
+        "rubric_sha256": RUBRIC_SHA256,
+        "logical_shards": logical_shards,
+        "shard_index": shard_index,
+        "candidate_rows": len(candidates),
+        "expected_judgments": len(candidates),
+        "created_judgments": len(hashes),
+        "preexisting_judgments": skipped,
+        "created_receipts_sha256": canonical_sha256(sorted(hashes)),
+        "api_key_persisted": False,
+        "training_ready": False,
+    }
+    summary["receipt_sha256"] = canonical_sha256(summary)
+    _atomic_create(output_root / f"shard_{shard_index:05d}.summary.json", summary)
+    return summary
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--candidates", type=Path, required=True)
+    parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
+    parser.add_argument("--api-key-env", default="NOUS_API_KEY")
+    parser.add_argument("--logical-shards", type=int, default=4)
+    parser.add_argument("--shard-index", type=int, required=True)
+    parser.add_argument("--concurrency", type=int, default=32)
+    parser.add_argument("--timeout-seconds", type=float, default=300.0)
+    parser.add_argument("--maximum-attempts", type=int, default=5)
+    args = parser.parse_args()
+    api_key = os.environ.get(args.api_key_env, "")
+    if not api_key:
+        raise NousLabelWorkerError(f"{args.api_key_env} is required")
+    summary = run_shard(
+        args.candidates,
+        args.output_root,
+        model=args.model,
+        base_url=args.base_url,
+        api_key=api_key,
+        logical_shards=args.logical_shards,
+        shard_index=args.shard_index,
+        concurrency=args.concurrency,
+        timeout_seconds=args.timeout_seconds,
+        maximum_attempts=args.maximum_attempts,
+    )
+    print(json.dumps(summary, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

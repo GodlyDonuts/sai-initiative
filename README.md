@@ -11,9 +11,10 @@ equal-compute control on real, source-disjoint benchmarks.
 sequence: verified source bytes, quality and duplication controls, explicit
 prerequisite coverage, gradual difficulty, later rehearsal of fundamentals,
 and source-disjoint evaluation. A sophisticated mixer cannot compensate for
-bad examples or for teaching dependent concepts before their primitives. No
-architecture is promoted on a data schedule that has not independently beaten
-an identical-document order control.
+bad examples or for teaching dependent concepts before their primitives. A 4B
+run may now be used as the decisive architecture experiment once its data is
+qualified, but the architecture is not called successful until that checkpoint
+beats the unchanged and equal-compute baselines on real benchmarks.
 
 Sai treats data admission as three separate scientific questions:
 
@@ -43,6 +44,22 @@ Sai uses progressive composition with continuous broad rehearsal, retains
 low-dose foundational code/math/science/technical exposure early, and measures
 specialist upsampling, reasoning mid-training, and long-context adaptation as
 separate factors rather than copying another model's ratios.
+
+The corpus objective is stated more directly in
+[`docs/SAI_POLYMATH_DATA_THESIS.md`](docs/SAI_POLYMATH_DATA_THESIS.md). Web is a
+candidate reservoir rather than a protected percentage. The final pool must
+cover human expression, literature, arts, history, philosophy, society,
+everyday life, reference knowledge, mathematics, science, engineering, and
+software, and explicitly reward accurate cross-domain bridges. Selection is
+driven by marginal concept, style, and capability coverage under a spiraled
+prerequisite curriculum--not by copying another model's 75--85% web ratio.
+
+The executable replacement for dataset concatenation is described in
+[`docs/SAI_DATA_COMPILER.md`](docs/SAI_DATA_COMPILER.md). It treats global raw
+sources as reality anchors, chooses preservation and English-translation policy,
+derives grounded representations, protects form-bearing human expression,
+constructs verified cross-domain and procedural reasoning, and leaves final
+sampling to a coverage- and model-responsive curriculum controller.
 
 Every training population must pass these gates in order:
 
@@ -79,9 +96,16 @@ frozen before milestone snapshots were added; it retains valid final
 phase-stratified evidence but will not be misrepresented as a full dynamic
 learning-curve experiment.
 
-**Execution status:** the user authorized sub-4B preparation and training on
-2026-08-21. The 4B run remains explicitly prohibited until smaller-scale real
-benchmark evidence selects an architecture.
+**Execution status:** on 2026-08-22 the user authorized Sai to proceed directly
+to the 4B architecture once the data is ready. Small-scale architecture
+tournaments are no longer a launch prerequisite. The remaining scientific
+launch gate is the exact data artifact: canonical unique documents, provenance
+and licensing decisions, benchmark decontamination, frozen exposure weights,
+semantic-prerequisite curriculum order, tokenizer qualification, and a replayed
+packed stream. A bounded one-update 4B execution canary remains a technical
+requirement so the full job does not fail on memory, kernel, or checkpointing
+mechanics. Neither the authorization nor a successful training run is evidence
+of improvement; only matched real-benchmark results can establish that claim.
 
 ## Data-first reset — 2026-08-22
 

@@ -1,7 +1,17 @@
 # Sai 4B Data Mixture Plan
 
-Status: prospective and data-first. This plan authorizes no 4B training. It
-defines the evidence required before a final Sai corpus can exist.
+Status: active 4B data-build boundary. On 2026-08-22 the user authorized direct
+4B execution once the final data artifact is ready. This plan defines that
+remaining scientific launch boundary.
+
+The earlier small-model factor ladder remains useful diagnostic evidence, but
+it is no longer a prerequisite for launching the 4B hypothesis. It must not
+delay construction of the real corpus. The final data build still fails closed
+on corrupt or untraceable bytes, benchmark contamination, unresolved duplicate
+exposure, invalid curriculum dependencies, tokenizer loss, or an unreplayable
+packed stream. After those checks, a bounded one-update 4B canary qualifies
+execution mechanics and the full run may begin. Architecture success is judged
+only afterward against matched real-benchmark baselines.
 
 The current primary-source research synthesis and its implications for
 progressive composition, continuous rehearsal, and stage separation are frozen
@@ -9,6 +19,12 @@ in
 [`SAI_2026_DATA_RESEARCH_SYNTHESIS.md`](SAI_2026_DATA_RESEARCH_SYNTHESIS.md).
 Published mixtures are treated as experimental priors, never copied as Sai
 ratios without matched evidence.
+
+The governing selection objective is
+[`SAI_POLYMATH_DATA_THESIS.md`](SAI_POLYMATH_DATA_THESIS.md): source percentages
+are reporting fields, not protected quotas. Human-world breadth, cross-domain
+bridges, concept novelty, prerequisite closure, and style coverage are explicit
+selection dimensions alongside reliability and information density.
 
 `sai-validate-data-mixture <plan.json>` enforces the structural prospective
 `sai-4b-data-mixture-plan-v2` schema. It checks immutable-looking revisions and
@@ -36,8 +52,7 @@ receipt's canonical `covered_source_manifest_sha256s` explicitly contains each
 source manifest. This prevents a valid decision for one corpus from being
 reattached to another. V3 exposes no structure-only validation path: an explicit
 evidence root and complete artifact replay are mandatory. No v3 mixture
-currently passes because the source
-selection work is intentionally incomplete.
+currently passes because the source selection work is still in progress.
 
 ## Principle
 
@@ -287,12 +302,12 @@ below one percentage point. Only this receipt may set
 `source_addition_retained=true`; it still cannot authorize architecture
 promotion or 4B training.
 
-The ladder begins with one matched approximately 100M-parameter model because
-data must be selected before architecture. A positive one-seed result is
-provisional. Promotion requires repeated seeds, held-out likelihood normalized
-per token and admitted UTF-8 byte, broad source-disjoint capability, and declared
-per-domain retention. Architecture comparisons then inherit the selected data
-bytes unchanged through 100M, 300M, and 1B.
+The historical ladder began with one matched approximately 100M-parameter model.
+Those experiments remain evidence about data order and source quality, but the
+2026-08-22 authorization removes 100M, 300M, and 1B architecture promotion as
+preconditions for the 4B run. The active path freezes one defensible mixture
+from source evidence, replays its complete data lineage, and tests the
+architecture decisively at 4B.
 
 ## Required evidence
 
@@ -322,5 +337,7 @@ A data factor is retained only if it improves or preserves held-out token NLL
 and UTF-8-byte-normalized NLL, produces a credible nonnegative aggregate on
 broad source-disjoint development tasks, and stays within every predeclared
 domain regression floor. The final public boards are not used to iteratively
-tune data. Passing the data ladder authorizes architecture selection; it does
-not authorize the 4B run.
+tune data. Under the 2026-08-22 authorization, a fully replayed final data
+artifact plus a successful bounded 4B execution canary authorizes the full 4B
+run. Neither event establishes an improvement claim; that requires the
+predeclared matched real-benchmark suite.

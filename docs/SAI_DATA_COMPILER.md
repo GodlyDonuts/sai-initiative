@@ -1,0 +1,186 @@
+# Sai Data Compiler
+
+Status: active compiler design with a live metadata pass. Raw source rows and
+compiler judgments remain non-training candidates.
+
+## Thesis
+
+Sai does not build a training corpus by concatenating named datasets at fixed
+percentages. A dataset is a reservoir of source evidence. The compiler converts
+qualified source evidence into multiple traceable learning representations, and
+the curriculum scheduler chooses among those representations according to
+concept coverage, prerequisite state, model learning, and measured diversity.
+
+```text
+raw knowledge sources
+    -> source identity and extraction
+    -> epistemic-function analysis
+    -> quality, novelty, difficulty, diversity, and grounding metadata
+    -> preserve, translate, transform, recombine, or reject
+    -> verify every derived representation
+    -> global duplicate and contamination accounting
+    -> concept/prerequisite graph
+    -> curriculum scheduler
+    -> packed training stream
+```
+
+No arrow erases lineage. Every derivative retains its source identities,
+generator and prompt identity, transformations, verification evidence, and
+duplicate family.
+
+## English output, global knowledge
+
+English-only means that the model learns and expresses the selected knowledge
+in English. It does not mean Western-only acquisition.
+
+High-value Chinese history, Persian poetry, Russian mathematics, French
+philosophy, German engineering, Japanese literature, Indian philosophy and
+history, Arabic science, Latin and Greek classics, and modern scholarship from
+anywhere may enter the candidate pool. For non-English sources, the compiler
+must decide whether to:
+
+- use an existing authoritative English translation;
+- translate while preserving argument and cultural context;
+- translate while preserving literary form as far as possible;
+- retain the original only as a source anchor and create English derivatives;
+- reject translation because the loss or provenance risk is too high.
+
+Translation never grants a source license, establishes factual truth, or makes a
+source unique. Those remain separate evidence.
+
+Language itself is never a rejection reason. Every non-English retained source
+receives an explicit `translation_priority` from 1 to 4. High-value sources are
+routed to English translation rather than excluded; zero is reserved for
+sources already in English or sources rejected for an independent reason.
+
+## Epistemic functions
+
+### 1. Reality anchors
+
+Primary and authoritative human material introduces information about reality:
+books, papers, archives, records, reference works, journalism, code,
+documentation, court opinions, standards, museums, cultural archives, and
+structured databases.
+
+The compiler may clean extraction defects, but it must not silently replace a
+reality anchor with generated prose.
+
+### 2. Knowledge distillations
+
+A qualified anchor may produce several grounded representations:
+
+- clean source text;
+- concise reference entry;
+- beginner, undergraduate, graduate, or expert explanation;
+- conceptual summary and prerequisite map;
+- FAQ, worked examples, and misconception/correction pairs;
+- source-grounded textbook sections.
+
+Derived text must cite exact source spans or structured records in its lineage.
+The original and its derivatives share one exposure family so repeated facts
+are accounted rather than disguised as unique knowledge.
+
+### 3. Knowledge recombination
+
+The compiler may construct examples that join established concepts from
+different domains: biology and information theory, history and economics,
+music and Fourier analysis, architecture and structural engineering,
+philosophy and computation, literature and psychology, law and logic, or
+systems and thermodynamics.
+
+Recombination is admitted only after each prerequisite chain is represented and
+the resulting claim or solution is independently grounded or verifiable.
+
+### 4. Procedurally generated reasoning
+
+Rule-defined generators can produce unlimited tasks with known truth for logic,
+state tracking, graphs, causal systems, symbolic manipulation, planning,
+constraints, algorithms, simulations, counterfactuals, space, and time.
+
+This is the most reusable lesson from Shohin's procedural-data work. Sai will
+retain the generators and ground-truth checkers while discarding the assumption
+that those tasks validate one particular architecture. A procedural task teaches
+composition or execution; it does not introduce unobserved real-world facts.
+
+### 5. Human intellectual expression
+
+Some texts carry information in their form. Literature, essays, speeches,
+letters, debates, memoirs, diaries, journalism, criticism, humor, rhetoric,
+dialogue, folklore, plays, poetry, philosophical argument, and distinctive
+scientific exposition may be protected from rewriting.
+
+The compiler must not flatten all human expression into homogeneous tutorial
+language. It may attach explanations or translations while preserving a
+licensed English original or authoritative translation as a separate
+representation.
+
+## Representation policy
+
+Each source receives one preservation policy:
+
+- `preserve_training_form`;
+- `preserve_source_anchor_only`;
+- `preserve_plus_derivatives`;
+- `derivative_only`;
+- `reject`.
+
+This policy is distinct from source quality. A noisy rendering of a reliable
+table may justify a clean derivative. A great novel may justify exact
+preservation. A dense paper may justify both its original and explanations.
+Executable code may justify the original, tests, reviews, and documentation.
+
+## Model-directed selection
+
+Fixed source ratios are replaced by measured marginal utility. Before final 4B
+stream construction, proxy experiments may estimate what additional exposure
+from each concept, style, difficulty, and reasoning region contributes.
+
+Candidate metadata may include semantic clusters and model-induced gradient
+clusters. [Prismatic Synthesis](https://arxiv.org/abs/2505.20161) and
+[SPOKES](https://arxiv.org/abs/2606.15216) motivate gradient-space diversity as
+an experimental selection signal. It does not supersede source reliability,
+quality, prerequisite closure, contamination, or representation lineage.
+
+The controller asks:
+
+> What does another unit of unique exposure from this region add to the model?
+
+It does not ask:
+
+> What percentage did another laboratory assign to this upstream dataset?
+
+## Synthetic generation hierarchy
+
+Synthetic rows are ranked by what they add:
+
+1. paraphrases of one source -- generally low novelty;
+2. multi-source, retrieval-grounded explanations or coherent books;
+3. cross-domain problems with independent solution and deterministic checks;
+4. examples targeted at underrepresented model-gradient regions and verified
+   against ground truth.
+
+The compiler prefers higher levels when source grounding and verification are
+available. The 2026 [book-organization
+study](https://arxiv.org/abs/2607.28109) motivates coherent source-grounded
+books rather than isolated rewrites. ICLR 2026 [rule-generated multi-hop
+work](https://proceedings.iclr.cc/paper_files/paper/2026/hash/9e95016eceae77e945b84554b0f1bb49-Abstract-Conference.html)
+supports procedural fictional worlds as a way to teach composition without
+pretending that they add real facts.
+
+## Current executable boundary
+
+`sai.data.data_compiler_labeling` defines the comprehensive compiler judgment.
+It records epistemic functions, fine-grained domains, source language,
+translation and preservation decisions, representations, provenance form,
+grounding, prerequisite concepts, cross-domain bridges, thirteen independent
+scores, twelve risks, exact evidence spans, and a grounded transformation brief.
+
+`sai.data.nous_compiler_worker` runs this contract through the Hermes loopback
+proxy with create-only per-source receipts. One row failure is isolated; other
+rows continue, and reruns skip already completed identities. The worker persists
+no portal credential, enables no tools, and marks every output
+`training_ready=false`.
+
+This is metadata compilation only. Translation, synthesis, procedural
+generation, verification, adaptive selection, and packing are separate compiler
+stages that must preserve this lineage.

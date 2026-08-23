@@ -1,0 +1,44 @@
+{
+  "schema": "sai-hf-stratified-audit-spec-v1",
+  "status": "prospective_no_download",
+  "training_authorized": false,
+  "source_admitted": false,
+  "content_download_authorized": false,
+  "dataset": "allenai/dolma3_dolmino_mix-100B-1025",
+  "revision": "f23942ae8a8114af6e992efe8188ce8c531acd16",
+  "inventory_receipt_sha256": "7e62c6006697110eba5857831d11903a14c41f76cb3547b866b69a4aa076ebf2",
+  "selection_seed": "sai-dolmino-content-audit-20260822-r1",
+  "rules": [
+    {
+      "name": "high_quality_web",
+      "component_regex": "^common_crawl-high-quality_(?P<band>19|20)_(?P<topic>[a-z_]+)$",
+      "group_keys": ["band", "topic"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "high_quality_science_pdfs",
+      "component_regex": "^olmocr_science_pdfs-high_quality-(?P<topic>[a-z_]+)-(?P<epoch>2e12|2e13)$",
+      "group_keys": ["epoch", "topic"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "stack_edu_quality_language",
+      "component_regex": "^stack_edu-fim_vigintile_(?P<quality>15|16|17|19)_(?P<language>[A-Za-z0-9_+]+)$",
+      "group_keys": ["quality", "language"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "math_code_stem_core",
+      "component_regex": "^(?P<component>cranecode|cranemath|dolmino-math|megamatt|stem-heavy-crawl|tinymath-mind|tinymath-pot)$",
+      "group_keys": ["component"],
+      "samples_per_group": 1
+    },
+    {
+      "name": "synthetic_instruction_reasoning",
+      "component_regex": "^(?P<component>code-meta-reasoning|dolmino_1-flan|gemini-reasoning-traces|general_reasoning_mix|llama_nemotron-reasoning-traces|math-meta-reasoning|nemotron-synth-qa|omr-rewrite-fullthoughts|openthoughts2-reasoning-traces|program_verifiable|qwq-reasoning-traces|reddit_to_flashcards|tulu-3-sft|wiki_to_rcqa-part1|wiki_to_rcqa-part2|wiki_to_rcqa-part3)$",
+      "group_keys": ["component"],
+      "samples_per_group": 1
+    }
+  ],
+  "spec_sha256": "b57346afd617f1fa6a0e0ad66b28d9fcc1282bc1d2ee78697807c1076946e0bf"
+}
