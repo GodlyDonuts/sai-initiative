@@ -255,6 +255,18 @@ published and byte-replayed in Hugging Face commit
 [`90a87727f9b5e88b0268153001f19d47c091101d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/90a87727f9b5e88b0268153001f19d47c091101d).
 Raw candidates and evidence-bearing judgments were not redistributed.
 
+The next Common Pile gate is now frozen rather than selected by intuition.
+Receipt `a48d9860193460e037c095f5483eb18b4b5199ec6b7be05eba8c6ebcfe562676`
+combines the completed compiler aggregate with the independent v2
+contamination screen. Promotion requires at least four observed rows, at least
+50% representation-verification routing, zero quarantine or rights routes, and
+zero benchmark-overlap rows. It selects ArXiv Abstracts, GitHub Archive,
+LibreTexts, Pressbooks, Public Domain Review, Python Enhancement Proposals, and
+StackExchange for a 224-row confirmation using different parent files. This is
+confirmation workload selection, not training admission. The source-safe plan
+was byte-replayed from Hugging Face commit
+[`6618216352dbecfae8e3c92eef53d4e14e1e24f1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6618216352dbecfae8e3c92eef53d4e14e1e24f1).
+
 The official public-benchmark contamination boundary is executable, but its
 first code-shingle policy has been superseded. It
 projects 18,235 rows from MMLU-Pro, HumanEval+, MBPP+, CorrectBench,

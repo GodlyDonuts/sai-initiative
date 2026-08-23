@@ -215,6 +215,16 @@ compiler route because the independent corrected benchmark-word gate found
 3/4 overlaps. This is the intended multi-gate behavior: model preference cannot
 override contamination evidence.
 
+`sai.data.reservoir_audit_confirmation_plan` makes the next promotion
+deterministic. It binds a completed aggregate and corrected contamination
+screen, then requires zero observed benchmark overlap, zero quarantine/rights
+routes, and at least 500,000 ppm representation-verification signal. The first
+live plan selects seven Common Pile sources for 32 source-disjoint rows each:
+ArXiv Abstracts, GitHub Archive, LibreTexts, Pressbooks, Public Domain Review,
+Python Enhancement Proposals, and StackExchange. Plan receipt
+`a48d9860193460e037c095f5483eb18b4b5199ec6b7be05eba8c6ebcfe562676`
+still sets `bulk_training_admission=false` and `training_ready=false`.
+
 `sai.data.benchmark_boundary_index` builds a non-reversible official benchmark
 boundary for 18,235 rows across nine public benchmark views. The r1 13-token
 word index contains 27,979,728 unique SHA-256 keys and its r1 8-token code index

@@ -99,6 +99,14 @@ Both uploaded files replay byte-for-byte against local SHA-256 values. Raw
 candidates and evidence-bearing judgments remain local, and every source stays
 `training_ready=false`.
 
+Dataset commit
+[`6618216352dbecfae8e3c92eef53d4e14e1e24f1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6618216352dbecfae8e3c92eef53d4e14e1e24f1)
+adds the source-safe Common Pile confirmation plan under receipt
+`a48d9860193460e037c095f5483eb18b4b5199ec6b7be05eba8c6ebcfe562676`.
+It selects seven clean-signal lanes and 224 source-disjoint confirmation rows;
+it contains no candidate text and grants no bulk or training admission. The
+downloaded remote bytes replayed exactly against the local plan.
+
 ## Benchmark boundary mirror
 
 Dataset commit
