@@ -7,8 +7,11 @@ from pathlib import Path
 import pytest
 
 from sai.data.decontamination import (
+    POLICY,
     RAW_SCHEMA,
     DecontaminationError,
+    _code_overlap_count,
+    _code_shingles,
     _overlap_count,
     _shingles,
     build,
@@ -32,18 +35,11 @@ def write_digest_boundary(root: Path, word: set[bytes], code: set[bytes]) -> Pat
             "bytes": path.stat().st_size,
             "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         }
-    policy = {
-        "unicode_normalization": "NFKC_casefold",
-        "word_shingle_tokens": 13,
-        "code_shingle_tokens": 8,
-        "minimum_boundary_string_characters": 8,
-        "decision": "reject_on_any_exact_word_or_code_shingle_overlap",
-    }
     receipt = {
-        "schema": "sai-official-benchmark-boundary-index-v1",
+        "schema": "sai-official-benchmark-boundary-index-v2",
         "status": "complete",
-        "policy": policy,
-        "policy_sha256": canonical_sha256(policy),
+        "policy": POLICY,
+        "policy_sha256": canonical_sha256(POLICY),
         **descriptors,
         "benchmark_contamination_gate_ready": True,
         "raw_benchmark_text_persisted": False,
@@ -251,3 +247,20 @@ def test_streaming_overlap_count_is_exact_unique_intersection() -> None:
     boundary = set(list(source)[::3]) | {b"x" * 32}
     assert _overlap_count(tokens, 8, boundary) == len(source.intersection(boundary))
     assert _overlap_count(tokens[:4], 8, boundary) == 0
+
+
+def test_code_shingles_exclude_punctuation_only_and_generic_short_windows() -> None:
+    punctuation = ["(", ")", "{", "}", "[", "]", ",", ";"]
+    generic_short = ["a", ",", "b", ",", "c", ",", "d", ","]
+    distinctive = ["if", "(", "value", "==", "0", ")", "return", "result"]
+    assert _code_shingles(punctuation) == set()
+    assert _code_shingles(generic_short) == set()
+    assert len(_code_shingles(distinctive)) == 1
+
+
+def test_code_overlap_applies_the_same_eligibility_rule_as_indexing() -> None:
+    punctuation = ["(", ")", "{", "}", "[", "]", ",", ";"]
+    distinctive = ["if", "(", "value", "==", "0", ")", "return", "result"]
+    boundary = _shingles(punctuation, 8) | _code_shingles(distinctive)
+    assert _code_overlap_count(punctuation, boundary) == 0
+    assert _code_overlap_count(distinctive, boundary) == 1

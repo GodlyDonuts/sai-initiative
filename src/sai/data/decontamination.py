@@ -23,13 +23,17 @@ POLICY = {
     "unicode_normalization": "NFKC_casefold",
     "word_shingle_tokens": 13,
     "code_shingle_tokens": 8,
+    "code_shingle_minimum_alphanumeric_tokens": 4,
+    "code_shingle_minimum_unique_alphanumeric_tokens": 3,
+    "code_shingle_minimum_characters": 16,
     "minimum_boundary_string_characters": 8,
-    "decision": "reject_on_any_exact_word_or_code_shingle_overlap",
+    "decision": "reject_on_any_exact_word_or_eligible_code_shingle_overlap",
 }
 _WORD = re.compile(r"[^\W_]+(?:['’-][^\W_]+)*", re.UNICODE)
 _CODE = re.compile(
     r"[A-Za-z_]\w*|\d+(?:\.\d+)?|==|!=|<=|>=|:=|->|\*\*|//|<<|>>|&&|\|\||\S"
 )
+_ALPHANUMERIC = re.compile(r"[^\W_]", re.UNICODE)
 _WORKER_WORD_BOUNDARY: Container[bytes] | None = None
 _WORKER_CODE_BOUNDARY: Container[bytes] | None = None
 
@@ -75,6 +79,44 @@ def _overlap_count(tokens: list[str], width: int, boundary: Container[bytes]) ->
         for index in range(len(tokens) - width + 1)
         if (digest := bytes.fromhex(canonical_sha256(tokens[index : index + width])))
         in boundary
+    }
+    return len(matches)
+
+
+def _eligible_code_window(tokens: list[str]) -> bool:
+    """Exclude punctuation-only and generic short windows from code matching."""
+
+    alphanumeric = [token for token in tokens if _ALPHANUMERIC.search(token)]
+    return (
+        len(alphanumeric) >= POLICY["code_shingle_minimum_alphanumeric_tokens"]
+        and len(set(alphanumeric))
+        >= POLICY["code_shingle_minimum_unique_alphanumeric_tokens"]
+        and sum(map(len, tokens)) >= POLICY["code_shingle_minimum_characters"]
+    )
+
+
+def _code_shingles(tokens: list[str]) -> set[bytes]:
+    width = POLICY["code_shingle_tokens"]
+    if len(tokens) < width:
+        return set()
+    return {
+        bytes.fromhex(canonical_sha256(window))
+        for index in range(len(tokens) - width + 1)
+        if _eligible_code_window(window := tokens[index : index + width])
+    }
+
+
+def _code_overlap_count(tokens: list[str], boundary: Container[bytes]) -> int:
+    """Count unique matching code shingles after applying the eligibility gate."""
+
+    width = POLICY["code_shingle_tokens"]
+    if len(tokens) < width:
+        return 0
+    matches = {
+        digest
+        for index in range(len(tokens) - width + 1)
+        if _eligible_code_window(window := tokens[index : index + width])
+        and (digest := bytes.fromhex(canonical_sha256(window))) in boundary
     }
     return len(matches)
 
@@ -173,7 +215,7 @@ def binary_boundary_index(
                 key: value for key, value in payload.items() if key != "receipt_sha256"
             }
             if (
-                payload.get("schema") != "sai-official-benchmark-boundary-index-v1"
+                payload.get("schema") != "sai-official-benchmark-boundary-index-v2"
                 or payload.get("status") != "complete"
                 or payload.get("receipt_sha256") != canonical_sha256(unsigned)
                 or payload.get("policy") != POLICY
@@ -223,7 +265,7 @@ def _text_shingles(text: str) -> tuple[set[bytes], set[bytes]]:
     normalized = _normalize(text)
     return (
         _shingles(_WORD.findall(normalized), POLICY["word_shingle_tokens"]),
-        _shingles(_CODE.findall(normalized), POLICY["code_shingle_tokens"]),
+        _code_shingles(_CODE.findall(normalized)),
     )
 
 
@@ -335,10 +377,8 @@ def _candidate(
         POLICY["word_shingle_tokens"],
         _WORKER_WORD_BOUNDARY,
     )
-    code_overlap_count = _overlap_count(
-        _CODE.findall(normalized_text),
-        POLICY["code_shingle_tokens"],
-        _WORKER_CODE_BOUNDARY,
+    code_overlap_count = _code_overlap_count(
+        _CODE.findall(normalized_text), _WORKER_CODE_BOUNDARY
     )
     return raw, normalized_text_sha256, word_overlap_count, code_overlap_count
 

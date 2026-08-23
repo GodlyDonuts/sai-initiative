@@ -16,12 +16,19 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
-from sai.data.decontamination import _CODE, _WORD, POLICY, _normalize, _shingles
+from sai.data.decontamination import (
+    _CODE,
+    _WORD,
+    POLICY,
+    _code_shingles,
+    _normalize,
+    _shingles,
+)
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-official-benchmark-boundary-index-v1"
+SCHEMA = "sai-official-benchmark-boundary-index-v2"
 WORD_INDEX = "word_13_sha256.bin"
-CODE_INDEX = "code_8_sha256.bin"
+CODE_INDEX = "code_8_eligible_sha256.bin"
 LIVEBENCH_RELEASE = "2024-11-25"
 EXPECTED_ROWS = {
     "correctbench": 739,
@@ -598,12 +605,7 @@ def build_boundary_index(
                                 )
                             )
                             if spec.benchmark in CODE_BENCHMARKS:
-                                code.add(
-                                    _shingles(
-                                        _CODE.findall(normalized),
-                                        POLICY["code_shingle_tokens"],
-                                    )
-                                )
+                                code.add(_code_shingles(_CODE.findall(normalized)))
             finally:
                 source_path.unlink(missing_ok=True)
             source_receipts.append(

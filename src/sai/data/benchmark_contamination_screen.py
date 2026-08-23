@@ -15,6 +15,7 @@ from sai.data.decontamination import (
     _CODE,
     _WORD,
     POLICY,
+    _code_overlap_count,
     _normalize,
     _overlap_count,
     binary_boundary_index,
@@ -22,7 +23,7 @@ from sai.data.decontamination import (
 from sai.data.reservoir_audit_aggregate import load_population
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-audit-population-benchmark-contamination-screen-v1"
+SCHEMA = "sai-audit-population-benchmark-contamination-screen-v2"
 
 
 class BenchmarkContaminationScreenError(RuntimeError):
@@ -62,9 +63,7 @@ def summarize(
         word_overlaps = _overlap_count(
             _WORD.findall(normalized), POLICY["word_shingle_tokens"], word_boundary
         )
-        code_overlaps = _overlap_count(
-            _CODE.findall(normalized), POLICY["code_shingle_tokens"], code_boundary
-        )
+        code_overlaps = _code_overlap_count(_CODE.findall(normalized), code_boundary)
         contaminated = bool(word_overlaps or code_overlaps)
         decision = {
             "candidate_identity_sha256": identity,
