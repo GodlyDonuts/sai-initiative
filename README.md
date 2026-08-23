@@ -463,6 +463,39 @@ the original reservoir. None of those bytes are counted as unique or
 training-ready until text-column extraction and global semantic deduplication
 complete.
 
+The first exact text-payload probe now measures that distinction instead of
+guessing it. One member per source was selected by a frozen SHA-256 rank before
+size or content inspection. Eight selected members fit the 4 GiB parent cap;
+FinePDF's independently selected 4.84 GB member did not, and was blocked rather
+than replaced by a conveniently smaller shard. Every measured member was fully
+downloaded, matched to its pinned size and SHA-256, streamed one at a time, and
+deleted afterward. “Useful” below means only the mechanical 200 B–128 KiB size
+window; it is not a quality, rights, uniqueness, or admission judgment.
+
+| Source | Exact physical bytes | Text UTF-8 bytes | Useful UTF-8 bytes | Useful/physical |
+| --- | ---: | ---: | ---: | ---: |
+| FineWeb-Edu fill | 2,378,402,603 | 3,832,560,263 | 3,741,009,274 | 1.572908× |
+| Dolma 3 mix-150B | 5,349,719 | 62,584,337 | 59,977,943 | 11.211419× |
+| FineMath | 733,726,864 | 1,199,827,734 | 1,165,858,399 | 1.588954× |
+| SmolLM corpus | 2,391,060,328 | 3,915,215,823 | 3,822,727,059 | 1.598758× |
+| PleIAs Common Corpus | 430,252,575 | 795,883,158 | 750,836,358 | 1.745106× |
+| FineWeb2-HQ multilingual | 1,203,684,113 | 447,018,551 | 384,827,189 | 0.319707× |
+| Ultra-FineWeb current L2 | 82,007,099 | 138,259,448 | 136,403,753 | 1.663316× |
+| Ultra-FineWeb earlier L2 | 1,298,592,398 | 2,240,142,912 | 2,190,701,659 | 1.686981× |
+| FinePDFs | 4,836,418,450 | not measured | not measured | cap hold |
+
+Across only the eight exact measured members, 8,523,075,699 compressed bytes
+contained 12,631,492,226 text bytes and 12,252,341,634 mechanically useful
+bytes. Ratios above one are expected for compressed members. The roughly 35×
+spread between the observed useful/physical ratios proves that repository size
+is not a defensible acquisition objective, but this single-member probe is not
+a source-wide yield estimate and cannot be extrapolated. Plan receipt
+`4f5312f7d9ae86b3fbe8998c7e780c7238eae9394fc767fdbedad2affbacc66c`
+and measurement receipt
+`1d550e0abc513c5b4e61f0ce5890155bfff01bcdbd2a6896f9a078c26952f848`
+were remotely replayed in Hugging Face commit
+[`fecd9d596c18dd63ab6ea7a89dda7b2544eca4a1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/fecd9d596c18dd63ab6ea7a89dda7b2544eca4a1).
+
 NVIDIA's organic/translated Nemotron-CC v2.1, CC-Code v1, and Code v2
 repositories were investigated but are not counted: metadata is visible while
 the current user token receives HTTP 403 on the actual gated objects. The

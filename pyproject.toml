@@ -75,6 +75,7 @@ sai-build-common-pile-streaming-pilot = "sai.data.common_pile_streaming_pilot:ma
 sai-filter-bounded-near-duplicates = "sai.data.bounded_near_duplicate_filter:main"
 sai-audit-cross-source-pilot-duplicates = "sai.data.cross_source_pilot_duplicates:main"
 sai-build-data-yield-ledger = "sai.data.data_yield_ledger:main"
+sai-probe-text-payload = "sai.data.text_payload_probe:main"
 sai-build-reservoir-audit-population = "sai.data.reservoir_audit_population:main"
 sai-build-reservoir-audit-expansion = "sai.data.reservoir_audit_expansion:main"
 sai-aggregate-reservoir-audit = "sai.data.reservoir_audit_aggregate:main"

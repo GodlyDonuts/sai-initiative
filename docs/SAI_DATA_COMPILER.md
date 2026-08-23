@@ -365,6 +365,15 @@ quarantine, 11/40 to cleanup, 6/40 to translation, and 6/40 to representation
 verification; the independent benchmark screen also located its only two
 contaminated rows. No source receives bulk admission from this coverage screen.
 
+`sai.data.text_payload_probe` closes a different accounting gap before bulk
+conversion. Its prospective plan selects exact members by SHA-256 rank before
+opening their content or consulting file size. Execution holds one member at a
+time, verifies the full pinned size and SHA-256, measures only the declared text
+column, separates all UTF-8 bytes from the mechanical 200 B–128 KiB useful-size
+window, and removes temporary source bytes. A selected member above the frozen
+storage cap is blocked and cannot be replaced with a smaller shard. Results are
+bounded member measurements, never source-wide yield estimates or admissions.
+
 ## Institutional Books lane
 
 The Harvard Library Institutional Books release is now a pinned, separate

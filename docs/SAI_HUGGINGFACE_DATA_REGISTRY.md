@@ -216,6 +216,28 @@ and `487c50a9fd4ba39ae22e73e4478673762e60fbedef254be387766fa41d740978`.
 Both remote files replayed byte-for-byte. Raw candidates and compiler judgments
 were not uploaded, and the ledger grants no bulk or training admission.
 
+## Exact text-payload probe
+
+Dataset commit
+[`fecd9d596c18dd63ab6ea7a89dda7b2544eca4a1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/fecd9d596c18dd63ab6ea7a89dda7b2544eca4a1)
+publishes the source-safe plan and result for the first exact text-payload probe.
+The SHA-256-ranked plan receipt is
+`4f5312f7d9ae86b3fbe8998c7e780c7238eae9394fc767fdbedad2affbacc66c`;
+the measurement receipt is
+`1d550e0abc513c5b4e61f0ce5890155bfff01bcdbd2a6896f9a078c26952f848`.
+Eight exact members totaling 8,523,075,699 physical bytes yielded
+12,631,492,226 text UTF-8 bytes and 12,252,341,634 bytes in the mechanical
+200 B–128 KiB useful-size window. FinePDF's preselected 4,836,418,450-byte
+member exceeded the frozen 4 GiB cap and was not replaced. Every measured
+member matched its pinned full-file size and SHA-256 and its temporary bytes
+were removed. Neither file contains source text. The remote plan and result
+SHA-256 values replayed as
+`f4afe3dcb6a0e1fb4808ef750c14e90c5c79f884257c715344d21923ba9cd471`
+and
+`62e82000db517e66e927747c25d521d3be113fa2bf5c34ed1f1f7bb60117968b`.
+This bounded probe is not a source-wide statistical yield estimate, quality
+decision, rights clearance, or training admission.
+
 ## Benchmark boundary mirror
 
 Dataset commit
