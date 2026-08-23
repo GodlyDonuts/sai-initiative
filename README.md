@@ -107,9 +107,9 @@ later curriculum position.
 
 #### Exact source-reservoir checkpoint
 
-The first live reservoir was sealed on 2026-08-23 from exact Hugging Face
-revisions. It contains **16,003 files and 8,797,534,711,475 bytes**
-(**8.0013112087 TiB**), exceeding the exact 8 TiB target by 1,441,689,267
+Reservoir v2 was sealed on 2026-08-23 from exact Hugging Face revisions. It
+contains **16,001 files and 8,796,890,808,426 bytes**
+(**8.0007255823 TiB**), exceeding the exact 8 TiB target by 797,786,218
 bytes. The selection includes every file from the specialist sources and only
 the minimum deterministic, path-ordered FineWeb-Edu prefix needed to cross the
 target.
@@ -120,21 +120,27 @@ target.
 | Institutional Books enriched text | `92fcdf938eb87edfe0fbf09d4f692fa3d8bc9bcd` | 4,916 | 870,263,633,412 | Books, human expression, and historical knowledge |
 | FineMath | `e92b25a616738fe95dc186b64dfb19f9c8525594` | 288 | 149,447,371,427 | Mathematical reality anchors |
 | Dolma 3 mix-150B | `afa92bfb22366821c5e6cd427cdd036b34b713ef` | 6,081 | 110,586,325,507 | Broad multidomain reality anchors |
-| SmolLM corpus | `3ba9d605774198c5868892d7a8deda78031a781f` | 340 | 673,074,320,609 | Curated education, code, and synthetic textbooks |
+| SmolLM corpus | `3ba9d605774198c5868892d7a8deda78031a781f` | 338 | 672,430,417,560 | Curated educational web and synthetic textbooks |
 | OpenWebMath | `fde8ef8de2300f5e778f56261843dab89f230815` | 114 | 27,431,041,597 | Mathematical exposition |
 | FineWeb-Edu deterministic fill | `87f09149ef4734204d70ed1d046ddc9ca3f2b8f9` | 691 | 1,591,089,065,280 | Broad educational-web coverage after specialists |
 
-The manifest is 7,809,055 bytes with file SHA-256
-`8b533e846f1c6f9ef636c5f6602d45447793a43b09be95882fc9f1f8173dadfd`
+The manifest is 7,808,445 bytes with file SHA-256
+`36d41d579511af2479281b3199f242d5d039ec8a261c2e3d37b07354ea6d7ccf`
 and ordered-row SHA-256
-`0fd20de4d3a3371c95d72453319ed1c2e853d303731e0a00cfb076960906f97c`.
+`3e1e95121ef44b0c87d430bbd46356cd978ede8719328a7416923a95a64c4e18`.
 The receipt SHA-256 is
-`62a5e8f63624220ed5d69525010d76cc3fab290137174c2b9e35f29a8d8ff32e`.
-The manifest, receipt, and spiral policy were replayed byte-for-byte after
-publication in Hugging Face dataset commit
-[`3e7f42416ea8ab3a74f8a0417a2b7f2fb98cd2e5`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/3e7f42416ea8ab3a74f8a0417a2b7f2fb98cd2e5).
+`38e777da2a81e90919d4404d00d2a8e17531e8e0aa1405424ec645e4cdaddf44`.
+The manifest and receipt were replayed byte-for-byte after publication in
+Hugging Face dataset commit
+[`8199183b8064ffd0c0b3748bdb40a90a10da2b23`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8199183b8064ffd0c0b3748bdb40a90a10da2b23).
 Every source revision was resolved exactly, an object from every source was
 access-probed, and every selected file is bound to its upstream LFS SHA-256.
+
+The v2 correction came from actual schema replay: SmolLM's two `python-edu`
+files contain blob identifiers, repository names, paths, lengths, and scores,
+but no code text. Sai excludes those metadata-only bytes instead of counting
+them as code training material. Code coverage remains present through Dolma's
+content-bearing Stack-Edu shards; it is not fabricated from an index.
 
 This checkpoint does **not** claim that 8 TiB is locally downloaded, unique,
 licensed as one combined corpus, quality-approved, translated, decontaminated,
@@ -242,6 +248,28 @@ explicitly non-training-ready. The successful request used 12,314 prompt and
 1,454 completion tokens after one invalid first response and one schema-bound
 repair. This single result proves the worker and repair path function; it does
 not estimate corpus-wide acceptance quality.
+
+A separate reservoir-wide coverage audit now freezes 128 generic compiler
+candidates across six content-bearing source families: 40 FinePDFs rows (16
+English and 24 named non-English language strata), 16 FineMath rows across all
+four quality/subset bands, 24 Dolma rows spanning reference, papers, math,
+Python/Rust/Java, and 18 PDF/web topics, 16 SmolLM educational-web and
+Cosmopedia rows, eight OpenWebMath rows, and 24 FineWeb-Edu rows across six
+crawl years. Institutional Books remains on its richer book-specific schema and
+is not flattened into this generic audit.
+
+The population file contains 128 unique identities and 1,059,279 bytes, with
+SHA-256
+`d3f24cd2855400a00e16f0bcf6dca63190a0f6653ee64031d77af9b35e83d823`.
+Its 138,940-byte lineage file has SHA-256
+`dc4cab1b3a0cea23b12841afd830970e588f3e0a17a52cd5d50849e8dbe8207b`.
+Twenty-four compressed Dolma parent files were fully downloaded and matched to
+their upstream SHA-256; 104 Parquet parents were read by exact-revision range
+requests and remain bound to the upstream LFS hash without falsely claiming a
+local whole-file rehash. The population receipt is
+`4c5a179bb6863969850cc7d70133650211a445eb124df6dd28948053cb817ed4`.
+This is a coverage-first diagnostic, not a statistically weighted corpus
+acceptance estimate.
 
 Hermes routing depends on content type:
 

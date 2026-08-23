@@ -59,3 +59,10 @@ def test_reservoir_rejects_missing_source_or_tampered_hash() -> None:
 def test_reservoir_fails_when_fill_cannot_reach_target() -> None:
     with pytest.raises(SourceReservoirError, match="cannot reach"):
         select_reservoir(_inventories(), target_bytes=10_000_000)
+
+
+def test_reservoir_rejects_known_metadata_only_prefix() -> None:
+    inventories = _inventories()
+    inventories["smollm_corpus"][0]["path"] = "python-edu/train-00000.parquet"
+    with pytest.raises(SourceReservoirError, match="identity"):
+        select_reservoir(inventories, target_bytes=100)

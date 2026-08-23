@@ -33,6 +33,7 @@ from sai.data.token_stream import canonical_sha256
 
 RECEIPT_SCHEMA = "sai-nous-data-compiler-receipt-v2"
 SUMMARY_SCHEMA = "sai-nous-data-compiler-shard-summary-v2"
+COMPILER_REASONING_EFFORT = "low"
 
 
 def execute_one(
@@ -62,6 +63,7 @@ def execute_one(
         rubric_sha256=RUBRIC_SHA256,
         receipt_schema=RECEIPT_SCHEMA,
         maximum_completion_tokens=2400,
+        reasoning_effort=COMPILER_REASONING_EFFORT,
     )
 
 

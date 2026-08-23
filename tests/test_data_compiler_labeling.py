@@ -11,6 +11,7 @@ from sai.data.data_compiler_labeling import (
     DataCompilerLabelingError,
     build_messages,
     normalize_model_judgment,
+    validate_normalized_judgment,
 )
 from sai.data.nous_compiler_worker import run_shard
 from sai.data.token_stream import canonical_sha256
@@ -205,3 +206,12 @@ def test_compiler_rejects_schema_tamper() -> None:
     raw["cross_domain_bridges"] = ["history-economics"]
     with pytest.raises(DataCompilerLabelingError, match="bridge format"):
         normalize_model_judgment(raw, candidate)
+
+
+def test_stored_compiler_judgment_replays_exact_evidence() -> None:
+    candidate = _candidate()
+    judgment = normalize_model_judgment(_judgment(candidate), candidate)
+    assert validate_normalized_judgment(judgment, candidate) == judgment
+    judgment["evidence_quotes"][0] = "invented evidence"
+    with pytest.raises(DataCompilerLabelingError, match="evidence"):
+        validate_normalized_judgment(judgment, candidate)

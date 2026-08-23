@@ -404,3 +404,84 @@ def normalize_model_judgment(payload: Any, candidate: dict[str, Any]) -> dict[st
     }
     normalized["judgment_sha256"] = canonical_sha256(normalized)
     return normalized
+
+
+def validate_normalized_judgment(
+    payload: Any, candidate: dict[str, Any]
+) -> dict[str, Any]:
+    """Replay a stored compiler judgment against its exact candidate text."""
+
+    candidate = normalize_candidate(candidate)
+    row = _exact(
+        payload,
+        {
+            "schema",
+            "candidate_identity_sha256",
+            "rubric_sha256",
+            "verdict",
+            "epistemic_functions",
+            "domains",
+            "subdomains",
+            "difficulty",
+            "prerequisite_burden",
+            "curriculum_phase",
+            "source_language",
+            "translation_disposition",
+            "translation_priority",
+            "preservation_policy",
+            "recommended_representations",
+            "style",
+            "likely_origin",
+            "grounding_type",
+            "concepts_taught",
+            "prerequisites_assumed",
+            "cross_domain_bridges",
+            "scores",
+            "risks",
+            "confidence_ppm",
+            "evidence_quotes",
+            "transformation_brief",
+            "rationale",
+            "judgment_sha256",
+        },
+        "normalized data compiler judgment",
+    )
+    if (
+        row["schema"] != JUDGMENT_SCHEMA
+        or row["candidate_identity_sha256"] != candidate["candidate_identity_sha256"]
+        or row["rubric_sha256"] != RUBRIC_SHA256
+    ):
+        raise DataCompilerLabelingError("normalized compiler identity differs")
+    raw = {
+        key: row[key]
+        for key in (
+            "verdict",
+            "epistemic_functions",
+            "domains",
+            "subdomains",
+            "difficulty",
+            "prerequisite_burden",
+            "curriculum_phase",
+            "source_language",
+            "translation_disposition",
+            "translation_priority",
+            "preservation_policy",
+            "recommended_representations",
+            "style",
+            "likely_origin",
+            "grounding_type",
+            "concepts_taught",
+            "prerequisites_assumed",
+            "cross_domain_bridges",
+            "scores",
+            "risks",
+            "confidence_ppm",
+            "evidence_quotes",
+            "transformation_brief",
+            "rationale",
+        )
+    }
+    replay = normalize_model_judgment(raw, candidate)
+    if replay != row:
+        raise DataCompilerLabelingError("normalized compiler replay differs")
+    return row

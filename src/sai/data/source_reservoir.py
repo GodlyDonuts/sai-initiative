@@ -27,6 +27,7 @@ class SourceSpec:
     access: str
     epistemic_function: str
     suffix: str
+    excluded_prefixes: tuple[str, ...] = ()
     fill_source: bool = False
 
 
@@ -73,8 +74,9 @@ SOURCE_SPECS = (
         "3ba9d605774198c5868892d7a8deda78031a781f",
         "odc-by-1.0",
         "public",
-        "curated_education_code_and_synthetic_textbooks",
+        "curated_educational_web_and_synthetic_textbooks",
         ".parquet",
+        ("python-edu/",),
     ),
     SourceSpec(
         "open_web_math",
@@ -93,7 +95,7 @@ SOURCE_SPECS = (
         "public",
         "broad_educational_web_fill",
         ".parquet",
-        True,
+        fill_source=True,
     ),
 )
 
@@ -129,6 +131,7 @@ def select_reservoir(
             if (
                 not isinstance(path, str)
                 or not path.endswith(spec.suffix)
+                or any(path.startswith(prefix) for prefix in spec.excluded_prefixes)
                 or path.startswith("/")
                 or ".." in Path(path).parts
                 or isinstance(size, bool)
@@ -192,6 +195,10 @@ def _fetch_inventories(token: str) -> dict[str, list[dict[str, Any]]]:
             sibling
             for sibling in info.siblings
             if sibling.rfilename.endswith(spec.suffix)
+            and not any(
+                sibling.rfilename.startswith(prefix)
+                for prefix in spec.excluded_prefixes
+            )
         ]
         if not siblings:
             raise SourceReservoirError(f"{spec.source_id} data files are absent")
