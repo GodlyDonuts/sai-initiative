@@ -54,6 +54,13 @@ software, and explicitly reward accurate cross-domain bridges. Selection is
 driven by marginal concept, style, and capability coverage under a spiraled
 prerequisite curriculum--not by copying another model's 75--85% web ratio.
 
+The executable replacement for dataset concatenation is described in
+[`docs/SAI_DATA_COMPILER.md`](docs/SAI_DATA_COMPILER.md). It treats global raw
+sources as reality anchors, chooses preservation and English-translation policy,
+derives grounded representations, protects form-bearing human expression,
+constructs verified cross-domain and procedural reasoning, and leaves final
+sampling to a coverage- and model-responsive curriculum controller.
+
 Every training population must pass these gates in order:
 
 1. **Source truth:** reopen exact source bytes; reject corruption, spam,

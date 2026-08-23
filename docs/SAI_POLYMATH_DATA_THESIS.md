@@ -58,7 +58,7 @@ scalar quality ranking.
 
 ### Document metadata
 
-The next labeling schema extends the existing quality, English, domain,
+The executable data-compiler schema extends the existing quality, English, domain,
 difficulty, prerequisite burden, curriculum phase, pedagogical role, concepts,
 risks, evidence spans, and confidence fields with:
 
@@ -71,6 +71,7 @@ risks, evidence spans, and confidence fields with:
 - human-expression and social-world value;
 - style and discourse form;
 - likely organic, synthetic, or transformed provenance;
+- source language, English-translation disposition, and translation priority;
 - cross-domain bridge concepts;
 - novelty relative to the selected pool.
 

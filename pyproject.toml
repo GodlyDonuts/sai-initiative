@@ -56,6 +56,7 @@ sai-compose-semantic-learnability = "sai.data.semantic_learnability_curriculum:m
 sai-build-agent-candidates = "sai.data.agent_candidate_population:main"
 sai-aggregate-agent-labels = "sai.data.agent_labeling:main"
 sai-run-nous-label-shard = "sai.data.nous_label_worker:main"
+sai-run-nous-data-compiler = "sai.data.nous_compiler_worker:main"
 sai-split-documents = "sai.data.split:main"
 sai-build-tokenizers = "sai.tokenizer.build:main"
 sai-qualify-tokenizers = "sai.tokenizer.qualification:main"
