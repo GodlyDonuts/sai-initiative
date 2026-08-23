@@ -255,12 +255,14 @@ are excluded from Git history. The preceding 12-population r2 evidence remains
 byte-replayed at immutable Hugging Face commit
 [`4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc);
 the r3 publication adds the exact 2,048-row OpenCoder population and explicit
-source-content duplicate accounting. Every nonpass row is barred from direct
-admission, and all 10,371 rows remain
-`training_ready=false`. The authorized Stokes evidence root contains the same
-prior publication, dataset card, receipts, and decisions. The new r3 evidence is
-published only after remote byte replay; until then, this local receipt is the
-authoritative current result.
+source-content duplicate accounting. All **28** r3 evidence files plus the
+dataset card were downloaded back byte-identically from Hugging Face commit
+[`444b1c482ff7e510d68f7e7115f1bf1d2087c936`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/444b1c482ff7e510d68f7e7115f1bf1d2087c936).
+The authorized Stokes evidence root contains the same evidence plus the dataset
+card as **29** byte-matched files under manifest SHA-256
+`929c6b46f7e4de7ca17c5fc360337465d33ec62ba284fbd5ca052c7d61a73c89`.
+Every nonpass row is barred from direct admission, and all 10,371 rows remain
+`training_ready=false`.
 
 #### Cross-domain connection compiler
 

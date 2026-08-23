@@ -98,12 +98,15 @@ capacity, not accepted corpus volume.
   source-content overlaps. The current local source-safe publication has
   canonical receipt
   `df34d6507032269351df3d841032e068de5ff986dcbcb7d5f92f212e98e82385`.
-  Its 2,048-row OpenCoder addition and explicit content-duplicate census will be
-  published under `evidence/source-mechanical-quality-gate/20260826-r3/` and
-  called remote evidence only after download replay. The preceding r2 evidence
-  remains immutable at dataset commit
-  `4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc`. A mechanical pass is not semantic
-  or training admission.
+  Its 2,048-row OpenCoder addition and explicit content-duplicate census are
+  published as 28 exact files under
+  `evidence/source-mechanical-quality-gate/20260826-r3/`. All 28 files plus this
+  card were downloaded back byte-identically from immutable dataset commit
+  `444b1c482ff7e510d68f7e7115f1bf1d2087c936`. The authorized Stokes evidence
+  mirror contains those files plus the card as 29 exact files under manifest
+  SHA-256
+  `929c6b46f7e4de7ca17c5fc360337465d33ec62ba284fbd5ca052c7d61a73c89`.
+  A mechanical pass is not semantic or training admission.
 - A host-diverse OpenCoder code-web audit replayed one exact 286,437,437-byte
   Parquet shard and all 197,882 rows. From 162,487 length-eligible unique
   contents, the 8,192-row screen rejected two mechanical failures and 39
