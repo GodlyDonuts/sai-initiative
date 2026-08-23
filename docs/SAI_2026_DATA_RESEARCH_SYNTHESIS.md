@@ -211,6 +211,13 @@ The following factor isolation remains mandatory:
   rejected 12 rows, leaving 148 for dependency-staged Hermes compilation. The
   provider's published 121.7B L2/L3 tokens are not counted as accepted Sai
   tokens.
+- A complete census of the pinned Common Pile Python Enhancement Proposal
+  parent scanned 655 rows, excluded 36 prior-audit identities and one short
+  row, rejected 50 benchmark-overlap rows, and removed one near duplicate. Its
+  567 unique benchmark-disjoint survivors have exact attribution coverage and
+  are dependency-staged for Hermes compilation. This is full coverage of one
+  narrow source parent, not evidence of source-wide quality or training-ready
+  bytes.
 - Pressbooks and Public Domain Review completed bounded source pilots. Their
   3,353 raw rows yielded 3,301 benchmark-disjoint rows and 3,290
   within-source near-deduplicated rows; the full bounded cross-source replay

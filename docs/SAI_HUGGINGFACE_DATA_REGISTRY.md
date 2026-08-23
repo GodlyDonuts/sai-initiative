@@ -507,3 +507,36 @@ and
 No sampled source text, benchmark text, individual contamination decisions,
 credentials, or absolute local paths were published. This evidence grants no
 quality, mixture, bulk-ingestion, curriculum, or training admission.
+
+## Common Pile PEP complete-parent census
+
+The exact `common-pile/python_enhancement_proposals_filtered` parent at
+revision `582170907dd303c207770fceacd38e6abf133edc` was acquired once and
+verified at 3,723,467 compressed bytes with SHA-256
+`4bb61eded5168ac7f0059a92ed242577c67e4fced8c0d019c84bfaca5596c791`.
+The complete scan accounted for 655 rows: 36 audit-population identities and
+one short row were excluded; 50 of the remaining 618 rows overlapped the
+official-public benchmark boundary; and one of the 568 clean rows was removed
+by bounded near-duplicate filtering. The final population contains 567 unique,
+benchmark-disjoint candidates and 567 exact public-domain attribution records.
+
+Canonical receipt SHA-256 values are:
+
+- complete filtered census:
+  `c1f18f641a31672cda7d2b10caf60769df766aa7edea62418d1089645319c92b`;
+- complete survivor compiler population:
+  `255e9aa09ec8d2f00c01db05b8eabb6bd06d9f93c77d59b1ed6e8ce2caf7a5ba`;
+- source-safe publication envelope:
+  `3eeb07c28d575542d87a670396452a155f0c97aaaeaa15f19d526f210568168e`.
+
+The respective file SHA-256 values are
+`acb93f59f4f66387f9a9c4439fc3b5ef6858b50454ea9b21e6d810b6b9c08878`,
+`d75940bbe96a3a5f179199b9ac420829eee832e66a33a96c806dcbd39a84b02b`,
+and
+`4f05f5b7dbd97ed49fcc825fbf34d84933d959fc466f39f66ded296d1fc4040b`.
+Only those three source-safe receipts are eligible for the public registry.
+Raw PEP text, Hermès excerpts, text-free lineage containing local source
+locators, individual decontamination decisions, and nested receipts containing
+absolute local paths remain unpublished. Hermès compilation is dependency-
+staged; quality, representation verification, curriculum placement, and
+training admission remain false.

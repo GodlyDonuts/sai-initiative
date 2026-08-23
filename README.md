@@ -222,6 +222,40 @@ population receipt, and 20 batch-custody receipts were uploaded and replayed
 byte-for-byte in Hugging Face dataset commit
 [`28227ed9ba5a22887c2a0bb3bee20502e0982253`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/28227ed9ba5a22887c2a0bb3bee20502e0982253).
 
+#### Complete Python Enhancement Proposal census
+
+The 32-row source-disjoint Common Pile confirmation recovered the Python
+Enhancement Proposal lane as a narrow but unusually traceable reality anchor:
+32/32 rows received `retain` judgments, 27/32 were routed to representation
+verification, 2/32 were quarantined, all 32 carried the recognized
+`LicenseRef-Public-Domain` declaration, and none overlapped the active
+benchmark boundary. That evidence authorizes a complete filtered census of
+one pinned parent; it does not authorize source-wide quality or training.
+
+Sai downloaded the exact 3,723,467-byte
+`common-pile/python_enhancement_proposals_filtered` parent at revision
+`582170907dd303c207770fceacd38e6abf133edc` and verified compressed SHA-256
+`4bb61eded5168ac7f0059a92ed242577c67e4fced8c0d019c84bfaca5596c791`.
+The exhaustive pass scanned **655 rows**, removed 36 identities already used
+in audit populations and one mechanically short row, then screened all 618
+remaining rows against the official-public benchmark boundary. It rejected
+50 overlapping rows, near-deduplicated the 568 clean rows into **567 unique
+candidates**, and joined every survivor to an exact public-domain attribution
+record. The compressed parent was removed after the one-host census.
+
+All 567 survivors now form a create-only Hermès compiler population with
+8,822,685 excerpt bytes and complete text-free lineage. Compilation is
+dependency-staged after the already-running UltraData tier audit so the proxy
+is not overloaded and no identity is scored twice. The census receipt is
+`c1f18f641a31672cda7d2b10caf60769df766aa7edea62418d1089645319c92b`,
+the compiler-population receipt is
+`255e9aa09ec8d2f00c01db05b8eabb6bd06d9f93c77d59b1ed6e8ce2caf7a5ba`,
+and the source-safe publication envelope is
+`3eeb07c28d575542d87a670396452a155f0c97aaaeaa15f19d526f210568168e`.
+Source text, individual decontamination decisions, and machine-local paths
+remain unpublished. The 567 candidates remain non-training-ready until
+Hermès quality compilation and representation verification close.
+
 The corrected reservoir rights inventory now binds **46 source lanes, 45 exact
 repository revisions, 42,600 files, and all 23,680,076,298,761 candidate
 bytes**. Five lanes have an exact manifest declaration with obligations, 31
@@ -962,6 +996,8 @@ hash-bound**; the 8T-token spiral is **prospective**; one production book and
 224 Common Pile confirmation rows are **judged**; two bounded source pilots
 have 3,290 benchmark-screened, near-deduplicated rows; the new UltraData Math
 L2/L3 screen has 148/160 benchmark-disjoint rows awaiting Hermes compilation;
+a complete PEP parent census has 567 benchmark-disjoint, near-deduplicated
+survivors dependency-staged for Hermès compilation;
 a live source-page probe observed matching declarations for 1,719 pilot rows
 without establishing governing scope; and the reservoir as a whole is **not
 training-ready**.
