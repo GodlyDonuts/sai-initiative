@@ -136,6 +136,18 @@ Parquet publication remain fail-closed. Stokes's 10 Gbps connection is reserved
 for transformations and verification that cannot use zero-download Hugging
 Face server-side copies; its network link is not the present bottleneck.
 
+The physical lake is now joined to the exact reservoir rights inventory in a
+38-source fail-closed admission matrix under canonical receipt
+`e70b65ebec4d451be5d4a7094fe798e1154019a0db79cf64d99ec1ff6ee26ab6`.
+It accounts for every one of the 13,974 materialized files and all
+8,802,247,613,960 bytes. Of those bytes, 5,027,859,142,584 require per-row
+license evidence, 3,100,801,687,198 have recognized declarations whose
+obligations still must be applied, and 673,586,784,178 require source-terms
+resolution. Every source separately exposes incomplete language/translation,
+decontamination, exact and semantic deduplication, full-population Hermes,
+representation, prerequisite, and spiral-curriculum gates. Physical custody can
+therefore never be mistaken for silent admission.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:

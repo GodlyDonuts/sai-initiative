@@ -86,3 +86,12 @@ custody does not establish:
 
 The source lake solves availability and immutable identity. The data compiler
 must still solve admission, transformation, and pedagogy.
+
+The executable admission join is
+`src/sai/data/materialized_source_admission_matrix.py`. Release r1 binds the
+source-lake receipt to reservoir rights-inventory v2 and emits one row per
+materialized source component. Its canonical receipt is
+`e70b65ebec4d451be5d4a7094fe798e1154019a0db79cf64d99ec1ff6ee26ab6`.
+The matrix accounts for all 38 source components, 13,974 files, and
+8,802,247,613,960 bytes without persisting source text or making a legal or
+training-readiness claim.
