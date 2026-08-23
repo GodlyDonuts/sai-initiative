@@ -318,6 +318,16 @@ begins only when its exact input receipt exists, preserves already-complete shar
 summaries, and retries only unresolved identities when the provider rate-limits a
 request.
 
+Two previously interrupted but fully acquired teacher populations are now also
+dependency-staged for exact resumption. The first contains 1,024 byte-weighted
+documents across FinePDFs, FineWeb-Edu, SmolLM, FineMath, Dolma, and OpenWebMath;
+484 existing receipts replay against the current compiler rubric, leaving 540.
+The second contains 1,007 benchmark-clean PubMed full texts; 17 receipts replay,
+leaving 990. Four low-concurrency workers begin only after both active source
+audits close, reuse the shared shard lock, and automatically seal complete
+aggregates and source-work decisions. These 2,031 rows broaden future teacher
+distillation evidence; they do not authorize bulk source admission.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:
