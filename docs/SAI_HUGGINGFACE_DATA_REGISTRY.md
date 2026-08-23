@@ -101,7 +101,9 @@ the 61,025,632 byte code index has SHA-256
 `8e1238e2fe382b532638dd82692647ebf431eb99905f2c64c9b487654f3ecb86`.
 Remote LFS object sizes and SHA-256 identifiers, plus the downloaded receipt,
 replayed against the local files. The index contains hashes only, never raw
-benchmark prompts or answers.
+benchmark prompts or answers. This r1 boundary is immutable audit history, not
+the active gate: its code policy admitted punctuation-only windows and has been
+superseded by the substantive-window v2 policy.
 
 Dataset commit
 [`5dc89bfeceadf56663a8f00c479f5d41d5229671`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5dc89bfeceadf56663a8f00c479f5d41d5229671)
@@ -115,6 +117,12 @@ published. The exact receipts are:
 - frontier 512: `f2e3c82b1386f6c668757a53fc6dd5e554ea79b6ecf992667ac155d3d74c933c`;
 - Common Pile 124: `71fcf44f96340feb73c399c82b4be00fd8c555bf5287c78b1464d9ad06bbb54c`;
 - PleIAs/Nemotron expansion 91: `cca8dfbd408d6f4bf8914e8e64b78c75db05cf927734131160f92099d741524b`.
+
+These five r1 screen receipts are also superseded. Their 286/1,879 overall and
+77/96 Nemotron conclusions are retracted; a source-side v2 eligibility replay
+measured preliminary counts of 69/1,879 and 25/96 respectively. The corrected
+create-only index and replacement screen receipts will be published under a new
+registry path rather than overwriting these historical artifacts.
 
 Credentials never enter the registry. The local `.env` is ignored by Git,
 mode-restricted, and used only by authenticated clients.

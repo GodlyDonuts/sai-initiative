@@ -236,38 +236,39 @@ first where the screen found recoverable signal. The aggregate receipt is
 the deterministic source-work ledger receipt is
 `7cd1a6b040eaa00a40eb37f2578045780815931d6f712a43d5bd33848a4e250e`.
 
-The official public-benchmark contamination boundary is also executable. It
+The official public-benchmark contamination boundary is executable, but its
+first code-shingle policy has been superseded. It
 projects 18,235 rows from MMLU-Pro, HumanEval+, MBPP+, CorrectBench,
 LiveCodeBench release v6, LongBench Pro, LiveBench 2024-11-25, IFEval, and MuSR
 without retaining benchmark text. The strictly ordered binary indexes contain
 27,979,728 unique 13-token word shingles (895,351,296 bytes) and 1,907,051
-unique 8-token code shingles (61,025,632 bytes). Both local index hashes,
-ordering, source-row accounting, and memory-mapped membership replay passed.
-The receipt is
-`073bb9f8a9ab9954ed3913b2414ff718e8f86a5020b2eb1feb18069cd75510f1`;
-the non-reversible index is mirrored in Hugging Face commit
+unique 8-token code shingles (61,025,632 bytes). Those r1 artifacts passed
+their byte-level replay, but the code index also admitted punctuation-only
+windows. Its receipt,
+`073bb9f8a9ab9954ed3913b2414ff718e8f86a5020b2eb1feb18069cd75510f1`,
+and non-reversible index are mirrored in Hugging Face commit
 [`ad178281de02625f043359a89070e905944452b9`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/ad178281de02625f043359a89070e905944452b9).
+It remains immutable audit history but is not an active admission gate.
 RULER remains an explicit gap until its generator is pinned to Sai's exact
 tokenizer and length geometry. Building the boundary makes contamination
 testing possible; it does not retroactively decontaminate any source bytes.
 
-It has now been applied to every sealed audit population. Across 1,879 distinct
-screen candidates, 286 (15.2%) contain at least one exact public-benchmark
-shingle and are ineligible for a clean pretraining lane. The most important
-finding is source-specific: **77 of 96 Nemotron specialized-reasoning rows
-(80.2%) overlap the boundary**. Sai therefore treats that apparently attractive
-reasoning source as a contamination quarantine, not premium training data.
+The resulting r1 population conclusion is retracted. The 286/1,879 overall
+count and 77/96 Nemotron count were materially inflated by nonsubstantive code
+windows and must not drive source selection. The v2 rule keeps exact 13-token
+word matching and admits an exact 8-token code window only when it has at least
+four alphanumeric-bearing tokens, three distinct alphanumeric-bearing tokens,
+and 16 total characters. A source-side replay under that fixed eligibility rule
+measured 69/1,879 flags: 42 rows with word overlap and 27 additional eligible
+code-only rows. Nemotron specialized reasoning fell to 25/96, comprising five
+word-overlap rows and 20 additional code-only rows. These are preliminary replay
+figures until the create-only v2 index and five new screen receipts finish.
+Neither result licenses bulk source admission or rejection.
 
-The same screen found 0/160 overlaps in FineWeb2-HQ, 0/120 in the current
-Ultra-FineWeb English slice, 0/21 in Nemotron Legal, 4/199 (2.0%) in the weighted
-FineWeb-Edu sample, 132/596 (22.1%) in weighted FinePDFs, 12/48 (25.0%) in
-FineMath, and 10/35 (28.6%) in OpenWebMath. Four-row Common Pile strata are
-discovery evidence only—high observations in regulations, USGPO, or arXiv
-papers require larger source-specific confirmation rather than extrapolation.
-Every flagged row will be excluded or source-disjointly regenerated; a source's
-marketing label never overrides the boundary. The five screen receipts and
-source-safe aggregates were replayed from Hugging Face dataset commit
+The r1 screens remain immutable evidence of the discovered policy failure in
+Hugging Face dataset commit
 [`5dc89bfeceadf56663a8f00c479f5d41d5229671`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5dc89bfeceadf56663a8f00c479f5d41d5229671).
+They are explicitly superseded and are not active contamination decisions.
 
 [PleIAs Common Corpus](https://huggingface.co/datasets/PleIAs/common_corpus)
 adds a distinct 2.27T-token, traceable open corpus rather than another opaque
