@@ -386,6 +386,18 @@ downloaded back byte-identically from Hugging Face commit
 The same two files are mirrored under the authorized Stokes evidence root;
 their SHA-256 values are `e6570108…105affb` and `410f8040…03ba87`.
 
+The code-web population now has a prospective **276-row promotion screen**:
+the exact identity buckets `64..71` and `96..103` under the frozen 128-shard
+partition. This boundary was fixed after 47 receipts exposed a low initial
+yield but before any screen result existed. The full 2,048-row audit is promoted
+only if the screen routes at least 30% of rows to representation verification,
+quarantines no more than 25%, assigns `computer_science` to at least 60%, and
+achieves mean educational-value and technical-depth scores of at least 2.5/4
+each. The wrappers pause without canceling an in-flight request as soon as all
+16 screen-shard summaries exist. Failure reallocates scarce Hermès capacity to
+a better code source; it does not relabel the failed web material or weaken the
+thresholds.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:
