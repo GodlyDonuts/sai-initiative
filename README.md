@@ -86,14 +86,22 @@ curriculum artifacts, and final training shards. The registry never treats a
 downloaded dataset as training-ready and records reference-only sources without
 copying bytes when their terms prohibit redistribution.
 
+Hugging Face may display an inherited Parquet split named `train` or `test`.
+Those names describe the upstream file layout, **not Sai admission state**. A
+row under an upstream `train` split can still be corrupt, contextless, duplicated,
+non-English, contaminated, or rights-blocked; an upstream `test` split is never
+silently treated as Sai evaluation data. Only a future hash-receipted
+`verified/` → `curriculum/` → `training/` release may be consumed by training.
+
 #### Materialized Hugging Face source-lake checkpoint
 
 The first physical source-lake boundary is now complete. At exact Hugging Face
 dataset head
 [`cc8576fbb3f949bdaf59049a150c1fa1d35f47c3`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/cc8576fbb3f949bdaf59049a150c1fa1d35f47c3),
 Sai has **13,974 byte-identical LFS source shards containing
-8,802,247,613,960 bytes (8.0055975686 TiB)**. This exceeds the exact 8 TiB
-physical-materialization target by 6,154,591,752 bytes. Every included
+8,802,247,613,960 bytes (8.802247614 TB; 8.0055975686 TiB)**. This exceeds the
+current 8.5 TB decimal registry-capacity target by 302,247,613,960 bytes and the
+earlier 8 TiB binary target by 6,154,591,752 bytes. Every included
 destination object was replayed against the size and SHA-256 of its pinned
 upstream object; the replay found zero identity mismatches.
 
@@ -107,7 +115,7 @@ upstream object; the replay found zero identity mismatches.
 | Nemotron specialized v1.2 | 90 | 53,621,158,028 | Complete source snapshot |
 | FineMath-4plus | 64 | 18,365,184,633 | Complete source snapshot |
 | Nemotron Legal v1 | 21 | 6,990,697,508 | Complete source snapshot |
-| **Total** | **13,974** | **8,802,247,613,960** | **8 TiB physical target met** |
+| **Total** | **13,974** | **8,802,247,613,960** | **8.5 TB and 8 TiB physical targets met** |
 
 Hugging Face accepted five deterministic FinePDFs copy batches and then
 returned a public-storage-quota `403` before batch six. No partial sixth batch
@@ -182,6 +190,53 @@ These profiles remain `training_ready=false`: official-boundary
 decontamination, semantic/subdocument deduplication, content-density analysis,
 Hermes judgment, rights obligations, and final curriculum assignment are still
 required.
+
+#### Conservative FineMath candidate qualification
+
+The next population-wide pass intersected score 5, English confidence ≥0.90,
+explicit `found_math=true`, 128–32,767 upstream tokens, at least 512 UTF-8
+bytes, and a valid source host. From all 6,699,493 rows it retained **56,654
+mechanical candidates**, **434,498,432 text bytes**, and **117,445,585 upstream
+tokens**. This is a candidate filter, not a quality-admission shortcut.
+
+Exact matching against the frozen 27,979,728-word-shingle and 475,804-code-
+shingle official benchmark boundary then retained **52,277 rows** and rejected
+**4,377**. The cause-complete receipt reports 1,422 rows with word overlap,
+3,290 with eligible-code overlap, and 335 with both; the candidate population
+had zero normalized-exact duplicates. A separate 32-CPU replay independently
+reproduced receipt
+`b0ba86aaa60dddfdfae6653882d489fde1ecf3ab0f043d9a3954bdd38e191277`
+and output SHA-256
+`c61a840375572bca1a9872d50d99c66ee0452f8f9be4aacd89c1cd7af5d84a7a`.
+
+After a contextless-MCQ-answer-key failure mode was identified in the broader
+source lake, a source-agnostic high-precision filter was added and replayed over
+all 52,277 survivors. It found zero instances matching the strict bare-key
+signature in this conservative FineMath subset, so it changed no document
+identities. That does **not** absolve the wider lake: completed Hermès judgments
+already flag 36 answer-farm rows, 149 SEO/content-farm rows, and 97 corrupted
+rows among 2,243 audited documents. These are hard admission exclusions. The
+post-filter 512-row semantic audit population is frozen at receipt
+`de365117bee119d224196a3a712518a2814214e130580bf643ef261c56327e1b`.
+
+#### Cross-domain connection compiler
+
+Hermès has already proposed cross-domain metadata for **2,105 of 2,243**
+completed source judgments: **6,751 assignments**, **730 distinct directed
+domain-pair labels**, and **22,345 distinct concept labels**. These are bridge
+proposals, not finished training examples.
+
+Sai now converts that metadata into paired-source development work. A frozen
+512-pair population uses 1,381 high-confidence English anchors across 290
+directed bridge labels, caps each label at eight pairs and each source anchor at
+two, and requires different candidate and content identities. The paired
+synthesis contract requires exact evidence from both anchors, a conceptual
+explanation, worked transfer problem, counterexample, analogy limits,
+prerequisite map, and verification questions. Generated rows remain
+`training_ready=false` until independent claim verification, benchmark
+decontamination, deduplication, and transfer ablations close. The development
+proposal receipt is
+`0ef933e21252d060a4691cc9f5c63441bd40f4a796d5952db6651298c3c133e5`.
 
 ### The eight-trillion data program
 

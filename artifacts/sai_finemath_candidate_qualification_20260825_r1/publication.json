@@ -1,0 +1,66 @@
+{
+  "schema": "sai-finemath-candidate-qualification-publication-v1",
+  "status": "complete_source_safe_candidate_qualification_not_admitted",
+  "source": {
+    "repository": "HuggingFaceTB/finemath",
+    "revision": "e92b25a616738fe95dc186b64dfb19f9c8525594",
+    "subset": "finemath-4plus",
+    "source_rows": 6699493,
+    "source_upstream_tokens": 9573187002
+  },
+  "mechanical_candidate": {
+    "rows": 56654,
+    "text_utf8_bytes": 434498432,
+    "upstream_tokens": 117445585,
+    "aggregate_receipt_sha256": "14683eefb1d02686e1777386d44852c83cbf954bcdee2d924cb25a56da63f6ab",
+    "aggregate_receipt_file_sha256": "9df1536c823d41695e2e3cdff105c19c1c29af87f4dc534b9fc1ef8c76c8fd8f"
+  },
+  "official_boundary": {
+    "scanned_rows": 56654,
+    "accepted_rows": 52277,
+    "dropped_rows": 4377,
+    "word_overlap_rows": 1422,
+    "code_overlap_rows": 3290,
+    "rows_with_both_overlap_types": 335,
+    "normalized_exact_duplicate_rows": 0,
+    "output_bytes": 409565808,
+    "output_sha256": "c61a840375572bca1a9872d50d99c66ee0452f8f9be4aacd89c1cd7af5d84a7a",
+    "receipt_sha256": "b0ba86aaa60dddfdfae6653882d489fde1ecf3ab0f043d9a3954bdd38e191277",
+    "receipt_file_sha256": "ff4bea824cb7f7c74d18f3582d127bb6380717cc1f0ca582d3e727b5af479b9f",
+    "independent_parallel_replay_passed": true,
+    "validation_output_file_sha256": "8cabb2f8ab911fa539c54ec5004247d9cb42af38ea01d776022812b1c8c6407e"
+  },
+  "contextless_answer_key_filter": {
+    "scanned_rows": 52277,
+    "accepted_rows": 52277,
+    "dropped_rows": 0,
+    "receipt_sha256": "6a9a25a0c692dea6bbccee2efac72479bf049de61ac6185c5c2aee57291a67c5",
+    "receipt_file_sha256": "7426b3d6b089a45702eb11d9accbed894d4c9f89fd9c8571bea8c0880c62f6d2"
+  },
+  "semantic_audit_population": {
+    "rows": 512,
+    "seed": 20260826,
+    "population_sha256": "e0553ee70b24176b0690789beccc989f3f548aa8b5690a867d0878a506574022",
+    "receipt_sha256": "de365117bee119d224196a3a712518a2814214e130580bf643ef261c56327e1b",
+    "receipt_file_sha256": "e0cd190a789945dbdc53a381a2815528f7b2cdb574517366097e4fc88443c779"
+  },
+  "stokes_jobs": {
+    "extraction_array": 817951,
+    "extraction_aggregate": 817952,
+    "decontamination_r1": 817953,
+    "decontamination_cause_complete": 818017,
+    "independent_replay": 818018,
+    "initial_audit_population": 818019,
+    "contextless_answer_key_filter_and_replay": 818020,
+    "filtered_audit_population": 818021,
+    "all_exit_codes_zero": true,
+    "requeue_disabled": true
+  },
+  "source_text_published_in_evidence": false,
+  "semantic_quality_review_complete": false,
+  "rights_admission_complete": false,
+  "curriculum_assignment_complete": false,
+  "training_ready": false,
+  "four_b_training_authorized": false,
+  "receipt_sha256": "08dbfcd19b851e87cefe6ee82ebe7e0a76caaacefbcd0fadedd73dba83fba2fa"
+}
