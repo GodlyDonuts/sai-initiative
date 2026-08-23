@@ -198,6 +198,19 @@ Wikipedia-family reference material, and spoken explanation. Sai uses the
 filtered releases as source candidates, retains each component's exact
 revision, and still requires per-record rights and quality review.
 
+Five deterministic coverage populations now bind **1,879 source candidates**
+across the original, weighted, frontier, Common Pile, and v3-expansion screens.
+The cross-population exact-content replay found zero duplicate pairs; its
+receipt is
+`e31954f5bd2b220004c6b19c0dd35949052f74a464f0ad009af476e2f6dff0be`.
+This is an exact result for the screened candidates, not a claim about the full
+21.537 TiB reservoirs and not a near-duplicate result. The source-safe lineage,
+population receipts, duplicate reports, and combined report were uploaded and
+re-downloaded byte-for-byte in Hugging Face dataset commit
+[`de17529bd3ba9ea67355c26985b70350e6b8377f`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/de17529bd3ba9ea67355c26985b70350e6b8377f).
+Raw candidates and evidence-bearing compiler judgments were deliberately not
+redistributed through that public commit.
+
 [PleIAs Common Corpus](https://huggingface.co/datasets/PleIAs/common_corpus)
 adds a distinct 2.27T-token, traceable open corpus rather than another opaque
 web mixture. Its rows expose collection, open-status, license, language,

@@ -57,5 +57,26 @@ card.
 - FineMath, Dolma, and authored-source artifacts stay staged until their exact
   source-specific license and redistribution bundles are complete.
 
+## Frontier audit mirror
+
+Dataset commit
+[`de17529bd3ba9ea67355c26985b70350e6b8377f`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/de17529bd3ba9ea67355c26985b70350e6b8377f)
+adds seven source-safe files and passed a byte-for-byte post-upload replay. The
+512-row frontier screen has population receipt
+`b772920d9c86d5eddeae69f338e53a7d1b520f161f034b0616c3ee2140088631`
+and zero-pair duplicate receipt
+`26ebacefe45c320a9f319ecf42f63fe5c510236879581e1cbc48293bc65fc8b1`.
+The 91-row PleIAs/Nemotron expansion has population receipt
+`2c91d84c8ed64a008f46c72062a5f387ce6bebac1a08ad08fa41d9079a05b5eb`
+and zero-pair duplicate receipt
+`35df65eee58e3a4b67cb2f409666a201350cdba8c27438ff992b53a7b3397f8b`.
+
+The combined exact-content report covers all 1,879 candidates in the five
+screen populations and reports zero cross-population pairs under receipt
+`e31954f5bd2b220004c6b19c0dd35949052f74a464f0ad009af476e2f6dff0be`.
+This does not estimate full-reservoir or semantic duplication. Only lineage,
+population receipts, duplicate receipts, and the combined statistics were
+published; raw candidate text and evidence-bearing judgments remain local.
+
 Credentials never enter the registry. The local `.env` is ignored by Git,
 mode-restricted, and used only by authenticated clients.

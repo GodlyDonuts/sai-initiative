@@ -181,6 +181,15 @@ rows continue, and reruns skip already completed identities. The worker persists
 no portal credential, enables no tools, and marks every output
 `training_ready=false`.
 
+Model responses sometimes preserve every source token while normalizing Unicode
+compatibility, case, or whitespace. The compiler now recovers such evidence only
+when the normalized token sequence maps to exactly one literal source span. It
+then stores the exact source bytes in the normalized judgment while retaining
+the raw model-JSON hash and a text-free repair record with both quote hashes and
+source byte offsets. Exact quotes are unchanged; missing, punctuation-altered,
+or ambiguously repeated spans still fail closed. The frozen rubric hash remains
+`3becf24768708f710439c053b1d0db1513ba03680c83f39503f007aa6a2a61c6`.
+
 This is metadata compilation only. Translation, synthesis, procedural
 generation, verification, adaptive selection, and packing are separate compiler
 stages that must preserve this lineage.
