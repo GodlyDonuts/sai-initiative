@@ -76,9 +76,11 @@ def _pilot(tmp_path: Path) -> Path:
     raw = root / "raw.jsonl"
     decontaminated = root / "decontaminated.jsonl"
     near_deduplicated = root / "near-deduplicated.jsonl"
+    attribution = root / "attribution.jsonl"
     raw.write_text('{"raw":1}\n')
     decontaminated.write_text('{"clean":1}\n')
     near_deduplicated.write_text('{"deduplicated":1}\n')
+    attribution.write_text('{"attribution":1}\n')
     decontamination_receipt = _seal(
         root / "decontamination-receipt.json",
         {"schema": "test-decontamination", "output": {"documents": 1}},
@@ -86,6 +88,10 @@ def _pilot(tmp_path: Path) -> Path:
     near_duplicate_receipt = _seal(
         root / "near-duplicate-receipt.json",
         {"schema": "test-near-duplicate", "output": {"documents": 1}},
+    )
+    attribution_receipt = _seal(
+        root / "attribution-receipt.json",
+        {"schema": "test-attribution", "output": {"records": 1}},
     )
     _seal(
         root / "receipt.json",
@@ -121,6 +127,22 @@ def _pilot(tmp_path: Path) -> Path:
                 "output_sha256": sha256_file(near_deduplicated),
                 "documents_dropped": 0,
             },
+            "attribution_manifest": {
+                "receipt_path": "attribution-receipt.json",
+                "receipt_file_sha256": sha256_file(
+                    root / "attribution-receipt.json"
+                ),
+                "receipt_sha256": attribution_receipt["receipt_sha256"],
+                "output_path": attribution.name,
+                "output_bytes": attribution.stat().st_size,
+                "output_sha256": sha256_file(attribution),
+                "records": 1,
+                "obligation_counts": {
+                    "attribution_required": 1,
+                    "share_alike_required": 0,
+                },
+            },
+            "rights_declaration_lineage_replay_complete": True,
             "global_cross_source_near_duplicate_filter_complete": False,
             "rights_verification_complete": False,
             "representation_verification_complete": False,

@@ -266,6 +266,13 @@ The pilot counts short and oversized documents instead of truncating them, and
 it remains `training_ready=false` until rights, global deduplication, and
 representation verification are independently complete.
 
+`sai.data.attribution_manifest` replays every retained pilot identity back to
+its exact raw repository revision, source file, and row index. It emits no
+source text; it records the original and canonical license classification plus
+attribution and share-alike obligations. Exact retained-document coverage is a
+pipeline-lineage result, not external provenance verification or legal
+clearance, and the receipt keeps those distinctions explicit.
+
 After two or more bounded source pilots complete,
 `sai.data.cross_source_pilot_duplicates` constructs a deterministic
 source-stratified sample with a global bottom-k fill. It replays every selected

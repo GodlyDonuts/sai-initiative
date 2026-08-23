@@ -146,7 +146,11 @@ def _pilot_row(root: Path) -> dict[str, Any]:
     raw = receipt.get("raw_population")
     decontamination = receipt.get("decontamination")
     near_duplicate = receipt.get("near_duplicate_filter")
-    if not all(isinstance(row, dict) for row in (raw, decontamination, near_duplicate)):
+    attribution = receipt.get("attribution_manifest")
+    if not all(
+        isinstance(row, dict)
+        for row in (raw, decontamination, near_duplicate, attribution)
+    ):
         raise DataYieldLedgerError("pilot conversion binding differs")
     _bound_file(root, raw)
     decontamination_output = {
@@ -161,13 +165,25 @@ def _pilot_row(root: Path) -> dict[str, Any]:
     }
     _bound_file(root, decontamination_output)
     _bound_file(root, near_duplicate_output)
+    _bound_file(
+        root,
+        {
+            "path": attribution.get("output_path"),
+            "bytes": attribution.get("output_bytes"),
+            "sha256": attribution.get("output_sha256"),
+        },
+    )
     decontamination_receipt = _bound_nested_receipt(root, decontamination)
     near_duplicate_receipt = _bound_nested_receipt(root, near_duplicate)
+    attribution_receipt = _bound_nested_receipt(root, attribution)
     if (
         decontamination_receipt.get("output", {}).get("documents")
         != decontamination.get("output_documents")
         or near_duplicate_receipt.get("output", {}).get("documents")
         != near_duplicate.get("output_documents")
+        or attribution_receipt.get("output", {}).get("records")
+        != attribution.get("records")
+        or attribution.get("records") != near_duplicate.get("output_documents")
     ):
         raise DataYieldLedgerError("pilot nested output coverage differs")
     return {
@@ -182,6 +198,11 @@ def _pilot_row(root: Path) -> dict[str, Any]:
         "near_deduplicated_bytes": near_duplicate.get("output_bytes"),
         "near_duplicate_documents_dropped": near_duplicate.get(
             "documents_dropped"
+        ),
+        "attribution_records": attribution.get("records"),
+        "obligation_counts": attribution.get("obligation_counts"),
+        "rights_declaration_lineage_replay_complete": receipt.get(
+            "rights_declaration_lineage_replay_complete"
         ),
         "global_cross_source_near_duplicate_filter_complete": receipt.get(
             "global_cross_source_near_duplicate_filter_complete"

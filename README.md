@@ -329,6 +329,14 @@ Documents outside 200 bytes to 128 KiB are counted rather than silently
 truncated. Pilot rows still remain non-training data until full rights,
 cross-source deduplication, and representation verification close.
 
+Every surviving pilot document also receives a text-free attribution companion
+record. The replay reconstructs the exact upstream repository revision,
+source file, and row index from the raw population; reclassifies the original
+license declaration; verifies that its canonical license matches the cleaned
+document; and preserves attribution/share-alike obligations. This closes
+internal lineage loss without claiming external provenance verification or
+legal clearance, both of which remain explicit open fields.
+
 `sai.data.cross_source_pilot_duplicates` is the next no-idle-gap gate. Once at
 least two source pilots exist, it preserves a deterministic per-source floor,
 fills unused capacity by a global bottom-k key, and exhaustively compares every

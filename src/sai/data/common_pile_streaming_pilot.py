@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
+from sai.data.attribution_manifest import build_manifest as build_attribution_manifest
 from sai.data.bounded_near_duplicate_filter import build_filter as build_near_duplicate
 from sai.data.common_pile_audit_population import (
     _declared_license,
@@ -430,6 +431,14 @@ def build_pilot(
             near_duplicate_path,
             near_duplicate_receipt_path,
         )
+        attribution_path = output_root / "attribution_manifest.jsonl"
+        attribution_receipt_path = output_root / "attribution_receipt.json"
+        attribution = build_attribution_manifest(
+            raw_path,
+            near_duplicate_path,
+            attribution_path,
+            attribution_receipt_path,
+        )
         payload = {
             "schema": SCHEMA,
             "status": "complete_nontraining_pilot",
@@ -480,11 +489,25 @@ def build_pilot(
                 "output_bytes": near_duplicate_path.stat().st_size,
                 "output_sha256": sha256_file(near_duplicate_path),
             },
+            "attribution_manifest": {
+                "receipt_path": attribution_receipt_path.name,
+                "receipt_file_sha256": sha256_file(attribution_receipt_path),
+                "receipt_sha256": attribution["receipt_sha256"],
+                "output_path": attribution_path.name,
+                "output_bytes": attribution_path.stat().st_size,
+                "output_sha256": sha256_file(attribution_path),
+                "records": attribution["output"]["records"],
+                "obligation_counts": attribution["obligation_counts"],
+                "source_text_persisted_in_manifest": False,
+                "external_source_provenance_verified": False,
+                "legal_clearance_established": False,
+            },
             "parent_removed_after_pilot": True,
             "maximum_simultaneous_parent_files": 1,
             "full_source_ingestion_authorized": False,
             "bounded_pilot_near_duplicate_filter_complete": True,
             "global_cross_source_near_duplicate_filter_complete": False,
+            "rights_declaration_lineage_replay_complete": True,
             "rights_verification_complete": False,
             "representation_verification_complete": False,
             "training_ready": False,
