@@ -31,6 +31,85 @@ class FrontierSourceSpec:
     epistemic_function: str
 
 
+COMMON_PILE_FILTERED_SOURCES = (
+    (
+        "arxiv_abstracts",
+        "dc1ceab4755eb037ec61e49cf1350dab7ceee6e7",
+        "scientific_abstracts",
+    ),
+    ("arxiv_papers", "033cf7f53f9b348deec868c1a5a48484f3ee9e52", "scientific_papers"),
+    (
+        "biodiversity_heritage_library",
+        "0486ed637d0d7aaff264bc77fe21a7444e0215cd",
+        "biodiversity_history_and_science",
+    ),
+    (
+        "caselaw_access_project",
+        "50e1961a5ed8fdddcee64c9e66e1338de8953b63",
+        "court_opinions",
+    ),
+    ("cccc", "03a3de5713a0bb23267d26724346508af0f25327", "licensed_cultural_web"),
+    (
+        "data_provenance_initiative",
+        "8f5afcf585e4618ff12f5b6d49cb5242faf5afbd",
+        "data_provenance_records",
+    ),
+    ("doab", "defb24ca72ef6aba6ce0228b669eec06dcfbffbc", "open_access_books"),
+    ("foodista", "bf2c7aaa2d32be1e7d4d4779a6017407236831de", "cooking_and_food"),
+    ("github_archive", "52282fe96670254bdc0d44dd718ee7a27210ee85", "software_history"),
+    (
+        "library_of_congress",
+        "56725c7aa1bb320703e22eb5f42903173d5bac3d",
+        "library_books_and_cultural_history",
+    ),
+    ("libretexts", "70388bca52b4a93515e14b1d56618fd7944988fd", "open_textbooks"),
+    ("news", "59aaa8f104e189e6fb8033f0ed319c5c343a03b1", "open_news"),
+    ("oercommons", "506b6159dadcbc0dc67611cea024eedb04232fb2", "open_education"),
+    ("peS2o", "297747513bfb0ff1fbf61ddad3b03319d0f04597", "open_academic_papers"),
+    (
+        "pre_1929_books",
+        "23f9d96dbb1db3324bbc9fbfe1f8299cc799c4d1",
+        "public_domain_books",
+    ),
+    ("pressbooks", "1a1d3b50d77f834370f8eb4c0d174668dd1676bb", "open_textbooks"),
+    (
+        "project_gutenberg",
+        "3cdf6879c807f4e4e063f2ceb23bc268d8c29ab7",
+        "public_domain_literature",
+    ),
+    (
+        "public_domain_review",
+        "efc7f21259d069a27d6ca3655f74fda969f82b01",
+        "curated_cultural_history",
+    ),
+    ("pubmed", "c156f0569a92d8f2edc33cebe1f72f7d3e1cae84", "biomedical_papers"),
+    (
+        "python_enhancement_proposals",
+        "582170907dd303c207770fceacd38e6abf133edc",
+        "software_standards_and_design",
+    ),
+    (
+        "regulations",
+        "3327364490dfc7929009226ad667eceb2441d93a",
+        "government_regulations",
+    ),
+    (
+        "stackexchange",
+        "c0ac7373830c688a43fc12d1988c4b19ccd884ab",
+        "technical_discussion",
+    ),
+    ("stackv2_edu", "c354dbe88469a1153e97c6a63ac50591849654de", "educational_code"),
+    ("stackv2_html", "92c9fa898d6af643db9c7d73e75219f862be8ca0", "web_code"),
+    ("ubuntu_irc", "84f88c986584f11d672befab542fa4d5123f3e8f", "technical_dialogue"),
+    ("uk_hansard", "c88adc44309aa255a41b51cef93ba783f775fe23", "parliamentary_debate"),
+    ("usgpo", "b150cc22211de4d57f1b7f570097a00e65042424", "government_publications"),
+    ("uspto", "13894c5462467c843163693269d9266ec2c772b4", "patents_and_invention"),
+    ("wikimedia", "0641bb84bd9b7162bcddf8be7836822161a9a342", "reference_and_culture"),
+    ("wikiteam", "f4ed055b57763a8f12238824140914b9eb098cab", "community_reference"),
+    ("youtube", "dff8c8a54e98bce64c2e7ce9a8466c144c1cddd6", "spoken_explanation"),
+)
+
+
 SOURCE_SPECS = (
     FrontierSourceSpec(
         "ultrafineweb_l2_en_20260820",
@@ -91,6 +170,20 @@ SOURCE_SPECS = (
         "apache-2.0_project_upstream_source_terms_apply",
         "public",
         "math_filtered_deduplicated_source",
+    ),
+    *(
+        FrontierSourceSpec(
+            f"common_pile_{name}",
+            f"common-pile/{name}_filtered",
+            revision,
+            ("",),
+            ".json.gz",
+            "text",
+            "common_pile_source_specific_public_domain_or_open_license",
+            "public",
+            function,
+        )
+        for name, revision, function in COMMON_PILE_FILTERED_SOURCES
     ),
 )
 

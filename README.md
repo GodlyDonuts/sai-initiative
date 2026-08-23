@@ -91,7 +91,7 @@ copying bytes when their terms prohibit redistribution.
 Sai is now executing two related but deliberately separate programs:
 
 1. **Hash-bound source-candidate reservoirs.** Two immutable inventories now
-   reference 16.907 physical TiB of reality anchors and candidate material.
+   reference 17.399 physical TiB of reality anchors and candidate material.
    They provide breadth and filtering headroom; neither is itself a training
    set.
 2. **A prospective 8T-token training curriculum.** This is the maximum-horizon
@@ -157,10 +157,10 @@ mixture allocation.
 The first semantic results exposed an unavoidable arithmetic fact: an 8 TiB
 raw reservoir cannot yield 8 TiB of finished data after rejecting damaged,
 duplicated, unsafe, low-value, or rights-incompatible material. Sai therefore
-sealed a second, source-only frontier inventory on 2026-08-24. It contains
-**15,643 files and 9,792,648,691,752 physical bytes (8.9063621015 TiB)** from
+sealed a second, source-only frontier inventory on 2026-08-24. Its v2 contains
+**16,488 files and 10,333,086,982,241 physical bytes (9.3978878633 TiB)** from
 modern, independently curated source families. Together, the two reservoirs
-reference **18,589,539,500,178 physical bytes (16.9070876838 TiB)** before
+reference **19,129,977,790,667 physical bytes (17.3986134456 TiB)** before
 cross-reservoir deduplication and quality compilation.
 
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
@@ -170,22 +170,31 @@ cross-reservoir deduplication and quality compilation.
 | FineWeb2-HQ multilingual | `c0c06e94fd3a44ae9e802b2b0fc533817601eb5e` | 5,891 | 6,042,406,965,380 | Twenty-language high-value translation discovery |
 | Nemotron specialized reasoning | `9ed3718b5f2ae29074c5e34e64115432b7c4320f` | 219 | 244,286,609,368 | RQA, InfiniByte, math textbooks, and scientific coding |
 | UltraData-Math L1 selected slice | `fe10db8efd35597fd7fcff8ff576b5ec4ea5ff87` | 1,485 | 366,622,518,811 | Filtered and deduplicated mathematical source material |
+| Common Pile filtered collection | 31 exact repository revisions | 845 | 540,438,290,489 | Courts, government, patents, science, books, education, code, reference, and culture |
 
-The 9,764,022-byte manifest has SHA-256
-`996f534e509d5c30a102e5d2ab29fd41a17f265f90c9682276b6147dfe066e59`
+The 10,257,303-byte v2 manifest has SHA-256
+`add5e374b747f0c19cc2144c7ee43cde577ecb8eadcda3fd53b1e2dc51a145d4`
 and ordered-row SHA-256
-`eef48d2e07f4d6a84682a504d0b3605396ea95cff09e7c9c9ad09835cd998103`.
+`ccc934ec7f0aea92b71009130ad86a9ee0e227ecdd8384a90ff2318d0962c6f8`.
 Its canonical receipt is
-`61e4051adc06476bbbabaad348fdb9d937a62c4beaf0e510e56393c5197dffe8`
+`bf173af7e4540b574373ae06ce2be917298346e2ca54981e0cb26e365fe6f1a3`
 and the receipt file SHA-256 is
-`75d8c54fa7ed140562e9134e25b0f0b3e957f499ac64a313cd8a69db0be6de56`.
+`56475757f451680f53afb30a3183386c115d2d13f3dff7aa42e1515788c9c264`.
 Every selected revision is exact, every file is upstream-LFS-hash-bound, and
 at least one selected object per slice passed a byte-access probe.
 The source-safe manifest and receipt were uploaded and re-downloaded
 byte-for-byte in Hugging Face dataset commit
-[`e3bc9af2c0a6ca211dc3a32c32c512e508dc6dac`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e3bc9af2c0a6ca211dc3a32c32c512e508dc6dac).
+[`7f0a5e2b85454e4696be463cfb146a0b8f57cc98`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7f0a5e2b85454e4696be463cfb146a0b8f57cc98).
 
-These are **physical Parquet bytes, not measured text-payload bytes**.
+The Common Pile expansion deliberately supplies epistemic functions missing
+from a web-heavy reservoir: case law, regulations, Hansard, US government
+publications, patents, arXiv and PubMed, biodiversity archives, public-domain
+and open-access books, open textbooks, Stack-Edu code, technical discussion,
+Wikipedia-family reference material, and spoken explanation. Sai uses the
+filtered releases as source candidates, retains each component's exact
+revision, and still requires per-record rights and quality review.
+
+These are **physical source-object bytes, not measured text-payload bytes**.
 FineWeb2-HQ, for example, includes large embedding columns, so treating its
 repository size as English training text would be materially false. The two
 Ultra-FineWeb generations may overlap, and every web-derived source may overlap
