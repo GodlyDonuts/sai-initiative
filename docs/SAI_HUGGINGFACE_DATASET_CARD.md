@@ -101,6 +101,15 @@ capacity, not accepted corpus volume.
   All 27 expected files were byte-replayed at immutable dataset commit
   `4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc`. A mechanical pass is not semantic
   or training admission.
+- A host-diverse OpenCoder code-web audit replayed one exact 286,437,437-byte
+  Parquet shard and all 197,882 rows. From 162,487 length-eligible unique
+  contents, the 8,192-row screen rejected two mechanical failures and 39
+  official-boundary overlaps. The frozen 2,048-row Hermès population spans
+  1,922 web hosts with at most two rows per host. Receipt
+  `53abfd09fb2bc71b17dba5b922c1eaa2c7752cb216654e1557b442701937e7c9`
+  binds the exact source, card, population, lineage, and boundary indexes. The
+  card's MIT declaration does not establish rights provenance for every
+  underlying web page; Hermès judgment and training admission remain open.
 - Completed Hermès receipts contain 6,751 proposed cross-domain assignments
   across 730 directed labels. A 512-pair, source-disjoint development proposal
   population has been frozen across 290 labels. No proposal is called
