@@ -363,6 +363,10 @@ the text-free artifact was remotely byte-replayed in Hugging Face commit
 [`e6b1210f26a7fb7e06e45c193131aa71d2c574df`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e6b1210f26a7fb7e06e45c193131aa71d2c574df).
 The v2 promotion decision now requires this independent rights receipt in
 addition to compiler, contamination, duplicate, and disjointness evidence.
+Forward conversion uses exact-declaration policy schema v2: the complete alias
+table is hash-bound, and the observed reservoir declarations `ODC-By-1.0` and
+`CC-BY-2.0` are recognized with attribution obligations. This does not
+retroactively change the immutable 224-row audit receipt.
 
 The official public-benchmark contamination boundary is executable, but its
 first code-shingle policy has been superseded. It

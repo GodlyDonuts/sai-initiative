@@ -302,6 +302,12 @@ byte-for-byte. Promotion schema v2 now requires this receipt and zero
 source-level declaration holds alongside the compiler, contamination,
 duplicate, and identity/content-disjointness gates.
 
+Future conversion uses exact-declaration policy v2, which binds the entire
+recognized-alias table by hash and adds `ODC-By-1.0` plus `CC-BY-2.0` for the
+observed reservoirs. Both retain attribution obligations. The new schema does
+not mutate the earlier Common Pile rights receipt or turn a dataset-level
+license into a content-level legal conclusion.
+
 `sai.data.benchmark_boundary_index` builds a non-reversible official benchmark
 boundary for 18,235 rows across nine public benchmark views. The r1 13-token
 word index contains 27,979,728 unique SHA-256 keys and its r1 8-token code index

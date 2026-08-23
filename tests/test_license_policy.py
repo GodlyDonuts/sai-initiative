@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from sai.data.license_policy import classify_declared_license
 
 
@@ -25,4 +27,18 @@ def test_ambiguous_gfdl_declaration_fails_closed() -> None:
 def test_case_only_spdx_alias_is_canonicalized() -> None:
     result = classify_declared_license("apache-2.0")
     assert result["canonical_license"] == "Apache-2.0"
+    assert result["rights_hold"] is False
+
+
+@pytest.mark.parametrize(
+    ("declared", "canonical"),
+    [("odc-by-1.0", "ODC-By-1.0"), ("CC-BY-2.0", "CC-BY-2.0")],
+)
+def test_exact_reservoir_license_aliases_preserve_attribution(
+    declared: str, canonical: str
+) -> None:
+    result = classify_declared_license(declared)
+    assert result["canonical_license"] == canonical
+    assert result["attribution_required"] is True
+    assert result["share_alike_required"] is False
     assert result["rights_hold"] is False

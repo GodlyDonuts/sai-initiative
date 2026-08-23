@@ -6,24 +6,19 @@ from typing import Any
 
 from sai.data.token_stream import canonical_sha256
 
-SCHEMA = "sai-exact-declared-license-policy-v1"
-POLICY = {
-    "normalization": "strip_casefold_exact_alias_match",
-    "unknown_or_ambiguous_action": "rights_hold",
-    "public_domain_is_a_declaration_not_jurisdictional_verification": True,
-    "license_declaration_does_not_verify_source_provenance": True,
-}
-
+SCHEMA = "sai-exact-declared-license-policy-v2"
 _LICENSES = {
     "apache-2.0": ("Apache-2.0", True, False),
     "bsd-2-clause": ("BSD-2-Clause", True, False),
     "cc0-1.0": ("CC0-1.0", False, False),
     "cc-by-3.0": ("CC-BY-3.0", True, False),
+    "cc-by-2.0": ("CC-BY-2.0", True, False),
     "cc-by-4.0": ("CC-BY-4.0", True, False),
     "cc-by-sa-2.5": ("CC-BY-SA-2.5", True, True),
     "cc-by-sa-3.0": ("CC-BY-SA-3.0", True, True),
     "cc-by-sa-4.0": ("CC-BY-SA-4.0", True, True),
     "mit": ("MIT", True, False),
+    "odc-by-1.0": ("ODC-By-1.0", True, False),
     "wtfpl": ("WTFPL", False, False),
     "public domain": ("LicenseRef-Public-Domain", False, False),
     (
@@ -51,6 +46,23 @@ _LICENSES = {
         "https://creativecommons.org/licenses/by-sa/4.0/"
     ): ("CC-BY-SA-4.0", True, True),
 }
+POLICY = {
+    "schema": SCHEMA,
+    "normalization": "strip_casefold_exact_alias_match",
+    "unknown_or_ambiguous_action": "rights_hold",
+    "public_domain_is_a_declaration_not_jurisdictional_verification": True,
+    "license_declaration_does_not_verify_source_provenance": True,
+    "recognized_aliases_sha256": canonical_sha256(
+        {
+            alias: {
+                "canonical_license": values[0],
+                "attribution_required": values[1],
+                "share_alike_required": values[2],
+            }
+            for alias, values in sorted(_LICENSES.items())
+        }
+    ),
+}
 
 
 class LicensePolicyError(RuntimeError):
@@ -68,6 +80,7 @@ def classify_declared_license(value: Any) -> dict[str, Any]:
     if match is None:
         result = {
             "schema": SCHEMA,
+            "policy_sha256": canonical_sha256(POLICY),
             "declared_license": declared,
             "canonical_license": None,
             "declaration_recognized": False,
@@ -81,6 +94,7 @@ def classify_declared_license(value: Any) -> dict[str, Any]:
         canonical, attribution, share_alike = match
         result = {
             "schema": SCHEMA,
+            "policy_sha256": canonical_sha256(POLICY),
             "declared_license": declared,
             "canonical_license": canonical,
             "declaration_recognized": True,
