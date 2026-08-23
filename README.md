@@ -165,21 +165,23 @@ Together, the two reservoirs reference **23,680,076,298,761 physical bytes
 compilation.
 
 Those bytes are now independently accounted under source-safe conversion
-ledger release r3 receipt
-`b8d5e6278aa9a076c4d143807f6e09f64b75ab992564651f9fa94dbcf5cb2337`.
+ledger release r4 receipt
+`d6e9cd17cf3515bde743bf036c15e712342760713dbfcdfc66a4283c562e67a6`.
 The ledger hash-verifies both reservoir manifests, all six immutable audit
-populations containing 2,103 rows, and corrected rights-inventory v2. Duplicate
-audit receipts are rejected. Its current funnel is deliberately blunt:
-21.5369 TiB referenced candidates, 2,103 acquired audit rows, zero completed
-source pilots, and **0 training-ready bytes**. Of the candidate bytes,
+populations containing 2,103 rows, corrected rights-inventory v2, and the exact
+bounded text-payload probe. Duplicate audit or probe receipts are rejected. Its
+current funnel is deliberately blunt: 21.5369 TiB referenced candidates, 2,103
+acquired audit rows, 12,252,341,634 mechanically useful bytes measured in eight
+bounded members, zero completed source pilots, and **0 training-ready bytes**.
+The bounded measurement is not extrapolated to the reservoir. Of the candidate bytes,
 7,899,196,133,417 require declared-license
 obligation handling, 5,027,859,142,584 require per-row license evidence, and
 10,753,021,022,760 require source-terms resolution. Cross-inventory overlap and
 exact text-payload yield remain unresolved, so the candidate-byte sum cannot
 be used as a training-data claim. The text-free receipt (file SHA-256
-`6db524e74dc64bafe2b93261fe6f9b3ef99aef30de450b71ed2637801776c163`)
+`0a4461ea06f8d4be5a506472badce66ee901033fd03d185343d4a310ff408c16`)
 was uploaded and replayed byte-for-byte in Hugging Face commit
-[`4b468991397fb123f4bf73674803ac931c1dd2ff`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4b468991397fb123f4bf73674803ac931c1dd2ff).
+[`8d83bab552d5b6cbd4ca82fcc068f6cedc21567c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8d83bab552d5b6cbd4ca82fcc068f6cedc21567c).
 Earlier ledger releases remain immutable historical evidence.
 
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |

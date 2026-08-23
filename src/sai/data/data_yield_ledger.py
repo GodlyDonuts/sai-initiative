@@ -10,7 +10,7 @@ from typing import Any
 from sai.data.agent_labeling import _atomic_create
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-data-conversion-yield-ledger-v2"
+SCHEMA = "sai-data-conversion-yield-ledger-v3"
 TARGET_TRAINING_READY_BYTES = 8 * 1024**4
 
 
@@ -267,6 +267,92 @@ def _rights_inventory(path: Path) -> dict[str, Any]:
     }
 
 
+def _text_payload_probe(path: Path) -> dict[str, Any]:
+    receipt = _load_receipt(path)
+    plan_binding = receipt.get("plan")
+    measurements = receipt.get("measurements")
+    summary = receipt.get("summary")
+    if (
+        receipt.get("schema")
+        != "sai-reservoir-text-payload-probe-receipt-v1"
+        or receipt.get("status") != "complete_bounded_exact_member_measurement"
+        or not isinstance(plan_binding, dict)
+        or not isinstance(measurements, list)
+        or not measurements
+        or not isinstance(summary, dict)
+        or receipt.get("temporary_members_removed") is not True
+        or receipt.get("sample_is_statistical_yield_estimate") is not False
+        or receipt.get("full_source_yield_extrapolation_allowed") is not False
+        or receipt.get("source_text_persisted") is not False
+        or receipt.get("training_ready") is not False
+    ):
+        raise DataYieldLedgerError("ledger text payload probe differs")
+    plan_path_raw = plan_binding.get("path")
+    if not isinstance(plan_path_raw, str) or not plan_path_raw:
+        raise DataYieldLedgerError("ledger text payload plan path differs")
+    plan_path = Path(plan_path_raw)
+    plan = _load_receipt(plan_path)
+    if (
+        plan.get("schema") != "sai-reservoir-text-payload-probe-plan-v1"
+        or plan_binding.get("file_sha256") != sha256_file(plan_path)
+        or plan_binding.get("receipt_sha256") != plan["receipt_sha256"]
+    ):
+        raise DataYieldLedgerError("ledger text payload plan binding differs")
+    measured = []
+    blocked = 0
+    for row in measurements:
+        if not isinstance(row, dict):
+            raise DataYieldLedgerError("ledger text payload measurement differs")
+        if row.get("status") == "blocked_selected_member_exceeds_parent_byte_cap":
+            blocked += 1
+            continue
+        measurement = row.get("measurement")
+        if (
+            row.get("status") != "measured_exact_member"
+            or row.get("full_member_size_and_sha256_replayed") is not True
+            or not isinstance(row.get("physical_bytes"), int)
+            or row["physical_bytes"] <= 0
+            or not isinstance(measurement, dict)
+            or not isinstance(measurement.get("text_utf8_bytes"), int)
+            or measurement["text_utf8_bytes"] < 0
+            or not isinstance(measurement.get("useful_text_utf8_bytes"), int)
+            or not 0
+            <= measurement["useful_text_utf8_bytes"]
+            <= measurement["text_utf8_bytes"]
+        ):
+            raise DataYieldLedgerError("ledger text payload measurement differs")
+        measured.append(row)
+    measured_physical = sum(row["physical_bytes"] for row in measured)
+    measured_text = sum(row["measurement"]["text_utf8_bytes"] for row in measured)
+    measured_useful = sum(
+        row["measurement"]["useful_text_utf8_bytes"] for row in measured
+    )
+    if (
+        summary.get("selected_members") != len(measurements)
+        or summary.get("measured_members") != len(measured)
+        or summary.get("blocked_members") != blocked
+        or summary.get("measured_physical_bytes") != measured_physical
+        or summary.get("measured_text_utf8_bytes") != measured_text
+        or summary.get("measured_useful_text_utf8_bytes") != measured_useful
+    ):
+        raise DataYieldLedgerError("ledger text payload summary differs")
+    return {
+        "path": str(path.resolve()),
+        "receipt_sha256": receipt["receipt_sha256"],
+        "plan_receipt_sha256": plan["receipt_sha256"],
+        "selected_members": len(measurements),
+        "measured_members": len(measured),
+        "blocked_members": blocked,
+        "measured_physical_bytes": measured_physical,
+        "measured_text_utf8_bytes": measured_text,
+        "measured_useful_text_utf8_bytes": measured_useful,
+        "statistical_yield_estimate": False,
+        "full_source_yield_extrapolation_allowed": False,
+        "source_text_persisted": False,
+        "training_ready": False,
+    }
+
+
 def build_ledger(
     reservoir_receipts: list[Path],
     audit_roots: list[Path],
@@ -274,6 +360,7 @@ def build_ledger(
     output_path: Path,
     *,
     rights_inventory_path: Path | None = None,
+    text_payload_probe_paths: list[Path] | None = None,
 ) -> dict[str, Any]:
     """Verify all inputs and seal conversion-stage byte/row accounting."""
 
@@ -291,6 +378,13 @@ def build_ledger(
         if rights_inventory_path is not None
         else None
     )
+    text_payload_probes = [
+        _text_payload_probe(path) for path in (text_payload_probe_paths or [])
+    ]
+    if len({row["receipt_sha256"] for row in text_payload_probes}) != len(
+        text_payload_probes
+    ):
+        raise DataYieldLedgerError("ledger repeats a text payload probe")
     source_ids = [row["source_id"] for row in pilots]
     if len(source_ids) != len(set(source_ids)):
         raise DataYieldLedgerError("ledger repeats a pilot source")
@@ -316,6 +410,25 @@ def build_ledger(
             "training_ready": False,
         },
         "rights_routing": rights,
+        "bounded_text_payload_probes": {
+            "probes": text_payload_probes,
+            "probe_count": len(text_payload_probes),
+            "measured_members": sum(
+                row["measured_members"] for row in text_payload_probes
+            ),
+            "measured_physical_bytes": sum(
+                row["measured_physical_bytes"] for row in text_payload_probes
+            ),
+            "measured_text_utf8_bytes": sum(
+                row["measured_text_utf8_bytes"] for row in text_payload_probes
+            ),
+            "measured_useful_text_utf8_bytes": sum(
+                row["measured_useful_text_utf8_bytes"]
+                for row in text_payload_probes
+            ),
+            "full_reservoir_text_payload_bytes_measured": False,
+            "training_ready": False,
+        },
         "bounded_source_pilots": {
             "pilots": pilots,
             "source_count": len(pilots),
@@ -362,6 +475,7 @@ def main() -> int:
     parser.add_argument("--audit-root", type=Path, action="append", default=[])
     parser.add_argument("--pilot-root", type=Path, action="append", default=[])
     parser.add_argument("--rights-inventory", type=Path)
+    parser.add_argument("--text-payload-probe", type=Path, action="append", default=[])
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = build_ledger(
@@ -370,6 +484,7 @@ def main() -> int:
         args.pilot_root,
         args.output,
         rights_inventory_path=args.rights_inventory,
+        text_payload_probe_paths=args.text_payload_probe,
     )
     print(json.dumps(result, sort_keys=True))
     return 0

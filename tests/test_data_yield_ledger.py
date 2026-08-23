@@ -174,6 +174,55 @@ def _rights(tmp_path: Path) -> Path:
     return path
 
 
+def _text_probe(tmp_path: Path) -> Path:
+    plan = tmp_path / "text-probe-plan.json"
+    plan_payload = _seal(
+        plan,
+        {
+            "schema": "sai-reservoir-text-payload-probe-plan-v1",
+            "training_ready": False,
+        },
+    )
+    receipt = tmp_path / "text-probe-receipt.json"
+    _seal(
+        receipt,
+        {
+            "schema": "sai-reservoir-text-payload-probe-receipt-v1",
+            "status": "complete_bounded_exact_member_measurement",
+            "plan": {
+                "path": str(plan.resolve()),
+                "file_sha256": sha256_file(plan),
+                "receipt_sha256": plan_payload["receipt_sha256"],
+            },
+            "measurements": [
+                {
+                    "status": "measured_exact_member",
+                    "physical_bytes": 100,
+                    "full_member_size_and_sha256_replayed": True,
+                    "measurement": {
+                        "text_utf8_bytes": 180,
+                        "useful_text_utf8_bytes": 150,
+                    },
+                }
+            ],
+            "summary": {
+                "selected_members": 1,
+                "measured_members": 1,
+                "blocked_members": 0,
+                "measured_physical_bytes": 100,
+                "measured_text_utf8_bytes": 180,
+                "measured_useful_text_utf8_bytes": 150,
+            },
+            "temporary_members_removed": True,
+            "sample_is_statistical_yield_estimate": False,
+            "full_source_yield_extrapolation_allowed": False,
+            "source_text_persisted": False,
+            "training_ready": False,
+        },
+    )
+    return receipt
+
+
 def test_ledger_separates_candidate_volume_from_ready_bytes(tmp_path: Path) -> None:
     output = tmp_path / "ledger.json"
     payload = build_ledger(
@@ -182,11 +231,16 @@ def test_ledger_separates_candidate_volume_from_ready_bytes(tmp_path: Path) -> N
         [_pilot(tmp_path)],
         output,
         rights_inventory_path=_rights(tmp_path),
+        text_payload_probe_paths=[_text_probe(tmp_path)],
     )
     assert payload["reservoir_candidates"]["referenced_candidate_bytes_sum"] == 1234
     assert payload["audit_populations"]["population_rows_sum"] == 1
     assert payload["bounded_source_pilots"]["near_deduplicated_rows_sum"] == 1
     assert payload["rights_routing"]["physical_candidate_bytes"] == 1234
+    assert (
+        payload["bounded_text_payload_probes"]["measured_useful_text_utf8_bytes"]
+        == 150
+    )
     assert payload["training_ready"]["exact_bytes"] == 0
     assert payload["claims"]["raw_reservoir_bytes_are_not_training_ready_bytes"]
 
@@ -240,4 +294,21 @@ def test_ledger_rejects_repeated_audit_population(tmp_path: Path) -> None:
             [audit, audit],
             [],
             tmp_path / "ledger.json",
+        )
+
+
+def test_ledger_rejects_text_probe_summary_mismatch(tmp_path: Path) -> None:
+    reservoir = _reservoir(tmp_path)
+    probe = _text_probe(tmp_path)
+    payload = json.loads(probe.read_text())
+    payload.pop("receipt_sha256")
+    payload["summary"]["measured_useful_text_utf8_bytes"] = 151
+    _seal(probe, payload)
+    with pytest.raises(DataYieldLedgerError, match="text payload summary differs"):
+        build_ledger(
+            [reservoir],
+            [],
+            [],
+            tmp_path / "ledger.json",
+            text_payload_probe_paths=[probe],
         )

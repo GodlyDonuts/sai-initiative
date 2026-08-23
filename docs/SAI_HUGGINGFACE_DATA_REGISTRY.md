@@ -38,15 +38,28 @@ verification result, and an upstream quality label is not a Sai admission.
 ## Conversion-yield ledger
 
 Dataset commit
+[`8d83bab552d5b6cbd4ca82fcc068f6cedc21567c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8d83bab552d5b6cbd4ca82fcc068f6cedc21567c)
+adds the current conversion ledger release r4 under receipt
+`d6e9cd17cf3515bde743bf036c15e712342760713dbfcdfc66a4283c562e67a6`.
+It retains all r3 population and rights bindings and additionally verifies the
+exact text-payload probe: eight measured members, 8,523,075,699 physical bytes,
+12,631,492,226 text bytes, and 12,252,341,634 bytes in the mechanical useful
+size window. Full-reservoir text yield remains explicitly unmeasured and no
+sample extrapolation is allowed. Training-ready bytes remain zero. The remote
+file SHA-256 replayed as
+`0a4461ea06f8d4be5a506472badce66ee901033fd03d185343d4a310ff408c16`.
+Earlier releases below remain immutable historical evidence.
+
+Dataset commit
 [`4b468991397fb123f4bf73674803ac931c1dd2ff`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4b468991397fb123f4bf73674803ac931c1dd2ff)
-adds the current complete-population ledger release r3 under receipt
+adds the complete-population ledger release r3 under receipt
 `b8d5e6278aa9a076c4d143807f6e09f64b75ab992564651f9fa94dbcf5cb2337`.
 It binds six distinct immutable populations totaling 2,103 acquired audit rows
 and rejects duplicate population receipts. Reservoir bytes and rights routing
 are unchanged from r2: 23,680,076,298,761 referenced candidate bytes and zero
 training-ready bytes. The remote file SHA-256 replayed exactly as
 `6db524e74dc64bafe2b93261fe6f9b3ef99aef30de450b71ed2637801776c163`.
-Earlier releases below remain immutable historical evidence.
+It is superseded by the probe-bound r4 accounting above.
 
 Dataset commit
 [`8c3baa4452d8bf06c2277e72f4dd79b5628e8d26`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8c3baa4452d8bf06c2277e72f4dd79b5628e8d26)
