@@ -76,6 +76,7 @@ sai-replay-common-pile-external-provenance = "sai.data.common_pile_external_prov
 sai-probe-external-rights-pages = "sai.data.external_rights_page_probe:main"
 sai-build-external-rights-adjudication-queue = "sai.data.external_rights_adjudication_queue:main"
 sai-audit-public-domain-review-scope = "sai.data.public_domain_review_scope_audit:main"
+sai-materialize-public-domain-review-scope = "sai.data.public_domain_review_scoped_candidates:main"
 sai-filter-bounded-near-duplicates = "sai.data.bounded_near_duplicate_filter:main"
 sai-audit-cross-source-pilot-duplicates = "sai.data.cross_source_pilot_duplicates:main"
 sai-build-bounded-pilot-compiler-population = "sai.data.bounded_pilot_compiler_population:main"
