@@ -35,10 +35,25 @@ def test_publication_replays_counts_and_cross_population_overlap(tmp_path) -> No
     assert result["unique_candidate_rows"] == 3
     assert result["cross_population_duplicate_identity_rows"] == 1
     assert result["cross_population_duplicate_assignments"] == 1
+    assert result["unique_source_content_rows"] == 3
+    assert result["cross_population_duplicate_content_rows"] == 1
+    assert result["cross_population_duplicate_content_assignments"] == 1
     assert result["decision_counts"] == {"pass_mechanical_gate": 4}
     assert result["publication_contains_source_text"] is False
     assert result["mechanical_pass_is_semantic_admission"] is False
     assert result["training_ready"] is False
+
+
+def test_publication_detects_same_content_under_distinct_identities(tmp_path) -> None:
+    text = "The same exact source content under two source locators. " * 12
+    first = write_population(tmp_path / "first", [candidate(text, 1)])
+    second = write_population(tmp_path / "second", [candidate(text, 2)])
+    result = build_publication([first, second], tmp_path / "content-publication.json")
+    assert result["unique_candidate_rows"] == 2
+    assert result["cross_population_duplicate_identity_rows"] == 0
+    assert result["unique_source_content_rows"] == 1
+    assert result["cross_population_duplicate_content_rows"] == 1
+    assert result["cross_population_duplicate_content_assignments"] == 1
 
 
 def test_publication_rejects_tampered_gate(tmp_path) -> None:

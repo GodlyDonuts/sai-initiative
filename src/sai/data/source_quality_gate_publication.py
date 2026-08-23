@@ -24,24 +24,31 @@ class SourceQualityGatePublicationError(RuntimeError):
     """A gate receipt, decision population, or publication differs."""
 
 
-def _decision_identities(receipt: dict[str, Any]) -> tuple[list[str], list[str]]:
+def _decision_identities(
+    receipt: dict[str, Any],
+) -> tuple[list[str], list[str], list[str]]:
     path = Path(receipt["decisions"]["path"])
     identities = []
+    content_identities = []
     hard_rejects = []
     try:
         with path.open() as handle:
             for line_number, line in enumerate(handle, start=1):
                 row = json.loads(line)
                 identity = row.get("candidate_identity_sha256")
+                content_identity = row.get("source_content_sha256")
                 if (
                     row.get("schema") != DECISION_SCHEMA
                     or not isinstance(identity, str)
                     or len(identity) != 64
+                    or not isinstance(content_identity, str)
+                    or len(content_identity) != 64
                 ):
                     raise SourceQualityGatePublicationError(
                         f"quality-gate decision row {line_number} differs"
                     )
                 identities.append(identity)
+                content_identities.append(content_identity)
                 if row.get("decision") == "hard_reject":
                     hard_rejects.append(identity)
     except (OSError, json.JSONDecodeError, UnicodeError) as error:
@@ -52,7 +59,7 @@ def _decision_identities(receipt: dict[str, Any]) -> tuple[list[str], list[str]]
         raise SourceQualityGatePublicationError(
             "quality-gate decision population coverage differs"
         )
-    return identities, hard_rejects
+    return identities, content_identities, hard_rejects
 
 
 def build_publication(receipt_paths: list[Path], output: Path) -> dict[str, Any]:
@@ -71,6 +78,7 @@ def build_publication(receipt_paths: list[Path], output: Path) -> dict[str, Any]
     decision_counts: Counter[str] = Counter()
     reason_counts: Counter[str] = Counter()
     identity_counts: Counter[str] = Counter()
+    content_counts: Counter[str] = Counter()
     hard_rejects = []
     for order, path in enumerate(receipt_paths):
         try:
@@ -79,8 +87,9 @@ def build_publication(receipt_paths: list[Path], output: Path) -> dict[str, Any]
             raise SourceQualityGatePublicationError(
                 "quality-gate receipt replay differs"
             ) from error
-        identities, rejected = _decision_identities(receipt)
+        identities, contents, rejected = _decision_identities(receipt)
         identity_counts.update(identities)
+        content_counts.update(contents)
         hard_rejects.extend(rejected)
         decision_counts.update(receipt["decision_counts"])
         reason_counts.update(receipt["reason_counts"])
@@ -105,6 +114,9 @@ def build_publication(receipt_paths: list[Path], output: Path) -> dict[str, Any]
     duplicate_identities = sorted(
         identity for identity, count in identity_counts.items() if count > 1
     )
+    duplicate_contents = sorted(
+        identity for identity, count in content_counts.items() if count > 1
+    )
     assignment_rows = sum(identity_counts.values())
     payload = {
         "schema": SCHEMA,
@@ -119,6 +131,13 @@ def build_publication(receipt_paths: list[Path], output: Path) -> dict[str, Any]
         - len(identity_counts),
         "ordered_cross_population_duplicate_identities_sha256": canonical_sha256(
             duplicate_identities
+        ),
+        "unique_source_content_rows": len(content_counts),
+        "cross_population_duplicate_content_rows": len(duplicate_contents),
+        "cross_population_duplicate_content_assignments": assignment_rows
+        - len(content_counts),
+        "ordered_cross_population_duplicate_contents_sha256": canonical_sha256(
+            duplicate_contents
         ),
         "decision_counts": dict(sorted(decision_counts.items())),
         "reason_counts": dict(sorted(reason_counts.items())),

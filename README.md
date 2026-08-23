@@ -230,35 +230,37 @@ boilerplate. Hard-reject, context-review, and cleanup-review routes take
 precedence over a mechanical pass. A pass never implies semantic quality,
 rights clearance, decontamination, global deduplication, or training readiness.
 
-The revised exact replay covers **8,323 distinct candidate rows** across 12
-current populations, with zero candidate-identity overlap between those
-populations. It routed **8,312** to mechanical pass, held **9** for
+The code-expanded exact replay covers **10,371 distinct candidate rows** across
+13 current populations, with zero candidate-identity overlap and zero exact
+source-content overlap between those populations. It routed **10,360** to
+mechanical pass, held **9** for
 duplicated-boilerplate cleanup, routed **1** short contextless bibliographic form
 to context review, and hard-rejected **1** contextless Cambridge physics
 mark-scheme row. The catalog-form detector was added after a live Hermès audit
 exposed a 258-byte field list that named a valuable book but contained no book
-content; replay over all 8,323 identities found exactly that one new nonpass.
+content; replay over all 10,371 identities found exactly that one new nonpass.
 That row independently triggered both the scored-answer-sheet detector and 136
 embedded backspace controls. An initially broader scoring-marker detector was
 rejected during development because it falsely matched citations, array indexes,
 PEPs, and papers; those cases are regression fixtures in the final policy.
 
 The current source-safe publication is
-[`artifacts/sai_source_mechanical_quality_gate_publication_20260826_r2.json`](artifacts/sai_source_mechanical_quality_gate_publication_20260826_r2.json),
+[`artifacts/sai_source_mechanical_quality_gate_publication_20260826_r3.json`](artifacts/sai_source_mechanical_quality_gate_publication_20260826_r3.json),
 with canonical receipt
-`50a641ecb9f5570235fc2bd50f33cf41c1fcbaa4ff03d71dcfbfbea8e9b71a82`
+`df34d6507032269351df3d841032e068de5ff986dcbcb7d5f92f212e98e82385`
 and policy SHA-256
 `436ea538156447a7188a15404764302c7b3290b3a06c12677d316f265ccc6c80`.
-The decision streams retain identities and measurements but no source text; they
-are excluded from Git history but were published with all 12 receipts and
-byte-replayed at immutable Hugging Face evidence commit
-[`4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc).
-The prior r1 publication remains immutable historical evidence. Every nonpass
-row is barred from direct admission, and all 8,323 rows remain
+The decision streams retain identities and measurements but no source text and
+are excluded from Git history. The preceding 12-population r2 evidence remains
+byte-replayed at immutable Hugging Face commit
+[`4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc);
+the r3 publication adds the exact 2,048-row OpenCoder population and explicit
+source-content duplicate accounting. Every nonpass row is barred from direct
+admission, and all 10,371 rows remain
 `training_ready=false`. The authorized Stokes evidence root contains the same
-publication, dataset card, receipts, and decisions as **28 exact files** under
-relative-path manifest SHA-256
-`4617c4d1982c0027b0ed71e6c92dfe4e50ca6f22d688afdc5019dd6260b9dd7d`.
+prior publication, dataset card, receipts, and decisions. The new r3 evidence is
+published only after remote byte replay; until then, this local receipt is the
+authoritative current result.
 
 #### Cross-domain connection compiler
 

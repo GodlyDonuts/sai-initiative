@@ -89,16 +89,19 @@ capacity, not accepted corpus volume.
   conservative FineMath survivors, while the broader completed Hermès audits
   already flag 36 answer-farm, 149 SEO/content-farm, and 97 corrupted rows.
   These remain exclusion evidence, not acceptable training examples.
-- A source-agnostic mechanical gate now replays 8,323 distinct candidates from
-  12 current populations. It routes 8,312 to mechanical pass, holds nine for
+- A source-agnostic mechanical gate now replays 10,371 distinct candidates from
+  13 current populations. It routes 10,360 to mechanical pass, holds nine for
   duplicated-boilerplate cleanup, routes one short contextless bibliographic
   form to context review, and hard-rejects one contextless scored physics answer
   sheet that also contains 136 embedded backspace controls.
-  There are zero cross-population candidate-identity overlaps. The source-safe
-  publication is under
-  `evidence/source-mechanical-quality-gate/20260826-r2/` with canonical receipt
-  `50a641ecb9f5570235fc2bd50f33cf41c1fcbaa4ff03d71dcfbfbea8e9b71a82`.
-  All 27 expected files were byte-replayed at immutable dataset commit
+  There are zero cross-population candidate-identity overlaps and zero exact
+  source-content overlaps. The current local source-safe publication has
+  canonical receipt
+  `df34d6507032269351df3d841032e068de5ff986dcbcb7d5f92f212e98e82385`.
+  Its 2,048-row OpenCoder addition and explicit content-duplicate census will be
+  published under `evidence/source-mechanical-quality-gate/20260826-r3/` and
+  called remote evidence only after download replay. The preceding r2 evidence
+  remains immutable at dataset commit
   `4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc`. A mechanical pass is not semantic
   or training admission.
 - A host-diverse OpenCoder code-web audit replayed one exact 286,437,437-byte
