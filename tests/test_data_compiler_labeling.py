@@ -203,6 +203,35 @@ def test_compiler_recovers_one_normalized_quote_as_exact_source_bytes() -> None:
     assert result["evidence_quotes"] == repaired["evidence_quotes"]
 
 
+def test_compiler_recovers_pdf_default_ignorables_as_literal_source_bytes() -> None:
+    candidate = _candidate()
+    candidate["text"] = candidate["text"].replace(
+        "irrigation records",
+        "irri\u00adgation\u200b records",
+    )
+    candidate["source_content_sha256"] = hashlib.sha256(
+        candidate["text"].encode()
+    ).hexdigest()
+    candidate["candidate_identity_sha256"] = canonical_sha256(
+        {
+            key: value
+            for key, value in candidate.items()
+            if key != "candidate_identity_sha256"
+        }
+    )
+    raw = _judgment(candidate)
+    raw["evidence_quotes"] = ["A historian compares irrigation records,"]
+    repaired, repairs = repair_evidence_quotes(raw, candidate)
+    assert repaired["evidence_quotes"] == [
+        "A historian compares irri\u00adgation\u200b records,"
+    ]
+    assert repairs[0]["algorithm"].startswith("nfkc-casefold-pdf-controls")
+    assert (
+        normalize_model_judgment(raw, candidate)["evidence_quotes"]
+        == repaired["evidence_quotes"]
+    )
+
+
 def test_compiler_rejects_ambiguous_normalized_quote_recovery() -> None:
     candidate = _candidate()
     candidate["text"] = (

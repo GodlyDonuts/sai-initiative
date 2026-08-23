@@ -17,6 +17,7 @@ from sai.data.agent_labeling import (
 from sai.data.token_stream import canonical_sha256
 
 JUDGMENT_SCHEMA = "sai-data-compiler-judgment-v2"
+QUOTE_RECOVERY_ALGORITHM = "nfkc-casefold-pdf-controls-whitespace-unique-source-span-v1"
 PHASES = ("grounding", "breadth", "integration", "reasoning_depth", "reject")
 VERDICTS = ("retain", "review", "reject")
 EPISTEMIC_FUNCTIONS = (
@@ -226,9 +227,17 @@ class DataCompilerLabelingError(RuntimeError):
 
 
 def _quote_normal_form(value: str) -> str:
-    """Normalize only compatibility, case, and whitespace for span recovery."""
+    """Normalize compatibility, case, PDF controls, and whitespace for recovery."""
 
-    return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+    # These default-ignorable controls are routinely inserted by PDF/OCR text
+    # extraction. They do not become training evidence: recovery still returns
+    # the unique literal source span, including every original codepoint.
+    without_pdf_controls = value.translate(
+        {ord(character): None for character in "\u00ad\u200b\u2060\ufeff"}
+    )
+    return " ".join(
+        unicodedata.normalize("NFKC", without_pdf_controls).casefold().split()
+    )
 
 
 def _recover_unique_source_span(document: str, quote: str) -> tuple[str, int, int]:
@@ -296,7 +305,7 @@ def repair_evidence_quotes(
         repaired_quotes.append(exact)
         repairs.append(
             {
-                "algorithm": "nfkc-casefold-whitespace-unique-source-span-v1",
+                "algorithm": QUOTE_RECOVERY_ALGORITHM,
                 "evidence_index": index,
                 "model_quote_utf8_sha256": hashlib.sha256(quote.encode()).hexdigest(),
                 "recovered_quote_utf8_sha256": hashlib.sha256(
