@@ -210,6 +210,15 @@ def execute_contract(
                 if isinstance(value, str) and 0 < len(value) <= (1 << 20):
                     prior_content = value
             if prior_content is not None:
+                validation_hint = ""
+                if "concepts differs" in str(error):
+                    validation_hint = (
+                        " concepts_taught must be a JSON list containing at most "
+                        "20 unique, nonempty, lowercase strings; each string must "
+                        "be at most 96 characters. Do not repeat a concept and do "
+                        "not use title case, symbols as standalone entries, or "
+                        "nested objects."
+                    )
                 body["messages"] = [
                     *base_messages,
                     {"role": "assistant", "content": prior_content},
@@ -222,6 +231,7 @@ def execute_contract(
                             "the prior answer. Remove any claim or edge that cannot be "
                             "supported by a byte-for-byte quote from "
                             f"{evidence_container_name}."
+                            + validation_hint
                             + (
                                 " You MUST replace evidence_quotes only with one "
                                 "to four complete, exact strings copied from "

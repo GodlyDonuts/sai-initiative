@@ -387,6 +387,46 @@ def test_general_compiler_retry_names_the_actual_document_envelope() -> None:
     assert "book_excerpt" not in repair
 
 
+def test_compiler_retry_explains_concept_label_geometry() -> None:
+    candidate = _candidate()
+    calls = []
+
+    def request_function(**kwargs):
+        calls.append(kwargs["body"])
+        raw = _judgment(candidate)
+        if len(calls) == 1:
+            raw["concepts_taught"] = ["Irrigation"]
+        return {
+            "id": f"response-{len(calls)}",
+            "model": "stealth/ox-alpha",
+            "provider": "test",
+            "created": 1,
+            "choices": [
+                {
+                    "message": {"content": json.dumps(raw)},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }, 200
+
+    execute_one(
+        candidate,
+        model="stealth/ox-alpha",
+        base_url="https://inference-api.nousresearch.com/v1",
+        api_key="not-persisted",
+        timeout_seconds=1.0,
+        maximum_attempts=2,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+
+    repair = calls[1]["messages"][-1]["content"]
+    assert "concepts_taught must be a JSON list" in repair
+    assert "20 unique, nonempty, lowercase strings" in repair
+    assert "nested objects" in repair
+
+
 def test_compiler_receipt_records_hashed_deterministic_quote_repair() -> None:
     candidate = _candidate()
     raw = _judgment(candidate)
