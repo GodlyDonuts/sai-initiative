@@ -61,6 +61,17 @@ derives grounded representations, protects form-bearing human expression,
 constructs verified cross-domain and procedural reasoning, and leaves final
 sampling to a coverage- and model-responsive curriculum controller.
 
+The first large book reservoir is now pinned in
+[`docs/SAI_INSTITUTIONAL_BOOKS_COMPILER.md`](docs/SAI_INSTITUTIONAL_BOOKS_COMPILER.md).
+Its 983,004 Harvard Library volumes are screened metadata-first rather than
+blindly downloaded. Sai separates archive facts from model inferences, measures
+linguistic/conceptual/reasoning complexity independently, builds cited
+prerequisite edges, and uses a spiral schedule that never stops rehearsing
+fundamentals. Valuable non-English technical works route to English; literature
+must use a reputable human translation or separately labeled literal and
+literary synthetic translations. Dataset terms and per-volume rights evidence
+remain independent admission gates.
+
 Every training population must pass these gates in order:
 
 1. **Source truth:** reopen exact source bytes; reject corruption, spam,
