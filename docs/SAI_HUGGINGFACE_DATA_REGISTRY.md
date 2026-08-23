@@ -103,5 +103,18 @@ Remote LFS object sizes and SHA-256 identifiers, plus the downloaded receipt,
 replayed against the local files. The index contains hashes only, never raw
 benchmark prompts or answers.
 
+Dataset commit
+[`5dc89bfeceadf56663a8f00c479f5d41d5229671`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5dc89bfeceadf56663a8f00c479f5d41d5229671)
+adds the five source-safe population screens. Each screen binds its population
+receipt, index receipt, policy, aggregate source/stratum counts, and ordered
+decision digest. Individual candidate decisions and source text are not
+published. The exact receipts are:
+
+- original 128: `a851a4210bdd48b525b46cada58eabca77c932afee00d86109f55b048dbb1613`;
+- weighted 1,024: `e28c7afb9799671d5fc7d6275fd82299da23271380b964a85eb09b71ee903db4`;
+- frontier 512: `f2e3c82b1386f6c668757a53fc6dd5e554ea79b6ecf992667ac155d3d74c933c`;
+- Common Pile 124: `71fcf44f96340feb73c399c82b4be00fd8c555bf5287c78b1464d9ad06bbb54c`;
+- PleIAs/Nemotron expansion 91: `cca8dfbd408d6f4bf8914e8e64b78c75db05cf927734131160f92099d741524b`.
+
 Credentials never enter the registry. The local `.env` is ignored by Git,
 mode-restricted, and used only by authenticated clients.

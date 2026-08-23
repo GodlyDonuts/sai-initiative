@@ -213,6 +213,14 @@ LiveCodeBench projection, index hashes, and the fact that raw benchmark text was
 not persisted. RULER remains a tokenizer-bound generator gap rather than being
 silently substituted or mislabeled.
 
+`sai.data.benchmark_contamination_screen` applies the same memory-mapped index
+to a sealed audit population and persists aggregate counts only. Across the five
+current populations it found 286 contaminated candidates out of 1,879. The
+77/96 hit rate in Nemotron specialized reasoning is a blocking discovery: those
+rows cannot supply a clean reasoning lane even though their upstream name and
+scores appear attractive. The screen retains an ordered decision digest while
+persisting neither individual decisions nor source text.
+
 ## Institutional Books lane
 
 The Harvard Library Institutional Books release is now a pinned, separate

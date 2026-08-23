@@ -251,6 +251,24 @@ RULER remains an explicit gap until its generator is pinned to Sai's exact
 tokenizer and length geometry. Building the boundary makes contamination
 testing possible; it does not retroactively decontaminate any source bytes.
 
+It has now been applied to every sealed audit population. Across 1,879 distinct
+screen candidates, 286 (15.2%) contain at least one exact public-benchmark
+shingle and are ineligible for a clean pretraining lane. The most important
+finding is source-specific: **77 of 96 Nemotron specialized-reasoning rows
+(80.2%) overlap the boundary**. Sai therefore treats that apparently attractive
+reasoning source as a contamination quarantine, not premium training data.
+
+The same screen found 0/160 overlaps in FineWeb2-HQ, 0/120 in the current
+Ultra-FineWeb English slice, 0/21 in Nemotron Legal, 4/199 (2.0%) in the weighted
+FineWeb-Edu sample, 132/596 (22.1%) in weighted FinePDFs, 12/48 (25.0%) in
+FineMath, and 10/35 (28.6%) in OpenWebMath. Four-row Common Pile strata are
+discovery evidence only—high observations in regulations, USGPO, or arXiv
+papers require larger source-specific confirmation rather than extrapolation.
+Every flagged row will be excluded or source-disjointly regenerated; a source's
+marketing label never overrides the boundary. The five screen receipts and
+source-safe aggregates were replayed from Hugging Face dataset commit
+[`5dc89bfeceadf56663a8f00c479f5d41d5229671`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5dc89bfeceadf56663a8f00c479f5d41d5229671).
+
 [PleIAs Common Corpus](https://huggingface.co/datasets/PleIAs/common_corpus)
 adds a distinct 2.27T-token, traceable open corpus rather than another opaque
 web mixture. Its rows expose collection, open-status, license, language,
