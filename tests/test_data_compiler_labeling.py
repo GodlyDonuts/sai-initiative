@@ -17,6 +17,8 @@ from sai.data.data_compiler_labeling import (
 )
 from sai.data.nous_compiler_worker import (
     DEFAULT_COMPILER_CONCURRENCY,
+    RETRY_TIMING_POLICY,
+    _retry_delay_seconds,
     execute_one,
     run_shard,
     run_shard_locked,
@@ -659,6 +661,24 @@ def test_streaming_compiler_transport_is_explicit_and_hashed() -> None:
     assert receipt["request_stream_transport"] is True
     assert receipt["credential_transport"] == "hermes_loopback_proxy"
     assert receipt["shared_provider_concurrency_limit"] == 10
+    assert receipt["retry_timing_policy"] == RETRY_TIMING_POLICY
+
+
+def test_transient_http_retry_delay_is_deterministically_staggered() -> None:
+    identity = "a" * 64
+    first = _retry_delay_seconds(identity, 1, "transient_http_error")
+    second = _retry_delay_seconds(identity, 2, "transient_http_error")
+    assert 1.0 <= first <= 2.0
+    assert second == min(30.0, first * 2)
+    assert _retry_delay_seconds(identity, 2, "invalid_model_output") == 2.0
+    assert _retry_delay_seconds(identity, 10, "transient_http_error") == 30.0
+    assert _retry_delay_seconds(identity, 10_000, "transient_http_error") == 30.0
+
+
+@pytest.mark.parametrize("identity", ["", "g" * 64, "a" * 63])
+def test_retry_delay_rejects_invalid_identity(identity: str) -> None:
+    with pytest.raises(NousLabelWorkerError, match="retry timing identity differs"):
+        _retry_delay_seconds(identity, 1, "transient_http_error")
 
 
 def test_sse_chat_completion_reconstruction_is_bounded_and_exact() -> None:

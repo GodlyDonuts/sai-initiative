@@ -45,6 +45,7 @@ DEFAULT_COMPILER_CONCURRENCY = 4
 MAXIMUM_RESUME_RECEIPT_BYTES = 4 << 20
 DEFAULT_SHARED_PROVIDER_CONCURRENCY = 10
 HERMES_LOOPBACK_URL = "http://127.0.0.1:8645/v1"
+RETRY_TIMING_POLICY = "identity_staggered_exponential_v1"
 
 
 def _shared_provider_concurrency(base_url: str) -> int | None:
@@ -63,6 +64,35 @@ def _shared_provider_concurrency(base_url: str) -> int | None:
     if not 1 <= value <= 64 or str(value) != raw:
         raise NousLabelWorkerError("shared provider concurrency differs")
     return value
+
+
+def _retry_delay_seconds(
+    candidate_identity_sha256: str, attempt: int, outcome: str
+) -> float:
+    """Stagger transient HTTP retries without changing scientific request bytes."""
+
+    if (
+        not isinstance(candidate_identity_sha256, str)
+        or len(candidate_identity_sha256) != 64
+        or any(
+            character not in "0123456789abcdef"
+            for character in candidate_identity_sha256
+        )
+        or isinstance(attempt, bool)
+        or not isinstance(attempt, int)
+        or attempt < 1
+        or not isinstance(outcome, str)
+        or not outcome
+    ):
+        raise NousLabelWorkerError("retry timing identity differs")
+    # Six or more exponential steps already exceed the 30-second ceiling. Avoid
+    # constructing an unbounded integer when a malformed caller supplies an
+    # extreme attempt count.
+    base = 30.0 if attempt >= 6 else float(2 ** (attempt - 1))
+    if outcome != "transient_http_error":
+        return base
+    jitter_milli = 1000 + (int(candidate_identity_sha256[:8], 16) % 1001)
+    return min(30.0, base * jitter_milli / 1000.0)
 
 
 def _shared_provider_slot_root() -> Path:
@@ -377,7 +407,13 @@ def execute_contract(
                         ),
                     },
                 ]
-        sleep_function(min(30.0, float(2 ** (attempt - 1))))
+        sleep_function(
+            _retry_delay_seconds(
+                candidate["candidate_identity_sha256"],
+                attempt,
+                attempts[-1]["outcome"],
+            )
+        )
     if response is None or judgment is None or choice is None or raw_judgment is None:
         raise NousLabelWorkerError("Nous request produced no compiler response")
     usage = response.get("usage")
@@ -405,6 +441,7 @@ def execute_contract(
             else "direct_portal_bearer"
         ),
         "shared_provider_concurrency_limit": shared_provider_concurrency,
+        "retry_timing_policy": RETRY_TIMING_POLICY,
         "requested_model": model,
         "request_sha256": request_sha256,
         "attempt_request_sha256s": attempt_request_sha256s,

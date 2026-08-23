@@ -347,6 +347,15 @@ lanes were terminated; healthy production workers and every completed receipt
 were preserved. Twelve was therefore rejected and the measured ten-slot limit
 remains active.
 
+Transient HTTP retries are now deterministically staggered by candidate
+identity instead of waking every independent worker on the same 1/2/4/8-second
+boundaries. The exponential backoff and 30-second ceiling remain intact; only
+the transient-HTTP retry timing receives a stable 1.000--2.000 multiplier. This
+breaks provider-side retry herds without changing prompts, judgments, candidate
+assignments, request hashes, or the content of any accepted training record.
+Every new receipt names the retry-timing policy, while completed receipts remain
+immutable and replayable.
+
 Two previously interrupted but fully acquired teacher populations are now also
 dependency-staged for exact resumption. The first contains 1,024 byte-weighted
 documents across FinePDFs, FineWeb-Edu, SmolLM, FineMath, Dolma, and OpenWebMath;
