@@ -379,6 +379,18 @@ exceeded 128 KiB. Long papers and books must enter a structure-aware
 segmentation queue that preserves sections, provenance, and work identity;
 blind truncation or blanket rejection would destroy valuable long-form signal.
 
+`sai.data.structural_segmentation` implements that queue's lossless mechanical
+boundary. It operates on raw pretraining rows, leaves in-budget rows unchanged,
+and prefers paragraph, line, sentence, clause, and word boundaries before an
+exact Unicode-character fallback. Every child binds the upstream dataset,
+revision, file, row, parent-text digest, segment index/count, UTF-8 byte range,
+and child-text digest. The compiler verifies ordered byte reconstruction and
+writes a text-free lineage manifest. `sai.data.decontamination` derives a unique
+row ID from this child lineage, while `sai.data.attribution_manifest` replays the
+same lineage and license obligations. Segmentation grants no quality decision,
+rights clearance, benchmark clearance, deduplication status, or training
+admission.
+
 ## Institutional Books lane
 
 The Harvard Library Institutional Books release is now a pinned, separate

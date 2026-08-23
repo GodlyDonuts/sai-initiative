@@ -15,6 +15,7 @@ from collections.abc import Callable, Container
 from pathlib import Path
 from typing import Any
 
+from sai.data.source_lineage import SourceLineageError, source_row_id
 from sai.data.token_stream import ROW_SCHEMA, canonical_sha256, sha256_file
 
 RAW_SCHEMA = "sai-raw-pretraining-document-v1"
@@ -343,6 +344,10 @@ def _raw_row(row: Any, *, source_path_sha256: str, line_number: int) -> dict[str
         not in {"english", "code", "math", "science", "technical"}
     ):
         raise DecontaminationError("raw pretraining row provenance differs")
+    try:
+        source_row_id(source, text)
+    except SourceLineageError as error:
+        raise DecontaminationError("raw pretraining row lineage differs") from error
     identity = canonical_sha256(
         {
             "source_path_sha256": source_path_sha256,
@@ -474,14 +479,7 @@ def _compute(
                 "text": raw["text"],
                 "source": {
                     "dataset": source_row["dataset"],
-                    "row_id": canonical_sha256(
-                        {
-                            "dataset": source_row["dataset"],
-                            "revision": source_row["revision"],
-                            "source_file": source_row["source_file"],
-                            "row_index": source_row["row_index"],
-                        }
-                    ),
+                    "row_id": source_row_id(source_row, raw["text"]),
                     "license": source_row["license"],
                     "domain": source_row["domain"],
                 },

@@ -12,6 +12,11 @@ from typing import Any
 from sai.data.agent_labeling import _atomic_create
 from sai.data.decontamination import RAW_SCHEMA
 from sai.data.license_policy import POLICY, classify_declared_license
+from sai.data.source_lineage import (
+    SourceLineageError,
+    source_row_id,
+    structural_segment,
+)
 from sai.data.token_stream import canonical_sha256, normalize_document, sha256_file
 
 SCHEMA = "sai-document-attribution-manifest-v1"
@@ -46,14 +51,10 @@ def _raw_source(row: Any) -> tuple[dict[str, Any], str]:
         or not source["domain"]
     ):
         raise AttributionManifestError("attribution raw provenance differs")
-    row_id = canonical_sha256(
-        {
-            "dataset": source["dataset"],
-            "revision": source["revision"],
-            "source_file": source["source_file"],
-            "row_index": source["row_index"],
-        }
-    )
+    try:
+        row_id = source_row_id(source, row["text"])
+    except SourceLineageError as error:
+        raise AttributionManifestError("attribution raw lineage differs") from error
     return source, row_id
 
 
@@ -128,9 +129,7 @@ def build_manifest(
                     raise AttributionManifestError(
                         "attribution raw source row is duplicated"
                     )
-                classification = classify_declared_license(
-                    source["declared_license"]
-                )
+                classification = classify_declared_license(source["declared_license"])
                 if (
                     classification["rights_hold"]
                     or classification["canonical_license"] != source["license"]
@@ -141,36 +140,35 @@ def build_manifest(
                     raise AttributionManifestError(
                         "attribution retained provenance or license differs"
                     )
+                source_record = {
+                    "dataset": source["dataset"],
+                    "revision": source["revision"],
+                    "source_file": source["source_file"],
+                    "row_index": source["row_index"],
+                    "domain": source["domain"],
+                }
+                segment = structural_segment(source, raw["text"])
+                if segment is not None:
+                    source_record["segment"] = segment
                 record = {
                     "schema": SCHEMA,
                     "identity_sha256": document["identity_sha256"],
                     "row_id": row_id,
-                    "source": {
-                        "dataset": source["dataset"],
-                        "revision": source["revision"],
-                        "source_file": source["source_file"],
-                        "row_index": source["row_index"],
-                        "domain": source["domain"],
-                    },
+                    "source": source_record,
                     "rights_declaration": {
                         "declared_license": classification["declared_license"],
                         "canonical_license": classification["canonical_license"],
                         "classification_sha256": classification[
                             "classification_sha256"
                         ],
-                        "attribution_required": classification[
-                            "attribution_required"
-                        ],
-                        "share_alike_required": classification[
-                            "share_alike_required"
-                        ],
+                        "attribution_required": classification["attribution_required"],
+                        "share_alike_required": classification["share_alike_required"],
                         "rights_hold": False,
                     },
                 }
                 record["record_sha256"] = canonical_sha256(record)
                 target.write(
-                    json.dumps(record, sort_keys=True, separators=(",", ":"))
-                    + "\n"
+                    json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n"
                 )
                 ordered_identity.update(bytes.fromhex(document["identity_sha256"]))
                 obligation_counts["attribution_required"] += bool(

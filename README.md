@@ -508,6 +508,17 @@ and measurement receipt
 were remotely replayed in Hugging Face commit
 [`e15ca127c695d2d42df04e15738e56525f0bb3ce`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e15ca127c695d2d42df04e15738e56525f0bb3ce).
 
+Sai now has a create-only long-document recovery path rather than a truncation
+policy. `sai-segment-long-documents` splits only over-budget raw documents,
+preferring paragraph, line, sentence, clause, and word boundaries before a
+lossless Unicode-character fallback. It never normalizes or rewrites source
+text, proves exact parent reconstruction, issues collision-free child row
+identities, and emits a text-free segment-lineage manifest. Segment geometry is
+carried through benchmark decontamination and the attribution manifest. This is
+preparatory compiler infrastructure, not a FinePDF admission result: segmented
+documents still require contamination screening, global deduplication, rights
+verification, representation verification, and curriculum placement.
+
 NVIDIA's organic/translated Nemotron-CC v2.1, CC-Code v1, and Code v2
 repositories were investigated but are not counted: metadata is visible while
 the current user token receives HTTP 403 on the actual gated objects. The
