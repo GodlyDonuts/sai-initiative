@@ -68,6 +68,7 @@ sai-build-frontier-source-audit-expansion = "sai.data.frontier_source_audit_expa
 sai-build-common-pile-audit = "sai.data.common_pile_audit_population:main"
 sai-build-common-pile-confirmation = "sai.data.common_pile_confirmation_population:main"
 sai-audit-common-pile-rights = "sai.data.common_pile_rights_audit:main"
+sai-inventory-reservoir-rights = "sai.data.reservoir_rights_inventory:main"
 sai-build-attribution-manifest = "sai.data.attribution_manifest:main"
 sai-promote-common-pile-confirmation = "sai.data.confirmation_promotion:main"
 sai-build-common-pile-streaming-pilot = "sai.data.common_pile_streaming_pilot:main"

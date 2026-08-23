@@ -50,6 +50,19 @@ text, tokens, or training data. The receipt contains no source text and its
 remote SHA-256 replayed exactly as
 `659e2eee6d95e065f1c6f5d2a31256847adf60f6e8b5d96ec19cfd79b173792c`.
 
+Dataset commit
+[`53e71e0c0f6e794d933421d5e459a0ec70e3f933`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/53e71e0c0f6e794d933421d5e459a0ec70e3f933)
+adds the text-free full-reservoir rights inventory under receipt
+`6ea8d853f23de1afded8bf66033fa4e873898c8608677b2fa191341d5f7bdf0c`.
+It binds 46 source lanes, 45 exact repository revisions, 42,600 files, and
+23,680,076,298,761 physical candidate bytes. Eleven lanes route to recognized
+declaration obligations, 31 to per-row license evidence, and four to
+source-terms resolution. One exact pinned tree, Common Pile StackV2 HTML, has
+no README; the inventory records the absence instead of borrowing a mutable or
+different-revision card. The remote file SHA-256 replayed as
+`a0f316bb11b75e7c3d49594ea10bbec90e91229f52ca44c2e230886cd2da6d1e`.
+The inventory is evidence routing, not legal clearance or training admission.
+
 The first registry commit is
 `89152fff3e47d85e35e75cad6b419b4f304a4e85`. It contains 22 paths: the dataset
 card, a 462-file local artifact index, five source-registry entries, a sanitized

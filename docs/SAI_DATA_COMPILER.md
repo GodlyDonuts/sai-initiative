@@ -308,6 +308,16 @@ observed reservoirs. Both retain attribution obligations. The new schema does
 not mutate the earlier Common Pile rights receipt or turn a dataset-level
 license into a content-level legal conclusion.
 
+`sai.data.reservoir_rights_inventory` has now replayed both candidate
+reservoirs. It binds 46 source lanes and 45 exact repository revisions covering
+all 42,600 files and 23,680,076,298,761 physical candidate bytes. Eleven lanes
+have recognized declaration obligations, 31 require per-row license evidence,
+and FineWeb2-HQ, Institutional Books, OpenWebMath, plus Common Pile StackV2
+HTML require source-terms resolution. The last pinned tree contains no README;
+absence is a fail-closed result, not permission to borrow another revision's
+terms. Receipt:
+`6ea8d853f23de1afded8bf66033fa4e873898c8608677b2fa191341d5f7bdf0c`.
+
 `sai.data.benchmark_boundary_index` builds a non-reversible official benchmark
 boundary for 18,235 rows across nine public benchmark views. The r1 13-token
 word index contains 27,979,728 unique SHA-256 keys and its r1 8-token code index
