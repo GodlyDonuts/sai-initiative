@@ -247,6 +247,21 @@ def execute_contract(
                         + ", ".join(REPRESENTATIONS)
                         + ". Do not invent, repeat, or combine labels."
                     )
+                elif (
+                    evidence_container_name == "document"
+                    and "non-English translation plan differs" in str(error)
+                ):
+                    validation_hint = (
+                        " source_language means the predominant language of the "
+                        "actual supplied document, not a language, title, author, "
+                        "or work merely discussed inside it. If the document is "
+                        "English, set source_language=english, "
+                        "translation_disposition=not_needed_english, and "
+                        "translation_priority=0. If a retained document is "
+                        "non-English, include english_translation in "
+                        "recommended_representations, use a non-English translation "
+                        "disposition, and set translation_priority to 1..4."
+                    )
                 body["messages"] = [
                     *base_messages,
                     {"role": "assistant", "content": prior_content},
