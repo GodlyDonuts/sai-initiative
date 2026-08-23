@@ -627,3 +627,6 @@ Only these three text-free receipts are eligible for publication. The raw
 parents, individual rows, and audit text remain unpublished. Benchmark
 screening, source-wide near-duplicate filtering, Hermès quality compilation,
 curriculum placement, bulk ingestion, and training admission remain false.
+All three eligible files were force-downloaded and replayed byte-for-byte from
+dataset commit
+[`288fe22adf52f8b5430cfa6834c039c45004cbbc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/288fe22adf52f8b5430cfa6834c039c45004cbbc).

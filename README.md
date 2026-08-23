@@ -184,7 +184,9 @@ obligation handling, 5,027,859,142,584 require per-row license evidence, and
 full-reservoir text-payload yield remains unresolved, so the candidate-byte sum cannot
 be used as a training-data claim. The path-portable text-free r7 receipt has file
 SHA-256
-`9fb929317de7de7aecdee12b97b91150e99ffe3876ca92c49bd32655a68089bc`;
+`9fb929317de7de7aecdee12b97b91150e99ffe3876ca92c49bd32655a68089bc`
+and replayed byte-for-byte from Hugging Face dataset commit
+[`288fe22adf52f8b5430cfa6834c039c45004cbbc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/288fe22adf52f8b5430cfa6834c039c45004cbbc);
 earlier ledger releases remain immutable historical evidence.
 
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
@@ -311,6 +313,9 @@ population. The census receipt is
 `507561b16269da59bfe5f85ab9ae64e4f9b8b88d815078812d06f843e0cf2708`
 and its source-safe publication envelope is
 `00cc4bcd19ec550adef2f323e57b81746db7d52c07a6555fdeda16d86bfa52a3`.
+The census, publication, and r7 ledger receipts were force-downloaded and
+replayed exactly from Hugging Face dataset commit
+[`288fe22adf52f8b5430cfa6834c039c45004cbbc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/288fe22adf52f8b5430cfa6834c039c45004cbbc).
 
 The corrected reservoir rights inventory now binds **46 source lanes, 45 exact
 repository revisions, 42,600 files, and all 23,680,076,298,761 candidate
