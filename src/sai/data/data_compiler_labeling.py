@@ -239,7 +239,7 @@ def _recover_unique_source_span(document: str, quote: str) -> tuple[str, int, in
         return quote, start, start + len(quote)
     target = _quote_normal_form(quote)
     if not target:
-        raise DataCompilerLabelingError("evidence quotes differ")
+        raise DataCompilerLabelingError("evidence quote normalization is empty")
     target_tokens = target.split(" ")
     raw_tokens = list(re.finditer(r"\S+", document))
     normalized_tokens: list[tuple[str, int]] = []
@@ -262,8 +262,14 @@ def _recover_unique_source_span(document: str, quote: str) -> tuple[str, int, in
         end = raw_tokens[last_raw].end()
         if _quote_normal_form(document[start:end]) == target:
             matches.add((start, end))
+    if not matches:
+        raise DataCompilerLabelingError(
+            "evidence quote normalization has no exact source span"
+        )
     if len(matches) != 1:
-        raise DataCompilerLabelingError("evidence quotes differ")
+        raise DataCompilerLabelingError(
+            "evidence quote normalization has ambiguous source spans"
+        )
     start, end = next(iter(matches))
     return document[start:end], start, end
 
@@ -465,19 +471,18 @@ def normalize_model_judgment(payload: Any, candidate: dict[str, Any]) -> dict[st
         raise DataCompilerLabelingError("risks differ")
     confidence = _bounded_int(row["confidence_ppm"], 0, 1_000_000, "confidence")
     evidence = row["evidence_quotes"]
-    if (
-        not isinstance(evidence, list)
-        or not 1 <= len(evidence) <= 4
-        or len(evidence) != len(set(evidence))
-        or any(
-            not isinstance(quote, str)
-            or not quote.strip()
-            or len(quote) > 1024
-            or quote not in candidate["text"]
-            for quote in evidence
-        )
+    if not isinstance(evidence, list) or not 1 <= len(evidence) <= 4:
+        raise DataCompilerLabelingError("evidence quote list geometry differs")
+    if len(evidence) != len(set(evidence)):
+        raise DataCompilerLabelingError("evidence quote uniqueness differs")
+    if any(
+        not isinstance(quote, str)
+        or not quote.strip()
+        or len(quote) > 1024
+        or quote not in candidate["text"]
+        for quote in evidence
     ):
-        raise DataCompilerLabelingError("evidence quotes differ")
+        raise DataCompilerLabelingError("evidence quote source span differs")
     brief = row["transformation_brief"]
     rationale = row["rationale"]
     if (
