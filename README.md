@@ -91,7 +91,7 @@ copying bytes when their terms prohibit redistribution.
 Sai is now executing two related but deliberately separate programs:
 
 1. **Hash-bound source-candidate reservoirs.** Two immutable inventories now
-   reference 17.399 physical TiB of reality anchors and candidate material.
+   reference 21.537 physical TiB of reality anchors and candidate material.
    They provide breadth and filtering headroom; neither is itself a training
    set.
 2. **A prospective 8T-token training curriculum.** This is the maximum-horizon
@@ -157,11 +157,12 @@ mixture allocation.
 The first semantic results exposed an unavoidable arithmetic fact: an 8 TiB
 raw reservoir cannot yield 8 TiB of finished data after rejecting damaged,
 duplicated, unsafe, low-value, or rights-incompatible material. Sai therefore
-sealed a second, source-only frontier inventory on 2026-08-24. Its v2 contains
-**16,488 files and 10,333,086,982,241 physical bytes (9.3978878633 TiB)** from
-modern, independently curated source families. Together, the two reservoirs
-reference **19,129,977,790,667 physical bytes (17.3986134456 TiB)** before
-cross-reservoir deduplication and quality compilation.
+sealed a second, source-only frontier inventory on 2026-08-24. Frontier v3
+contains **26,599 files and 14,883,185,490,335 physical bytes
+(13.5361783490 TiB)** from modern, independently curated source families.
+Together, the two reservoirs reference **23,680,076,298,761 physical bytes
+(21.5369039313 TiB)** before cross-reservoir deduplication and quality
+compilation.
 
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
 | --- | --- | ---: | ---: | --- |
@@ -170,21 +171,24 @@ cross-reservoir deduplication and quality compilation.
 | FineWeb2-HQ multilingual | `c0c06e94fd3a44ae9e802b2b0fc533817601eb5e` | 5,891 | 6,042,406,965,380 | Twenty-language high-value translation discovery |
 | Nemotron specialized reasoning | `9ed3718b5f2ae29074c5e34e64115432b7c4320f` | 219 | 244,286,609,368 | RQA, InfiniByte, math textbooks, and scientific coding |
 | UltraData-Math L1 selected slice | `fe10db8efd35597fd7fcff8ff576b5ec4ea5ff87` | 1,485 | 366,622,518,811 | Filtered and deduplicated mathematical source material |
+| PleIAs Common Corpus | `307910e4c5d040d6f318e6edf2a2b97849155771` | 10,000 | 4,489,486,652,558 | Traceable open-license and public-domain global reality anchors |
+| Nemotron Specialized v1.2 | `807afc1fa65c441d46ebc7d9b95295a35499a527` | 90 | 53,621,158,028 | Fact seeking, generative tasks, moral scenarios, and multiple choice |
+| Nemotron Legal v1 | `3d91d58a5c0c46fe9944300ec46719f97a385b13` | 21 | 6,990,697,508 | Primary law and legal reasoning |
 | Common Pile filtered collection | 31 exact repository revisions | 845 | 540,438,290,489 | Courts, government, patents, science, books, education, code, reference, and culture |
 
-The 10,257,303-byte v2 manifest has SHA-256
-`add5e374b747f0c19cc2144c7ee43cde577ecb8eadcda3fd53b1e2dc51a145d4`
+The 16,200,072-byte v3 manifest has SHA-256
+`0a59e8a24208f8593f806b919a65a3e3e64d911936f137286235c31627f56ebd`
 and ordered-row SHA-256
-`ccc934ec7f0aea92b71009130ad86a9ee0e227ecdd8384a90ff2318d0962c6f8`.
+`510ddd35f23a00474d1ba5e6468f65bfd44e82cf33b98c8ed9870e85bf744819`.
 Its canonical receipt is
-`bf173af7e4540b574373ae06ce2be917298346e2ca54981e0cb26e365fe6f1a3`
+`5c3423c8d473a6155f6c402deeef298f95e89cc3769c968ced6da79f24d488a1`
 and the receipt file SHA-256 is
-`56475757f451680f53afb30a3183386c115d2d13f3dff7aa42e1515788c9c264`.
+`3a4a3169a8fbb75bb805dc8726c2e15e96bd21a0958f1b9bf1e2585156b09468`.
 Every selected revision is exact, every file is upstream-LFS-hash-bound, and
 at least one selected object per slice passed a byte-access probe.
 The source-safe manifest and receipt were uploaded and re-downloaded
 byte-for-byte in Hugging Face dataset commit
-[`7f0a5e2b85454e4696be463cfb146a0b8f57cc98`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7f0a5e2b85454e4696be463cfb146a0b8f57cc98).
+[`65729b3e32cc5f86aa440cb2ff2f6e3bc8d64611`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/65729b3e32cc5f86aa440cb2ff2f6e3bc8d64611).
 
 The Common Pile expansion deliberately supplies epistemic functions missing
 from a web-heavy reservoir: case law, regulations, Hansard, US government
@@ -193,6 +197,13 @@ and open-access books, open textbooks, Stack-Edu code, technical discussion,
 Wikipedia-family reference material, and spoken explanation. Sai uses the
 filtered releases as source candidates, retains each component's exact
 revision, and still requires per-record rights and quality review.
+
+[PleIAs Common Corpus](https://huggingface.co/datasets/PleIAs/common_corpus)
+adds a distinct 2.27T-token, traceable open corpus rather than another opaque
+web mixture. Its rows expose collection, open-status, license, language,
+creator, and date metadata alongside text. Valuable non-English material is a
+translation-discovery pool, not automatic English training data; literary form
+and cultural context remain protected from indiscriminate rewriting.
 
 These are **physical source-object bytes, not measured text-payload bytes**.
 FineWeb2-HQ, for example, includes large embedding columns, so treating its
@@ -209,6 +220,10 @@ public Nemotron specialized-reasoning slices are counted and will still face
 the same quality, novelty, generator-lineage, contamination, and benchmark
 gates as every other synthetic source. In particular, Sai does not import the
 2.1T-token medium-high synthetic-rephrase bulk merely to inflate volume.
+Nemotron Pretraining Code v3 is also excluded from byte counts because its
+published Parquet schema contains repository, path, language, and commit
+metadata but no code text. Those locators may support a future rights-aware
+source fetch, but an index is not training data.
 
 #### Moving-center spiral for an 8T-token run
 

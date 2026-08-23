@@ -1,6 +1,7 @@
 import pytest
 
 from sai.data.frontier_source_reservoir import (
+    NON_TEXT_CANDIDATE_REPOSITORIES_NOT_COUNTED,
     SOURCE_SPECS,
     FrontierSourceReservoirError,
     select_frontier_sources,
@@ -28,6 +29,9 @@ def test_frontier_source_selection_is_exact_large_and_non_admitting() -> None:
     assert all(row["physical_bytes_are_text_payload_bytes"] is False for row in rows)
     assert all(row["source_candidate_is_training_ready"] is False for row in rows)
     assert [row["ordinal"] for row in rows] == list(range(len(rows)))
+    assert NON_TEXT_CANDIDATE_REPOSITORIES_NOT_COUNTED == (
+        "nvidia/Nemotron-Pretraining-Code-v3",
+    )
 
 
 def test_frontier_source_selection_rejects_unlisted_path() -> None:

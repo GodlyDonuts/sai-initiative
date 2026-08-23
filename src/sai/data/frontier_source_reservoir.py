@@ -171,6 +171,39 @@ SOURCE_SPECS = (
         "public",
         "math_filtered_deduplicated_source",
     ),
+    FrontierSourceSpec(
+        "pleias_common_corpus",
+        "PleIAs/common_corpus",
+        "307910e4c5d040d6f318e6edf2a2b97849155771",
+        ("common_corpus_",),
+        ".parquet",
+        "text",
+        "source_specific_public_domain_or_open_license",
+        "public",
+        "traceable_open_global_reality_anchors",
+    ),
+    FrontierSourceSpec(
+        "nemotron_specialized_v1_2",
+        "nvidia/Nemotron-Pretraining-Specialized-v1.2",
+        "807afc1fa65c441d46ebc7d9b95295a35499a527",
+        ("Nemotron-Pretraining-",),
+        ".parquet",
+        "text",
+        "cc-by-4.0_and_cc-by-2.0_with_upstream_terms",
+        "public",
+        "fact_seeking_generative_moral_and_multiple_choice_reasoning",
+    ),
+    FrontierSourceSpec(
+        "nemotron_legal_v1",
+        "nvidia/Nemotron-Pretraining-Legal-v1",
+        "3d91d58a5c0c46fe9944300ec46719f97a385b13",
+        ("Nemotron-Pretraining-Legal-",),
+        ".parquet",
+        "text",
+        "cc-by-4.0_with_upstream_terms",
+        "public",
+        "legal_reasoning_and_primary_law",
+    ),
     *(
         FrontierSourceSpec(
             f"common_pile_{name}",
@@ -192,6 +225,8 @@ GATED_CANDIDATE_REPOSITORIES = (
     "nvidia/Nemotron-CC-Code-v1",
     "nvidia/Nemotron-Pretraining-Code-v2",
 )
+
+NON_TEXT_CANDIDATE_REPOSITORIES_NOT_COUNTED = ("nvidia/Nemotron-Pretraining-Code-v3",)
 
 
 class FrontierSourceReservoirError(RuntimeError):
@@ -375,6 +410,9 @@ def build_frontier_reservoir(
         "text_payload_bytes_measured": False,
         "selected_slices_are_source_candidates": True,
         "gated_candidate_repositories_not_counted": list(GATED_CANDIDATE_REPOSITORIES),
+        "non_text_candidate_repositories_not_counted": list(
+            NON_TEXT_CANDIDATE_REPOSITORIES_NOT_COUNTED
+        ),
         "overlap_with_prior_reservoir_resolved": False,
         "quality_compilation_complete": False,
         "rights_review_complete": False,
