@@ -35,6 +35,21 @@ verification result, and an upstream quality label is not a Sai admission.
 - `verified/` is reserved for verified representations.
 - `training/` is reserved for final packed populations.
 
+## Conversion-yield ledger
+
+Dataset commit
+[`22eb617b741bc21c38d154f36fe040e8652e7b2a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/22eb617b741bc21c38d154f36fe040e8652e7b2a)
+adds the first source-safe conversion-yield ledger under receipt
+`b6a984a0552f2fc58352d5d66a79c4cdd8d771aff26f82a0f12e0fb0cf4bcea8`.
+It hash-verifies two distinct reservoir manifests totaling
+23,680,076,298,761 referenced candidate bytes and two Common Pile population
+receipts totaling 348 audit rows. It records zero completed bounded pilots and
+zero training-ready bytes. Cross-inventory overlap and exact text-payload yield
+remain unresolved, so candidate physical bytes are not presented as unique
+text, tokens, or training data. The receipt contains no source text and its
+remote SHA-256 replayed exactly as
+`659e2eee6d95e065f1c6f5d2a31256847adf60f6e8b5d96ec19cfd79b173792c`.
+
 The first registry commit is
 `89152fff3e47d85e35e75cad6b419b4f304a4e85`. It contains 22 paths: the dataset
 card, a 462-file local artifact index, five source-registry entries, a sanitized

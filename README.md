@@ -164,6 +164,18 @@ Together, the two reservoirs reference **23,680,076,298,761 physical bytes
 (21.5369039313 TiB)** before cross-reservoir deduplication and quality
 compilation.
 
+Those bytes are now independently accounted under the source-safe conversion
+ledger receipt
+`b6a984a0552f2fc58352d5d66a79c4cdd8d771aff26f82a0f12e0fb0cf4bcea8`.
+The ledger hash-verifies both reservoir manifests and the 124-row discovery
+plus 224-row confirmation populations. Its current funnel is deliberately
+blunt: 21.5369 TiB referenced candidates, 348 acquired audit rows, zero
+completed source pilots, and **0 training-ready bytes**. It also records that
+cross-inventory overlap and exact text-payload yield remain unresolved, so the
+candidate-byte sum cannot be used as a training-data claim. The text-free
+receipt was uploaded and replayed byte-for-byte in Hugging Face commit
+[`22eb617b741bc21c38d154f36fe040e8652e7b2a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/22eb617b741bc21c38d154f36fe040e8652e7b2a).
+
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
 | --- | --- | ---: | ---: | --- |
 | Ultra-FineWeb current English L2 (2026-08-20 slice) | `02c85641e3d19a854be2e09139c25adaa9518063` | 6,000 | 477,974,475,357 | Newest model-selected English web |
