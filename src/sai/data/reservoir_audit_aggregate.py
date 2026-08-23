@@ -27,6 +27,7 @@ from sai.data.reservoir_audit_population import (
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 SCHEMA = "sai-reservoir-hermes-audit-aggregate-v1"
+ALLOWED_REASONING_EFFORTS = (COMPILER_REASONING_EFFORT, "medium")
 
 
 class ReservoirAuditAggregateError(RuntimeError):
@@ -127,7 +128,7 @@ def _validate_compiler_receipt(
         != candidate["candidate_identity_sha256"]
         or receipt.get("rubric_sha256") != RUBRIC_SHA256
         or receipt.get("requested_model") != DEFAULT_MODEL
-        or receipt.get("request_reasoning_effort") != COMPILER_REASONING_EFFORT
+        or receipt.get("request_reasoning_effort") not in ALLOWED_REASONING_EFFORTS
         or receipt.get("api_key_persisted") is not False
         or receipt.get("tools_enabled") is not False
         or receipt.get("raw_source_is_training_data") is not False
@@ -271,12 +272,18 @@ def summarize(
         )
     usage = Counter()
     attempt_outcomes = Counter()
+    reasoning_efforts = Counter()
+    nondefault_reasoning_identities = []
     repaired_rows = 0
     for receipt in receipts:
         for key, value in receipt["usage"].items():
             if isinstance(value, int) and not isinstance(value, bool):
                 usage[key] += value
         attempt_outcomes.update(attempt["outcome"] for attempt in receipt["attempts"])
+        effort = receipt.get("request_reasoning_effort", COMPILER_REASONING_EFFORT)
+        reasoning_efforts[effort] += 1
+        if effort != COMPILER_REASONING_EFFORT:
+            nondefault_reasoning_identities.append(receipt["candidate_identity_sha256"])
         repaired_rows += len(receipt["attempts"]) > 1
     return {
         "rows": len(judgments),
@@ -298,6 +305,11 @@ def summarize(
         "potential_translation_rows": potential_translation_rows,
         "usage": dict(sorted(usage.items())),
         "attempt_outcomes": dict(sorted(attempt_outcomes.items())),
+        "request_reasoning_effort_counts": dict(sorted(reasoning_efforts.items())),
+        "nondefault_reasoning_effort_rows": len(nondefault_reasoning_identities),
+        "ordered_nondefault_reasoning_identities_sha256": canonical_sha256(
+            sorted(nondefault_reasoning_identities)
+        ),
         "rows_requiring_repair": repaired_rows,
         "model_judgments_are_verified_admissions": False,
         "representation_verification_is_training_admission": False,

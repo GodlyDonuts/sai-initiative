@@ -5,6 +5,7 @@ from sai.data.reservoir_audit_aggregate import (
     ReservoirAuditAggregateError,
     summarize,
 )
+from sai.data.token_stream import canonical_sha256
 
 
 def _receipt(
@@ -14,8 +15,11 @@ def _receipt(
     bridge: bool = False,
     score: int = 3,
     enabled_risks: tuple[str, ...] = (),
+    reasoning_effort: str = "low",
 ) -> dict:
     return {
+        "candidate_identity_sha256": "1" * 64,
+        "request_reasoning_effort": reasoning_effort,
         "judgment": {
             "verdict": verdict,
             "epistemic_functions": ["reality_anchor"],
@@ -76,6 +80,8 @@ def test_aggregate_reports_model_evidence_without_promoting_it() -> None:
     assert result["mean_scores_milli"]["writing_quality"] == 2500
     assert result["usage"]["total_tokens"] == 240
     assert result["rows_requiring_repair"] == 2
+    assert result["request_reasoning_effort_counts"] == {"low": 2}
+    assert result["nondefault_reasoning_effort_rows"] == 0
     assert result["conservative_triage_routes"] == {
         "factual_grounding_review": 1,
         "representation_verification": 1,
@@ -86,6 +92,18 @@ def test_aggregate_reports_model_evidence_without_promoting_it() -> None:
 def test_aggregate_rejects_missing_receipt() -> None:
     with pytest.raises(ReservoirAuditAggregateError, match="inputs"):
         summarize([{"source_id": "one", "stratum": "one"}], [])
+
+
+def test_aggregate_exposes_nondefault_reasoning_exception() -> None:
+    result = summarize(
+        [{"source_id": "one", "stratum": "synthetic"}],
+        [_receipt("retain", reasoning_effort="medium")],
+    )
+    assert result["request_reasoning_effort_counts"] == {"medium": 1}
+    assert result["nondefault_reasoning_effort_rows"] == 1
+    assert result["ordered_nondefault_reasoning_identities_sha256"] == canonical_sha256(
+        ["1" * 64]
+    )
 
 
 @pytest.mark.parametrize(
