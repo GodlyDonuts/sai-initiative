@@ -206,13 +206,16 @@ from direct admission. The gate deliberately distinguishes hard rejection from
 recoverable context and cleanup review, and its mechanical pass is not semantic
 admission.
 
-The first 12-population publication covers 8,323 distinct identities: 8,313
-mechanical passes, nine cleanup holds, and one hard rejection. Its policy hash is
-`f85ae862121974b48210964b9a81abd55ae4a6a35cf7e7758840ba854f9faf0f`
+The revised 12-population publication covers 8,323 distinct identities: 8,312
+mechanical passes, nine cleanup holds, one context hold for a short
+bibliographic form without source content, and one hard rejection. Its policy
+hash is
+`436ea538156447a7188a15404764302c7b3290b3a06c12677d316f265ccc6c80`
 and canonical publication receipt is
-`c25127e13c579bb066b887d264da1905bd78f2f3d24c183bba547ea019a2bf66`.
+`50a641ecb9f5570235fc2bd50f33cf41c1fcbaa4ff03d71dcfbfbea8e9b71a82`.
 All rows remain `training_ready=false`; the decision streams are evidence about
-admission work, not a compiled training corpus.
+admission work, not a compiled training corpus. The earlier policy and
+publication remain immutable historical evidence.
 
 ### Grounded cross-domain bridge verification
 

@@ -10,6 +10,12 @@ PUBLICATION = (
     / "sai_source_mechanical_quality_gate_publication_20260826_r1.json"
 )
 RECEIPTS = ROOT / "artifacts" / "sai_source_mechanical_quality_gate_20260826_r3"
+PUBLICATION_R2 = (
+    ROOT
+    / "artifacts"
+    / "sai_source_mechanical_quality_gate_publication_20260826_r2.json"
+)
+RECEIPTS_R2 = ROOT / "artifacts" / "sai_source_mechanical_quality_gate_20260826_r4"
 
 
 def test_source_safe_quality_gate_publication_is_exact() -> None:
@@ -41,6 +47,46 @@ def test_source_safe_quality_gate_publication_is_exact() -> None:
     assert len(payload["populations"]) == 12
     for population in payload["populations"]:
         path = RECEIPTS / population["receipt_file"]
+        assert sha256_file(path) == population["receipt_file_sha256"]
+        receipt = json.loads(path.read_text())
+        receipt_unsigned = {
+            key: value for key, value in receipt.items() if key != "receipt_sha256"
+        }
+        assert receipt["receipt_sha256"] == canonical_sha256(receipt_unsigned)
+        assert receipt["training_ready"] is False
+
+
+def test_revised_source_safe_quality_gate_publication_is_exact() -> None:
+    payload = json.loads(PUBLICATION_R2.read_text())
+    unsigned = {key: value for key, value in payload.items() if key != "receipt_sha256"}
+    assert payload["receipt_sha256"] == canonical_sha256(unsigned)
+    assert payload["receipt_sha256"] == (
+        "50a641ecb9f5570235fc2bd50f33cf41c1fcbaa4ff03d71dcfbfbea8e9b71a82"
+    )
+    assert payload["policy_sha256"] == (
+        "436ea538156447a7188a15404764302c7b3290b3a06c12677d316f265ccc6c80"
+    )
+    assert payload["population_assignment_rows"] == 8_323
+    assert payload["unique_candidate_rows"] == 8_323
+    assert payload["cross_population_duplicate_identity_rows"] == 0
+    assert payload["decision_counts"] == {
+        "cleanup_review": 9,
+        "context_review": 1,
+        "hard_reject": 1,
+        "pass_mechanical_gate": 8_312,
+    }
+    assert payload["reason_counts"] == {
+        "contextless_metadata_form": 1,
+        "contextless_scored_answer_sheet": 1,
+        "control_character_corruption": 1,
+        "duplicated_boilerplate": 9,
+    }
+    assert payload["publication_contains_source_text"] is False
+    assert payload["mechanical_pass_is_semantic_admission"] is False
+    assert payload["training_ready"] is False
+    assert len(payload["populations"]) == 12
+    for population in payload["populations"]:
+        path = RECEIPTS_R2 / population["receipt_file"]
         assert sha256_file(path) == population["receipt_file_sha256"]
         receipt = json.loads(path.read_text())
         receipt_unsigned = {

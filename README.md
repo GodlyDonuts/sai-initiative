@@ -230,26 +230,29 @@ boilerplate. Hard-reject, context-review, and cleanup-review routes take
 precedence over a mechanical pass. A pass never implies semantic quality,
 rights clearance, decontamination, global deduplication, or training readiness.
 
-The first exact replay covers **8,323 distinct candidate rows** across 12 current
-populations, with zero candidate-identity overlap between those populations. It
-routed **8,313** to mechanical pass, held **9** for duplicated-boilerplate
-cleanup, and hard-rejected **1** contextless Cambridge physics mark-scheme row.
+The revised exact replay covers **8,323 distinct candidate rows** across 12
+current populations, with zero candidate-identity overlap between those
+populations. It routed **8,312** to mechanical pass, held **9** for
+duplicated-boilerplate cleanup, routed **1** short contextless bibliographic form
+to context review, and hard-rejected **1** contextless Cambridge physics
+mark-scheme row. The catalog-form detector was added after a live Hermès audit
+exposed a 258-byte field list that named a valuable book but contained no book
+content; replay over all 8,323 identities found exactly that one new nonpass.
 That row independently triggered both the scored-answer-sheet detector and 136
 embedded backspace controls. An initially broader scoring-marker detector was
 rejected during development because it falsely matched citations, array indexes,
 PEPs, and papers; those cases are regression fixtures in the final policy.
 
-The source-safe publication is
-[`artifacts/sai_source_mechanical_quality_gate_publication_20260826_r1.json`](artifacts/sai_source_mechanical_quality_gate_publication_20260826_r1.json),
+The current source-safe publication is
+[`artifacts/sai_source_mechanical_quality_gate_publication_20260826_r2.json`](artifacts/sai_source_mechanical_quality_gate_publication_20260826_r2.json),
 with canonical receipt
-`c25127e13c579bb066b887d264da1905bd78f2f3d24c183bba547ea019a2bf66`
+`50a641ecb9f5570235fc2bd50f33cf41c1fcbaa4ff03d71dcfbfbea8e9b71a82`
 and policy SHA-256
-`f85ae862121974b48210964b9a81abd55ae4a6a35cf7e7758840ba854f9faf0f`.
+`436ea538156447a7188a15404764302c7b3290b3a06c12677d316f265ccc6c80`.
 The decision streams retain identities and measurements but no source text; they
-are excluded from Git history but published with all 12 receipts at immutable
-Hugging Face evidence commit
-[`8fcf0ba853617d8200ad0956684754d6390a0fa5`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8fcf0ba853617d8200ad0956684754d6390a0fa5).
-Every nonpass row is barred from direct admission, and all 8,323 rows remain
+are excluded from Git history. The prior r1 publication and its immutable
+Hugging Face evidence commit remain historical evidence. Every nonpass row is
+barred from direct admission, and all 8,323 rows remain
 `training_ready=false`.
 
 #### Cross-domain connection compiler
