@@ -75,6 +75,7 @@ sai-build-common-pile-streaming-pilot = "sai.data.common_pile_streaming_pilot:ma
 sai-replay-common-pile-external-provenance = "sai.data.common_pile_external_provenance:main"
 sai-probe-external-rights-pages = "sai.data.external_rights_page_probe:main"
 sai-build-external-rights-adjudication-queue = "sai.data.external_rights_adjudication_queue:main"
+sai-audit-public-domain-review-scope = "sai.data.public_domain_review_scope_audit:main"
 sai-filter-bounded-near-duplicates = "sai.data.bounded_near_duplicate_filter:main"
 sai-audit-cross-source-pilot-duplicates = "sai.data.cross_source_pilot_duplicates:main"
 sai-build-bounded-pilot-compiler-population = "sai.data.bounded_pilot_compiler_population:main"
@@ -125,7 +126,7 @@ sai-compare-qwen08-workspace = "sai.evaluation.hf_workspace_compare:main"
 
 [project.optional-dependencies]
 train = ["torch>=2.6", "tokenizers>=0.22", "transformers>=5.0"]
-data = ["zstandard>=0.25"]
+data = ["beautifulsoup4>=4.13", "zstandard>=0.25"]
 dev = ["black>=25.0", "pytest>=8.0", "ruff>=0.11"]
 
 [tool.hatch.build.targets.wheel]
