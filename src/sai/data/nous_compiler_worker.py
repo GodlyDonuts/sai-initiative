@@ -218,8 +218,10 @@ def execute_contract(
                             "supported by a byte-for-byte quote from "
                             f"{evidence_container_name}."
                             + (
-                                " Prefer copying evidence_quotes directly from "
-                                "evidence_quote_candidates."
+                                " You MUST replace evidence_quotes only with one "
+                                "to four complete, exact strings copied from "
+                                "evidence_quote_candidates. Do not shorten, "
+                                "normalize, join, or rewrite those strings."
                                 if evidence_container_name == "document"
                                 else ""
                             )

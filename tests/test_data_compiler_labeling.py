@@ -360,6 +360,8 @@ def test_general_compiler_retry_names_the_actual_document_envelope() -> None:
     repair = calls[1]["messages"][-1]["content"]
     assert "byte-for-byte quote from document" in repair
     assert "evidence_quote_candidates" in repair
+    assert "MUST replace evidence_quotes only" in repair
+    assert "Do not shorten, normalize, join, or rewrite" in repair
     assert "book_excerpt" not in repair
 
 
