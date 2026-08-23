@@ -339,6 +339,14 @@ and receipt hashes remain governed by the same contracts. Non-loopback
 endpoints are unaffected, and new receipts record the applied shared limit
 explicitly.
 
+A final bounded twelve-slot probe bracketed the optimum rather than assuming
+that ten was maximal. It held at most eleven simultaneous requests, produced
+zero valid probe receipts in 3m48s, and coincided with repeated five-attempt 429
+exhaustions in the independently running frontier shard. Only the two probe
+lanes were terminated; healthy production workers and every completed receipt
+were preserved. Twelve was therefore rejected and the measured ten-slot limit
+remains active.
+
 Two previously interrupted but fully acquired teacher populations are now also
 dependency-staged for exact resumption. The first contains 1,024 byte-weighted
 documents across FinePDFs, FineWeb-Edu, SmolLM, FineMath, Dolma, and OpenWebMath;
