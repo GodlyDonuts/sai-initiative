@@ -94,6 +94,7 @@ sai-aggregate-bounded-pilot-compiler = "sai.data.bounded_pilot_compiler_aggregat
 sai-build-bounded-pilot-work-queue = "sai.data.bounded_pilot_work_queue:main"
 sai-build-bounded-pilot-concept-claims = "sai.data.bounded_pilot_concept_claims:main"
 sai-build-data-yield-ledger = "sai.data.data_yield_ledger:main"
+sai-freeze-hf-materialized-source-lake = "sai.data.hf_materialized_source_lake:main"
 sai-probe-text-payload = "sai.data.text_payload_probe:main"
 sai-segment-long-documents = "sai.data.structural_segmentation:main"
 sai-deduplicate-global-exact = "sai.data.external_exact_deduplication:main"

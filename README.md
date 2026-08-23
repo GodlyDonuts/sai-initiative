@@ -86,6 +86,50 @@ curriculum artifacts, and final training shards. The registry never treats a
 downloaded dataset as training-ready and records reference-only sources without
 copying bytes when their terms prohibit redistribution.
 
+#### Materialized Hugging Face source-lake checkpoint
+
+The first physical source-lake boundary is now complete. At exact Hugging Face
+dataset head
+[`cc8576fbb3f949bdaf59049a150c1fa1d35f47c3`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/cc8576fbb3f949bdaf59049a150c1fa1d35f47c3),
+Sai has **13,974 byte-identical LFS source shards containing
+8,802,247,613,960 bytes (8.0055975686 TiB)**. This exceeds the exact 8 TiB
+physical-materialization target by 6,154,591,752 bytes. Every included
+destination object was replayed against the size and SHA-256 of its pinned
+upstream object; the replay found zero identity mismatches.
+
+| Materialized source family | Files | Bytes | Snapshot status |
+| --- | ---: | ---: | --- |
+| PleIAs Common Corpus | 10,000 | 4,489,486,652,558 | Complete selected data snapshot; per-row rights required |
+| FinePDFs | 1,250 | 3,082,436,502,565 | Deterministic partial snapshot at storage boundary |
+| Common Pile, 31 families | 845 | 540,438,290,489 | Complete selected source snapshots |
+| UltraData-Math L1 | 1,485 | 366,622,518,811 | Complete source snapshot |
+| Nemotron specialized reasoning | 219 | 244,286,609,368 | Complete source snapshot |
+| Nemotron specialized v1.2 | 90 | 53,621,158,028 | Complete source snapshot |
+| FineMath-4plus | 64 | 18,365,184,633 | Complete source snapshot |
+| Nemotron Legal v1 | 21 | 6,990,697,508 | Complete source snapshot |
+| **Total** | **13,974** | **8,802,247,613,960** | **8 TiB physical target met** |
+
+Hugging Face accepted five deterministic FinePDFs copy batches and then
+returned a public-storage-quota `403` before batch six. No partial sixth batch
+was committed. Sai freezes the accepted head rather than silently changing the
+selection. The file-level manifest contains 13,974 rows and has SHA-256
+`56dc0d512db07aa26533decce8efd86bcb1b705355cd40069fdf9cb6311b5665`;
+the aggregate receipt is
+`0715eefc3c3bda8ee800fc4c80155df461055da3bbf2a473ad6c93cf93bea9d8`.
+Both live under
+[`artifacts/sai_hf_materialized_source_lake_20260825_r1`](artifacts/sai_hf_materialized_source_lake_20260825_r1),
+and the executable remote verifier is
+[`src/sai/data/hf_materialized_source_lake.py`](src/sai/data/hf_materialized_source_lake.py).
+
+This is a major storage and custody milestone, not a training-readiness claim.
+These are compressed source candidates, not eight trillion tokens and not a
+final mixture. Global rights adjudication, English routing/translation,
+benchmark decontamination, exact and semantic deduplication, Hermes quality and
+pedagogy compilation, tokenizer accounting, curriculum assignment, and final
+Parquet publication remain fail-closed. Stokes's 10 Gbps connection is reserved
+for transformations and verification that cannot use zero-download Hugging
+Face server-side copies; its network link is not the present bottleneck.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:
