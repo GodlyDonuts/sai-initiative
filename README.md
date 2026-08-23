@@ -250,10 +250,15 @@ with canonical receipt
 and policy SHA-256
 `436ea538156447a7188a15404764302c7b3290b3a06c12677d316f265ccc6c80`.
 The decision streams retain identities and measurements but no source text; they
-are excluded from Git history. The prior r1 publication and its immutable
-Hugging Face evidence commit remain historical evidence. Every nonpass row is
-barred from direct admission, and all 8,323 rows remain
-`training_ready=false`.
+are excluded from Git history but were published with all 12 receipts and
+byte-replayed at immutable Hugging Face evidence commit
+[`4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc).
+The prior r1 publication remains immutable historical evidence. Every nonpass
+row is barred from direct admission, and all 8,323 rows remain
+`training_ready=false`. The authorized Stokes evidence root contains the same
+publication, dataset card, receipts, and decisions as **28 exact files** under
+relative-path manifest SHA-256
+`4617c4d1982c0027b0ed71e6c92dfe4e50ca6f22d688afdc5019dd6260b9dd7d`.
 
 #### Cross-domain connection compiler
 

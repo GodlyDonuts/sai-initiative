@@ -98,7 +98,9 @@ capacity, not accepted corpus volume.
   publication is under
   `evidence/source-mechanical-quality-gate/20260826-r2/` with canonical receipt
   `50a641ecb9f5570235fc2bd50f33cf41c1fcbaa4ff03d71dcfbfbea8e9b71a82`.
-  A mechanical pass is not semantic or training admission.
+  All 27 expected files were byte-replayed at immutable dataset commit
+  `4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc`. A mechanical pass is not semantic
+  or training admission.
 - Completed Hermès receipts contain 6,751 proposed cross-domain assignments
   across 730 directed labels. A 512-pair, source-disjoint development proposal
   population has been frozen across 290 labels. No proposal is called

@@ -215,7 +215,11 @@ and canonical publication receipt is
 `50a641ecb9f5570235fc2bd50f33cf41c1fcbaa4ff03d71dcfbfbea8e9b71a82`.
 All rows remain `training_ready=false`; the decision streams are evidence about
 admission work, not a compiled training corpus. The earlier policy and
-publication remain immutable historical evidence.
+publication remain immutable historical evidence. All 27 expected r2 dataset
+files were downloaded and hash-matched at Hugging Face commit
+`4ab25974f7b7f40d5ef0bfe2dd8eedfe267831fc`. The 28-file Stokes durable mirror
+has identical relative-path manifest SHA-256
+`4617c4d1982c0027b0ed71e6c92dfe4e50ca6f22d688afdc5019dd6260b9dd7d`.
 
 ### Grounded cross-domain bridge verification
 
