@@ -292,6 +292,26 @@ lane is training-ready until the remaining compiler, rights, full-corpus
 deduplication, and transformation gates close. Screen receipt:
 `02fa2ead3bd14689fb6f46bf7eaca4f1518342aea8e3c08393d44aac1eb9acba`.
 
+The bounded production-pilot path is now executable but evidence-locked.
+`sai.data.confirmation_promotion` combines the confirmation compiler aggregate,
+corrected benchmark screen, discovery/confirmation duplicate report, and exact
+population receipt. A source must have at least 32 confirmation rows, at least
+50% representation-verification routing, zero quarantine, zero rights holds,
+zero benchmark-contaminated rows, zero exact/normalized duplicate pairs, and
+exact identity/content disjointness. A pass authorizes only a bounded streaming
+pilot, never bulk ingestion or training.
+
+`sai.data.common_pile_streaming_pilot` consumes that promotion receipt. It
+chooses the smallest hash-pinned parent not used by discovery or confirmation
+when available, downloads only that parent, verifies the full compressed hash,
+excludes every audit line and content identity, and chooses deterministic
+bottom-k rows in a text-free first pass. A second pass replays the exact rows,
+writes provenance-complete raw candidates, applies the corrected official
+benchmark boundary and exact normalized deduplication, seals receipts, and
+removes the downloaded parent. Documents outside 200 bytes to 128 KiB are
+counted rather than silently truncated. Pilot rows still remain non-training
+data until full rights, near-duplicate, and representation verification close.
+
 The official public-benchmark contamination boundary is executable, but its
 first code-shingle policy has been superseded. It
 projects 18,235 rows from MMLU-Pro, HumanEval+, MBPP+, CorrectBench,

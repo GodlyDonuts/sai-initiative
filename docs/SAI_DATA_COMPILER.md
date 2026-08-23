@@ -244,6 +244,24 @@ permission to weaken the boundary. All source rows remain
 `training_ready=false` pending compiler, rights, full-source deduplication, and
 transformation gates.
 
+The next conversion boundary is executable in
+`sai.data.confirmation_promotion` and
+`sai.data.common_pile_streaming_pilot`. Promotion requires a 32-row minimum,
+at least 500,000 ppm representation-verification routing, zero quarantine,
+zero rights holds, zero benchmark-contaminated rows, zero exact or
+normalized-token duplicate pairs, and exact identity/content disjointness from
+discovery. It authorizes only a bounded streaming pilot.
+
+The pilot then selects one exact hash-pinned parent, prefers a parent unused by
+both audits, excludes every audit line and content hash, performs deterministic
+bottom-k selection in a text-free first pass, and replays only those exact rows
+in source order. The downloaded parent is held one at a time and removed after
+full compressed-byte verification. The pilot applies the active binary
+benchmark boundary and normalized exact deduplication before sealing its local
+outputs. It counts short and oversized documents instead of truncating them,
+and it remains `training_ready=false` until rights, near-duplicate, and
+representation verification are independently complete.
+
 `sai.data.benchmark_boundary_index` builds a non-reversible official benchmark
 boundary for 18,235 rows across nine public benchmark views. The r1 13-token
 word index contains 27,979,728 unique SHA-256 keys and its r1 8-token code index
