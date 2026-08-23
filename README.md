@@ -120,6 +120,12 @@ Both live under
 [`artifacts/sai_hf_materialized_source_lake_20260825_r1`](artifacts/sai_hf_materialized_source_lake_20260825_r1),
 and the executable remote verifier is
 [`src/sai/data/hf_materialized_source_lake.py`](src/sai/data/hf_materialized_source_lake.py).
+The receipt, updated dataset card, and a four-part text publication of the
+manifest were remotely replayed at Hugging Face evidence head
+[`122b98e0aa38130b0165ed3166cc7a569c3cddf0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/122b98e0aa38130b0165ed3166cc7a569c3cddf0).
+Ordered concatenation of the four remote parts reproduced all 13,974 rows and
+the exact manifest SHA-256. The parts descriptor has canonical receipt
+`3287b272bd78bd12fca1b9a580928a8b0556815ecc404f57b3cb6ee401632c7a`.
 
 This is a major storage and custody milestone, not a training-readiness claim.
 These are compressed source candidates, not eight trillion tokens and not a

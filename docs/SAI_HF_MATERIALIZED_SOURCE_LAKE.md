@@ -18,6 +18,16 @@ The file-level manifest is
 The aggregate receipt has canonical receipt SHA-256
 `0715eefc3c3bda8ee800fc4c80155df461055da3bbf2a473ad6c93cf93bea9d8`.
 
+Hugging Face evidence head
+`122b98e0aa38130b0165ed3166cc7a569c3cddf0` contains the exact aggregate
+receipt, the updated dataset card, this documentation, and four ordered plain
+text manifest parts. Remote reassembly reproduced 13,974 newline-delimited rows,
+10,353,483 bytes, and the exact manifest SHA-256 above. The manifest-parts
+descriptor has canonical receipt
+`3287b272bd78bd12fca1b9a580928a8b0556815ecc404f57b3cb6ee401632c7a`.
+The manifest uses plain text parts because the closed public LFS quota rejected
+even a small gzip object while ordinary metadata commits remained available.
+
 ## Exact boundary
 
 The materialized lake contains complete selected snapshots of FineMath-4plus,
