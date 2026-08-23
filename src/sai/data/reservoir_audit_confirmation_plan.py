@@ -13,7 +13,7 @@ from sai.data.decontamination import POLICY as CONTAMINATION_POLICY
 from sai.data.reservoir_audit_decision import ROUTES, _load_aggregate
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-reservoir-audit-confirmation-plan-v1"
+SCHEMA = "sai-reservoir-audit-confirmation-plan-v2"
 METHOD = {
     "minimum_observed_rows": 4,
     "minimum_representation_verification_ppm": 500_000,
@@ -21,7 +21,9 @@ METHOD = {
     "maximum_quarantine_rows": 0,
     "maximum_rights_hold_rows": 0,
     "confirmation_rows_per_source": 32,
-    "source_disjoint_parent_required": True,
+    "identity_disjoint_rows_required": True,
+    "different_parent_when_available": True,
+    "source_disjoint_parent_required": False,
     "coverage_screen_not_acceptance_rate_estimate": True,
     "bulk_training_admission_allowed": False,
 }

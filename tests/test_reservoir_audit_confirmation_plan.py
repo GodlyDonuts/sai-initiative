@@ -82,6 +82,9 @@ def test_plan_requires_independent_clean_and_quality_signals(tmp_path: Path) -> 
     )
     assert result["selected_source_ids"] == ["clean"]
     assert result["target_confirmation_rows"] == 32
+    assert result["method"]["identity_disjoint_rows_required"] is True
+    assert result["method"]["different_parent_when_available"] is True
+    assert result["method"]["source_disjoint_parent_required"] is False
     rows = {row["source_id"]: row for row in result["sources"]}
     assert rows["contaminated"]["exclusion_reasons"] == ["benchmark_overlap_observed"]
     assert rows["quarantined"]["exclusion_reasons"] == ["quarantine_observed"]
