@@ -14,7 +14,7 @@ from sai.data.agent_labeling import _atomic_create
 from sai.data.license_policy import POLICY, classify_declared_license
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-reservoir-rights-inventory-v1"
+SCHEMA = "sai-reservoir-rights-inventory-v2"
 SUPPORTED_RECEIPT_SCHEMAS = {
     "sai-source-reservoir-receipt-v1",
     "sai-frontier-source-reservoir-receipt-v1",
@@ -211,6 +211,20 @@ def _card_licenses(value: Any) -> list[str]:
     return []
 
 
+def _composite_or_upstream_terms(value: str) -> bool:
+    normalized = value.casefold()
+    return any(
+        marker in normalized
+        for marker in (
+            "_and_",
+            "_with_",
+            "upstream_terms",
+            "project_upstream",
+            "pinned_early_access_terms",
+        )
+    )
+
+
 def build_inventory(
     reservoir_roots: list[Path],
     output_path: Path,
@@ -273,8 +287,12 @@ def build_inventory(
             ("common_pile_", "source_specific_")
         ):
             route = "per_row_license_evidence_required"
-        elif exact_manifest_recognized or exact_card_recognized:
+        elif _composite_or_upstream_terms(source["declared_license"]):
+            route = "source_terms_resolution_required"
+        elif exact_manifest_recognized:
             route = "recognized_declaration_obligations_required"
+        elif exact_card_recognized:
+            route = "recognized_card_declaration_manifest_resolution_required"
         else:
             route = "source_terms_resolution_required"
         route_counts[route] += 1

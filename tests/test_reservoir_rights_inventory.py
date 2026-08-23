@@ -35,6 +35,14 @@ def _reservoir(tmp_path: Path) -> Path:
             "access": "public",
             "physical_bytes": 50,
         },
+        {
+            "source_id": "composite_terms_source",
+            "repository": "owner/composite",
+            "revision": "d" * 40,
+            "license": "apache-2.0_project_upstream_source_terms_apply",
+            "access": "public",
+            "physical_bytes": 25,
+        },
     ]
     manifest = root / "manifest.jsonl"
     manifest.write_text("".join(json.dumps(row) + "\n" for row in rows))
@@ -68,9 +76,10 @@ def _card(repository: str, revision: str, _token: str, _root: Path) -> dict:
         "revision": revision,
         "readme_bytes": 100,
         "readme_sha256": "f" * 64,
-        "top_level_card_license": (
-            "odc-by-1.0" if repository == "owner/licensed" else None
-        ),
+        "top_level_card_license": {
+            "owner/licensed": "odc-by-1.0",
+            "owner/composite": "apache-2.0",
+        }.get(repository),
         "card_text_persisted": False,
     }
 
@@ -95,6 +104,9 @@ def test_inventory_routes_exact_and_row_specific_rights(tmp_path: Path) -> None:
     assert rows["missing_card_source"]["rights_work_route"] == (
         "source_terms_resolution_required"
     )
-    assert result["summary"]["physical_candidate_bytes"] == 350
+    assert rows["composite_terms_source"]["rights_work_route"] == (
+        "source_terms_resolution_required"
+    )
+    assert result["summary"]["physical_candidate_bytes"] == 375
     assert result["legal_clearance_established"] is False
     assert result["training_ready"] is False

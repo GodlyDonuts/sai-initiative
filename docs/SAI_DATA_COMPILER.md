@@ -309,14 +309,15 @@ not mutate the earlier Common Pile rights receipt or turn a dataset-level
 license into a content-level legal conclusion.
 
 `sai.data.reservoir_rights_inventory` has now replayed both candidate
-reservoirs. It binds 46 source lanes and 45 exact repository revisions covering
-all 42,600 files and 23,680,076,298,761 physical candidate bytes. Eleven lanes
-have recognized declaration obligations, 31 require per-row license evidence,
-and FineWeb2-HQ, Institutional Books, OpenWebMath, plus Common Pile StackV2
-HTML require source-terms resolution. The last pinned tree contains no README;
-absence is a fail-closed result, not permission to borrow another revision's
-terms. Receipt:
-`6ea8d853f23de1afded8bf66033fa4e873898c8608677b2fa191341d5f7bdf0c`.
+reservoirs. Corrected schema v2 binds 46 source lanes and 45 exact repository
+revisions covering all 42,600 files and 23,680,076,298,761 physical candidate
+bytes. Five lanes have exact manifest-declaration obligations, 31 require
+per-row license evidence, and ten require source-terms resolution. A wrapper
+card no longer erases manifest qualifiers such as upstream or generator terms.
+The StackV2 HTML pinned tree contains no README; absence is a fail-closed
+result, not permission to borrow another revision's terms. Corrected receipt:
+`8e72391081af17323aa1e1b8d0480ddbe70dcb232006e6cf37ed7228d34d3d80`.
+The earlier 11/31/4 routing is retained only as superseded audit history.
 
 `sai.data.benchmark_boundary_index` builds a non-reversible official benchmark
 boundary for 18,235 rows across nine public benchmark views. The r1 13-token

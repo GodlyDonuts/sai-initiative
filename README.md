@@ -188,17 +188,19 @@ receipt was uploaded and replayed byte-for-byte in Hugging Face commit
 | Nemotron Legal v1 | `3d91d58a5c0c46fe9944300ec46719f97a385b13` | 21 | 6,990,697,508 | Primary law and legal reasoning |
 | Common Pile filtered collection | 31 exact repository revisions | 845 | 540,438,290,489 | Courts, government, patents, science, books, education, code, reference, and culture |
 
-The complete reservoir rights inventory now binds **46 source lanes, 45 exact
+The corrected reservoir rights inventory now binds **46 source lanes, 45 exact
 repository revisions, 42,600 files, and all 23,680,076,298,761 candidate
-bytes**. Eleven lanes have a recognized manifest/card declaration with
-obligations, 31 Common Pile lanes require per-row evidence, and four require
-source-terms resolution: FineWeb2-HQ, Institutional Books, OpenWebMath, and
-Common Pile StackV2 HTML. StackV2 HTML has no `README.md` in its exact pinned
-tree; that absence is recorded rather than substituted from another revision.
-Receipt `6ea8d853f23de1afded8bf66033fa4e873898c8608677b2fa191341d5f7bdf0c`
+bytes**. Five lanes have an exact manifest declaration with obligations, 31
+Common Pile lanes require per-row evidence, and ten require source-terms
+resolution. A permissive wrapper card can no longer override manifest labels
+such as “with upstream terms” or “generator terms.” StackV2 HTML has no
+`README.md` in its exact pinned tree; that absence is recorded rather than
+substituted from another revision. Corrected receipt
+`8e72391081af17323aa1e1b8d0480ddbe70dcb232006e6cf37ed7228d34d3d80`
 contains no source text and establishes no legal clearance. Its remote bytes
 replayed exactly in Hugging Face commit
-[`53e71e0c0f6e794d933421d5e459a0ec70e3f933`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/53e71e0c0f6e794d933421d5e459a0ec70e3f933).
+[`b7b60404ab737b9fd1e44740f6f781dc8d56da38`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/b7b60404ab737b9fd1e44740f6f781dc8d56da38).
+The earlier 11/31/4 routing receipt is retained as superseded audit history.
 
 The 16,200,072-byte v3 manifest has SHA-256
 `0a59e8a24208f8593f806b919a65a3e3e64d911936f137286235c31627f56ebd`

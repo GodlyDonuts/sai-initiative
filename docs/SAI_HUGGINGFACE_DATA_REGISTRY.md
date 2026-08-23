@@ -63,6 +63,17 @@ different-revision card. The remote file SHA-256 replayed as
 `a0f316bb11b75e7c3d49594ea10bbec90e91229f52ca44c2e230886cd2da6d1e`.
 The inventory is evidence routing, not legal clearance or training admission.
 
+That first routing is superseded. It allowed a recognized wrapper-card license
+to outrank a manifest declaration containing upstream/generator terms. Dataset
+commit
+[`b7b60404ab737b9fd1e44740f6f781dc8d56da38`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/b7b60404ab737b9fd1e44740f6f781dc8d56da38)
+adds corrected schema v2 under receipt
+`8e72391081af17323aa1e1b8d0480ddbe70dcb232006e6cf37ed7228d34d3d80`.
+It routes five exact manifest declarations to obligations, 31 Common Pile
+lanes to per-row evidence, and ten composite/ambiguous lanes to source-terms
+resolution. The remote receipt SHA-256 replayed as
+`2362e903a4bf067863971a50cf2a1445de670bbd46c84cf2093767d45b02aca1`.
+
 The first registry commit is
 `89152fff3e47d85e35e75cad6b419b4f304a4e85`. It contains 22 paths: the dataset
 card, a 462-file local artifact index, five source-registry entries, a sanitized
