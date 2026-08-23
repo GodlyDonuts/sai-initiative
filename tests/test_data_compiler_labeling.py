@@ -527,6 +527,7 @@ def test_compiler_retry_disambiguates_document_language_from_subject() -> None:
     assert "predominant language of the actual supplied document" in repair
     assert "not a language, title, author, or work merely discussed" in repair
     assert "include english_translation" in repair
+    assert "disconnected catalog form, field list, or metadata record" in repair
 
 
 @pytest.mark.parametrize(

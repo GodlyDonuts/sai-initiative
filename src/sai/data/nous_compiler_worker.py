@@ -261,6 +261,11 @@ def execute_contract(
                         "non-English, include english_translation in "
                         "recommended_representations, use a non-English translation "
                         "disposition, and set translation_priority to 1..4."
+                        " A disconnected catalog form, field list, or metadata record "
+                        "that lacks coherent educational or expressive content should "
+                        "be rejected with curriculum_phase=reject and "
+                        "preservation_policy=reject; do not retain it merely because "
+                        "it names a valuable work."
                     )
                 body["messages"] = [
                     *base_messages,
