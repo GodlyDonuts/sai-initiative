@@ -272,19 +272,29 @@ RULER remains an explicit gap until its generator is pinned to Sai's exact
 tokenizer and length geometry. Building the boundary makes contamination
 testing possible; it does not retroactively decontaminate any source bytes.
 
-The resulting r1 population conclusion is retracted. The 286/1,879 overall
-count and 77/96 Nemotron count were materially inflated by nonsubstantive code
-windows and must not drive source selection. The v2 rule keeps exact 13-token
-word matching and admits an exact 8-token code window only when it has at least
-four alphanumeric-bearing tokens, three distinct alphanumeric-bearing tokens,
-and 16 total characters. A source-side replay under that fixed eligibility rule
-measured 69/1,879 flags: 42 rows with word overlap and 27 additional eligible
-code-only rows. Nemotron specialized reasoning fell to 25/96, comprising five
-word-overlap rows and 20 additional code-only rows. These are preliminary replay
-figures until the create-only v2 index and five new screen receipts finish.
-Neither result licenses bulk source admission or rejection.
+The active v2 boundary keeps the exact r1 word index byte-for-byte and admits an
+exact 8-token code window only when it has at least four alphanumeric-bearing
+tokens, three distinct alphanumeric-bearing tokens, and 16 total characters.
+The corrected code index contains 475,804 unique shingles (15,225,728 bytes),
+down from 1,907,051. Its receipt is
+`9fee65cb9f99813407ea4d5e4c35b4bc0bb7659c1720342f0f50bd1a8c237667`;
+the receipt file SHA-256 is
+`cd985016d5a301b4a1d17e9ee0f5290edda956f0434ba7293475cc187037d20a`.
+Both indexes passed an independent hash, byte-count, and strict-order replay.
 
-The r1 screens remain immutable evidence of the discovered policy failure in
+All five v2 population screens are complete. They found 69/1,879 flags: 42 rows
+with word overlap and 27 additional eligible code-only rows. The population
+counts are 6/128 original, 26/1,024 weighted, 28/512 frontier, 7/124 Common
+Pile, and 2/91 frontier expansion. Nemotron specialized reasoning is 25/96,
+comprising five word-overlap rows and 20 additional code-only rows. Neither an
+individual flag nor a clean screen licenses bulk source admission or rejection.
+The boundary and all five source-safe screen receipts were uploaded and
+byte-replayed in Hugging Face commit
+[`43ae57ee4981c78ae23c111436b1fc9b6aa27023`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/43ae57ee4981c78ae23c111436b1fc9b6aa27023).
+
+The r1 286/1,879 overall and 77/96 Nemotron conclusions are retracted because
+they were materially inflated by nonsubstantive code windows. Those screens
+remain immutable evidence of the discovered policy failure in
 Hugging Face dataset commit
 [`5dc89bfeceadf56663a8f00c479f5d41d5229671`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5dc89bfeceadf56663a8f00c479f5d41d5229671).
 They are explicitly superseded and are not active contamination decisions.

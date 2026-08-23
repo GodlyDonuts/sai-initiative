@@ -129,10 +129,31 @@ published. The exact receipts are:
 - PleIAs/Nemotron expansion 91: `cca8dfbd408d6f4bf8914e8e64b78c75db05cf927734131160f92099d741524b`.
 
 These five r1 screen receipts are also superseded. Their 286/1,879 overall and
-77/96 Nemotron conclusions are retracted; a source-side v2 eligibility replay
-measured preliminary counts of 69/1,879 and 25/96 respectively. The corrected
-create-only index and replacement screen receipts will be published under a new
-registry path rather than overwriting these historical artifacts.
+77/96 Nemotron conclusions are retracted.
+
+Dataset commit
+[`43ae57ee4981c78ae23c111436b1fc9b6aa27023`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/43ae57ee4981c78ae23c111436b1fc9b6aa27023)
+stores the corrected create-only boundary under
+`registry/benchmark-boundaries/official-public-20260824-r2/` and adds five
+replacement `benchmark_contamination_screen_v2.json` files without overwriting
+r1. The word index exactly reproduces the r1 SHA-256. The 15,225,728-byte code
+index has 475,804 unique substantive windows and SHA-256
+`d438ea1176ed8357b7139475d469ce42dbe4c147f62cbab301b48e26e68dea39`.
+Boundary receipt
+`9fee65cb9f99813407ea4d5e4c35b4bc0bb7659c1720342f0f50bd1a8c237667`
+and every remote file replayed byte-for-byte.
+
+The replacement screen receipts and contaminated-row counts are:
+
+- original 128: `be7829eb302e4824477c08199b8ace2d41deacf0af9284a063c37284f2937785`, 6;
+- weighted 1,024: `280103a098d2367d6f9bd5e7c2cb46e5ad8437fcf15d3a1d02d215d2dcc4fef0`, 26;
+- frontier 512: `54f3630f3a1b1a7a77799550dda8c9f9031ef459a37ceaf232657174e091d4a8`, 28;
+- Common Pile 124: `f8608096167fa77c208ed63a5e7270af408b9c4abce7e9eaaa4eb85bc5da2ca7`, 7;
+- frontier expansion 91: `9b73917db65ea70b1e4b7c9d044a917ce30d5b3fd862e01d8f966a268177ea1a`, 2.
+
+The corrected combined result is 69/1,879; Nemotron specialized reasoning is
+25/96. Individual decisions, raw candidate text, and raw benchmark text remain
+unpublished.
 
 Credentials never enter the registry. The local `.env` is ignored by Git,
 mode-restricted, and used only by authenticated clients.

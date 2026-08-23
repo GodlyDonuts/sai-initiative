@@ -229,11 +229,19 @@ generator gap rather than being silently substituted or mislabeled.
 
 The v2 policy keeps 13-token exact word matching and restricts exact 8-token
 code matching to windows with at least four alphanumeric-bearing tokens, three
-distinct alphanumeric-bearing tokens, and 16 total characters. A deterministic
-source-side replay reduced the preliminary population result from 286/1,879 to
-69/1,879 and the Nemotron specialized-reasoning result from 77/96 to 25/96.
-The old source-quarantine conclusion is retracted. These figures remain
-preliminary until the create-only v2 binary index and screen receipts complete.
+distinct alphanumeric-bearing tokens, and 16 total characters. The create-only
+v2 code index contains 475,804 unique keys and has SHA-256
+`d438ea1176ed8357b7139475d469ce42dbe4c147f62cbab301b48e26e68dea39`.
+Its 27,979,728-key word index exactly reproduces the r1 SHA-256. Receipt
+`9fee65cb9f99813407ea4d5e4c35b4bc0bb7659c1720342f0f50bd1a8c237667`
+binds the corrected policy and all source revisions.
+
+The five replacement screens reduced the exact population result from
+286/1,879 to 69/1,879 and the Nemotron specialized-reasoning result from 77/96
+to 25/96. Their population counts are 6/128, 26/1,024, 28/512, 7/124, and
+2/91. The old source-quarantine conclusion is retracted. The v2 boundary and
+screens passed local and post-upload replay in Hugging Face commit
+`43ae57ee4981c78ae23c111436b1fc9b6aa27023`.
 `sai.data.benchmark_contamination_screen` persists aggregate counts and an
 ordered decision digest while persisting neither individual decisions nor
 source text.
