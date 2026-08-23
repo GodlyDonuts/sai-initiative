@@ -26,7 +26,7 @@ METADATA_PARQUET_SHA256 = (
 )
 METADATA_PARQUET_BYTES = 306_251_508
 TEXT_FIELD = "processed_middlematter_gen"
-MAX_EXCERPT_BYTES = 196_608
+MAX_EXCERPT_BYTES = 32_768
 
 
 class InstitutionalBooksError(RuntimeError):
@@ -128,7 +128,7 @@ def build_book_candidate(
         "enriched_revision": ENRICHED_REVISION,
         "enriched_row_sha256": enriched_sha256,
         "join_key": barcode,
-        "excerpt_policy": "beginning_middle_end_utf8_v1",
+        "excerpt_policy": "beginning_middle_end_utf8_32768_v2",
     }
     candidate = {
         "schema": CANDIDATE_SCHEMA,

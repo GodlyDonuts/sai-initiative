@@ -4,6 +4,7 @@ import pytest
 
 from sai.data.institutional_books import (
     ENRICHED_REVISION,
+    MAX_EXCERPT_BYTES,
     METADATA_PARQUET_BYTES,
     METADATA_PARQUET_SHA256,
     InstitutionalBooksError,
@@ -54,7 +55,7 @@ def test_institutional_source_pins_and_representative_sampling() -> None:
     assert len(METADATA_PARQUET_SHA256) == 64
     excerpt = representative_excerpt(_enriched()["processed_middlematter_gen"])
     assert excerpt.count("[SAI REPRESENTATIVE EXCERPT BOUNDARY]") == 2
-    assert len(excerpt.encode()) <= 196_608
+    assert len(excerpt.encode()) <= MAX_EXCERPT_BYTES == 32_768
 
 
 def test_build_book_candidate_joins_exact_barcode_and_keeps_rights_evidence() -> None:

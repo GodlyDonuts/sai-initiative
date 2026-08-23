@@ -11,7 +11,7 @@ from sai.data.data_compiler_labeling import DOMAINS, STYLES
 from sai.data.token_stream import canonical_sha256
 
 CANDIDATE_SCHEMA = "sai-institutional-book-candidate-v1"
-JUDGMENT_SCHEMA = "sai-institutional-book-compiler-judgment-v1"
+JUDGMENT_SCHEMA = "sai-institutional-book-compiler-judgment-v2"
 VERDICTS = ("retain", "review", "reject")
 CURRICULUM_BANDS = ("basic", "intermediate", "advanced", "expert", "reject")
 GENRES = (
@@ -102,10 +102,15 @@ For literature, poetry, or drama, first seek a reputable public-domain human Eng
 translation. If none exists, require both a literal translation and a literary
 translation, preserve the source-language anchor, and label both as synthetic. Never
 flatten distinct cultures into generic contemporary assistant prose. Return exactly
-one JSON object with the requested keys and no markdown."""
+one JSON object with the requested keys and no markdown. Every enum-valued field
+must copy one literal value from its supplied list. Never invent a synonym, combine
+two enum values, or return an explanatory label. Every evidence_quote must be a
+byte-for-byte substring copied from book_excerpt. Before returning, search the
+excerpt for each quote; delete an edge or quote rather than paraphrasing evidence
+that is not present."""
 
 RUBRIC = {
-    "verdict": list(VERDICTS),
+    "verdict": "exactly one literal value: " + "|".join(VERDICTS),
     "work_id_candidate": "stable lowercase slug or null",
     "edition_id_candidate": "stable lowercase slug or null",
     "author_normalized_candidate": "string or null",
@@ -117,20 +122,21 @@ RUBRIC = {
     "translation_date_candidate": "year/range string or null",
     "domains": list(DOMAINS),
     "subdomains": "0..20 concise lowercase labels",
-    "genre": list(GENRES),
-    "style": list(STYLES),
+    "genre": "exactly one literal value: " + "|".join(GENRES),
+    "style": "exactly one literal value: " + "|".join(STYLES),
     "quality": {key: "integer 0..4" for key in QUALITY_KEYS},
     "complexity": {key: "integer 0..4" for key in COMPLEXITY_KEYS},
-    "curriculum_band": list(CURRICULUM_BANDS),
-    "prerequisites": "0..24 concise lowercase concept labels",
-    "concepts": "0..24 concise lowercase concept labels",
+    "curriculum_band": "exactly one literal value: " + "|".join(CURRICULUM_BANDS),
+    "prerequisites": "0..64 concise lowercase concept labels",
+    "concepts": "0..64 concise lowercase concept labels",
     "concept_edges": (
         "0..32 objects with prerequisite, dependent, relation, confidence_ppm, "
-        "and an exact evidence_quote"
+        "and an exact evidence_quote; relation must be exactly one of "
+        + "|".join(EDGE_RELATIONS)
     ),
     "period": "0..8 concise lowercase labels",
     "culture_geography": "0..12 concise lowercase labels",
-    "translation_type": list(TRANSLATION_TYPES),
+    "translation_type": "exactly one literal value: " + "|".join(TRANSLATION_TYPES),
     "translation_confidence_ppm": "integer 0..1000000",
     "human_translation_search_required": "boolean",
     "preserve_original_language_anchor": "boolean",
@@ -408,10 +414,8 @@ def normalize_model_judgment(payload: Any, candidate: dict[str, Any]) -> dict[st
     complexity = {
         key: _bounded_int(complexity_raw[key], 0, 4, key) for key in COMPLEXITY_KEYS
     }
-    prerequisites = _labels(row["prerequisites"], maximum=24, label="prerequisites")
-    concepts = _labels(row["concepts"], maximum=24, label="concepts")
-    if set(prerequisites) & set(concepts):
-        raise BookCompilerError("prerequisite and concept sets overlap")
+    prerequisites = _labels(row["prerequisites"], maximum=64, label="prerequisites")
+    concepts = _labels(row["concepts"], maximum=64, label="concepts")
     edges = row["concept_edges"]
     if not isinstance(edges, list) or len(edges) > 32:
         raise BookCompilerError("concept edges differ")
@@ -429,12 +433,20 @@ def normalize_model_judgment(payload: Any, candidate: dict[str, Any]) -> dict[st
             },
             "concept edge",
         )
-        if (
-            edge["prerequisite"] not in prerequisites
-            or edge["dependent"] not in concepts
-            or edge["prerequisite"] == edge["dependent"]
-        ):
+        prerequisite = _labels(
+            [edge["prerequisite"]], maximum=1, label="concept edge prerequisite"
+        )[0]
+        dependent = _labels(
+            [edge["dependent"]], maximum=1, label="concept edge dependent"
+        )[0]
+        if prerequisite == dependent:
             raise BookCompilerError("concept edge endpoint differs")
+        if prerequisite not in prerequisites:
+            prerequisites.append(prerequisite)
+        if dependent not in concepts:
+            concepts.append(dependent)
+        if len(prerequisites) > 64 or len(concepts) > 64:
+            raise BookCompilerError("concept edge expands node sets beyond bounds")
         relation = _enum(edge["relation"], EDGE_RELATIONS, "concept edge relation")
         confidence = _bounded_int(
             edge["confidence_ppm"], 0, 1_000_000, "concept edge confidence"
@@ -446,14 +458,14 @@ def normalize_model_judgment(payload: Any, candidate: dict[str, Any]) -> dict[st
             or quote not in candidate["text_excerpt"]
         ):
             raise BookCompilerError("concept edge evidence differs")
-        edge_id = (edge["prerequisite"], edge["dependent"], relation)
+        edge_id = (prerequisite, dependent, relation)
         if edge_id in edge_ids:
             raise BookCompilerError("concept edge is duplicated")
         edge_ids.add(edge_id)
         normalized_edges.append(
             {
-                "prerequisite": edge["prerequisite"],
-                "dependent": edge["dependent"],
+                "prerequisite": prerequisite,
+                "dependent": dependent,
                 "relation": relation,
                 "confidence_ppm": confidence,
                 "evidence_quote": quote,
@@ -544,6 +556,7 @@ def normalize_model_judgment(payload: Any, candidate: dict[str, Any]) -> dict[st
         raise BookCompilerError("book rationale differs")
     normalized = {
         "schema": JUDGMENT_SCHEMA,
+        "verdict": verdict,
         "candidate_identity_sha256": candidate["candidate_identity_sha256"],
         "rubric_sha256": RUBRIC_SHA256,
         "source_id": candidate["source"]["barcode_src"],

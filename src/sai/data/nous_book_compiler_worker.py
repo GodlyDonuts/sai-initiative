@@ -24,8 +24,8 @@ from sai.data.nous_label_worker import (
     _post_json,
 )
 
-RECEIPT_SCHEMA = "sai-nous-institutional-book-compiler-receipt-v1"
-SUMMARY_SCHEMA = "sai-nous-institutional-book-compiler-shard-summary-v1"
+RECEIPT_SCHEMA = "sai-nous-institutional-book-compiler-receipt-v2"
+SUMMARY_SCHEMA = "sai-nous-institutional-book-compiler-shard-summary-v2"
 
 
 def _load_book_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -73,6 +73,7 @@ def execute_one(
         rubric_sha256=RUBRIC_SHA256,
         receipt_schema=RECEIPT_SCHEMA,
         maximum_completion_tokens=4000,
+        reasoning_effort="low",
     )
 
 

@@ -74,9 +74,17 @@ remain independent admission gates.
 
 The first metadata-only book queue now contains 10,000 duplicate-safe volumes
 across 772 language×subject cells: 9,409 non-English and 591 English. This is a
-translation-discovery workload, not a fixed training ratio. Actual text remains
-gated under the pinned IDI terms, so no book text or derivative is published in
-this repository.
+translation-discovery workload, not a fixed training ratio. Authenticated access
+has now replayed the first exact enriched-text shard and built a separate
+185-volume compiler pilot. The gated text remains local under the pinned IDI
+terms; it is not redistributed through GitHub or Hugging Face.
+
+The durable data catalog is
+[`Godlydonuts/Sai`](https://huggingface.co/datasets/Godlydonuts/Sai). It separates
+upstream source references, model judgments, verified representations,
+curriculum artifacts, and final training shards. The registry never treats a
+downloaded dataset as training-ready and records reference-only sources without
+copying bytes when their terms prohibit redistribution.
 
 Every training population must pass these gates in order:
 

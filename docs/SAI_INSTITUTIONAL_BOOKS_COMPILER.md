@@ -1,7 +1,7 @@
 # Sai Institutional Books Compiler
 
-Status: source pinned and compiler mechanics implemented; book text access is not
-yet active on this machine. No Institutional Books volume is training-ready.
+Status: source pinned, authenticated text access active, and the first exact
+185-volume compiler pilot built. No Institutional Books volume is training-ready.
 
 ## Source pin
 
@@ -78,11 +78,34 @@ evidence; Hermes cannot turn it into a new legal conclusion. No text is packed
 until the intended Sai use is compatible with the pinned terms and the exact
 volume's evidence remains acceptable.
 
-The text repositories are gated. The local Hugging Face CLI was not authenticated
-when this source was pinned on 2026-08-23. Metadata can be inventoried without
-accepting text access, but book-agent execution requires the account holder to
-accept the current terms and authenticate. Dataset bytes or derivatives will not
-be committed or redistributed through GitHub.
+The text repositories are gated. On 2026-08-23 the account holder accepted the
+current terms and authenticated the local Hugging Face client. This grants source
+access; it does not grant redistribution rights. Dataset bytes or excerpt-bearing
+derivatives are not committed or redistributed through GitHub or the public Sai
+Hugging Face registry.
+
+The first enriched shard is exact repository path
+`train/data/train-00000-of-04916.parquet`, 127,727,860 bytes, SHA-256
+`8c86db250ede35dfb5039760dca4f5699f9c953041e9faa75151c418aa1c778b` at
+revision `92fcdf938eb87edfe0fbf09d4f692fa3d8bc9bcd`. It contains 200 rows.
+Metadata, rights, OCR, and token filters admitted 185: 164 English and 21
+translation-routed non-English volumes (11 Czech, 5 German, 5 French). Fourteen
+rows failed the OCR floor and one failed the token bound before any model call.
+
+The create-only r2 candidate population is 6,576,671 bytes, SHA-256
+`8e2cac8832da06909e3680ed1d12a9991a1552e8864ccd2ac3e71182f46e0d06`.
+Its ordered candidate-identity digest is
+`243ae20ea9f1a7270d4cd4ced9e57b6180e6dc9bece53427a87e4b729597338b`
+and receipt SHA-256 is
+`fae7568186587cd224eb87ce6e45a4323e2bb2fae2ac12b74373dfe6e1ca40b3`.
+These local excerpt-bearing files are reference-only and are not uploaded.
+
+One live calibration volume completed the strict source-bound compiler on
+2026-08-23: 11,229 prompt tokens, 1,168 completion tokens, 12 prerequisites,
+35 taught concepts, and 7 evidence-backed edges. That calibration exposed that
+the normalized v1 record omitted the already-validated disposition. Production
+judgments therefore use the corrected v2 judgment/receipt schema; the v1 file is
+calibration evidence only and cannot enter a curriculum or training shard.
 
 ## Archive quality is not automatic training quality
 
@@ -134,8 +157,12 @@ remain `training_ready=false`.
 
 The first metadata pass does not send 217B tokens through Hermes. For each
 selected volume, `sai.data.institutional_books` binds a deterministic
-beginning/middle/end excerpt of at most 192 KiB. This supports efficient
-classification while making the partial-reading boundary explicit.
+beginning/middle/end excerpt of at most 32 KiB. The initial 192 KiB calibration
+prompt consumed 53,245 input tokens and exhausted all 4,000 completion tokens in
+hidden reasoning before producing JSON. The 32 KiB policy reduced the observed
+prompt to 11,108 tokens; a low-reasoning request then stopped normally after
+1,108 completion tokens. This supports efficient classification while making the
+partial-reading boundary explicit.
 
 A retained volume then advances to a separate full-book compiler stage that can
 split chapters, detect front/back-matter contamination, refine work/edition

@@ -149,6 +149,8 @@ def test_book_candidate_and_prompt_bind_archive_fields() -> None:
     candidate = normalize_book_candidate(_candidate())
     messages = build_messages(candidate)
     assert "Difficulty is not one scalar" in messages[0]["content"]
+    assert "Never invent a synonym" in messages[0]["content"]
+    assert "byte-for-byte substring" in messages[0]["content"]
     envelope = json.loads(messages[1]["content"])
     assert envelope["source"]["barcode_src"] == "32044000000018"
     assert envelope["rubric_sha256"] == RUBRIC_SHA256
@@ -157,17 +159,44 @@ def test_book_candidate_and_prompt_bind_archive_fields() -> None:
         "conceptual_complexity",
         "reasoning_complexity",
     }
+    assert envelope["output_schema"]["style"].startswith(
+        "exactly one literal value: exposition|reference"
+    )
+    assert envelope["output_schema"]["genre"].startswith(
+        "exactly one literal value: literature|poetry|drama"
+    )
+    assert envelope["output_schema"]["concept_edges"].endswith(
+        "requires|builds_on|contextualizes"
+    )
 
 
 def test_book_judgment_preserves_rights_and_explicit_graph() -> None:
     candidate = _candidate()
     result = normalize_model_judgment(_judgment(), candidate)
+    assert result["verdict"] == "retain"
     assert result["source_id"] == "32044000000018"
     assert result["rights_are_model_inferred"] is False
     assert result["rights_evidence"]["status_code"] == "pd"
     assert result["complexity"]["conceptual_complexity"] == 3
     assert result["concept_edges"][0]["prerequisite"] == "latent heat"
     assert result["raw_archive_source_is_training_ready"] is False
+
+
+def test_book_graph_allows_a_taught_concept_to_support_a_later_concept() -> None:
+    candidate = _candidate()
+    raw = _judgment()
+    raw["prerequisites"].append("atmospheric thermodynamics")
+    result = normalize_model_judgment(raw, candidate)
+    assert "atmospheric thermodynamics" in result["prerequisites"]
+    assert "atmospheric thermodynamics" in result["concepts"]
+
+
+def test_book_graph_canonicalizes_declared_edge_endpoints_into_node_sets() -> None:
+    candidate = _candidate()
+    raw = _judgment()
+    raw["concept_edges"][0]["dependent"] = "moist atmospheric thermodynamics"
+    result = normalize_model_judgment(raw, candidate)
+    assert "moist atmospheric thermodynamics" in result["concepts"]
 
 
 def test_non_english_technical_book_is_routed_to_english() -> None:
@@ -223,6 +252,7 @@ def test_book_worker_emits_source_bound_non_training_receipt() -> None:
     def request_function(**kwargs):
         assert kwargs["body"]["model"] == "stealth/ox-alpha"
         assert kwargs["body"]["max_tokens"] == 4000
+        assert kwargs["body"]["reasoning"] == {"effort": "low"}
         return (
             {
                 "id": "response-1",
@@ -258,4 +288,49 @@ def test_book_worker_emits_source_bound_non_training_receipt() -> None:
         receipt["candidate_identity_sha256"] == candidate["candidate_identity_sha256"]
     )
     assert receipt["training_ready"] is False
+    assert receipt["request_reasoning_effort"] == "low"
     assert receipt["judgment"]["raw_archive_source_is_training_ready"] is False
+
+
+def test_book_worker_repairs_a_strictly_invalid_first_response() -> None:
+    candidate = _candidate()
+    invalid = _judgment()
+    invalid["style"] = ["exposition", "reference"]
+    valid = _judgment()
+    calls = []
+
+    def request_function(**kwargs):
+        calls.append(kwargs["body"])
+        payload = invalid if len(calls) == 1 else valid
+        return (
+            {
+                "choices": [
+                    {
+                        "message": {"content": json.dumps(payload)},
+                        "finish_reason": "stop",
+                    }
+                ]
+            },
+            200,
+        )
+
+    receipt = execute_one(
+        candidate,
+        model="stealth/ox-alpha",
+        base_url="http://127.0.0.1:8645/v1",
+        api_key="loopback-only",
+        timeout_seconds=1,
+        maximum_attempts=2,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+    assert [attempt["outcome"] for attempt in receipt["attempts"]] == [
+        "invalid_model_output",
+        "valid",
+    ]
+    assert len(calls[1]["messages"]) == 4
+    assert "style differs" in calls[1]["messages"][-1]["content"]
+    assert len(set(receipt["attempt_request_sha256s"])) == 2
+    assert (
+        receipt["successful_request_sha256"] == receipt["attempt_request_sha256s"][-1]
+    )

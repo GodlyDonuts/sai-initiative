@@ -78,6 +78,7 @@ def execute_contract(
     rubric_sha256: str,
     receipt_schema: str,
     maximum_completion_tokens: int,
+    reasoning_effort: str | None = None,
     request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
     sleep_function: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
@@ -91,6 +92,7 @@ def execute_contract(
         or not isinstance(rubric_sha256, str)
         or len(rubric_sha256) != 64
         or any(character not in "0123456789abcdef" for character in rubric_sha256)
+        or reasoning_effort not in {None, "none", "minimal", "low", "medium", "high"}
     ):
         raise NousLabelWorkerError("compiler contract identity or token bound differs")
     base_url = _validate_endpoint(base_url)
@@ -101,13 +103,19 @@ def execute_contract(
         "max_tokens": maximum_completion_tokens,
         "stream": False,
     }
+    if reasoning_effort is not None:
+        body["reasoning"] = {"effort": reasoning_effort}
     request_sha256 = canonical_sha256(body)
+    base_messages = list(body["messages"])
     attempts = []
+    attempt_request_sha256s = []
     response = None
     raw_judgment = None
     judgment = None
     choice = None
     for attempt in range(1, maximum_attempts + 1):
+        attempt_request_sha256 = canonical_sha256(body)
+        attempt_request_sha256s.append(attempt_request_sha256)
         try:
             response, status = request_function(
                 base_url=base_url,
@@ -128,7 +136,12 @@ def execute_contract(
             raw_judgment = _json_object(choice["message"].get("content"))
             judgment = normalize_function(raw_judgment, candidate)
             attempts.append(
-                {"attempt": attempt, "http_status": status, "outcome": "valid"}
+                {
+                    "attempt": attempt,
+                    "http_status": status,
+                    "outcome": "valid",
+                    "request_sha256": attempt_request_sha256,
+                }
             )
             break
         except urllib.error.HTTPError as error:
@@ -137,6 +150,7 @@ def execute_contract(
                     "attempt": attempt,
                     "http_status": error.code,
                     "outcome": "transient_http_error",
+                    "request_sha256": attempt_request_sha256,
                 }
             )
             if error.code not in RETRYABLE_STATUS or attempt == maximum_attempts:
@@ -149,22 +163,44 @@ def execute_contract(
                     "attempt": attempt,
                     "http_status": None,
                     "outcome": "transient_transport_error",
+                    "request_sha256": attempt_request_sha256,
                 }
             )
             if attempt == maximum_attempts:
                 raise NousLabelWorkerError(
                     "Nous request exhausted transient retries"
                 ) from error
-        except (NousLabelWorkerError, RuntimeError):
+        except (NousLabelWorkerError, RuntimeError) as error:
             attempts.append(
                 {
                     "attempt": attempt,
                     "http_status": 200,
                     "outcome": "invalid_model_output",
+                    "request_sha256": attempt_request_sha256,
                 }
             )
             if attempt == maximum_attempts:
                 raise
+            prior_content = None
+            if isinstance(choice, dict) and isinstance(choice.get("message"), dict):
+                value = choice["message"].get("content")
+                if isinstance(value, str) and 0 < len(value) <= (1 << 20):
+                    prior_content = value
+            if prior_content is not None:
+                body["messages"] = [
+                    *base_messages,
+                    {"role": "assistant", "content": prior_content},
+                    {
+                        "role": "user",
+                        "content": (
+                            "Your JSON failed strict validation: "
+                            f"{str(error)[:256]}. Return a corrected complete JSON "
+                            "object with the exact same required keys. Do not defend "
+                            "the prior answer. Remove any claim or edge that cannot be "
+                            "supported by a byte-for-byte quote from book_excerpt."
+                        ),
+                    },
+                ]
         sleep_function(min(30.0, float(2 ** (attempt - 1))))
     if response is None or judgment is None or choice is None or raw_judgment is None:
         raise NousLabelWorkerError("Nous request produced no compiler response")
@@ -194,6 +230,9 @@ def execute_contract(
         ),
         "requested_model": model,
         "request_sha256": request_sha256,
+        "attempt_request_sha256s": attempt_request_sha256s,
+        "successful_request_sha256": attempt_request_sha256s[-1],
+        "request_reasoning_effort": reasoning_effort,
         "attempts": attempts,
         "response_identity": {
             "id": response.get("id") if isinstance(response.get("id"), str) else None,
