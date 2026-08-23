@@ -74,6 +74,7 @@ sai-audit-cross-population-duplicates = "sai.data.cross_population_duplicates:ma
 sai-build-benchmark-boundary-index = "sai.data.benchmark_boundary_index:main"
 sai-screen-audit-benchmark-contamination = "sai.data.benchmark_contamination_screen:main"
 sai-build-reservoir-audit-decision = "sai.data.reservoir_audit_decision:main"
+sai-build-reservoir-audit-confirmation-plan = "sai.data.reservoir_audit_confirmation_plan:main"
 sai-build-eight-trillion-spiral = "sai.data.eight_trillion_spiral:main"
 sai-split-documents = "sai.data.split:main"
 sai-build-tokenizers = "sai.tokenizer.build:main"
