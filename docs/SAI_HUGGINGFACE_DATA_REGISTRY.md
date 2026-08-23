@@ -38,17 +38,26 @@ verification result, and an upstream quality label is not a Sai admission.
 ## Conversion-yield ledger
 
 Dataset commit
-[`8d83bab552d5b6cbd4ca82fcc068f6cedc21567c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8d83bab552d5b6cbd4ca82fcc068f6cedc21567c)
-adds the current conversion ledger release r4 under receipt
-`d6e9cd17cf3515bde743bf036c15e712342760713dbfcdfc66a4283c562e67a6`.
-It retains all r3 population and rights bindings and additionally verifies the
-exact text-payload probe: eight measured members, 8,523,075,699 physical bytes,
-12,631,492,226 text bytes, and 12,252,341,634 bytes in the mechanical useful
-size window. Full-reservoir text yield remains explicitly unmeasured and no
-sample extrapolation is allowed. Training-ready bytes remain zero. The remote
-file SHA-256 replayed as
-`0a4461ea06f8d4be5a506472badce66ee901033fd03d185343d4a310ff408c16`.
+[`7b9c6a2d57f60cb9fa4e98f26d89925a29975413`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7b9c6a2d57f60cb9fa4e98f26d89925a29975413)
+adds the current conversion ledger release r5 under receipt
+`f8369fca50e0142ee8fd505f1bf6aa9167f7a41bddb4c641a673249c9c881083`.
+It retains all r4 population, rights, and probe bindings and additionally
+verifies the exact FinePDF probe. Across both probes, nine measured members
+total 13,359,494,149 physical bytes, 22,576,343,154 text bytes, and
+17,638,716,209 bytes in the mechanical useful-size window. Full-reservoir text
+yield remains explicitly unmeasured and no sample extrapolation is allowed.
+Training-ready bytes remain zero. The remote file SHA-256 replayed as
+`b79f5b4d4b35bf98991887bf43b265e3b44dde18f73022e31d69e753fa98ecfa`.
 Earlier releases below remain immutable historical evidence.
+
+Dataset commit
+[`8d83bab552d5b6cbd4ca82fcc068f6cedc21567c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8d83bab552d5b6cbd4ca82fcc068f6cedc21567c)
+adds conversion ledger release r4 under receipt
+`d6e9cd17cf3515bde743bf036c15e712342760713dbfcdfc66a4283c562e67a6`.
+Its eight measured members contain 12,252,341,634 mechanically useful bytes;
+its remote file SHA-256 is
+`0a4461ea06f8d4be5a506472badce66ee901033fd03d185343d4a310ff408c16`.
+It is superseded by the FinePDF-bound r5 accounting above.
 
 Dataset commit
 [`4b468991397fb123f4bf73674803ac931c1dd2ff`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4b468991397fb123f4bf73674803ac931c1dd2ff)
@@ -59,7 +68,7 @@ and rejects duplicate population receipts. Reservoir bytes and rights routing
 are unchanged from r2: 23,680,076,298,761 referenced candidate bytes and zero
 training-ready bytes. The remote file SHA-256 replayed exactly as
 `6db524e74dc64bafe2b93261fe6f9b3ef99aef30de450b71ed2637801776c163`.
-It is superseded by the probe-bound r4 accounting above.
+It is superseded by the probe-bound r4 and r5 accounting above.
 
 Dataset commit
 [`8c3baa4452d8bf06c2277e72f4dd79b5628e8d26`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8c3baa4452d8bf06c2277e72f4dd79b5628e8d26)
@@ -230,6 +239,22 @@ Both remote files replayed byte-for-byte. Raw candidates and compiler judgments
 were not uploaded, and the ledger grants no bulk or training admission.
 
 ## Exact text-payload probe
+
+Dataset commit
+[`e15ca127c695d2d42df04e15738e56525f0bb3ce`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e15ca127c695d2d42df04e15738e56525f0bb3ce)
+publishes the separately planned FinePDF probe. Its plan receipt is
+`325382746db5836ccffa12ea437fcfdfaf12ee0f29e469ac47cf0e43c0559017`
+and its measurement receipt is
+`5947564751b941b18d8a025abd3451c2e81cfa6e6357c0cad28213561d372919`.
+The exact 4,836,418,450-byte member yielded 9,944,850,928 text bytes across
+414,000 rows: 397,166 rows and 5,386,374,575 bytes fit the mechanical useful
+window, 4,821 rows were short, and 12,013 rows were oversized. Oversized
+documents require structure-aware segmentation rather than blanket rejection.
+The remote plan and result SHA-256 values replayed as
+`acc165fb92dc6961c99c7c761d3b511277607dc746cd5191a8a137e5bade29b7`
+and
+`07115706935ee29104a000bc885ddcae24a9fd0a1a7b20bdd15ef05b450da48a`.
+The temporary source member was removed, and no source text was published.
 
 Dataset commit
 [`fecd9d596c18dd63ab6ea7a89dda7b2544eca4a1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/fecd9d596c18dd63ab6ea7a89dda7b2544eca4a1)

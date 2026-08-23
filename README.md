@@ -165,23 +165,23 @@ Together, the two reservoirs reference **23,680,076,298,761 physical bytes
 compilation.
 
 Those bytes are now independently accounted under source-safe conversion
-ledger release r4 receipt
-`d6e9cd17cf3515bde743bf036c15e712342760713dbfcdfc66a4283c562e67a6`.
+ledger release r5 receipt
+`f8369fca50e0142ee8fd505f1bf6aa9167f7a41bddb4c641a673249c9c881083`.
 The ledger hash-verifies both reservoir manifests, all six immutable audit
-populations containing 2,103 rows, corrected rights-inventory v2, and the exact
-bounded text-payload probe. Duplicate audit or probe receipts are rejected. Its
+populations containing 2,103 rows, corrected rights-inventory v2, and both exact
+bounded text-payload probes. Duplicate audit or probe receipts are rejected. Its
 current funnel is deliberately blunt: 21.5369 TiB referenced candidates, 2,103
-acquired audit rows, 12,252,341,634 mechanically useful bytes measured in eight
+acquired audit rows, 17,638,716,209 mechanically useful bytes measured in nine
 bounded members, zero completed source pilots, and **0 training-ready bytes**.
 The bounded measurement is not extrapolated to the reservoir. Of the candidate bytes,
 7,899,196,133,417 require declared-license
 obligation handling, 5,027,859,142,584 require per-row license evidence, and
 10,753,021,022,760 require source-terms resolution. Cross-inventory overlap and
-exact text-payload yield remain unresolved, so the candidate-byte sum cannot
+full-reservoir text-payload yield remains unresolved, so the candidate-byte sum cannot
 be used as a training-data claim. The text-free receipt (file SHA-256
-`0a4461ea06f8d4be5a506472badce66ee901033fd03d185343d4a310ff408c16`)
+`b79f5b4d4b35bf98991887bf43b265e3b44dde18f73022e31d69e753fa98ecfa`)
 was uploaded and replayed byte-for-byte in Hugging Face commit
-[`8d83bab552d5b6cbd4ca82fcc068f6cedc21567c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8d83bab552d5b6cbd4ca82fcc068f6cedc21567c).
+[`7b9c6a2d57f60cb9fa4e98f26d89925a29975413`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7b9c6a2d57f60cb9fa4e98f26d89925a29975413).
 Earlier ledger releases remain immutable historical evidence.
 
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
@@ -465,14 +465,15 @@ the original reservoir. None of those bytes are counted as unique or
 training-ready until text-column extraction and global semantic deduplication
 complete.
 
-The first exact text-payload probe now measures that distinction instead of
-guessing it. One member per source was selected by a frozen SHA-256 rank before
-size or content inspection. Eight selected members fit the 4 GiB parent cap;
-FinePDF's independently selected 4.84 GB member did not, and was blocked rather
-than replaced by a conveniently smaller shard. Every measured member was fully
-downloaded, matched to its pinned size and SHA-256, streamed one at a time, and
-deleted afterward. “Useful” below means only the mechanical 200 B–128 KiB size
-window; it is not a quality, rights, uniqueness, or admission judgment.
+Two exact text-payload probes now measure that distinction instead of guessing
+it. One member per source was selected by a frozen SHA-256 rank before size or
+content inspection. Eight selected members fit the first probe's 4 GiB parent
+cap. FinePDF's independently selected 4.84 GB member was blocked rather than
+replaced by a conveniently smaller shard, then measured in a second prospective
+probe with a 6 GiB cap. Every measured member was fully downloaded, matched to
+its pinned size and SHA-256, streamed one at a time, and deleted afterward.
+“Useful” below means only the mechanical 200 B–128 KiB size window; it is not a
+quality, rights, uniqueness, or admission judgment.
 
 | Source | Exact physical bytes | Text UTF-8 bytes | Useful UTF-8 bytes | Useful/physical |
 | --- | ---: | ---: | ---: | ---: |
@@ -484,19 +485,28 @@ window; it is not a quality, rights, uniqueness, or admission judgment.
 | FineWeb2-HQ multilingual | 1,203,684,113 | 447,018,551 | 384,827,189 | 0.319707× |
 | Ultra-FineWeb current L2 | 82,007,099 | 138,259,448 | 136,403,753 | 1.663316× |
 | Ultra-FineWeb earlier L2 | 1,298,592,398 | 2,240,142,912 | 2,190,701,659 | 1.686981× |
-| FinePDFs | 4,836,418,450 | not measured | not measured | cap hold |
+| FinePDFs | 4,836,418,450 | 9,944,850,928 | 5,386,374,575 | 1.113711× |
 
-Across only the eight exact measured members, 8,523,075,699 compressed bytes
-contained 12,631,492,226 text bytes and 12,252,341,634 mechanically useful
-bytes. Ratios above one are expected for compressed members. The roughly 35×
-spread between the observed useful/physical ratios proves that repository size
-is not a defensible acquisition objective, but this single-member probe is not
-a source-wide yield estimate and cannot be extrapolated. Plan receipt
+Across only the nine exact measured members, 13,359,494,149 physical bytes
+contained 22,576,343,154 text bytes and 17,638,716,209 mechanically useful
+bytes. Ratios above one are expected for compressed members. FinePDF contained
+397,166 useful rows, 4,821 short rows, and 12,013 rows above 128 KiB. Those long
+documents are a structure-aware segmentation queue, not automatic rejects. The
+roughly 35× spread between the observed useful/physical ratios proves that
+repository size is not a defensible acquisition objective, but these bounded
+member probes are not source-wide yield estimates and cannot be extrapolated.
+The first plan receipt
 `4f5312f7d9ae86b3fbe8998c7e780c7238eae9394fc767fdbedad2affbacc66c`
 and measurement receipt
 `1d550e0abc513c5b4e61f0ce5890155bfff01bcdbd2a6896f9a078c26952f848`
 were remotely replayed in Hugging Face commit
 [`fecd9d596c18dd63ab6ea7a89dda7b2544eca4a1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/fecd9d596c18dd63ab6ea7a89dda7b2544eca4a1).
+The FinePDF plan receipt
+`325382746db5836ccffa12ea437fcfdfaf12ee0f29e469ac47cf0e43c0559017`
+and measurement receipt
+`5947564751b941b18d8a025abd3451c2e81cfa6e6357c0cad28213561d372919`
+were remotely replayed in Hugging Face commit
+[`e15ca127c695d2d42df04e15738e56525f0bb3ce`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e15ca127c695d2d42df04e15738e56525f0bb3ce).
 
 NVIDIA's organic/translated Nemotron-CC v2.1, CC-Code v1, and Code v2
 repositories were investigated but are not counted: metadata is visible while

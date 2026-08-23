@@ -373,6 +373,11 @@ column, separates all UTF-8 bytes from the mechanical 200 B–128 KiB useful-siz
 window, and removes temporary source bytes. A selected member above the frozen
 storage cap is blocked and cannot be replaced with a smaller shard. Results are
 bounded member measurements, never source-wide yield estimates or admissions.
+The separately planned FinePDF probe showed why the useful-size window is an
+accounting boundary rather than a rejection rule: 12,013 of 414,000 exact rows
+exceeded 128 KiB. Long papers and books must enter a structure-aware
+segmentation queue that preserves sections, provenance, and work identity;
+blind truncation or blanket rejection would destroy valuable long-form signal.
 
 ## Institutional Books lane
 
