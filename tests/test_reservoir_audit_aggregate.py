@@ -115,6 +115,14 @@ def test_aggregate_exposes_nondefault_reasoning_exception() -> None:
             "quarantine",
         ),
         (
+            _receipt("retain", enabled_risks=("seo_or_content_farm",)),
+            "quarantine",
+        ),
+        (
+            _receipt("retain", enabled_risks=("answer_farm_without_teaching",)),
+            "quarantine",
+        ),
+        (
             _receipt("retain", enabled_risks=("license_or_provenance_unclear",)),
             "rights_hold",
         ),

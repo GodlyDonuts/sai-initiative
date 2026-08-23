@@ -178,6 +178,8 @@ def _triage_route(judgment: dict[str, Any]) -> str:
         judgment["verdict"] == "reject"
         or risks["personal_or_secret_data"]
         or risks["incoherent_or_corrupted"]
+        or risks["seo_or_content_farm"]
+        or risks["answer_farm_without_teaching"]
     ):
         return "quarantine"
     if risks["license_or_provenance_unclear"]:
@@ -192,7 +194,6 @@ def _triage_route(judgment: dict[str, Any]) -> str:
         return "translation_review"
     if (
         risks["ocr_or_extraction_damage"]
-        or risks["seo_or_content_farm"]
         or risks["duplicated_boilerplate"]
         or judgment["scores"]["formatting_quality"] < 3
     ):
