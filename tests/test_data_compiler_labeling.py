@@ -12,6 +12,7 @@ from sai.data.data_compiler_labeling import (
     build_messages,
     evidence_quote_candidates,
     normalize_model_judgment,
+    repair_evidence_quotes,
     validate_normalized_judgment,
 )
 from sai.data.nous_compiler_worker import (
@@ -173,6 +174,67 @@ def test_compiler_accepts_translation_and_preservation_plan() -> None:
     assert result["epistemic_functions"][-1] == "human_expression"
 
 
+def test_compiler_recovers_one_normalized_quote_as_exact_source_bytes() -> None:
+    candidate = _candidate()
+    candidate["text"] = candidate["text"].replace(
+        "A historian compares irrigation records",
+        "A historian\ncompares irrigation records",
+    )
+    candidate["source_content_sha256"] = hashlib.sha256(
+        candidate["text"].encode()
+    ).hexdigest()
+    candidate["candidate_identity_sha256"] = canonical_sha256(
+        {
+            key: value
+            for key, value in candidate.items()
+            if key != "candidate_identity_sha256"
+        }
+    )
+    raw = _judgment(candidate)
+    raw["evidence_quotes"] = ["a historian compares irrigation records,"]
+    repaired, repairs = repair_evidence_quotes(raw, candidate)
+    assert repaired["evidence_quotes"] == ["A historian\ncompares irrigation records,"]
+    assert len(repairs) == 1
+    assert repairs[0]["source_span_byte_start"] == 0
+    assert repairs[0]["source_span_byte_end"] == len(
+        repaired["evidence_quotes"][0].encode()
+    )
+    result = normalize_model_judgment(raw, candidate)
+    assert result["evidence_quotes"] == repaired["evidence_quotes"]
+
+
+def test_compiler_rejects_ambiguous_normalized_quote_recovery() -> None:
+    candidate = _candidate()
+    candidate["text"] = (
+        "Alpha\nbeta. "
+        + "This independently grounded archival explanation supplies enough context "
+        * 4
+        + "Alpha beta."
+    )
+    candidate["source_content_sha256"] = hashlib.sha256(
+        candidate["text"].encode()
+    ).hexdigest()
+    candidate["candidate_identity_sha256"] = canonical_sha256(
+        {
+            key: value
+            for key, value in candidate.items()
+            if key != "candidate_identity_sha256"
+        }
+    )
+    raw = _judgment(candidate)
+    raw["evidence_quotes"] = ["alpha beta."]
+    with pytest.raises(DataCompilerLabelingError, match="evidence"):
+        normalize_model_judgment(raw, candidate)
+
+
+def test_compiler_leaves_exact_quote_unchanged_without_repair() -> None:
+    candidate = _candidate()
+    raw = _judgment(candidate)
+    repaired, repairs = repair_evidence_quotes(raw, candidate)
+    assert repaired["evidence_quotes"] == raw["evidence_quotes"]
+    assert repairs == []
+
+
 def test_compiler_rejects_non_english_without_translation_and_fake_evidence() -> None:
     candidate = _candidate(language="chinese")
     raw = _judgment(candidate, language="chinese")
@@ -270,6 +332,43 @@ def test_general_compiler_retry_names_the_actual_document_envelope() -> None:
     assert "byte-for-byte quote from document" in repair
     assert "evidence_quote_candidates" in repair
     assert "book_excerpt" not in repair
+
+
+def test_compiler_receipt_records_hashed_deterministic_quote_repair() -> None:
+    candidate = _candidate()
+    raw = _judgment(candidate)
+    raw["evidence_quotes"] = ["a historian compares irrigation records,"]
+
+    def request_function(**_kwargs):
+        return {
+            "id": "response-1",
+            "model": "stealth/ox-alpha",
+            "provider": "test",
+            "created": 1,
+            "choices": [
+                {"message": {"content": json.dumps(raw)}, "finish_reason": "stop"}
+            ],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }, 200
+
+    receipt = execute_one(
+        candidate,
+        model="stealth/ox-alpha",
+        base_url="https://inference-api.nousresearch.com/v1",
+        api_key="not-persisted",
+        timeout_seconds=1.0,
+        maximum_attempts=1,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+    assert len(receipt["deterministic_evidence_quote_repairs"]) == 1
+    repair = receipt["deterministic_evidence_quote_repairs"][0]
+    assert (
+        repair["model_quote_utf8_sha256"]
+        == hashlib.sha256(raw["evidence_quotes"][0].encode()).hexdigest()
+    )
+    assert receipt["judgment"]["evidence_quotes"][0] in candidate["text"]
+    assert receipt["raw_model_json_sha256"] == canonical_sha256(raw)
 
 
 def test_stored_compiler_judgment_replays_exact_evidence() -> None:

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
+import re
+import unicodedata
 from typing import Any
 
 from sai.data.agent_labeling import (
@@ -222,6 +225,87 @@ class DataCompilerLabelingError(RuntimeError):
     """A compiler judgment differs from the frozen polymath contract."""
 
 
+def _quote_normal_form(value: str) -> str:
+    """Normalize only compatibility, case, and whitespace for span recovery."""
+
+    return " ".join(unicodedata.normalize("NFKC", value).casefold().split())
+
+
+def _recover_unique_source_span(document: str, quote: str) -> tuple[str, int, int]:
+    """Map one normalized quote to exactly one literal source span, or fail closed."""
+
+    if quote in document:
+        start = document.index(quote)
+        return quote, start, start + len(quote)
+    target = _quote_normal_form(quote)
+    if not target:
+        raise DataCompilerLabelingError("evidence quotes differ")
+    target_tokens = target.split(" ")
+    raw_tokens = list(re.finditer(r"\S+", document))
+    normalized_tokens: list[tuple[str, int]] = []
+    for raw_index, match in enumerate(raw_tokens):
+        normalized_tokens.extend(
+            (token, raw_index)
+            for token in _quote_normal_form(match.group()).split(" ")
+            if token
+        )
+    matches: set[tuple[int, int]] = set()
+    width = len(target_tokens)
+    for offset in range(0, len(normalized_tokens) - width + 1):
+        if [
+            token for token, _raw_index in normalized_tokens[offset : offset + width]
+        ] != target_tokens:
+            continue
+        first_raw = normalized_tokens[offset][1]
+        last_raw = normalized_tokens[offset + width - 1][1]
+        start = raw_tokens[first_raw].start()
+        end = raw_tokens[last_raw].end()
+        if _quote_normal_form(document[start:end]) == target:
+            matches.add((start, end))
+    if len(matches) != 1:
+        raise DataCompilerLabelingError("evidence quotes differ")
+    start, end = next(iter(matches))
+    return document[start:end], start, end
+
+
+def repair_evidence_quotes(
+    payload: Any, candidate: dict[str, Any]
+) -> tuple[Any, list[dict[str, Any]]]:
+    """Recover only unique, normalization-equivalent model quotes as exact bytes."""
+
+    candidate = normalize_candidate(candidate)
+    if not isinstance(payload, dict) or not isinstance(
+        payload.get("evidence_quotes"), list
+    ):
+        return payload, []
+    document = candidate["text"]
+    repaired = dict(payload)
+    repaired_quotes = []
+    repairs = []
+    for index, quote in enumerate(payload["evidence_quotes"]):
+        if not isinstance(quote, str) or quote in document:
+            repaired_quotes.append(quote)
+            continue
+        exact, start, end = _recover_unique_source_span(document, quote)
+        repaired_quotes.append(exact)
+        repairs.append(
+            {
+                "algorithm": "nfkc-casefold-whitespace-unique-source-span-v1",
+                "evidence_index": index,
+                "model_quote_utf8_sha256": hashlib.sha256(quote.encode()).hexdigest(),
+                "recovered_quote_utf8_sha256": hashlib.sha256(
+                    exact.encode()
+                ).hexdigest(),
+                "source_span_codepoint_start": start,
+                "source_span_codepoint_end": end,
+                "source_span_byte_start": len(document[:start].encode()),
+                "source_span_byte_end": len(document[:end].encode()),
+            }
+        )
+    repaired["evidence_quotes"] = repaired_quotes
+    return repaired, repairs
+
+
 def evidence_quote_candidates(text: str, *, maximum: int = 12) -> list[str]:
     """Expose deterministic exact anchors without changing the frozen rubric."""
 
@@ -321,6 +405,7 @@ def normalize_model_judgment(payload: Any, candidate: dict[str, Any]) -> dict[st
     """Validate one compiler judgment and bind its evidence to the source."""
 
     candidate = normalize_candidate(candidate)
+    payload, _repairs = repair_evidence_quotes(payload, candidate)
     row = _exact(payload, set(OUTPUT_TEMPLATE), "data compiler judgment")
     verdict = _enum(row["verdict"], VERDICTS, "verdict")
     functions = _enum_list(

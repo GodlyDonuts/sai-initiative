@@ -17,6 +17,7 @@ from sai.data.data_compiler_labeling import (
     RUBRIC_SHA256,
     build_messages,
     normalize_model_judgment,
+    repair_evidence_quotes,
 )
 from sai.data.nous_label_worker import (
     DEFAULT_BASE_URL,
@@ -66,6 +67,7 @@ def execute_one(
         maximum_completion_tokens=2400,
         reasoning_effort=COMPILER_REASONING_EFFORT,
         evidence_container_name="document",
+        evidence_repair_function=repair_evidence_quotes,
     )
 
 
@@ -84,6 +86,9 @@ def execute_contract(
     maximum_completion_tokens: int,
     reasoning_effort: str | None = None,
     evidence_container_name: str = "document",
+    evidence_repair_function: (
+        Callable[[Any, dict[str, Any]], tuple[Any, list[dict[str, Any]]]] | None
+    ) = None,
     request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
     sleep_function: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
@@ -118,6 +123,7 @@ def execute_contract(
     response = None
     raw_judgment = None
     judgment = None
+    evidence_repairs: list[dict[str, Any]] = []
     choice = None
     for attempt in range(1, maximum_attempts + 1):
         attempt_request_sha256 = canonical_sha256(body)
@@ -140,7 +146,13 @@ def execute_contract(
             ):
                 raise NousLabelWorkerError("model response message differs")
             raw_judgment = _json_object(choice["message"].get("content"))
-            judgment = normalize_function(raw_judgment, candidate)
+            normalized_payload = raw_judgment
+            evidence_repairs = []
+            if evidence_repair_function is not None:
+                normalized_payload, evidence_repairs = evidence_repair_function(
+                    raw_judgment, candidate
+                )
+            judgment = normalize_function(normalized_payload, candidate)
             attempts.append(
                 {
                     "attempt": attempt,
@@ -272,6 +284,7 @@ def execute_contract(
         },
         "usage": usage_receipt,
         "raw_model_json_sha256": canonical_sha256(raw_judgment),
+        "deterministic_evidence_quote_repairs": evidence_repairs,
         "judgment": judgment,
         "api_key_persisted": False,
         "tools_enabled": False,
