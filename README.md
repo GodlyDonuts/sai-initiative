@@ -491,6 +491,20 @@ byte-for-byte at Hugging Face dataset commit
 This measures scope evidence only: every row remains non-cleared and
 non-training-ready.
 
+The active scope was then materialized into actual candidate data rather than
+left as a hash-only plan. A third live replay reproduced all 1,253 eligible
+pages without drift and emitted 5,919,449 UTF-8 text bytes across 995
+Collections, 243 Essays, and 15 Conjectures. It excluded 883 quoted elements
+containing 412,039 codepoints; the other 89 pilot identities remain absent.
+Because quotation deletion creates new token adjacencies, the exact transformed
+text was re-screened against the pinned official benchmark boundary. All 1,253
+rows remained clean with zero word or eligible-code shingle hits. Receipt
+`52484c5f8b22d79b231e71d2d03962fd10ea18b29c6740c02b86afd25ebd7741`
+binds the scoped candidates; receipt
+`9a051d33874a8515938d072914dbe3888e7cde52ed7eff7754c12d7efd528097`
+binds the post-transformation screen. This is a replayable open candidate
+population, not content-quality verification or training admission.
+
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
 field; source-specific READMEs instead describe their collection policy and,
