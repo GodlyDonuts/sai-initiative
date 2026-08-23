@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
+from sai.data.common_pile_streaming_pilot import SCHEMA as COMMON_PILE_PILOT_SCHEMA
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 SCHEMA = "sai-data-conversion-yield-ledger-v3"
@@ -147,7 +148,7 @@ def _audit_row(root: Path) -> dict[str, Any]:
 def _pilot_row(root: Path) -> dict[str, Any]:
     receipt_path = root / "receipt.json"
     receipt = _load_receipt(receipt_path)
-    if receipt.get("schema") != "sai-common-pile-streaming-pilot-v1":
+    if receipt.get("schema") != COMMON_PILE_PILOT_SCHEMA:
         raise DataYieldLedgerError(f"unsupported pilot receipt: {receipt_path}")
     if receipt.get("training_ready") is not False:
         raise DataYieldLedgerError("pilot receipt makes an unsupported ready claim")

@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from sai.data.common_pile_streaming_pilot import SCHEMA as COMMON_PILE_PILOT_SCHEMA
 from sai.data.data_yield_ledger import DataYieldLedgerError, build_ledger
 from sai.data.token_stream import canonical_sha256, sha256_file
 
@@ -106,7 +107,7 @@ def _pilot(tmp_path: Path) -> Path:
     _seal(
         root / "receipt.json",
         {
-            "schema": "sai-common-pile-streaming-pilot-v1",
+            "schema": COMMON_PILE_PILOT_SCHEMA,
             "source_id": "common_pile_test",
             "raw_population": {
                 "path": raw.name,

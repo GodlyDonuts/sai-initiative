@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from sai.data.common_pile_streaming_pilot import SCHEMA as COMMON_PILE_PILOT_SCHEMA
 from sai.data.cross_source_pilot_duplicates import build_sample
 from sai.data.token_stream import ROW_SCHEMA, canonical_sha256, sha256_file
 
@@ -28,7 +29,7 @@ def _pilot(root: Path, source_id: str, documents: list[dict]) -> Path:
     output = root / "bounded.jsonl"
     output.write_text("".join(json.dumps(row) + "\n" for row in documents))
     receipt = {
-        "schema": "sai-common-pile-streaming-pilot-v1",
+        "schema": COMMON_PILE_PILOT_SCHEMA,
         "source_id": source_id,
         "near_duplicate_filter": {
             "output_path": output.name,
@@ -69,8 +70,6 @@ def test_cross_source_sample_finds_duplicate_family(tmp_path: Path) -> None:
     assert result["duplicate_filter"]["duplicate_groups"] == 1
     assert result["duplicate_filter"]["cross_source_duplicate_groups"] == 1
     assert result["duplicate_filter"]["documents_dropped"] == 1
-    assert result[
-        "full_pilot_population_cross_source_deduplication_complete"
-    ] is True
+    assert result["full_pilot_population_cross_source_deduplication_complete"] is True
     assert result["full_reservoir_cross_source_deduplication_complete"] is False
     assert result["training_ready"] is False

@@ -15,6 +15,7 @@ from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
 from sai.data.bounded_near_duplicate_filter import build_filter
+from sai.data.common_pile_streaming_pilot import SCHEMA as COMMON_PILE_PILOT_SCHEMA
 from sai.data.data_yield_ledger import _bound_file, _load_receipt
 from sai.data.token_stream import canonical_sha256, normalize_document, sha256_file
 
@@ -37,7 +38,7 @@ def _pilot_binding(root: Path) -> tuple[dict[str, Any], Path]:
         ) from error
     near_duplicate = receipt.get("near_duplicate_filter")
     if (
-        receipt.get("schema") != "sai-common-pile-streaming-pilot-v1"
+        receipt.get("schema") != COMMON_PILE_PILOT_SCHEMA
         or receipt.get("training_ready") is not False
         or receipt.get("bounded_pilot_near_duplicate_filter_complete") is not True
         or receipt.get("global_cross_source_near_duplicate_filter_complete")
@@ -203,9 +204,7 @@ def build_sample(
         raise CrossSourcePilotDuplicateError("cross-source output already exists")
     output_root.mkdir(parents=True)
     try:
-        selected, bindings = select_bottom_k(
-            pilot_roots, maximum_rows=maximum_rows
-        )
+        selected, bindings = select_bottom_k(pilot_roots, maximum_rows=maximum_rows)
         if len({source_id for _, source_id, _ in selected}) < 2:
             raise CrossSourcePilotDuplicateError(
                 "cross-source selection does not cover two sources"
@@ -233,9 +232,7 @@ def build_sample(
             "schema": SCHEMA,
             "status": "complete_nontraining_cross_source_sample",
             "selection": {
-                "method": (
-                    "deterministic_source_stratified_bottom_k_then_global_fill"
-                ),
+                "method": ("deterministic_source_stratified_bottom_k_then_global_fill"),
                 "seed": SELECTION_SEED,
                 "maximum_rows": maximum_rows,
                 "input_documents": sum(
