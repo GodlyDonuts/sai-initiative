@@ -295,6 +295,21 @@ family, so its aggregate truthfully records
 anchor text, and still requires decontamination, global deduplication, and
 transfer ablation before any bridge can become training-ready.
 
+#### Prerequisite-edge compiler
+
+Sai is also converting Hermès's document-level `prerequisites_assumed` and
+`concepts_taught` fields into graph-verification work. It does not equate
+co-occurrence with a prerequisite. After both active compiler populations close,
+the builder requires each proposed direction to recur in at least two distinct
+candidate and content identities, applies the same conservative source-quality
+floor, balances selection across domains, and freezes 192 repeated-evidence
+edges. A separate Hermès request then compares every edge against two or three
+exact source documents and distinguishes strict prerequisites, helpful
+foundations, co-taught nonedges, and unsupported directions with byte-exact
+quotes. Even positive same-family decisions remain graph candidates until
+independent verification and acyclic graph construction close; every route is
+`training_ready=false`.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:
