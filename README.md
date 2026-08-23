@@ -503,7 +503,10 @@ rows remained clean with zero word or eligible-code shingle hits. Receipt
 binds the scoped candidates; receipt
 `9a051d33874a8515938d072914dbe3888e7cde52ed7eff7754c12d7efd528097`
 binds the post-transformation screen. This is a replayable open candidate
-population, not content-quality verification or training admission.
+population, not content-quality verification or training admission. The card,
+candidate bytes, receipts, and text-free decisions were force-downloaded and
+replayed from Hugging Face dataset commit
+[`6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d).
 
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`

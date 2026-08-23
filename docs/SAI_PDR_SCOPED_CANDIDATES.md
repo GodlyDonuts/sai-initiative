@@ -68,3 +68,10 @@ The candidate file remains `content_quality_verified=false`,
 `legal_clearance_established=false`, and `training_ready=false`. The live
 Hermès compiler and independent work lanes decide which rows deserve later
 representation verification; no compiler verdict alone can promote a row.
+
+All seven published files were force-downloaded and replayed from exact
+Hugging Face dataset commit
+[`6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d).
+The remote candidate file, all 1,253 candidate signatures, all 1,253 text-free
+contamination decisions, both receipts, and the zero-contamination conclusion
+reproduced exactly.

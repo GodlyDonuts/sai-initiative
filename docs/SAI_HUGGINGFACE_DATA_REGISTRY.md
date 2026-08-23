@@ -239,6 +239,29 @@ and per-row signatures exactly. Neither generation is a legal decision,
 rights clearance, training admission, or 4B training authorization.
 
 Dataset commit
+[`6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d)
+publishes the first actual text-bearing output of that scope audit. A third live
+replay materialized all 1,253 eligible pages—995 Collections, 243 Essays, and
+15 Conjectures—into 5,919,449 UTF-8 bytes. It excluded 883 tagged quotations
+containing 412,039 codepoints; all 85 drifted and four unavailable pages remain
+absent. Every row carries its exact source URL, upstream identity, provenance,
+rights, scope-result, attribution, and share-alike bindings.
+
+Because removing a quotation can create new token adjacencies, the transformed
+text was screened again against the pinned official benchmark boundary. All
+1,253 rows survived with zero exact word-shingle and zero eligible-code-shingle
+hits. Materialization receipt
+`52484c5f8b22d79b231e71d2d03962fd10ea18b29c6740c02b86afd25ebd7741`
+and post-scope screen receipt
+`9a051d33874a8515938d072914dbe3888e7cde52ed7eff7754c12d7efd528097`
+replayed exactly. A forced remote download also reproduced all seven files,
+every candidate signature, every text-free contamination decision, and the
+candidate SHA-256
+`04626195b471db0a543a1de7a7b3feb672696ac0069da9a1025c64e11b2ddbf6`.
+The population remains candidate data: content quality is not yet independently
+verified and no row is training-ready.
+
+Dataset commit
 [`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf)
 publishes the source-safe bounded-pilot compiler population receipt and its
 text-free 3,290-row lineage. The compiler input contains 1,948 Pressbooks and
