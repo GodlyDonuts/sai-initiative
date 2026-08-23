@@ -329,6 +329,14 @@ Documents outside 200 bytes to 128 KiB are counted rather than silently
 truncated. Pilot rows still remain non-training data until full rights,
 cross-source deduplication, and representation verification close.
 
+`sai.data.cross_source_pilot_duplicates` is the next no-idle-gap gate. Once at
+least two source pilots exist, it preserves a deterministic per-source floor,
+fills unused capacity by a global bottom-k key, and exhaustively compares every
+unordered pair in the resulting sample with the same exact sparse shingle
+join. Its receipt distinguishes cross-source duplicate components and says
+whether the sample happened to cover every pilot row. It never upgrades a
+sample result into full-reservoir deduplication or training admission.
+
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
 field; source-specific READMEs instead describe their collection policy and,

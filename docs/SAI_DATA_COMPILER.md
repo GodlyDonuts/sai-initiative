@@ -266,6 +266,14 @@ The pilot counts short and oversized documents instead of truncating them, and
 it remains `training_ready=false` until rights, global deduplication, and
 representation verification are independently complete.
 
+After two or more bounded source pilots complete,
+`sai.data.cross_source_pilot_duplicates` constructs a deterministic
+source-stratified sample with a global bottom-k fill. It replays every selected
+unordered pair under the identical five-word-shingle policy and separately
+counts duplicate components spanning source IDs. This measures whether
+source-local cleanup is hiding cross-source redundancy while explicitly
+leaving full-reservoir deduplication and training admission false.
+
 `sai.data.license_policy` is a separate exact-declaration boundary. The pinned
 cards for the seven Common Pile confirmation sources do not provide one
 top-level license; their source READMEs and rows carry source-specific rights
