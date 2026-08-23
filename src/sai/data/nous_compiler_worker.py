@@ -39,6 +39,7 @@ RECEIPT_SCHEMA = "sai-nous-data-compiler-receipt-v2"
 SUMMARY_SCHEMA = "sai-nous-data-compiler-shard-summary-v2"
 COMPILER_REASONING_EFFORT = "low"
 DEFAULT_COMPILER_CONCURRENCY = 4
+MAXIMUM_RESUME_RECEIPT_BYTES = 4 << 20
 
 
 def execute_one(
@@ -351,6 +352,89 @@ def execute_contract(
     return receipt
 
 
+def _resume_completed_shard(
+    summary_path: Path,
+    output_root: Path,
+    candidates: list[dict[str, Any]],
+    *,
+    model: str,
+    logical_shards: int,
+    shard_index: int,
+    summary_schema: str,
+    rubric_sha256: str,
+    output_suffix: str,
+) -> dict[str, Any] | None:
+    """Replay a complete shard only after every exact receipt is revalidated."""
+
+    if not summary_path.exists() and not summary_path.is_symlink():
+        return None
+    if (
+        not summary_path.is_file()
+        or summary_path.is_symlink()
+        or summary_path.stat().st_nlink != 1
+        or summary_path.stat().st_size > MAXIMUM_RESUME_RECEIPT_BYTES
+    ):
+        raise NousLabelWorkerError("completed compiler shard summary is unsafe")
+    try:
+        summary = json.loads(summary_path.read_bytes())
+    except (OSError, json.JSONDecodeError) as error:
+        raise NousLabelWorkerError(
+            "completed compiler shard summary cannot be decoded"
+        ) from error
+    if not isinstance(summary, dict):
+        raise NousLabelWorkerError("completed compiler shard summary differs")
+    unsigned = {key: value for key, value in summary.items() if key != "receipt_sha256"}
+    if (
+        summary.get("receipt_sha256") != canonical_sha256(unsigned)
+        or summary.get("schema") != summary_schema
+        or summary.get("status") != "complete"
+        or summary.get("model") != model
+        or summary.get("rubric_sha256") != rubric_sha256
+        or summary.get("logical_shards") != logical_shards
+        or summary.get("shard_index") != shard_index
+        or summary.get("candidate_rows") != len(candidates)
+        or summary.get("expected_judgments") != len(candidates)
+        or not isinstance(summary.get("created_judgments"), int)
+        or not isinstance(summary.get("preexisting_judgments"), int)
+        or summary["created_judgments"] + summary["preexisting_judgments"]
+        != len(candidates)
+        or summary.get("api_key_persisted") is not False
+        or summary.get("training_ready") is not False
+    ):
+        raise NousLabelWorkerError("completed compiler shard summary differs")
+    for row in candidates:
+        identity = row["candidate_identity_sha256"]
+        target = output_root / f"{identity}.{output_suffix}.json"
+        if (
+            not target.is_file()
+            or target.is_symlink()
+            or target.stat().st_nlink != 1
+            or target.stat().st_size > MAXIMUM_RESUME_RECEIPT_BYTES
+        ):
+            raise NousLabelWorkerError(
+                "completed compiler shard has missing or unsafe receipt"
+            )
+        try:
+            receipt = json.loads(target.read_bytes())
+        except (OSError, json.JSONDecodeError) as error:
+            raise NousLabelWorkerError(
+                "completed compiler shard receipt cannot be decoded"
+            ) from error
+        if not isinstance(receipt, dict):
+            raise NousLabelWorkerError("completed compiler shard receipt differs")
+        receipt_unsigned = {
+            key: value for key, value in receipt.items() if key != "receipt_sha256"
+        }
+        if (
+            receipt.get("candidate_identity_sha256") != identity
+            or receipt.get("receipt_sha256") != canonical_sha256(receipt_unsigned)
+            or receipt.get("api_key_persisted", False) is not False
+            or receipt.get("training_ready", False) is not False
+        ):
+            raise NousLabelWorkerError("completed compiler shard receipt differs")
+    return summary
+
+
 def run_shard(
     candidates_path: Path,
     output_root: Path,
@@ -400,6 +484,20 @@ def run_shard(
     ]
     base_url = _validate_endpoint(base_url)
     output_root.mkdir(parents=True, exist_ok=True)
+    summary_path = output_root / f"shard_{shard_index:05d}.summary.json"
+    completed = _resume_completed_shard(
+        summary_path,
+        output_root,
+        candidates,
+        model=model,
+        logical_shards=logical_shards,
+        shard_index=shard_index,
+        summary_schema=summary_schema,
+        rubric_sha256=rubric_sha256,
+        output_suffix=output_suffix,
+    )
+    if completed is not None:
+        return completed
     pending = []
     skipped = 0
     for row in candidates:
@@ -476,7 +574,7 @@ def run_shard(
         "training_ready": False,
     }
     summary["receipt_sha256"] = canonical_sha256(summary)
-    _atomic_create(output_root / f"shard_{shard_index:05d}.summary.json", summary)
+    _atomic_create(summary_path, summary)
     return summary
 
 

@@ -312,6 +312,68 @@ def test_compiler_worker_writes_one_resumable_receipt(tmp_path: Path) -> None:
     assert summary["created_judgments"] == 1
     assert len(list(output.glob("*.compiler.json"))) == 1
 
+    def refuse_duplicate(row, **kwargs):
+        raise AssertionError(f"duplicate compiler request for {row}")
+
+    replay = run_shard(
+        candidates,
+        output,
+        model="stealth/ox-alpha",
+        base_url="https://inference-api.nousresearch.com/v1",
+        api_key="local-test",
+        logical_shards=1,
+        shard_index=0,
+        concurrency=1,
+        timeout_seconds=1,
+        maximum_attempts=1,
+        execute_function=refuse_duplicate,
+    )
+    assert replay == summary
+
+
+def test_compiler_resume_rejects_missing_receipt(tmp_path: Path) -> None:
+    candidate = _candidate()
+    candidates = tmp_path / "candidates.jsonl"
+    candidates.write_text(json.dumps(candidate) + "\n")
+    output = tmp_path / "outputs"
+
+    def execute_function(row, **kwargs):
+        receipt = {
+            "schema": "test-compiler-receipt",
+            "candidate_identity_sha256": row["candidate_identity_sha256"],
+        }
+        receipt["receipt_sha256"] = canonical_sha256(receipt)
+        return receipt
+
+    run_shard(
+        candidates,
+        output,
+        model="stealth/ox-alpha",
+        base_url="https://inference-api.nousresearch.com/v1",
+        api_key="local-test",
+        logical_shards=1,
+        shard_index=0,
+        concurrency=1,
+        timeout_seconds=1,
+        maximum_attempts=1,
+        execute_function=execute_function,
+    )
+    (output / f"{candidate['candidate_identity_sha256']}.compiler.json").unlink()
+    with pytest.raises(NousLabelWorkerError, match="missing or unsafe"):
+        run_shard(
+            candidates,
+            output,
+            model="stealth/ox-alpha",
+            base_url="https://inference-api.nousresearch.com/v1",
+            api_key="local-test",
+            logical_shards=1,
+            shard_index=0,
+            concurrency=1,
+            timeout_seconds=1,
+            maximum_attempts=1,
+            execute_function=execute_function,
+        )
+
 
 def test_compiler_rejects_schema_tamper() -> None:
     candidate = _candidate()
