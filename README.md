@@ -328,6 +328,30 @@ audits close, reuse the shared shard lock, and automatically seal complete
 aggregates and source-work decisions. These 2,031 rows broaden future teacher
 distillation evidence; they do not authorize bulk source admission.
 
+#### Host-diverse code-web teacher expansion
+
+The live teacher census exposed a material code shortage: among the first 1,692
+high-confidence English anchors, only 16 came from code-repository sources and
+only 13 had code style. NVIDIA's newer pretraining-code releases remain
+manually gated for the current account, so Sai does not count their metadata as
+code content. Instead, an exact public OpenCoder code-web shard is now pinned at
+revision `9e8e48e…c06f3`. The complete 286,437,437-byte Parquet member replayed
+its published LFS SHA-256 and all 197,882 rows.
+
+The code audit considered 162,487 rows between 512 bytes and 512 KiB, found the
+same number of unique content hashes, and froze an 8,192-row host-diverse
+screen. The source-agnostic mechanical gate rejected two rows and the official
+benchmark boundary rejected 39, leaving 8,151 clean screen candidates. A final
+bottom-hash selection froze **2,048 unique documents across 1,922 web hosts**,
+with no host contributing more than two rows. Candidate SHA-256 is
+`3cf1a97021a22f8a2dbab932c0bbf58ac724bd49b03c679aa61d447126e46182`;
+population receipt is
+`53abfd09fb2bc71b17dba5b922c1eaa2c7752cb216654e1557b442701937e7c9`.
+The dataset card's MIT declaration is bound but does not establish rights for
+every underlying web document, so per-row rights provenance remains false.
+Hermès compilation is dependency-staged and every row remains
+`training_ready=false`.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:
