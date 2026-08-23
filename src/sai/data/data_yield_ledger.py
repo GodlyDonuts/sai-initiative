@@ -34,8 +34,7 @@ def _load_receipt(path: Path) -> dict[str, Any]:
     return payload
 
 
-def _bound_file(root: Path, descriptor: dict[str, Any]) -> Path:
-    relative = descriptor.get("path")
+def _member_path(root: Path, relative: Any) -> Path:
     if not isinstance(relative, str) or not relative:
         raise DataYieldLedgerError("ledger bound-file path differs")
     candidate = root / relative
@@ -43,6 +42,11 @@ def _bound_file(root: Path, descriptor: dict[str, Any]) -> Path:
         candidate.resolve().relative_to(root.resolve())
     except ValueError as error:
         raise DataYieldLedgerError("ledger bound-file path escapes its root") from error
+    return candidate
+
+
+def _bound_file(root: Path, descriptor: dict[str, Any]) -> Path:
+    candidate = _member_path(root, descriptor.get("path"))
     if (
         not candidate.is_file()
         or candidate.is_symlink()
@@ -52,6 +56,19 @@ def _bound_file(root: Path, descriptor: dict[str, Any]) -> Path:
     ):
         raise DataYieldLedgerError(f"ledger bound file differs: {candidate}")
     return candidate
+
+
+def _bound_nested_receipt(root: Path, descriptor: dict[str, Any]) -> dict[str, Any]:
+    candidate = _member_path(root, descriptor.get("receipt_path"))
+    receipt = _load_receipt(candidate)
+    if (
+        descriptor.get("receipt_file_sha256") != sha256_file(candidate)
+        or descriptor.get("receipt_sha256") != receipt["receipt_sha256"]
+    ):
+        raise DataYieldLedgerError(
+            f"ledger nested receipt binding differs: {candidate}"
+        )
+    return receipt
 
 
 def _reservoir_row(path: Path) -> dict[str, Any]:
@@ -144,22 +161,15 @@ def _pilot_row(root: Path) -> dict[str, Any]:
     }
     _bound_file(root, decontamination_output)
     _bound_file(root, near_duplicate_output)
-    _bound_file(
-        root,
-        {
-            "path": decontamination.get("receipt_path"),
-            "bytes": (root / str(decontamination.get("receipt_path"))).stat().st_size,
-            "sha256": decontamination.get("receipt_file_sha256"),
-        },
-    )
-    _bound_file(
-        root,
-        {
-            "path": near_duplicate.get("receipt_path"),
-            "bytes": (root / str(near_duplicate.get("receipt_path"))).stat().st_size,
-            "sha256": near_duplicate.get("receipt_file_sha256"),
-        },
-    )
+    decontamination_receipt = _bound_nested_receipt(root, decontamination)
+    near_duplicate_receipt = _bound_nested_receipt(root, near_duplicate)
+    if (
+        decontamination_receipt.get("output", {}).get("documents")
+        != decontamination.get("output_documents")
+        or near_duplicate_receipt.get("output", {}).get("documents")
+        != near_duplicate.get("output_documents")
+    ):
+        raise DataYieldLedgerError("pilot nested output coverage differs")
     return {
         "root": str(root.resolve()),
         "source_id": receipt.get("source_id"),
