@@ -213,6 +213,32 @@ queue SHA-256 is
 Both remote files replayed byte-for-byte.
 
 Dataset commit
+[`c2dbb5dfe68a85b06e85c5d1962162d12a62c68f`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/c2dbb5dfe68a85b06e85c5d1962162d12a62c68f)
+publishes both immutable generations of the text-free Public Domain Review
+scope audit. The audit replays all 1,342 frozen candidate identities against
+their live source pages using the selector geometry pinned from Common Pile
+commit `9457f04a14cb2355ab00023420369d46ffd4a395`, requires the applicable
+official-policy or page-specific CC BY-SA evidence, excludes nested
+`blockquote` and `q` elements, and retains only hashes, counts, routing status,
+and transport evidence. It never stores page HTML, source text, or scoped text.
+
+Generation `20260825-r1` is retained as superseded audit history because it
+revealed that a live license footer also matched the upstream content-block
+class. Active generation `20260825-r2` deterministically removes that exact
+license UI before replay. It has 1,342/1,342 unique signed results: 1,253 exact
+live-page replays, 85 source-page drift reviews, and four unavailable
+responses. It excludes 961 quotation elements containing 446,625 codepoints.
+The active receipt SHA-256 is
+`779eeef0a192dcd73744f68aa47af46305c5a45391601a244a87be3cdbf0f40a`;
+its result-file SHA-256 is
+`3d9b8793a2696dfc072ab226262c577ceb76212a22794fcd312d8e254a7d6271`;
+its ordered per-row result digest is
+`50fff9f3d15d52def277717ff2901847baf53952196c99d0cb3fb723a9f4d8c1`.
+Forced remote download reproduced both r1 and r2 receipts, files, row counts,
+and per-row signatures exactly. Neither generation is a legal decision,
+rights clearance, training admission, or 4B training authorization.
+
+Dataset commit
 [`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf)
 publishes the source-safe bounded-pilot compiler population receipt and its
 text-free 3,290-row lineage. The compiler input contains 1,948 Pressbooks and

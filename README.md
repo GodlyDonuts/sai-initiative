@@ -464,6 +464,33 @@ and queue SHA-256
 were uploaded and byte-replayed from Hugging Face dataset commit
 [`e1a2f00a121cbfec417cabe657111e5cb6a2de30`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e1a2f00a121cbfec417cabe657111e5cb6a2de30).
 
+Public Domain Review has now received a stricter, per-identity scope replay.
+Inspection of the pinned Common Pile collector at commit
+`9457f04a14cb2355ab00023420369d46ffd4a395` found that its permissive-license
+checker was defined but not applied in record construction, while quoted
+`blockquote`/`q` material could enter the extracted text. The audit therefore
+re-fetched every one of the 1,342 frozen PDR pages, reproduced the pinned
+selector geometry, required the applicable official-policy or page-specific
+CC BY-SA evidence, and constructed a quotation-excluded hash without retaining
+HTML, source text, or scoped text.
+
+The first immutable replay (`20260825-r1`) exposed a live license-footer class
+collision and is retained only as superseded audit history. The corrected
+active replay (`20260825-r2`) deterministically excludes the exact license UI
+before comparison. It accounts for all 1,342 identities: 1,253 exactly replay
+the frozen candidate, 85 require source-page drift review, and four returned
+unavailable responses. Across the inspected pages, 961 quotation elements
+containing 446,625 codepoints were excluded from the scoped hashes. The active
+receipt is
+`779eeef0a192dcd73744f68aa47af46305c5a45391601a244a87be3cdbf0f40a`;
+the results SHA-256 is
+`3d9b8793a2696dfc072ab226262c577ceb76212a22794fcd312d8e254a7d6271`.
+Both r1 and r2 source-safe evidence were force-downloaded from and replayed
+byte-for-byte at Hugging Face dataset commit
+[`c2dbb5dfe68a85b06e85c5d1962162d12a62c68f`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/c2dbb5dfe68a85b06e85c5d1962162d12a62c68f).
+This measures scope evidence only: every row remains non-cleared and
+non-training-ready.
+
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
 field; source-specific READMEs instead describe their collection policy and,
