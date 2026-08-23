@@ -34,6 +34,7 @@ from sai.data.token_stream import canonical_sha256
 RECEIPT_SCHEMA = "sai-nous-data-compiler-receipt-v2"
 SUMMARY_SCHEMA = "sai-nous-data-compiler-shard-summary-v2"
 COMPILER_REASONING_EFFORT = "low"
+DEFAULT_COMPILER_CONCURRENCY = 4
 
 
 def execute_one(
@@ -409,7 +410,7 @@ def main() -> int:
     parser.add_argument("--api-key-env", default="NOUS_API_KEY")
     parser.add_argument("--logical-shards", type=int, default=4)
     parser.add_argument("--shard-index", type=int, required=True)
-    parser.add_argument("--concurrency", type=int, default=32)
+    parser.add_argument("--concurrency", type=int, default=DEFAULT_COMPILER_CONCURRENCY)
     parser.add_argument("--timeout-seconds", type=float, default=300.0)
     parser.add_argument("--maximum-attempts", type=int, default=5)
     args = parser.parse_args()

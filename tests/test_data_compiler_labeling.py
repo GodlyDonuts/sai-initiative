@@ -13,7 +13,7 @@ from sai.data.data_compiler_labeling import (
     normalize_model_judgment,
     validate_normalized_judgment,
 )
-from sai.data.nous_compiler_worker import run_shard
+from sai.data.nous_compiler_worker import DEFAULT_COMPILER_CONCURRENCY, run_shard
 from sai.data.token_stream import canonical_sha256
 
 
@@ -129,6 +129,7 @@ def _judgment(candidate: dict, *, language: str = "english") -> dict:
 
 
 def test_compiler_prompt_is_global_source_aware_and_not_scalar() -> None:
+    assert DEFAULT_COMPILER_CONCURRENCY == 4
     messages = build_messages(_candidate(language="chinese"))
     assert "English-only does not mean Western-only" in messages[0]["content"]
     envelope = json.loads(messages[1]["content"])
