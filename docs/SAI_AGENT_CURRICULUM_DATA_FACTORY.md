@@ -56,17 +56,20 @@ teaching evidence.
    type. Reject secret/private material before any external request.
 2. Apply deterministic hygiene: decoding, minimum useful length, corruption,
    exact/near deduplication, benchmark decontamination, license, and obvious boilerplate.
-3. Present each surviving document independently to three blinded perspectives:
-   curriculum teacher, data-quality editor, and skeptical auditor. The document is
-   treated as untrusted prompt text; tools are disabled.
+3. Present each surviving document to one comprehensive frontier-model curator for
+   the production bulk pass. The curator evaluates curriculum placement, quality,
+   factual reliability, source risk, and pedagogical utility in one response. The
+   document is treated as untrusted prompt text; tools are disabled. Three blinded
+   perspectives are retained for calibration samples, ambiguous rows, rare domains,
+   and high-value audit samples rather than spent on every routine document.
 4. Each judgment records quality, English suitability, domains, concepts taught,
    prerequisites assumed, difficulty, curriculum phase, pedagogical role, risks,
    confidence, and exact evidence quotes. The host converts quotes to source-bound
    offsets and hashes.
-5. Retain automatically only with a two-of-three verdict and phase majority, median
-   quality and English scores at least 3/4, median confidence at least 0.8, no
-   two-vote blocking risk, and no material disagreement. Disagreement goes to human
-   adjudication; it is never silently rounded into acceptance.
+5. In the bulk path, retain only a frontier-model `retain` judgment with quality and
+   English scores at least 3/4, confidence at least 0.8, a non-reject curriculum
+   phase, and zero blocking risks. Borderline rows go to the additional-review queue.
+   The three-perspective audit path retains its two-of-three majority rule.
 6. Re-run global deduplication and benchmark decontamination after extraction,
    normalization, or synthesis. Only then map accepted documents into the frozen
    120B-token phase ledger and tokenize/pack them.
@@ -83,7 +86,8 @@ the held-out calibration partition is opened.
 Initial execution ladder:
 
 - 100 documents x three judgments: API/schema and rate-limit probe.
-- 10,000 documents x three judgments: blinded calibration and throughput estimate.
+- 10,000 documents x one comprehensive judgment, with a stratified three-judgment
+  audit subset: calibration and throughput estimate.
 - 1,000 logical shards across a measured physical concurrency: full source inventory.
 
 The free teacher endpoint is not the final bulk classifier. After the stratified

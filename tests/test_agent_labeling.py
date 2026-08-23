@@ -13,6 +13,7 @@ from sai.data.agent_labeling import (
     _load_judgment,
     aggregate_judgments,
     build_messages,
+    classify_single_judgment,
     normalize_candidate,
     normalize_model_judgment,
 )
@@ -125,6 +126,24 @@ def test_three_blind_votes_retain_only_high_agreement() -> None:
     assert result["curriculum_phase"] == "grounding"
     assert result["training_ready"] is False
     assert result["concepts_taught_consensus"] == ["addition", "counting"]
+
+
+def test_single_frontier_judgment_supports_fast_bulk_disposition() -> None:
+    candidate = _candidate()
+    judgment = normalize_model_judgment(_raw_judgment(), candidate, 0)
+    result = classify_single_judgment(candidate, judgment)
+    assert result["disposition"] == "retain"
+    assert result["curriculum_phase"] == "grounding"
+    assert result["domains"] == ["foundation", "math"]
+    assert result["training_ready"] is False
+
+    risky = _raw_judgment()
+    risky["risks"]["seo_or_content_farm"] = True
+    result = classify_single_judgment(
+        candidate, normalize_model_judgment(risky, candidate, 0)
+    )
+    assert result["disposition"] == "reject"
+    assert result["blocking_risks"] == ["seo_or_content_farm"]
 
 
 def test_disagreement_escalates_and_blocking_risk_rejects() -> None:
@@ -299,6 +318,7 @@ def test_shard_is_deterministic_create_only_and_resumable(tmp_path: Path) -> Non
     )
     assert summary["expected_judgments"] == 3
     assert summary["created_judgments"] == 3
+    assert summary["judgments_per_candidate"] == 3
     assert (
         len(list(output.glob(f"{candidate['candidate_identity_sha256']}.*.json"))) == 3
     )
@@ -316,6 +336,45 @@ def test_shard_is_deterministic_create_only_and_resumable(tmp_path: Path) -> Non
             maximum_attempts=1,
             execute_function=execute_function,
         )
+
+
+def test_bulk_shard_uses_one_comprehensive_judgment_per_document(
+    tmp_path: Path,
+) -> None:
+    candidate = _candidate()
+    candidates = tmp_path / "candidates.jsonl"
+    candidates.write_text(json.dumps(candidate) + "\n")
+
+    def execute_function(row, slot, **kwargs):
+        assert slot == 0
+        judgment = normalize_model_judgment(_raw_judgment(), row, slot)
+        receipt = {
+            "schema": "test-receipt",
+            "candidate_identity_sha256": row["candidate_identity_sha256"],
+            "annotator_slot": slot,
+            "judgment": judgment,
+        }
+        receipt["receipt_sha256"] = canonical_sha256(receipt)
+        return receipt
+
+    summary = run_shard(
+        candidates,
+        tmp_path / "outputs",
+        model="stealth/ox-alpha",
+        base_url="https://inference-api.nousresearch.com/v1",
+        api_key="secret",
+        logical_shards=1,
+        shard_index=0,
+        concurrency=1,
+        timeout_seconds=1,
+        maximum_attempts=1,
+        judgments_per_candidate=1,
+        execute_function=execute_function,
+    )
+    assert summary["candidate_rows"] == 1
+    assert summary["expected_judgments"] == 1
+    assert summary["created_judgments"] == 1
+    assert summary["judgments_per_candidate"] == 1
 
 
 def test_candidate_and_worker_fail_closed_on_drift(tmp_path: Path) -> None:
@@ -352,6 +411,7 @@ def test_stokes_worker_is_cpu_only_bounded_and_does_not_submit_key() -> None:
     assert "#SBATCH --no-requeue" in script
     assert "LOGICAL_SHARDS:=1000" in script
     assert "CONCURRENCY:=4" in script
+    assert "JUDGMENTS_PER_CANDIDATE:=1" in script
     assert "CONCURRENCY <= 16" in script
     assert "NOUS_API_KEY_FILE" in script
     assert 'NOUS_API_KEY="$NOUS_API_KEY"' in script

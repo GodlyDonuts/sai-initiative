@@ -16,6 +16,7 @@ from sai.data.token_stream import canonical_sha256
 CANDIDATE_SCHEMA = "sai-agent-data-candidate-v1"
 JUDGMENT_SCHEMA = "sai-agent-data-judgment-v1"
 AGGREGATE_SCHEMA = "sai-agent-data-aggregate-v1"
+SINGLE_PASS_SCHEMA = "sai-agent-data-single-pass-disposition-v1"
 PHASES = ("grounding", "integration", "reasoning", "specialization", "reject")
 DOMAINS = ("foundation", "math", "code", "science", "technical", "reasoning")
 SOURCE_TYPES = (
@@ -442,6 +443,67 @@ def aggregate_judgments(
     return aggregate
 
 
+def classify_single_judgment(
+    candidate: dict[str, Any], judgment: dict[str, Any]
+) -> dict[str, Any]:
+    """Turn one comprehensive frontier-model judgment into a bulk disposition."""
+
+    candidate = normalize_candidate(candidate)
+    if not isinstance(judgment, dict):
+        raise AgentLabelingError("judgment differs")
+    unsigned = {
+        key: value for key, value in judgment.items() if key != "judgment_sha256"
+    }
+    if (
+        judgment.get("judgment_sha256") != canonical_sha256(unsigned)
+        or judgment.get("annotator_slot") != 0
+        or judgment.get("perspective") != PERSPECTIVES[0]
+        or judgment.get("candidate_identity_sha256")
+        != candidate["candidate_identity_sha256"]
+        or judgment.get("rubric_sha256") != RUBRIC_SHA256
+    ):
+        raise AgentLabelingError("judgment binding differs")
+    blocking_risks = sorted(risk for risk in RISK_KEYS if judgment["risks"][risk])
+    retained = (
+        judgment["verdict"] == "retain"
+        and judgment["curriculum_phase"] != "reject"
+        and judgment["quality_score"] >= 3
+        and judgment["english_score"] >= 3
+        and judgment["confidence_ppm"] >= 800_000
+        and not blocking_risks
+    )
+    if retained:
+        disposition = "retain"
+    elif judgment["verdict"] == "reject" or blocking_risks:
+        disposition = "reject"
+    else:
+        disposition = "review"
+    result = {
+        "schema": SINGLE_PASS_SCHEMA,
+        "candidate_identity_sha256": candidate["candidate_identity_sha256"],
+        "rubric_sha256": RUBRIC_SHA256,
+        "judgment_sha256": judgment["judgment_sha256"],
+        "disposition": disposition,
+        "curriculum_phase": (
+            judgment["curriculum_phase"] if disposition == "retain" else None
+        ),
+        "quality_score": judgment["quality_score"],
+        "english_score": judgment["english_score"],
+        "domains": judgment["domains"],
+        "difficulty": judgment["difficulty"],
+        "prerequisite_burden": judgment["prerequisite_burden"],
+        "pedagogical_role": judgment["pedagogical_role"],
+        "concepts_taught": judgment["concepts_taught"],
+        "prerequisites_assumed": judgment["prerequisites_assumed"],
+        "confidence_ppm": judgment["confidence_ppm"],
+        "blocking_risks": blocking_risks,
+        "additional_review_required": disposition == "review",
+        "training_ready": False,
+    }
+    result["aggregate_sha256"] = canonical_sha256(result)
+    return result
+
+
 def _atomic_create(path: Path, payload: dict[str, Any]) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -532,10 +594,14 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     candidate = load_candidate(args.candidate)
-    if len(args.judgment) != 3:
-        raise AgentLabelingError("exactly three judgment files are required")
+    if len(args.judgment) not in (1, 3):
+        raise AgentLabelingError("exactly one or three judgment files are required")
     judgments = [_load_judgment(path) for path in args.judgment]
-    result = aggregate_judgments(candidate, judgments)
+    result = (
+        classify_single_judgment(candidate, judgments[0])
+        if len(judgments) == 1
+        else aggregate_judgments(candidate, judgments)
+    )
     _atomic_create(args.output, result)
     print(json.dumps({"aggregate_sha256": result["aggregate_sha256"]}, sort_keys=True))
     return 0

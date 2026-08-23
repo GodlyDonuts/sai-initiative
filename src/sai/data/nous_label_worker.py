@@ -309,6 +309,7 @@ def run_shard(
     concurrency: int,
     timeout_seconds: float,
     maximum_attempts: int,
+    judgments_per_candidate: int = 3,
     execute_function: Callable[..., dict[str, Any]] = execute_one,
 ) -> dict[str, Any]:
     """Run one deterministic logical shard with create-only row receipts."""
@@ -320,6 +321,7 @@ def run_shard(
         or not 0 <= shard_index < logical_shards
         or isinstance(concurrency, bool)
         or not 1 <= concurrency <= 64
+        or judgments_per_candidate not in (1, 3)
         or not api_key
     ):
         raise NousLabelWorkerError("worker geometry or credential differs")
@@ -331,7 +333,9 @@ def run_shard(
     base_url = _validate_endpoint(base_url)
     output_root = Path(output_root)
     output_root.mkdir(parents=True, exist_ok=True)
-    tasks = [(row, slot) for row in candidates for slot in range(len(PERSPECTIVES))]
+    tasks = [
+        (row, slot) for row in candidates for slot in range(judgments_per_candidate)
+    ]
     pending = []
     skipped = 0
     for row, slot in tasks:
@@ -368,6 +372,7 @@ def run_shard(
         "logical_shards": logical_shards,
         "shard_index": shard_index,
         "candidate_rows": len(candidates),
+        "judgments_per_candidate": judgments_per_candidate,
         "expected_judgments": len(tasks),
         "created_judgments": len(hashes),
         "preexisting_judgments": skipped,
@@ -392,6 +397,9 @@ def main() -> int:
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--timeout-seconds", type=float, default=180.0)
     parser.add_argument("--maximum-attempts", type=int, default=5)
+    parser.add_argument(
+        "--judgments-per-candidate", type=int, choices=(1, 3), default=1
+    )
     args = parser.parse_args()
     api_key = os.environ.get(args.api_key_env, "")
     if not api_key:
@@ -407,6 +415,7 @@ def main() -> int:
         concurrency=args.concurrency,
         timeout_seconds=args.timeout_seconds,
         maximum_attempts=args.maximum_attempts,
+        judgments_per_candidate=args.judgments_per_candidate,
     )
     print(json.dumps(summary, sort_keys=True))
     return 0

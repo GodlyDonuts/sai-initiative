@@ -20,6 +20,7 @@ umask 077
 : "${PHYSICAL_WORKERS:?PHYSICAL_WORKERS is required}"
 : "${LOGICAL_SHARDS:=1000}"
 : "${CONCURRENCY:=4}"
+: "${JUDGMENTS_PER_CANDIDATE:=1}"
 : "${MODEL:=stealth/ox-alpha}"
 
 for value in "$PYTHON" "$CANDIDATES" "$NOUS_API_KEY_FILE"; do
@@ -57,5 +58,6 @@ for (( shard=WORKER_INDEX; shard<LOGICAL_SHARDS; shard+=PHYSICAL_WORKERS )); do
       --model "$MODEL" \
       --logical-shards "$LOGICAL_SHARDS" \
       --shard-index "$shard" \
-      --concurrency "$CONCURRENCY"
+      --concurrency "$CONCURRENCY" \
+      --judgments-per-candidate "$JUDGMENTS_PER_CANDIDATE"
 done
