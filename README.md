@@ -45,6 +45,15 @@ low-dose foundational code/math/science/technical exposure early, and measures
 specialist upsampling, reasoning mid-training, and long-context adaptation as
 separate factors rather than copying another model's ratios.
 
+The corpus objective is stated more directly in
+[`docs/SAI_POLYMATH_DATA_THESIS.md`](docs/SAI_POLYMATH_DATA_THESIS.md). Web is a
+candidate reservoir rather than a protected percentage. The final pool must
+cover human expression, literature, arts, history, philosophy, society,
+everyday life, reference knowledge, mathematics, science, engineering, and
+software, and explicitly reward accurate cross-domain bridges. Selection is
+driven by marginal concept, style, and capability coverage under a spiraled
+prerequisite curriculum--not by copying another model's 75--85% web ratio.
+
 Every training population must pass these gates in order:
 
 1. **Source truth:** reopen exact source bytes; reject corruption, spam,

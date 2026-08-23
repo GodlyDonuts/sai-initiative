@@ -20,6 +20,12 @@ in
 Published mixtures are treated as experimental priors, never copied as Sai
 ratios without matched evidence.
 
+The governing selection objective is
+[`SAI_POLYMATH_DATA_THESIS.md`](SAI_POLYMATH_DATA_THESIS.md): source percentages
+are reporting fields, not protected quotas. Human-world breadth, cross-domain
+bridges, concept novelty, prerequisite closure, and style coverage are explicit
+selection dimensions alongside reliability and information density.
+
 `sai-validate-data-mixture <plan.json>` enforces the structural prospective
 `sai-4b-data-mixture-plan-v2` schema. It checks immutable-looking revisions and
 hash identities, all five Sai domains, exact per-source and per-phase token
