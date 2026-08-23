@@ -223,6 +223,7 @@ def build_pair_plan(
                     "anchor_b": _anchor(partner["candidate"], partner["judgment"]),
                     "selection_key": selection_key,
                     "pair_identity_sha256": pair_identity,
+                    "candidate_identity_sha256": pair_identity,
                     "source_disjoint": True,
                     "proposal_verified": False,
                     "training_ready": False,

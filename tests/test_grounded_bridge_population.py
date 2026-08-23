@@ -64,6 +64,9 @@ def test_pair_plan_is_deterministic_disjoint_and_non_result() -> None:
     assert all(row["proposal_verified"] is False for row in first)
     assert all(row["training_ready"] is False for row in first)
     assert all(
+        row["candidate_identity_sha256"] == row["pair_identity_sha256"] for row in first
+    )
+    assert all(
         row["anchor_a"]["source_content_sha256"]
         != row["anchor_b"]["source_content_sha256"]
         for row in first

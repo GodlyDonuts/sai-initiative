@@ -115,6 +115,7 @@ sai-build-reservoir-audit-confirmation-plan = "sai.data.reservoir_audit_confirma
 sai-build-eight-trillion-spiral = "sai.data.eight_trillion_spiral:main"
 sai-build-grounded-bridge-population = "sai.data.grounded_bridge_population:main"
 sai-filter-contextless-answer-keys = "sai.data.contextless_answer_key_filter:main"
+sai-run-nous-grounded-bridge = "sai.data.nous_grounded_bridge_worker:main"
 sai-split-documents = "sai.data.split:main"
 sai-build-tokenizers = "sai.tokenizer.build:main"
 sai-qualify-tokenizers = "sai.tokenizer.qualification:main"
