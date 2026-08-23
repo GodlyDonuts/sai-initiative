@@ -135,6 +135,15 @@ records zero flagged exact pairs. Benchmark-screen receipt
 records 223 clean rows and one contaminated GitHub Archive row. These files
 remain audit evidence, not training data.
 
+Dataset commit
+[`2a085eacf1479293e3c369d7eaa8e476d7f84054`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2a085eacf1479293e3c369d7eaa8e476d7f84054)
+publishes the completed 91-row modern-source expansion aggregate and
+source-work ledger under receipts
+`afd82b43ac66f3a485d167b97f79fccc75bc67026c94e182d846a6923f9dea23`
+and `487c50a9fd4ba39ae22e73e4478673762e60fbedef254be387766fa41d740978`.
+Both remote files replayed byte-for-byte. Raw candidates and compiler judgments
+were not uploaded, and the ledger grants no bulk or training admission.
+
 ## Benchmark boundary mirror
 
 Dataset commit

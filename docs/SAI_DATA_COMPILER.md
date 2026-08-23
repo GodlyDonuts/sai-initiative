@@ -275,6 +275,21 @@ screens passed local and post-upload replay in Hugging Face commit
 ordered decision digest while persisting neither individual decisions nor
 source text.
 
+The 91-row modern-source expansion has also closed its compiler pass under
+aggregate receipt
+`afd82b43ac66f3a485d167b97f79fccc75bc67026c94e182d846a6923f9dea23`
+and source-work receipt
+`487c50a9fd4ba39ae22e73e4478673762e60fbedef254be387766fa41d740978`.
+Although 60 rows received model `retain` verdicts, only 14 routed directly to
+representation verification. Nemotron Legal produced the strongest observed
+signal at 8/21 representation-verification rows; its remaining sample still
+contains cleanup, grounding, quarantine, and transformation work. Nemotron
+Specialized v1.2 routed 22/30 rows to factual-grounding review and zero directly
+to representation verification. PleIAs Common Corpus routed 16/40 to
+quarantine, 11/40 to cleanup, 6/40 to translation, and 6/40 to representation
+verification; the independent benchmark screen also located its only two
+contaminated rows. No source receives bulk admission from this coverage screen.
+
 ## Institutional Books lane
 
 The Harvard Library Institutional Books release is now a pinned, separate

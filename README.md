@@ -329,6 +329,22 @@ The boundary and all five source-safe screen receipts were uploaded and
 byte-replayed in Hugging Face commit
 [`43ae57ee4981c78ae23c111436b1fc9b6aa27023`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/43ae57ee4981c78ae23c111436b1fc9b6aa27023).
 
+The 91-row modern-source expansion compiler pass is now complete under
+aggregate receipt
+`afd82b43ac66f3a485d167b97f79fccc75bc67026c94e182d846a6923f9dea23`.
+The result again separates a model's `retain` verdict from actual source
+readiness: Hermes retained 60/91 rows, but conservative routing sent only 14/91
+to representation verification. Nemotron Legal contributed 8/21 such rows and
+is the only priority targeted-verification lane; Nemotron Specialized v1.2 sent
+22/30 rows to factual-grounding review and none directly to representation
+verification; PleIAs Common Corpus sent 16/40 to quarantine, 11/40 to cleanup,
+6/40 to translation, and 6/40 to representation verification. Independent v2
+benchmark screening found both contaminated rows in PleIAs (2/40), while the
+Nemotron Legal and Specialized samples were clean. These are coverage-screen
+results, not source-wide yield estimates. The aggregate and fail-closed work
+ledger were remotely byte-replayed in Hugging Face commit
+[`2a085eacf1479293e3c369d7eaa8e476d7f84054`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2a085eacf1479293e3c369d7eaa8e476d7f84054).
+
 The r1 286/1,879 overall and 77/96 Nemotron conclusions are retracted because
 they were materially inflated by nonsubstantive code windows. Those screens
 remain immutable evidence of the discovered policy failure in
