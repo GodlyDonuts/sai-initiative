@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -14,6 +15,42 @@ from sai.data.decontamination import (
     validate,
 )
 from sai.data.token_stream import canonical_sha256
+
+
+def write_digest_boundary(root: Path, word: set[bytes], code: set[bytes]) -> Path:
+    root.mkdir()
+    descriptors = {}
+    for key, values in (("word_index", word), ("code_index", code)):
+        filename = "word.bin" if key == "word_index" else "code.bin"
+        path = root / filename
+        path.write_bytes(b"".join(sorted(values)))
+        descriptors[key] = {
+            "file": filename,
+            "digest_bytes": 32,
+            "observed_shingles": len(values),
+            "unique_shingles": len(values),
+            "bytes": path.stat().st_size,
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+    policy = {
+        "unicode_normalization": "NFKC_casefold",
+        "word_shingle_tokens": 13,
+        "code_shingle_tokens": 8,
+        "minimum_boundary_string_characters": 8,
+        "decision": "reject_on_any_exact_word_or_code_shingle_overlap",
+    }
+    receipt = {
+        "schema": "sai-official-benchmark-boundary-index-v1",
+        "status": "complete",
+        "policy": policy,
+        "policy_sha256": canonical_sha256(policy),
+        **descriptors,
+        "benchmark_contamination_gate_ready": True,
+        "raw_benchmark_text_persisted": False,
+    }
+    receipt["receipt_sha256"] = canonical_sha256(receipt)
+    (root / "receipt.json").write_text(json.dumps(receipt) + "\n")
+    return root
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> Path:
@@ -88,6 +125,40 @@ def test_boundary_source_or_output_tampering_fails_replay(tmp_path: Path) -> Non
     output.write_text(output.read_text() + "\n")
     with pytest.raises(DecontaminationError, match="output"):
         validate(receipt)
+
+
+def test_build_and_replay_accepts_non_reversible_binary_boundary(
+    tmp_path: Path,
+) -> None:
+    benchmark_text = (
+        "one two three four five six seven eight nine ten eleven twelve thirteen"
+    )
+    code_text = "def solve value return value plus one if value else zero"
+    boundary = write_digest_boundary(
+        tmp_path / "binary-boundary",
+        _shingles(benchmark_text.split(), 13),
+        _shingles(code_text.split(), 8),
+    )
+    source = write_jsonl(
+        tmp_path / "source.jsonl",
+        [
+            raw(0, "A separate clean document about stellar spectroscopy."),
+            raw(1, f"prefix {benchmark_text} suffix"),
+            raw(2, f"example {code_text} trailing"),
+        ],
+    )
+    output = tmp_path / "admitted.jsonl"
+    receipt = tmp_path / "receipt.json"
+    report = build(
+        source,
+        [],
+        output,
+        receipt,
+        boundary_indexes=[boundary],
+    )
+    assert report["accepted"] == 1
+    assert report["dropped"] == 2
+    assert validate(receipt) == report
 
 
 def test_parallel_build_is_byte_exact_and_replays_sequentially(tmp_path: Path) -> None:

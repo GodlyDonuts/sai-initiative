@@ -5,11 +5,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import mmap
 import multiprocessing
 import os
 import re
+import stat
 import unicodedata
-from collections.abc import Callable
+from collections.abc import Callable, Container
 from pathlib import Path
 from typing import Any
 
@@ -28,8 +30,8 @@ _WORD = re.compile(r"[^\W_]+(?:['’-][^\W_]+)*", re.UNICODE)
 _CODE = re.compile(
     r"[A-Za-z_]\w*|\d+(?:\.\d+)?|==|!=|<=|>=|:=|->|\*\*|//|<<|>>|&&|\|\||\S"
 )
-_WORKER_WORD_BOUNDARY: set[bytes] | None = None
-_WORKER_CODE_BOUNDARY: set[bytes] | None = None
+_WORKER_WORD_BOUNDARY: Container[bytes] | None = None
+_WORKER_CODE_BOUNDARY: Container[bytes] | None = None
 
 
 class DecontaminationError(RuntimeError):
@@ -63,7 +65,7 @@ def _shingles(tokens: list[str], width: int) -> set[bytes]:
     }
 
 
-def _overlap_count(tokens: list[str], width: int, boundary: set[bytes]) -> int:
+def _overlap_count(tokens: list[str], width: int, boundary: Container[bytes]) -> int:
     """Count unique matching shingles without retaining nonmatching source keys."""
 
     if len(tokens) < width:
@@ -75,6 +77,146 @@ def _overlap_count(tokens: list[str], width: int, boundary: set[bytes]) -> int:
         in boundary
     }
     return len(matches)
+
+
+class SortedDigestBoundary:
+    """Memory-map a strictly ordered fixed-width SHA-256 membership index."""
+
+    def __init__(
+        self, path: Path, *, expected_bytes: int, expected_sha256: str
+    ) -> None:
+        try:
+            descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
+        except OSError as error:
+            raise DecontaminationError("boundary index is missing or unsafe") from error
+        try:
+            metadata = os.fstat(descriptor)
+            if (
+                not stat.S_ISREG(metadata.st_mode)
+                or metadata.st_nlink != 1
+                or metadata.st_size != expected_bytes
+                or metadata.st_size <= 0
+                or metadata.st_size % 32
+                or sha256_file(path) != expected_sha256
+            ):
+                raise DecontaminationError("boundary index bytes differ")
+            self._mapping = mmap.mmap(descriptor, 0, access=mmap.ACCESS_READ)
+        finally:
+            os.close(descriptor)
+        self._rows = expected_bytes // 32
+        previous = None
+        for index in range(self._rows):
+            value = self._mapping[index * 32 : (index + 1) * 32]
+            if previous is not None and value <= previous:
+                self.close()
+                raise DecontaminationError("boundary index ordering differs")
+            previous = value
+
+    def __contains__(self, value: object) -> bool:
+        if not isinstance(value, bytes) or len(value) != 32:
+            return False
+        low = 0
+        high = self._rows
+        while low < high:
+            middle = (low + high) // 2
+            observed = self._mapping[middle * 32 : (middle + 1) * 32]
+            if observed < value:
+                low = middle + 1
+            else:
+                high = middle
+        return low < self._rows and self._mapping[low * 32 : (low + 1) * 32] == value
+
+    def close(self) -> None:
+        self._mapping.close()
+
+
+class CombinedDigestBoundary:
+    """Present file and binary boundaries through one exact-membership surface."""
+
+    def __init__(self, members: list[Container[bytes]]) -> None:
+        if not members:
+            raise DecontaminationError("at least one benchmark boundary is required")
+        self.members = members
+
+    def __contains__(self, value: object) -> bool:
+        return any(value in member for member in self.members)
+
+
+def binary_boundary_index(
+    roots: list[Path],
+) -> tuple[
+    list[SortedDigestBoundary],
+    list[SortedDigestBoundary],
+    list[dict[str, Any]],
+]:
+    """Replay source-safe exact-shingle index receipts and memory-map their bytes."""
+
+    words = []
+    code = []
+    receipts = []
+    resolved = set()
+    try:
+        for order, root in enumerate(roots):
+            absolute = str(root.resolve())
+            receipt_path = root / "receipt.json"
+            if (
+                absolute in resolved
+                or not root.is_dir()
+                or root.is_symlink()
+                or not receipt_path.is_file()
+                or receipt_path.is_symlink()
+            ):
+                raise DecontaminationError("boundary index root is missing or unsafe")
+            resolved.add(absolute)
+            payload = json.loads(receipt_path.read_text())
+            unsigned = {
+                key: value for key, value in payload.items() if key != "receipt_sha256"
+            }
+            if (
+                payload.get("schema") != "sai-official-benchmark-boundary-index-v1"
+                or payload.get("status") != "complete"
+                or payload.get("receipt_sha256") != canonical_sha256(unsigned)
+                or payload.get("policy") != POLICY
+                or payload.get("policy_sha256") != canonical_sha256(POLICY)
+                or payload.get("benchmark_contamination_gate_ready") is not True
+                or payload.get("raw_benchmark_text_persisted") is not False
+            ):
+                raise DecontaminationError("boundary index receipt differs")
+            for key, target in (("word_index", words), ("code_index", code)):
+                index = payload.get(key)
+                if (
+                    not isinstance(index, dict)
+                    or index.get("digest_bytes") != 32
+                    or not isinstance(index.get("file"), str)
+                    or Path(index["file"]).name != index["file"]
+                    or not isinstance(index.get("bytes"), int)
+                    or not isinstance(index.get("unique_shingles"), int)
+                    or index["bytes"] != index["unique_shingles"] * 32
+                    or not isinstance(index.get("sha256"), str)
+                ):
+                    raise DecontaminationError("boundary index descriptor differs")
+                target.append(
+                    SortedDigestBoundary(
+                        root / index["file"],
+                        expected_bytes=index["bytes"],
+                        expected_sha256=index["sha256"],
+                    )
+                )
+            receipts.append(
+                {
+                    "order": order,
+                    "boundary_index_root": absolute,
+                    "receipt_sha256": payload["receipt_sha256"],
+                    "receipt_file_sha256": sha256_file(receipt_path),
+                    "word_index_sha256": payload["word_index"]["sha256"],
+                    "code_index_sha256": payload["code_index"]["sha256"],
+                }
+            )
+        return words, code, receipts
+    except BaseException:
+        for member in [*words, *code]:
+            member.close()
+        raise
 
 
 def _text_shingles(text: str) -> tuple[set[bytes], set[bytes]]:
@@ -213,6 +355,7 @@ def _compute(
     boundaries: list[Path],
     on_accepted: Callable[[dict[str, Any]], None],
     *,
+    boundary_indexes: list[Path] | None = None,
     workers: int = 1,
 ) -> dict[str, Any]:
     if (
@@ -224,7 +367,23 @@ def _compute(
     ):
         raise DecontaminationError("raw source is missing or unsafe")
     source_sha256 = sha256_file(source)
-    words, code, boundary_receipts = boundary_index(boundaries)
+    boundary_indexes = boundary_indexes or []
+    if not boundaries and not boundary_indexes:
+        raise DecontaminationError("at least one benchmark boundary is required")
+    word_members: list[Container[bytes]] = []
+    code_members: list[Container[bytes]] = []
+    boundary_receipts = []
+    if boundaries:
+        file_words, file_code, file_receipts = boundary_index(boundaries)
+        word_members.append(file_words)
+        code_members.append(file_code)
+        boundary_receipts.extend(file_receipts)
+    binary_words, binary_code, binary_receipts = binary_boundary_index(boundary_indexes)
+    word_members.extend(binary_words)
+    code_members.extend(binary_code)
+    boundary_receipts.extend(binary_receipts)
+    words = CombinedDigestBoundary(word_members)
+    code = CombinedDigestBoundary(code_members)
     boundary_manifest_sha256 = canonical_sha256(boundary_receipts)
     policy_sha256 = canonical_sha256(POLICY)
     seen_text: set[bytes] = set()
@@ -306,6 +465,8 @@ def _compute(
     finally:
         _WORKER_WORD_BOUNDARY = None
         _WORKER_CODE_BOUNDARY = None
+        for member in [*binary_words, *binary_code]:
+            member.close()
     if not scanned or not accepted:
         raise DecontaminationError("decontamination admitted no documents")
     return {
@@ -333,6 +494,7 @@ def build(
     output: Path,
     receipt: Path,
     *,
+    boundary_indexes: list[Path] | None = None,
     workers: int = 1,
 ) -> dict[str, Any]:
     if output.exists() or receipt.exists():
@@ -349,6 +511,7 @@ def build(
                 lambda row: output_handle.write(
                     json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n"
                 ),
+                boundary_indexes=boundary_indexes,
                 workers=workers,
             )
     except BaseException:
@@ -385,7 +548,15 @@ def validate(receipt: Path) -> dict[str, Any]:
     if payload.get("receipt_sha256") != canonical_sha256(unsigned):
         raise DecontaminationError("decontamination receipt hash differs")
     source = Path(payload.get("source", {}).get("path", ""))
-    boundaries = [Path(row.get("path", "")) for row in payload.get("boundaries", [])]
+    boundary_rows = payload.get("boundaries", [])
+    boundaries = [
+        Path(row["path"]) for row in boundary_rows if isinstance(row.get("path"), str)
+    ]
+    boundary_indexes = [
+        Path(row["boundary_index_root"])
+        for row in boundary_rows
+        if isinstance(row.get("boundary_index_root"), str)
+    ]
     output = Path(payload.get("output", {}).get("path", ""))
     if (
         not output.is_file()
@@ -403,7 +574,9 @@ def validate(receipt: Path) -> dict[str, Any]:
             if observed != expected:
                 raise DecontaminationError("decontaminated output differs")
 
-        metadata = _compute(source, boundaries, compare_row)
+        metadata = _compute(
+            source, boundaries, compare_row, boundary_indexes=boundary_indexes
+        )
         if output_handle.read(1):
             raise DecontaminationError("decontaminated output differs")
     for key, value in metadata.items():
@@ -417,7 +590,10 @@ def main() -> None:
     subparsers = parser.add_subparsers(dest="command", required=True)
     build_parser = subparsers.add_parser("build")
     build_parser.add_argument("--source", type=Path, required=True)
-    build_parser.add_argument("--boundary", type=Path, action="append", required=True)
+    build_parser.add_argument("--boundary", type=Path, action="append", default=[])
+    build_parser.add_argument(
+        "--boundary-index", type=Path, action="append", default=[]
+    )
     build_parser.add_argument("--output", type=Path, required=True)
     build_parser.add_argument("--receipt", type=Path, required=True)
     build_parser.add_argument("--workers", type=int, default=1)
@@ -430,6 +606,7 @@ def main() -> None:
             args.boundary,
             args.output,
             args.receipt,
+            boundary_indexes=args.boundary_index,
             workers=args.workers,
         )
     else:
