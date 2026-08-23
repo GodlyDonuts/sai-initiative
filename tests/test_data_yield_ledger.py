@@ -83,7 +83,17 @@ def _pilot(tmp_path: Path) -> Path:
     attribution.write_text('{"attribution":1}\n')
     decontamination_receipt = _seal(
         root / "decontamination-receipt.json",
-        {"schema": "test-decontamination", "output": {"documents": 1}},
+        {
+            "schema": "test-decontamination",
+            "scanned": 1,
+            "accepted": 1,
+            "dropped": 0,
+            "output": {
+                "path": str(decontaminated.resolve()),
+                "bytes": decontaminated.stat().st_size,
+                "sha256": sha256_file(decontaminated),
+            },
+        },
     )
     near_duplicate_receipt = _seal(
         root / "near-duplicate-receipt.json",
@@ -111,7 +121,9 @@ def _pilot(tmp_path: Path) -> Path:
                 ),
                 "receipt_sha256": decontamination_receipt["receipt_sha256"],
                 "output_path": decontaminated.name,
-                "output_documents": 1,
+                "scanned": 1,
+                "accepted": 1,
+                "dropped": 0,
                 "output_bytes": decontaminated.stat().st_size,
                 "output_sha256": sha256_file(decontaminated),
             },
@@ -129,9 +141,7 @@ def _pilot(tmp_path: Path) -> Path:
             },
             "attribution_manifest": {
                 "receipt_path": "attribution-receipt.json",
-                "receipt_file_sha256": sha256_file(
-                    root / "attribution-receipt.json"
-                ),
+                "receipt_file_sha256": sha256_file(root / "attribution-receipt.json"),
                 "receipt_sha256": attribution_receipt["receipt_sha256"],
                 "output_path": attribution.name,
                 "output_bytes": attribution.stat().st_size,
@@ -238,8 +248,7 @@ def test_ledger_separates_candidate_volume_from_ready_bytes(tmp_path: Path) -> N
     assert payload["bounded_source_pilots"]["near_deduplicated_rows_sum"] == 1
     assert payload["rights_routing"]["physical_candidate_bytes"] == 1234
     assert (
-        payload["bounded_text_payload_probes"]["measured_useful_text_utf8_bytes"]
-        == 150
+        payload["bounded_text_payload_probes"]["measured_useful_text_utf8_bytes"] == 150
     )
     assert payload["training_ready"]["exact_bytes"] == 0
     assert payload["claims"]["raw_reservoir_bytes_are_not_training_ready_bytes"]
@@ -262,6 +271,22 @@ def test_ledger_rejects_tampered_nested_pilot_receipt(tmp_path: Path) -> None:
     payload["output"]["documents"] = 2
     nested.write_text(json.dumps(payload))
     with pytest.raises(DataYieldLedgerError, match="receipt hash differs"):
+        build_ledger([reservoir], [], [pilot], tmp_path / "ledger.json")
+
+
+def test_ledger_rejects_pilot_decontamination_coverage_mismatch(
+    tmp_path: Path,
+) -> None:
+    reservoir = _reservoir(tmp_path)
+    pilot = _pilot(tmp_path)
+    receipt_path = pilot / "receipt.json"
+    payload = json.loads(receipt_path.read_text())
+    payload.pop("receipt_sha256")
+    payload["decontamination"]["accepted"] = 2
+    _seal(receipt_path, payload)
+    with pytest.raises(
+        DataYieldLedgerError, match="pilot nested output coverage differs"
+    ):
         build_ledger([reservoir], [], [pilot], tmp_path / "ledger.json")
 
 

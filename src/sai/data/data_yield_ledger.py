@@ -185,8 +185,9 @@ def _pilot_row(root: Path) -> dict[str, Any]:
     near_duplicate_receipt = _bound_nested_receipt(root, near_duplicate)
     attribution_receipt = _bound_nested_receipt(root, attribution)
     if (
-        decontamination_receipt.get("output", {}).get("documents")
-        != decontamination.get("output_documents")
+        decontamination_receipt.get("accepted") != decontamination.get("accepted")
+        or decontamination_receipt.get("scanned") != decontamination.get("scanned")
+        or decontamination_receipt.get("dropped") != decontamination.get("dropped")
         or near_duplicate_receipt.get("output", {}).get("documents")
         != near_duplicate.get("output_documents")
         or attribution_receipt.get("output", {}).get("records")
@@ -200,13 +201,11 @@ def _pilot_row(root: Path) -> dict[str, Any]:
         "receipt_sha256": receipt["receipt_sha256"],
         "raw_rows": raw.get("rows"),
         "raw_bytes": raw.get("bytes"),
-        "benchmark_disjoint_rows": decontamination.get("output_documents"),
+        "benchmark_disjoint_rows": decontamination.get("accepted"),
         "benchmark_disjoint_bytes": decontamination.get("output_bytes"),
         "near_deduplicated_rows": near_duplicate.get("output_documents"),
         "near_deduplicated_bytes": near_duplicate.get("output_bytes"),
-        "near_duplicate_documents_dropped": near_duplicate.get(
-            "documents_dropped"
-        ),
+        "near_duplicate_documents_dropped": near_duplicate.get("documents_dropped"),
         "attribution_records": attribution.get("records"),
         "obligation_counts": attribution.get("obligation_counts"),
         "rights_declaration_lineage_replay_complete": receipt.get(
@@ -215,9 +214,7 @@ def _pilot_row(root: Path) -> dict[str, Any]:
         "global_cross_source_near_duplicate_filter_complete": receipt.get(
             "global_cross_source_near_duplicate_filter_complete"
         ),
-        "rights_verification_complete": receipt.get(
-            "rights_verification_complete"
-        ),
+        "rights_verification_complete": receipt.get("rights_verification_complete"),
         "representation_verification_complete": receipt.get(
             "representation_verification_complete"
         ),
@@ -273,8 +270,7 @@ def _text_payload_probe(path: Path) -> dict[str, Any]:
     measurements = receipt.get("measurements")
     summary = receipt.get("summary")
     if (
-        receipt.get("schema")
-        != "sai-reservoir-text-payload-probe-receipt-v1"
+        receipt.get("schema") != "sai-reservoir-text-payload-probe-receipt-v1"
         or receipt.get("status") != "complete_bounded_exact_member_measurement"
         or not isinstance(plan_binding, dict)
         or not isinstance(measurements, list)
@@ -423,8 +419,7 @@ def build_ledger(
                 row["measured_text_utf8_bytes"] for row in text_payload_probes
             ),
             "measured_useful_text_utf8_bytes": sum(
-                row["measured_useful_text_utf8_bytes"]
-                for row in text_payload_probes
+                row["measured_useful_text_utf8_bytes"] for row in text_payload_probes
             ),
             "full_reservoir_text_payload_bytes_measured": False,
             "training_ready": False,
