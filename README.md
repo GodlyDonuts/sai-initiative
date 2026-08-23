@@ -343,6 +343,19 @@ audits close, reuse the shared shard lock, and automatically seal complete
 aggregates and source-work decisions. These 2,031 rows broaden future teacher
 distillation evidence; they do not authorize bulk source admission.
 
+A global Hermès teacher census is now dependency-staged behind all 13 exact
+source aggregates. It will refuse to run unless the aggregate candidate-file
+hashes form a one-to-one match with the 10,371-row mechanical-quality
+publication, every source population is complete, and the global verdict,
+language, style, and conservative-route partitions each cover every row exactly
+once. Reservoir and Institutional Books schemas are normalized without
+collapsing their distinct curriculum taxonomies. The resulting publication
+contains only counts, usage, source hashes, and aggregate receipts; it cannot
+promote teacher opinions into verified admission. This turns the completed
+Hermès work into an exact global gap map for scalable triage, representation
+verification, translation, and curriculum allocation rather than another pile
+of disconnected per-source reports.
+
 #### Host-diverse code-web teacher expansion
 
 The live teacher census exposed a material code shortage: among the first 1,692
