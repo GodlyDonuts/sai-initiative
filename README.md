@@ -72,6 +72,12 @@ must use a reputable human translation or separately labeled literal and
 literary synthetic translations. Dataset terms and per-volume rights evidence
 remain independent admission gates.
 
+The first metadata-only book queue now contains 10,000 duplicate-safe volumes
+across 772 language×subject cells: 9,409 non-English and 591 English. This is a
+translation-discovery workload, not a fixed training ratio. Actual text remains
+gated under the pinned IDI terms, so no book text or derivative is published in
+this repository.
+
 Every training population must pass these gates in order:
 
 1. **Source truth:** reopen exact source bytes; reject corruption, spam,
