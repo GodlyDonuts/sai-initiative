@@ -165,23 +165,24 @@ Together, the two reservoirs reference **23,680,076,298,761 physical bytes
 compilation.
 
 Those bytes are now independently accounted under source-safe conversion
-ledger release r5 receipt
-`f8369fca50e0142ee8fd505f1bf6aa9167f7a41bddb4c641a673249c9c881083`.
+ledger release r6 receipt
+`1970d1ecdb70ccc6f554ee9927df49eb2b42d15ed3a516bc955862748a545fb6`.
 The ledger hash-verifies both reservoir manifests, all six immutable audit
 populations containing 2,103 rows, corrected rights-inventory v2, and both exact
 bounded text-payload probes. Duplicate audit or probe receipts are rejected. Its
 current funnel is deliberately blunt: 21.5369 TiB referenced candidates, 2,103
 acquired audit rows, 17,638,716,209 mechanically useful bytes measured in nine
-bounded members, zero completed source pilots, and **0 training-ready bytes**.
+bounded members, two completed source pilots containing 3,290 bounded
+near-deduplicated rows, and **0 training-ready bytes**.
 The bounded measurement is not extrapolated to the reservoir. Of the candidate bytes,
 7,899,196,133,417 require declared-license
 obligation handling, 5,027,859,142,584 require per-row license evidence, and
 10,753,021,022,760 require source-terms resolution. Cross-inventory overlap and
 full-reservoir text-payload yield remains unresolved, so the candidate-byte sum cannot
-be used as a training-data claim. The text-free receipt (file SHA-256
-`b79f5b4d4b35bf98991887bf43b265e3b44dde18f73022e31d69e753fa98ecfa`)
+be used as a training-data claim. The text-free r6 receipt (file SHA-256
+`36b2dcc3542b9a282eb4836fcf1d64883d3c75624c33ab25464998bca007cb86`)
 was uploaded and replayed byte-for-byte in Hugging Face commit
-[`7b9c6a2d57f60cb9fa4e98f26d89925a29975413`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7b9c6a2d57f60cb9fa4e98f26d89925a29975413).
+[`f5ec9e07e987f008c52a29b31922c2e361c8472a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f5ec9e07e987f008c52a29b31922c2e361c8472a).
 Earlier ledger releases remain immutable historical evidence.
 
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
@@ -366,6 +367,25 @@ unordered pair in the resulting sample with the same exact sparse shingle
 join. Its receipt distinguishes cross-source duplicate components and says
 whether the sample happened to cover every pilot row. It never upgrades a
 sample result into full-reservoir deduplication or training admission.
+
+That gate has now completed over the entire bounded pilot population. The
+Pressbooks lane selected 2,000 rows, rejected 42 against the public benchmark
+boundary, and removed ten more through the within-pilot near-duplicate filter,
+leaving 1,948. Public Domain Review had 1,353 eligible rows, rejected ten at
+the benchmark boundary, and removed one near duplicate, leaving 1,342. The
+combined cross-source pass covered all 3,290 survivors and all 5,410,405
+unordered pairs logically; it found zero additional duplicate groups and
+dropped zero rows. Its receipt is
+`f489ab77ec8c8cd930e8b7b7dfafb17e36f4c8936d3d8f6f7630ce33421729ba`.
+This closes the cross-source gate for these two bounded populations only. It
+does not establish reservoir-wide deduplication, rights verification,
+representation verification, or training readiness.
+
+The two pilot receipts, nested filter receipts, text-free attribution
+manifests, cross-source receipt, and conversion ledger r6 were all replayed
+byte-for-byte from Hugging Face dataset commit
+[`f5ec9e07e987f008c52a29b31922c2e361c8472a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f5ec9e07e987f008c52a29b31922c2e361c8472a).
+Raw and transformed source text was deliberately not published.
 
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
@@ -766,8 +786,10 @@ To keep progress legible, Sai uses these states consistently:
   gate is closed.
 
 The current truthful status is: the 8 TiB reservoir is **referenced and
-hash-bound**; the 8T-token spiral is **prospective**; one production book is
-**judged**; and the new reservoir as a whole is **not training-ready**.
+hash-bound**; the 8T-token spiral is **prospective**; one production book and
+224 Common Pile confirmation rows are **judged**; two bounded source pilots
+have 3,290 benchmark-screened, near-deduplicated rows; and the reservoir as a
+whole is **not training-ready**.
 
 Every training population must pass these gates in order:
 

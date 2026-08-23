@@ -38,8 +38,21 @@ verification result, and an upstream quality label is not a Sai admission.
 ## Conversion-yield ledger
 
 Dataset commit
+[`f5ec9e07e987f008c52a29b31922c2e361c8472a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f5ec9e07e987f008c52a29b31922c2e361c8472a)
+adds current conversion ledger release r6 under receipt
+`1970d1ecdb70ccc6f554ee9927df49eb2b42d15ed3a516bc955862748a545fb6`.
+It retains every r5 reservoir, audit, rights, and text-probe binding and adds
+two bounded source pilots: 3,353 raw rows, 3,301 benchmark-disjoint rows, and
+3,290 within-pilot near-deduplicated rows totaling 27,573,127 bytes. The
+separate exhaustive cross-source pass covered the full 3,290-row bounded
+population and found zero additional duplicate groups. Rights and
+representation verification remain incomplete, so training-ready bytes remain
+zero. The remote ledger file SHA-256 replayed as
+`36b2dcc3542b9a282eb4836fcf1d64883d3c75624c33ab25464998bca007cb86`.
+
+Dataset commit
 [`7b9c6a2d57f60cb9fa4e98f26d89925a29975413`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7b9c6a2d57f60cb9fa4e98f26d89925a29975413)
-adds the current conversion ledger release r5 under receipt
+adds the superseded conversion ledger release r5 under receipt
 `f8369fca50e0142ee8fd505f1bf6aa9167f7a41bddb4c641a673249c9c881083`.
 It retains all r4 population, rights, and probe bindings and additionally
 verifies the exact FinePDF probe. Across both probes, nine measured members
