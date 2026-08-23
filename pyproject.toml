@@ -115,6 +115,7 @@ sai-build-reservoir-audit-confirmation-plan = "sai.data.reservoir_audit_confirma
 sai-build-eight-trillion-spiral = "sai.data.eight_trillion_spiral:main"
 sai-build-grounded-bridge-population = "sai.data.grounded_bridge_population:main"
 sai-build-opencoder-code-audit = "sai.data.opencoder_code_audit_population:main"
+sai-evaluate-opencoder-promotion-screen = "sai.data.opencoder_promotion_screen:main"
 sai-build-compiler-prerequisite-edges = "sai.data.compiler_prerequisite_edge_population:main"
 sai-run-nous-prerequisite-edge-verifier = "sai.data.nous_compiler_prerequisite_edge_verifier:main"
 sai-aggregate-prerequisite-edge-verification = "sai.data.compiler_prerequisite_edge_aggregate:main"

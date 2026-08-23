@@ -398,6 +398,15 @@ each. The wrappers pause without canceling an in-flight request as soon as all
 a better code source; it does not relabel the failed web material or weaken the
 thresholds.
 
+`sai-evaluate-opencoder-promotion-screen` now makes that boundary executable.
+It pins the population and receipt hashes above, replays all 16 shard summaries
+and all 276 compiler receipts, computes every threshold with exact integer
+comparisons, and emits a signed, source-text-free pass/fail receipt. The local
+dependency runner invokes it as soon as the screen closes, so a failed screen
+releases Hermès capacity without a manual scoring gap. The evaluator cannot
+weaken a threshold, add a row, call a model, or turn a teacher judgment into
+training admission.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:
