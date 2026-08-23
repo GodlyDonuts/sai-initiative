@@ -136,6 +136,15 @@ records 223 clean rows and one contaminated GitHub Archive row. These files
 remain audit evidence, not training data.
 
 Dataset commit
+[`e6b1210f26a7fb7e06e45c193131aa71d2c574df`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e6b1210f26a7fb7e06e45c193131aa71d2c574df)
+adds the text-free Common Pile rights-declaration audit under receipt
+`357414811d687921225830732feae6f45508707f126c01cf7b01624eaed0df40`.
+It binds seven exact repository revisions and README hashes, recognizes 222/224
+row declarations, and records two unversioned GFDL LibreTexts rows as rights
+holds. The remote file replayed byte-for-byte. It establishes neither source
+provenance nor legal clearance and grants no training admission.
+
+Dataset commit
 [`2a085eacf1479293e3c369d7eaa8e476d7f84054`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2a085eacf1479293e3c369d7eaa8e476d7f84054)
 publishes the completed 91-row modern-source expansion aggregate and
 source-work ledger under receipts

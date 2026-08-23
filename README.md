@@ -323,6 +323,13 @@ only exact recognized aliases and attaches attribution/share-alike obligations.
 The unversioned GFDL label and every unknown value enter `rights_hold`; they are
 excluded from pilot selection. A recognized declaration still records
 `source_provenance_verified=false` and `legal_clearance_established=false`.
+The sealed 224-row audit found 222 recognized declarations and two rights holds,
+both in LibreTexts. Its receipt is
+`357414811d687921225830732feae6f45508707f126c01cf7b01624eaed0df40`;
+the text-free artifact was remotely byte-replayed in Hugging Face commit
+[`e6b1210f26a7fb7e06e45c193131aa71d2c574df`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e6b1210f26a7fb7e06e45c193131aa71d2c574df).
+The v2 promotion decision now requires this independent rights receipt in
+addition to compiler, contamination, duplicate, and disjointness evidence.
 
 The official public-benchmark contamination boundary is executable, but its
 first code-shingle policy has been superseded. It

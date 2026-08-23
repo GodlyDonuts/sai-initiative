@@ -273,6 +273,16 @@ unknown or ambiguous value to `rights_hold`. Even a recognized declaration
 does not establish provenance or legal clearance. Streaming selection excludes
 rights-held rows while preserving counts in its receipt.
 
+The live audit binds seven exact README hashes and all 224 confirmation
+declarations under receipt
+`357414811d687921225830732feae6f45508707f126c01cf7b01624eaed0df40`.
+It recognizes 222 declarations and sends the two unversioned GFDL LibreTexts
+rows to rights hold. Hugging Face commit
+`e6b1210f26a7fb7e06e45c193131aa71d2c574df` replayed the source-safe artifact
+byte-for-byte. Promotion schema v2 now requires this receipt and zero
+source-level declaration holds alongside the compiler, contamination,
+duplicate, and identity/content-disjointness gates.
+
 `sai.data.benchmark_boundary_index` builds a non-reversible official benchmark
 boundary for 18,235 rows across nine public benchmark views. The r1 13-token
 word index contains 27,979,728 unique SHA-256 keys and its r1 8-token code index
