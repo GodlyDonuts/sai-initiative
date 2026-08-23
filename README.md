@@ -721,6 +721,25 @@ Hermes routing depends on content type:
   evidence, duplicative editions, unsupported factual claims, benchmark
   material, and synthetic voice collapse.
 
+The exact Common Pile confirmation is now complete: all 224 source-disjoint
+rows have compiler receipts and all 32 shards have summaries. Hermes returned
+207 `retain`, 11 `review`, and six `reject` verdicts, but deterministic routing
+is deliberately stricter: 141 rows require representation verification, 49
+cleanup review, 15 factual-grounding review, 17 quarantine, and two
+transformation review. The sample spans seven sources; 187 rows identify at
+least one cross-domain bridge. The run consumed 958,783 model tokens and 48
+rows required bounded schema repair. These are diagnostic results, not an
+acceptance rate or training admission.
+
+Only `common_pile_pressbooks` and
+`common_pile_public_domain_review` cleared the frozen zero-quarantine,
+zero-rights-hold, zero-benchmark-contamination, identity/content-disjoint, and
+minimum-representation-verification checks for a bounded streaming pilot. The
+other five sources remain held, and neither promoted source has bulk ingestion
+or training authorization. Source-safe aggregate, decision, and promotion
+receipts were uploaded and byte-replayed in Hugging Face dataset commit
+[`44fbdd30cedc89ac908057929468d3162651d645`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/44fbdd30cedc89ac908057929468d3162651d645).
+
 The next operational work is to expand sustainable, stratified compiler lanes;
 build cross-source exact and semantic duplicate families; populate the concept
 prerequisite graph; create verified English translations and grounded

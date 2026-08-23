@@ -145,6 +145,23 @@ card.
 ## Frontier audit mirror
 
 Dataset commit
+[`44fbdd30cedc89ac908057929468d3162651d645`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/44fbdd30cedc89ac908057929468d3162651d645)
+completes the source-safe Common Pile confirmation mirror with the aggregate,
+per-source decision, and frozen promotion-v2 receipt. The 224-row confirmation
+contains 207 retain, 11 review, and six reject model verdicts; deterministic
+conservative routing instead assigns 141 rows to representation verification,
+49 to cleanup review, 15 to factual-grounding review, 17 to quarantine, and two
+to transformation review. All 32 shard summaries are complete, 187 rows carry
+cross-domain bridge candidates, and total measured usage is 958,783 model
+tokens. Only Pressbooks and Public Domain Review are authorized for bounded
+streaming pilots. No full-source ingestion, bulk admission, or model training
+is authorized. Remote file SHA-256 values replayed exactly as
+`52633a9edef045da4ed3a1e04ede23ea79c42fee86846350a72cbaa6846d8983`,
+`4b9d4d71ed00dd2a5827cf46b8cd8c81c0f24d46e022ef2937bb56adc09122e0`,
+and
+`32b72f5e6fd1d25b478b2c7c59844f71c610ad7d6368005ba7463ca7fd43035e`.
+
+Dataset commit
 [`de17529bd3ba9ea67355c26985b70350e6b8377f`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/de17529bd3ba9ea67355c26985b70350e6b8377f)
 adds seven source-safe files and passed a byte-for-byte post-upload replay. The
 512-row frontier screen has population receipt
