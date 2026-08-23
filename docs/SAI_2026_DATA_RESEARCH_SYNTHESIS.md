@@ -205,6 +205,12 @@ The following factor isolation remains mandatory:
 - Six immutable audit populations contain 2,103 rows. The source-disjoint
   Common Pile confirmation is complete at 224/224 compiler receipts, but no
   source-wide admission rate follows from those rows.
+- A separate 2026 tier audit binds 160 deterministic rows from UltraData Math
+  L2 and all four L3 formats at exact revision
+  `fe10db8efd35597fd7fcff8ff576b5ec4ea5ff87`. The active benchmark boundary
+  rejected 12 rows, leaving 148 for dependency-staged Hermes compilation. The
+  provider's published 121.7B L2/L3 tokens are not counted as accepted Sai
+  tokens.
 - Pressbooks and Public Domain Review completed bounded source pilots. Their
   3,353 raw rows yielded 3,301 benchmark-disjoint rows and 3,290
   within-source near-deduplicated rows; the full bounded cross-source replay

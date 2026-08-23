@@ -197,6 +197,29 @@ Earlier ledger releases remain immutable historical evidence.
 | Nemotron Legal v1 | `3d91d58a5c0c46fe9944300ec46719f97a385b13` | 21 | 6,990,697,508 | Primary law and legal reasoning |
 | Common Pile filtered collection | 31 exact repository revisions | 845 | 540,438,290,489 | Courts, government, patents, science, books, education, code, reference, and culture |
 
+#### UltraData Math L2/L3 quality audit
+
+Sai does not treat a provider's tier name as evidence of quality. On 2026-08-25
+it therefore acquired a deterministic **160-row** screen from the exact
+[`openbmb/UltraData-Math`](https://huggingface.co/datasets/openbmb/UltraData-Math)
+revision `fe10db8efd35597fd7fcff8ff576b5ec4ea5ff87`: 32 rows from the
+33.7B-token L2 quality-selected tier and 32 rows from each of the four L3
+synthetic formats (conversation, multi-style, question-answer, and
+textbook-exercise). Every official dataset-server response returned that exact
+revision in `X-Revision`; 20 response hashes and 160 source identities are
+sealed under population receipt
+`d62c4bf9711135f8d3d2aabbbeca4891c7e02eba3ec799974d3dbc65197cd138`.
+
+The active official-public benchmark boundary rejected **12/160 rows** before
+quality scoring: 3/32 L2, 0/32 conversation, and 3/32 in each remaining L3
+format. The benchmark-disjoint population contains **148 rows** under receipt
+`54cfe887c504bb1415fc5fd803eaea7438cc40a4ee0f7882b279f07e31d3afe3`.
+Hermes compilation is dependency-staged behind the two already-running source
+populations, so these 121.7B published upstream tokens remain source candidates,
+not accepted or training-ready Sai tokens. Raw sampled text and individual
+contamination decisions remain local; only source-safe receipts may be
+published.
+
 The corrected reservoir rights inventory now binds **46 source lanes, 45 exact
 repository revisions, 42,600 files, and all 23,680,076,298,761 candidate
 bytes**. Five lanes have an exact manifest declaration with obligations, 31
@@ -935,9 +958,11 @@ To keep progress legible, Sai uses these states consistently:
 The current truthful status is: the 8 TiB reservoir is **referenced and
 hash-bound**; the 8T-token spiral is **prospective**; one production book and
 224 Common Pile confirmation rows are **judged**; two bounded source pilots
-have 3,290 benchmark-screened, near-deduplicated rows; a live source-page probe
-observed matching declarations for 1,719 of them without establishing governing
-scope; and the reservoir as a whole is **not training-ready**.
+have 3,290 benchmark-screened, near-deduplicated rows; the new UltraData Math
+L2/L3 screen has 148/160 benchmark-disjoint rows awaiting Hermes compilation;
+a live source-page probe observed matching declarations for 1,719 pilot rows
+without establishing governing scope; and the reservoir as a whole is **not
+training-ready**.
 
 Every training population must pass these gates in order:
 
