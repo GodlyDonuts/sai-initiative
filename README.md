@@ -90,9 +90,10 @@ copying bytes when their terms prohibit redistribution.
 
 Sai is now executing two related but deliberately separate programs:
 
-1. **An 8 TiB source reservoir.** This is a large, immutable inventory of
-   reality anchors and candidate training material. It provides breadth and
-   headroom for filtering; it is not itself a training set.
+1. **Hash-bound source-candidate reservoirs.** Two immutable inventories now
+   reference 16.907 physical TiB of reality anchors and candidate material.
+   They provide breadth and filtering headroom; neither is itself a training
+   set.
 2. **A prospective 8T-token training curriculum.** This is the maximum-horizon
    schedule for turning qualified material into a moving-center spiral. It is a
    curriculum contract, not authorization to train and not a claim that eight
@@ -150,6 +151,52 @@ manual-gated sources are excluded until their exact bytes can be accessed
 lawfully and reproducibly. Source inclusion also does not establish a final
 training percentage: origin is metadata, not an epistemic function or a fixed
 mixture allocation.
+
+#### Modern-source augmentation checkpoint
+
+The first semantic results exposed an unavoidable arithmetic fact: an 8 TiB
+raw reservoir cannot yield 8 TiB of finished data after rejecting damaged,
+duplicated, unsafe, low-value, or rights-incompatible material. Sai therefore
+sealed a second, source-only frontier inventory on 2026-08-24. It contains
+**15,643 files and 9,792,648,691,752 physical bytes (8.9063621015 TiB)** from
+modern, independently curated source families. Together, the two reservoirs
+reference **18,589,539,500,178 physical bytes (16.9070876838 TiB)** before
+cross-reservoir deduplication and quality compilation.
+
+| Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
+| --- | --- | ---: | ---: | --- |
+| Ultra-FineWeb current English L2 (2026-08-20 slice) | `02c85641e3d19a854be2e09139c25adaa9518063` | 6,000 | 477,974,475,357 | Newest model-selected English web |
+| Ultra-FineWeb benchmark-validated English L2 | `02c85641e3d19a854be2e09139c25adaa9518063` | 2,048 | 2,661,358,122,836 | Earlier L2 generation with published proxy evidence |
+| FineWeb2-HQ multilingual | `c0c06e94fd3a44ae9e802b2b0fc533817601eb5e` | 5,891 | 6,042,406,965,380 | Twenty-language high-value translation discovery |
+| Nemotron specialized reasoning | `9ed3718b5f2ae29074c5e34e64115432b7c4320f` | 219 | 244,286,609,368 | RQA, InfiniByte, math textbooks, and scientific coding |
+| UltraData-Math L1 selected slice | `fe10db8efd35597fd7fcff8ff576b5ec4ea5ff87` | 1,485 | 366,622,518,811 | Filtered and deduplicated mathematical source material |
+
+The 9,764,022-byte manifest has SHA-256
+`996f534e509d5c30a102e5d2ab29fd41a17f265f90c9682276b6147dfe066e59`
+and ordered-row SHA-256
+`eef48d2e07f4d6a84682a504d0b3605396ea95cff09e7c9c9ad09835cd998103`.
+Its canonical receipt is
+`61e4051adc06476bbbabaad348fdb9d937a62c4beaf0e510e56393c5197dffe8`
+and the receipt file SHA-256 is
+`75d8c54fa7ed140562e9134e25b0f0b3e957f499ac64a313cd8a69db0be6de56`.
+Every selected revision is exact, every file is upstream-LFS-hash-bound, and
+at least one selected object per slice passed a byte-access probe.
+
+These are **physical Parquet bytes, not measured text-payload bytes**.
+FineWeb2-HQ, for example, includes large embedding columns, so treating its
+repository size as English training text would be materially false. The two
+Ultra-FineWeb generations may overlap, and every web-derived source may overlap
+the original reservoir. None of those bytes are counted as unique or
+training-ready until text-column extraction and global semantic deduplication
+complete.
+
+NVIDIA's organic/translated Nemotron-CC v2.1, CC-Code v1, and Code v2
+repositories were investigated but are not counted: metadata is visible while
+the current user token receives HTTP 403 on the actual gated objects. The
+public Nemotron specialized-reasoning slices are counted and will still face
+the same quality, novelty, generator-lineage, contamination, and benchmark
+gates as every other synthetic source. In particular, Sai does not import the
+2.1T-token medium-high synthetic-rephrase bulk merely to inflate volume.
 
 #### Moving-center spiral for an 8T-token run
 

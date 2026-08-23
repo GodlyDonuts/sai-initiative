@@ -90,3 +90,19 @@ def test_candidate_binds_full_source_and_exact_locator() -> None:
     changed["locator"]["row_index"] += 1
     other, _ = _candidate_and_lineage(plan, changed)
     assert other["candidate_identity_sha256"] != candidate["candidate_identity_sha256"]
+
+
+def test_candidate_lineage_accepts_a_source_specific_text_column() -> None:
+    plan = build_plan(_rows())[0]
+    plan["text_column"] = "content"
+    candidate, lineage = _candidate_and_lineage(
+        plan,
+        {
+            "text": "Grounded source-specific content column. " * 20,
+            "locator": {"format": "parquet", "row_index": 7},
+            "full_file_content_verified": False,
+        },
+    )
+    assert candidate["text"].startswith("Grounded source-specific")
+    assert lineage["locator"]["row_index"] == 7
+    assert lineage["text_column"] == "content"

@@ -338,6 +338,9 @@ def _parquet_row(plan: dict[str, Any], token: str) -> dict[str, Any]:
         repo_type="dataset",
         revision=plan["revision"],
     )
+    text_column = plan.get("text_column", "text")
+    if not isinstance(text_column, str) or not text_column:
+        raise ReservoirAuditError("remote parquet text column differs")
     filesystem = fsspec.filesystem("http", headers={"Authorization": f"Bearer {token}"})
     try:
         with filesystem.open(url, "rb", block_size=8 << 20) as handle:
@@ -345,7 +348,7 @@ def _parquet_row(plan: dict[str, Any], token: str) -> dict[str, Any]:
                 raise ReservoirAuditError("remote parquet size differs")
             source = parquet.ParquetFile(handle)
             if (
-                "text" not in source.schema_arrow.names
+                text_column not in source.schema_arrow.names
                 or source.metadata.num_row_groups <= 0
             ):
                 raise ReservoirAuditError("remote parquet schema differs")
@@ -359,7 +362,7 @@ def _parquet_row(plan: dict[str, Any], token: str) -> dict[str, Any]:
                 % source.metadata.num_row_groups
             )
             table = source.read_row_group(
-                group_index, columns=["text"], use_threads=False
+                group_index, columns=[text_column], use_threads=False
             )
             if table.num_rows <= 0:
                 raise ReservoirAuditError("selected parquet row group is empty")
@@ -372,7 +375,7 @@ def _parquet_row(plan: dict[str, Any], token: str) -> dict[str, Any]:
             )
             for offset in range(table.num_rows):
                 row_index = (start + offset) % table.num_rows
-                text = table["text"][row_index].as_py()
+                text = table[text_column][row_index].as_py()
                 if isinstance(text, str) and len(text.strip().encode("utf-8")) >= 200:
                     global_index = (
                         sum(
@@ -486,6 +489,8 @@ def _candidate_and_lineage(
         "parent_file_sha256": plan["parent_file_sha256"],
         "locator": locator,
     }
+    if "text_column" in plan:
+        row_locator["text_column"] = plan["text_column"]
     provenance = canonical_sha256(
         {
             "row_locator": row_locator,
@@ -533,6 +538,8 @@ def _candidate_and_lineage(
         "excerpt_sha256": candidate["source_content_sha256"],
         "raw_source_is_training_ready": False,
     }
+    if "text_column" in plan:
+        lineage["text_column"] = plan["text_column"]
     lineage["lineage_sha256"] = canonical_sha256(lineage)
     return candidate, lineage
 
