@@ -236,6 +236,21 @@ first where the screen found recoverable signal. The aggregate receipt is
 the deterministic source-work ledger receipt is
 `7cd1a6b040eaa00a40eb37f2578045780815931d6f712a43d5bd33848a4e250e`.
 
+The official public-benchmark contamination boundary is also executable. It
+projects 18,235 rows from MMLU-Pro, HumanEval+, MBPP+, CorrectBench,
+LiveCodeBench release v6, LongBench Pro, LiveBench 2024-11-25, IFEval, and MuSR
+without retaining benchmark text. The strictly ordered binary indexes contain
+27,979,728 unique 13-token word shingles (895,351,296 bytes) and 1,907,051
+unique 8-token code shingles (61,025,632 bytes). Both local index hashes,
+ordering, source-row accounting, and memory-mapped membership replay passed.
+The receipt is
+`073bb9f8a9ab9954ed3913b2414ff718e8f86a5020b2eb1feb18069cd75510f1`;
+the non-reversible index is mirrored in Hugging Face commit
+[`ad178281de02625f043359a89070e905944452b9`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/ad178281de02625f043359a89070e905944452b9).
+RULER remains an explicit gap until its generator is pinned to Sai's exact
+tokenizer and length geometry. Building the boundary makes contamination
+testing possible; it does not retroactively decontaminate any source bytes.
+
 [PleIAs Common Corpus](https://huggingface.co/datasets/PleIAs/common_corpus)
 adds a distinct 2.27T-token, traceable open corpus rather than another opaque
 web mixture. Its rows expose collection, open-status, license, language,

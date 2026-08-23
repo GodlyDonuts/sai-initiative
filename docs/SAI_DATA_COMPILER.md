@@ -202,6 +202,17 @@ translation, transformation, or representation verification. Its first live
 ledger paused FinePDF bulk expansion and rights-blocked OpenWebMath while
 prioritizing targeted FineWeb-Edu verification.
 
+`sai.data.benchmark_boundary_index` now builds a non-reversible official
+benchmark boundary for 18,235 rows across nine public benchmark views. Its
+13-token word index contains 27,979,728 unique SHA-256 keys and its 8-token code
+index contains 1,907,051. `sai.data.decontamination` memory-maps these sorted
+indexes and rejects a source row on any exact membership hit. Receipt
+`073bb9f8a9ab9954ed3913b2414ff718e8f86a5020b2eb1feb18069cd75510f1`
+binds the official source revisions, every source byte hash, the model-visible
+LiveCodeBench projection, index hashes, and the fact that raw benchmark text was
+not persisted. RULER remains a tokenizer-bound generator gap rather than being
+silently substituted or mislabeled.
+
 ## Institutional Books lane
 
 The Harvard Library Institutional Books release is now a pinned, separate

@@ -89,5 +89,19 @@ adds its deterministic source-work ledger under receipt
 The ledger is descriptive triage, not a source-yield estimate or training
 admission.
 
+## Benchmark boundary mirror
+
+Dataset commit
+[`ad178281de02625f043359a89070e905944452b9`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/ad178281de02625f043359a89070e905944452b9)
+stores the non-reversible official public-benchmark boundary under
+`registry/benchmark-boundaries/official-public-20260824-r1/`. The 895,351,296
+byte word index has SHA-256
+`f470834f84ff24dbd1bee66c115a460e913b5384470cc8a91e09c56459111acd`;
+the 61,025,632 byte code index has SHA-256
+`8e1238e2fe382b532638dd82692647ebf431eb99905f2c64c9b487654f3ecb86`.
+Remote LFS object sizes and SHA-256 identifiers, plus the downloaded receipt,
+replayed against the local files. The index contains hashes only, never raw
+benchmark prompts or answers.
+
 Credentials never enter the registry. The local `.env` is ignored by Git,
 mode-restricted, and used only by authenticated clients.
