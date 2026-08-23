@@ -599,6 +599,51 @@ def run_shard(
     return summary
 
 
+def run_shard_locked(
+    candidates_path: Path,
+    output_root: Path,
+    *,
+    model: str,
+    base_url: str,
+    api_key: str,
+    logical_shards: int,
+    shard_index: int,
+    concurrency: int,
+    timeout_seconds: float,
+    maximum_attempts: int,
+    execute_function: Callable[..., dict[str, Any]] = execute_one,
+    load_function: Callable[[Path], list[dict[str, Any]]] = _load_jsonl,
+    summary_schema: str = SUMMARY_SCHEMA,
+    rubric_sha256: str = RUBRIC_SHA256,
+    output_suffix: str = "compiler",
+) -> dict[str, Any]:
+    """Serialize one logical shard across independent resumable workers."""
+
+    if isinstance(shard_index, bool) or not isinstance(shard_index, int):
+        raise NousLabelWorkerError("compiler shard lock identity differs")
+    output_root.mkdir(parents=True, exist_ok=True)
+    lock_path = output_root / f".shard_{shard_index:05d}.lock"
+    with lock_path.open("a+b") as lock_handle:
+        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+        return run_shard(
+            candidates_path,
+            output_root,
+            model=model,
+            base_url=base_url,
+            api_key=api_key,
+            logical_shards=logical_shards,
+            shard_index=shard_index,
+            concurrency=concurrency,
+            timeout_seconds=timeout_seconds,
+            maximum_attempts=maximum_attempts,
+            execute_function=execute_function,
+            load_function=load_function,
+            summary_schema=summary_schema,
+            rubric_sha256=rubric_sha256,
+            output_suffix=output_suffix,
+        )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidates", type=Path, required=True)
@@ -636,23 +681,19 @@ def main() -> int:
                 **kwargs,
             )
 
-    args.output_root.mkdir(parents=True, exist_ok=True)
-    lock_path = args.output_root / f".shard_{args.shard_index:05d}.lock"
-    with lock_path.open("a+b") as lock_handle:
-        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
-        summary = run_shard(
-            args.candidates,
-            args.output_root,
-            model=args.model,
-            base_url=args.base_url,
-            api_key=api_key,
-            logical_shards=args.logical_shards,
-            shard_index=args.shard_index,
-            concurrency=args.concurrency,
-            timeout_seconds=args.timeout_seconds,
-            maximum_attempts=args.maximum_attempts,
-            execute_function=execute_function,
-        )
+    summary = run_shard_locked(
+        args.candidates,
+        args.output_root,
+        model=args.model,
+        base_url=args.base_url,
+        api_key=api_key,
+        logical_shards=args.logical_shards,
+        shard_index=args.shard_index,
+        concurrency=args.concurrency,
+        timeout_seconds=args.timeout_seconds,
+        maximum_attempts=args.maximum_attempts,
+        execute_function=execute_function,
+    )
     print(json.dumps(summary, sort_keys=True))
     return 0
 

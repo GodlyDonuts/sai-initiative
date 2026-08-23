@@ -19,6 +19,7 @@ from sai.data.nous_compiler_worker import (
     DEFAULT_COMPILER_CONCURRENCY,
     execute_one,
     run_shard,
+    run_shard_locked,
 )
 from sai.data.nous_label_worker import (
     NousLabelWorkerError,
@@ -296,7 +297,7 @@ def test_compiler_worker_writes_one_resumable_receipt(tmp_path: Path) -> None:
         return receipt
 
     output = tmp_path / "outputs"
-    summary = run_shard(
+    summary = run_shard_locked(
         candidates,
         output,
         model="stealth/ox-alpha",
@@ -311,11 +312,12 @@ def test_compiler_worker_writes_one_resumable_receipt(tmp_path: Path) -> None:
     )
     assert summary["created_judgments"] == 1
     assert len(list(output.glob("*.compiler.json"))) == 1
+    assert (output / ".shard_00000.lock").is_file()
 
     def refuse_duplicate(row, **kwargs):
         raise AssertionError(f"duplicate compiler request for {row}")
 
-    replay = run_shard(
+    replay = run_shard_locked(
         candidates,
         output,
         model="stealth/ox-alpha",

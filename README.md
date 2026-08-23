@@ -310,6 +310,14 @@ quotes. Even positive same-family decisions remain graph candidates until
 independent verification and acyclic graph construction close; every route is
 `training_ready=false`.
 
+All Hermès compiler-style workers now acquire the same persistent logical-shard
+lock before replaying or creating receipts. This permits dependency-prestaged
+single-process fan-out over disjoint bridge, book, prerequisite, representation,
+and verification shards without duplicate model calls. The local capacity fan-out
+begins only when its exact input receipt exists, preserves already-complete shard
+summaries, and retries only unresolved identities when the provider rate-limits a
+request.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:

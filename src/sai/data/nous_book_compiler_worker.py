@@ -16,7 +16,7 @@ from sai.data.book_compiler_labeling import (
     normalize_book_candidate,
     normalize_model_judgment,
 )
-from sai.data.nous_compiler_worker import execute_contract, run_shard
+from sai.data.nous_compiler_worker import execute_contract, run_shard_locked
 from sai.data.nous_label_worker import (
     DEFAULT_BASE_URL,
     DEFAULT_MODEL,
@@ -118,7 +118,7 @@ def main() -> int:
                 **kwargs,
             )
 
-    summary = run_shard(
+    summary = run_shard_locked(
         args.candidates,
         args.output_root,
         model=args.model,
