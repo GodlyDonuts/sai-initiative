@@ -98,7 +98,13 @@ def test_build_and_replay_reject_word_code_overlap_and_duplicates(
     assert report["scanned"] == 4
     assert report["accepted"] == 1
     assert report["dropped"] == 3
-    assert validate(receipt) == report
+    assert report["dropped_reason_counts"] == {
+        "word_overlap_rows": 1,
+        "code_overlap_rows": 2,
+        "normalized_exact_duplicate_rows": 1,
+        "rows_with_multiple_drop_reasons": 1,
+    }
+    assert validate(receipt, workers=2, materialize_boundary_indexes=True) == report
     row = json.loads(output.read_text())
     assert row["verification"]["benchmark_disjoint"] is True
     assert len(row["verification"]["evidence_sha256"]) == 64

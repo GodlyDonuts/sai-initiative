@@ -450,6 +450,12 @@ def _compute(
     accepted_identity_digest = hashlib.sha256()
     dropped_evidence_digest = hashlib.sha256()
     scanned = accepted = dropped = 0
+    dropped_reasons = {
+        "word_overlap_rows": 0,
+        "code_overlap_rows": 0,
+        "normalized_exact_duplicate_rows": 0,
+        "rows_with_multiple_drop_reasons": 0,
+    }
     global _WORKER_WORD_BOUNDARY, _WORKER_CODE_BOUNDARY
     _WORKER_WORD_BOUNDARY = words
     _WORKER_CODE_BOUNDARY = code
@@ -486,6 +492,17 @@ def _compute(
             evidence_sha256 = canonical_sha256(decision)
             if word_overlap_count or code_overlap_count or duplicate:
                 dropped += 1
+                reason_flags = (
+                    word_overlap_count > 0,
+                    code_overlap_count > 0,
+                    duplicate,
+                )
+                dropped_reasons["word_overlap_rows"] += reason_flags[0]
+                dropped_reasons["code_overlap_rows"] += reason_flags[1]
+                dropped_reasons["normalized_exact_duplicate_rows"] += reason_flags[2]
+                dropped_reasons["rows_with_multiple_drop_reasons"] += (
+                    sum(reason_flags) > 1
+                )
                 dropped_evidence_digest.update(bytes.fromhex(evidence_sha256))
                 continue
             source_row = raw["source"]
@@ -535,6 +552,7 @@ def _compute(
         "scanned": scanned,
         "accepted": accepted,
         "dropped": dropped,
+        "dropped_reason_counts": dropped_reasons,
         "identity_accumulation": "ordered_raw_sha256_bytes",
         "accepted_identity_sha256": accepted_identity_digest.hexdigest(),
         "dropped_evidence_sha256": dropped_evidence_digest.hexdigest(),
@@ -593,7 +611,12 @@ def build(
     return payload
 
 
-def validate(receipt: Path) -> dict[str, Any]:
+def validate(
+    receipt: Path,
+    *,
+    workers: int = 1,
+    materialize_boundary_indexes: bool = False,
+) -> dict[str, Any]:
     if not receipt.is_file() or receipt.is_symlink():
         raise DecontaminationError("decontamination receipt is missing or unsafe")
     payload = json.loads(receipt.read_text())
@@ -630,7 +653,12 @@ def validate(receipt: Path) -> dict[str, Any]:
                 raise DecontaminationError("decontaminated output differs")
 
         metadata = _compute(
-            source, boundaries, compare_row, boundary_indexes=boundary_indexes
+            source,
+            boundaries,
+            compare_row,
+            boundary_indexes=boundary_indexes,
+            workers=workers,
+            materialize_boundary_indexes=materialize_boundary_indexes,
         )
         if output_handle.read(1):
             raise DecontaminationError("decontaminated output differs")
@@ -662,6 +690,15 @@ def main() -> None:
     )
     validate_parser = subparsers.add_parser("validate")
     validate_parser.add_argument("--receipt", type=Path, required=True)
+    validate_parser.add_argument("--workers", type=int, default=1)
+    validate_parser.add_argument(
+        "--materialize-boundary-indexes",
+        action="store_true",
+        help=(
+            "preload exact digest indexes into shared memory before replay; "
+            "this changes performance only, never decisions"
+        ),
+    )
     args = parser.parse_args()
     if args.command == "build":
         payload = build(
@@ -674,7 +711,11 @@ def main() -> None:
             materialize_boundary_indexes=args.materialize_boundary_indexes,
         )
     else:
-        payload = validate(args.receipt)
+        payload = validate(
+            args.receipt,
+            workers=args.workers,
+            materialize_boundary_indexes=args.materialize_boundary_indexes,
+        )
     print(
         json.dumps(
             {"status": payload["status"], "receipt_sha256": payload["receipt_sha256"]},

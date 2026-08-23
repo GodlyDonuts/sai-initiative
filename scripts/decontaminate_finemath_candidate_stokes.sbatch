@@ -24,7 +24,7 @@ export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
 sai_source_root=/lustre/fs1/home/sa305415/sai_data_sources
 sai_candidate_root=${sai_source_root}/finemath-conservative-candidate-aggregate-20260825-r1
 sai_boundary_root=${sai_source_root}/sai-official-benchmark-boundary-index-20260824-r2
-sai_output_root=${sai_source_root}/finemath-benchmark-disjoint-candidate-20260825-r1
+sai_output_root=${sai_source_root}/finemath-benchmark-disjoint-candidate-20260825-r2
 
 mkdir -p "${sai_output_root}"
 
