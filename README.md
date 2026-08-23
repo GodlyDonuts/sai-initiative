@@ -350,7 +350,11 @@ population receipt is
 The dataset card's MIT declaration is bound but does not establish rights for
 every underlying web document, so per-row rights provenance remains false.
 Hermès compilation is dependency-staged and every row remains
-`training_ready=false`.
+`training_ready=false`. The source-safe receipt and updated dataset card were
+downloaded back byte-identically from Hugging Face commit
+[`861b793e68504f4a7df6b4e6ade4ce6322454300`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/861b793e68504f4a7df6b4e6ade4ce6322454300).
+The same two files are mirrored under the authorized Stokes evidence root;
+their SHA-256 values are `e6570108…105affb` and `410f8040…03ba87`.
 
 ### The eight-trillion data program
 
