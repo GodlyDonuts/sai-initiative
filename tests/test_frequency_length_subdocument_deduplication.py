@@ -198,3 +198,37 @@ def test_boundary_document_retains_all_its_same_group_occurrences(
     expected = first if survivor_id == first["identity_sha256"] else second
     assert survivor["text"] == expected["text"]
     assert result["counts"]["initial_candidate_chunks"] >= 1
+
+
+def test_keep_one_control_is_frozen_separately_from_adaptive_policy(
+    tmp_path: Path,
+) -> None:
+    repeated = "A short recurring phrase with enough words."
+    rows = [
+        _document(f"Unique opening {index}. {repeated}", f"row-{index}")
+        for index in range(4)
+    ]
+    source = tmp_path / "source.jsonl"
+    _write(source, rows)
+    results = {}
+    for policy in ("adaptive_frequency_length", "keep_one_control"):
+        root = tmp_path / policy
+        root.mkdir()
+        results[policy] = build_frequency_length_deduplication(
+            [source],
+            root / "output.jsonl",
+            root / "manifest.jsonl",
+            root / "receipt.json",
+            minimum_characters=8,
+            delete_characters=8,
+            retention_policy=policy,
+        )
+    adaptive = results["adaptive_frequency_length"]
+    keep_one = results["keep_one_control"]
+    assert adaptive["frequency_length_retention_complete"] is True
+    assert adaptive["keep_one_control_complete"] is False
+    assert keep_one["frequency_length_retention_complete"] is False
+    assert keep_one["keep_one_control_complete"] is True
+    assert keep_one["counts"]["deleted_chunks"] > adaptive["counts"].get(
+        "deleted_chunks", 0
+    )

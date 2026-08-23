@@ -432,7 +432,10 @@ def _enum_list(
         or len(value) != len(set(value))
         or any(item not in allowed for item in value)
     ):
-        raise DataCompilerLabelingError(f"{label} differs")
+        raise DataCompilerLabelingError(
+            f"{label} differs; use 1..{maximum} unique entries from the original "
+            "allowed list only"
+        )
     return value
 
 

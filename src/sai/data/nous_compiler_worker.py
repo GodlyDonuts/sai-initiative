@@ -266,6 +266,18 @@ def execute_contract(
         "successful_request_sha256": attempt_request_sha256s[-1],
         "request_reasoning_effort": reasoning_effort,
         "request_stream_transport": stream_transport,
+        "response_stream_transport": {
+            "requested": stream_transport,
+            "done_marker_observed": (
+                response.get("_sse_done_marker_observed")
+                if stream_transport
+                and isinstance(response.get("_sse_done_marker_observed"), bool)
+                else None
+            ),
+            "terminal_finish_reason_observed": isinstance(
+                choice.get("finish_reason"), str
+            ),
+        },
         "attempts": attempts,
         "response_identity": {
             "id": response.get("id") if isinstance(response.get("id"), str) else None,

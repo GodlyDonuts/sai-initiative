@@ -36,6 +36,7 @@ DEFAULT_EFFECTIVE_SHARDS_DENOMINATOR = 3
 DEFAULT_CHUNK_RECORDS = 100_000
 DEFAULT_MAXIMUM_LINE_BYTES = 16 << 20
 DEFAULT_MAXIMUM_OPEN_CHUNKS = 128
+RETENTION_POLICIES = {"adaptive_frequency_length", "keep_one_control"}
 
 # hash, document identity, input, line offset/bytes, chunk, character span,
 # normalized character length, code flag
@@ -484,6 +485,7 @@ def _build_groups(
     reference_characters: int,
     effective_shards_numerator: int,
     effective_shards_denominator: int,
+    retention_policy: str,
 ) -> Counter[str]:
     counts: Counter[str] = Counter()
     with ExitStack() as stack, group_path.open("xb") as groups:
@@ -497,12 +499,16 @@ def _build_groups(
             nonlocal group_hash, group_frequency, group_length
             if group_hash is None:
                 return
-            budget = retention_budget(
-                group_frequency,
-                group_length,
-                reference_characters=reference_characters,
-                effective_shards_numerator=effective_shards_numerator,
-                effective_shards_denominator=effective_shards_denominator,
+            budget = (
+                1
+                if retention_policy == "keep_one_control"
+                else retention_budget(
+                    group_frequency,
+                    group_length,
+                    reference_characters=reference_characters,
+                    effective_shards_numerator=effective_shards_numerator,
+                    effective_shards_denominator=effective_shards_denominator,
+                )
             )
             groups.write(_GROUP.pack(group_hash, group_frequency, group_length, budget))
             counts["groups"] += 1
@@ -801,6 +807,7 @@ def build_frequency_length_deduplication(
     maximum_line_bytes: int = DEFAULT_MAXIMUM_LINE_BYTES,
     maximum_open_chunks: int = DEFAULT_MAXIMUM_OPEN_CHUNKS,
     temporary_root: Path | None = None,
+    retention_policy: str = "adaptive_frequency_length",
 ) -> dict[str, Any]:
     """Count global subdocuments and apply coherent adaptive copy retention."""
 
@@ -828,6 +835,8 @@ def build_frequency_length_deduplication(
         or chunk_records <= 0
         or maximum_line_bytes <= 0
         or not 2 <= maximum_open_chunks <= 1_024
+        or not isinstance(retention_policy, str)
+        or retention_policy not in RETENTION_POLICIES
         or (
             temporary_root is not None
             and (not temporary_root.is_dir() or temporary_root.is_symlink())
@@ -875,6 +884,7 @@ def build_frequency_length_deduplication(
                 reference_characters=reference_characters,
                 effective_shards_numerator=effective_shards_numerator,
                 effective_shards_denominator=effective_shards_denominator,
+                retention_policy=retention_policy,
             )
             candidate_runs, initial_candidates = _build_candidate_runs(
                 index_runs,
@@ -948,10 +958,11 @@ def build_frequency_length_deduplication(
     counts["initial_candidate_chunks"] = initial_candidates
     payload = {
         "schema": SCHEMA,
-        "status": "complete_frequency_length_subdocument_deduplication",
+        "status": "complete_subdocument_deduplication_control",
         "inputs": inputs,
         "policy": {
             "paper": "arxiv:2608.03089v1",
+            "retention_policy": retention_policy,
             "segmentation": "natural_boundaries_with_short_forward_merge",
             "minimum_segment_characters": minimum_characters,
             "numeric_normalization": (
@@ -967,8 +978,12 @@ def build_frequency_length_deduplication(
             "reference_characters": reference_characters,
             "minimum_contiguous_delete_characters": delete_characters,
             "retention_function": (
-                "ceil(1+(C*(1-1/N)^(C-1)-1)*max(0,1-L/L0)); "
-                "clamped_to_[1,C]; one_when_frequency_budget_leq_one"
+                "keep_exactly_one_initial_occurrence"
+                if retention_policy == "keep_one_control"
+                else (
+                    "ceil(1+(C*(1-1/N)^(C-1)-1)*max(0,1-L/L0)); "
+                    "clamped_to_[1,C]; one_when_frequency_budget_leq_one"
+                )
             ),
             "occurrence_order": "document_identity_sha256_then_chunk_index",
             "boundary_document_policy": (
@@ -1006,7 +1021,10 @@ def build_frequency_length_deduplication(
             "contains_source_text": False,
         },
         "global_normalized_exact_subdocument_counting_complete": True,
-        "frequency_length_retention_complete": True,
+        "frequency_length_retention_complete": (
+            retention_policy == "adaptive_frequency_length"
+        ),
+        "keep_one_control_complete": retention_policy == "keep_one_control",
         "coherence_aware_deletion_complete": True,
         "semantic_near_duplicate_filtering_complete": False,
         "matched_unchanged_keep_one_and_adaptive_evaluation_complete": False,
@@ -1059,6 +1077,11 @@ def main() -> int:
         "--maximum-open-chunks", type=int, default=DEFAULT_MAXIMUM_OPEN_CHUNKS
     )
     parser.add_argument("--temporary-root", type=Path)
+    parser.add_argument(
+        "--retention-policy",
+        choices=sorted(RETENTION_POLICIES),
+        default="adaptive_frequency_length",
+    )
     args = parser.parse_args()
     result = build_frequency_length_deduplication(
         args.source,
@@ -1074,6 +1097,7 @@ def main() -> int:
         maximum_line_bytes=args.maximum_line_bytes,
         maximum_open_chunks=args.maximum_open_chunks,
         temporary_root=args.temporary_root,
+        retention_policy=args.retention_policy,
     )
     print(json.dumps(result, sort_keys=True))
     return 0

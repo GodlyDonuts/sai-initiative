@@ -20,7 +20,10 @@ from sai.data.nous_compiler_worker import (
     execute_one,
     run_shard,
 )
-from sai.data.nous_label_worker import _parse_sse_chat_completion
+from sai.data.nous_label_worker import (
+    NousLabelWorkerError,
+    _parse_sse_chat_completion,
+)
 from sai.data.token_stream import canonical_sha256
 
 
@@ -322,6 +325,24 @@ def test_compiler_rejects_schema_tamper() -> None:
         normalize_model_judgment(raw, candidate)
 
 
+def test_compiler_enum_list_repair_error_states_the_hidden_geometry() -> None:
+    candidate = _candidate()
+    raw = _judgment(candidate)
+    raw["recommended_representations"] = [
+        "original_english",
+        "cleaned_source",
+        "concise_reference",
+        "prerequisite_map",
+        "conceptual_summary",
+        "beginner_explanation",
+        "undergraduate_explanation",
+        "graduate_explanation",
+        "faq",
+    ]
+    with pytest.raises(DataCompilerLabelingError, match=r"use 1\.\.8 unique"):
+        normalize_model_judgment(raw, candidate)
+
+
 def test_general_compiler_retry_names_the_actual_document_envelope() -> None:
     candidate = _candidate()
     calls = []
@@ -479,6 +500,27 @@ def test_sse_chat_completion_reconstruction_is_bounded_and_exact() -> None:
     assert response["choices"][0]["message"]["content"] == '{"verdict":"keep"}'
     assert response["choices"][0]["finish_reason"] == "stop"
     assert response["usage"]["total_tokens"] == 3
+    assert response["_sse_done_marker_observed"] is True
+
+
+def test_sse_clean_eof_requires_terminal_finish_reason() -> None:
+    terminal = {
+        "id": "r",
+        "model": "m",
+        "choices": [
+            {
+                "index": 0,
+                "delta": {"content": "complete"},
+                "finish_reason": "stop",
+            }
+        ],
+    }
+    response = _parse_sse_chat_completion([f"data: {json.dumps(terminal)}\n".encode()])
+    assert response["choices"][0]["message"]["content"] == "complete"
+    assert response["_sse_done_marker_observed"] is False
+    terminal["choices"][0]["finish_reason"] = None
+    with pytest.raises(NousLabelWorkerError, match="incomplete"):
+        _parse_sse_chat_completion([f"data: {json.dumps(terminal)}\n".encode()])
 
 
 def test_stored_compiler_judgment_replays_exact_evidence() -> None:

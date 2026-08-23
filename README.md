@@ -547,6 +547,9 @@ language.
 The implementation does not turn the paper's result into a Sai result. Corpus
 promotion still requires an identical-token, identical-compute,
 source-disjoint comparison of unchanged, keep-one, and adaptive retention.
+The CLI freezes both executable transformed arms with
+`--retention-policy keep_one_control` and the default
+`adaptive_frequency_length`; the immutable input is the unchanged arm.
 Semantic near-duplicates remain a separate measured gate, and every receipt
 keeps `training_ready=false` and `four_b_training_authorized=false`.
 

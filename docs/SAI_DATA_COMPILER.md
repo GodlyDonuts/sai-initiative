@@ -429,6 +429,10 @@ experimental priors, not frozen Sai winners. The output cannot advance until
 unchanged, keep-one, and adaptive controls are compared with equal source bytes,
 tokens, compute, and source-disjoint evaluation. This layer also does not claim
 semantic near-duplicate completion or training admission.
+The CLI exposes `--retention-policy keep_one_control` and
+`--retention-policy adaptive_frequency_length`; each arm writes a distinct
+policy hash and explicit completion flag, while the immutable input supplies
+the unchanged arm.
 
 ## Institutional Books lane
 

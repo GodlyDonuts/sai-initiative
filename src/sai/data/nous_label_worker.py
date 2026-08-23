@@ -204,8 +204,9 @@ def _parse_sse_chat_completion(lines: Any) -> dict[str, Any]:
             if not isinstance(current_finish, str):
                 raise NousLabelWorkerError("model SSE finish reason differs")
             finish_reason = current_finish
-    if not saw_done or not content_parts:
+    if not content_parts or finish_reason is None:
         raise NousLabelWorkerError("model SSE response is incomplete")
+    response["_sse_done_marker_observed"] = saw_done
     response["choices"] = [
         {
             "message": {"content": "".join(content_parts)},
