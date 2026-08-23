@@ -13,7 +13,11 @@ from sai.data.data_compiler_labeling import (
     normalize_model_judgment,
     validate_normalized_judgment,
 )
-from sai.data.nous_compiler_worker import DEFAULT_COMPILER_CONCURRENCY, run_shard
+from sai.data.nous_compiler_worker import (
+    DEFAULT_COMPILER_CONCURRENCY,
+    execute_one,
+    run_shard,
+)
 from sai.data.token_stream import canonical_sha256
 
 
@@ -207,6 +211,47 @@ def test_compiler_rejects_schema_tamper() -> None:
     raw["cross_domain_bridges"] = ["history-economics"]
     with pytest.raises(DataCompilerLabelingError, match="bridge format"):
         normalize_model_judgment(raw, candidate)
+
+
+def test_general_compiler_retry_names_the_actual_document_envelope() -> None:
+    candidate = _candidate()
+    calls = []
+
+    def request_function(**kwargs):
+        calls.append(kwargs["body"])
+        content = (
+            json.dumps({"wrong": "shape"})
+            if len(calls) == 1
+            else json.dumps(_judgment(candidate))
+        )
+        return {
+            "id": f"response-{len(calls)}",
+            "model": "stealth/ox-alpha",
+            "provider": "test",
+            "created": 1,
+            "choices": [
+                {
+                    "message": {"content": content},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }, 200
+
+    execute_one(
+        candidate,
+        model="stealth/ox-alpha",
+        base_url="https://inference-api.nousresearch.com/v1",
+        api_key="not-persisted",
+        timeout_seconds=1.0,
+        maximum_attempts=2,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+
+    repair = calls[1]["messages"][-1]["content"]
+    assert "byte-for-byte quote from document" in repair
+    assert "book_excerpt" not in repair
 
 
 def test_stored_compiler_judgment_replays_exact_evidence() -> None:

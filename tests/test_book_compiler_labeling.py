@@ -330,6 +330,8 @@ def test_book_worker_repairs_a_strictly_invalid_first_response() -> None:
     ]
     assert len(calls[1]["messages"]) == 4
     assert "style differs" in calls[1]["messages"][-1]["content"]
+    assert "byte-for-byte quote from book_excerpt" in calls[1]["messages"][-1]["content"]
+    assert "quote from document" not in calls[1]["messages"][-1]["content"]
     assert len(set(receipt["attempt_request_sha256s"])) == 2
     assert (
         receipt["successful_request_sha256"] == receipt["attempt_request_sha256s"][-1]

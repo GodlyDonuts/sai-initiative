@@ -65,6 +65,7 @@ def execute_one(
         receipt_schema=RECEIPT_SCHEMA,
         maximum_completion_tokens=2400,
         reasoning_effort=COMPILER_REASONING_EFFORT,
+        evidence_container_name="document",
     )
 
 
@@ -82,6 +83,7 @@ def execute_contract(
     receipt_schema: str,
     maximum_completion_tokens: int,
     reasoning_effort: str | None = None,
+    evidence_container_name: str = "document",
     request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
     sleep_function: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
@@ -96,6 +98,7 @@ def execute_contract(
         or len(rubric_sha256) != 64
         or any(character not in "0123456789abcdef" for character in rubric_sha256)
         or reasoning_effort not in {None, "none", "minimal", "low", "medium", "high"}
+        or evidence_container_name not in {"document", "book_excerpt"}
     ):
         raise NousLabelWorkerError("compiler contract identity or token bound differs")
     base_url = _validate_endpoint(base_url)
@@ -200,7 +203,8 @@ def execute_contract(
                             f"{str(error)[:256]}. Return a corrected complete JSON "
                             "object with the exact same required keys. Do not defend "
                             "the prior answer. Remove any claim or edge that cannot be "
-                            "supported by a byte-for-byte quote from book_excerpt."
+                            "supported by a byte-for-byte quote from "
+                            f"{evidence_container_name}."
                         ),
                     },
                 ]

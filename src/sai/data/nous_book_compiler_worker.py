@@ -74,6 +74,7 @@ def execute_one(
         receipt_schema=RECEIPT_SCHEMA,
         maximum_completion_tokens=4000,
         reasoning_effort="low",
+        evidence_container_name="book_excerpt",
     )
 
 
