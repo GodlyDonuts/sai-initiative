@@ -79,6 +79,7 @@ sai-filter-bounded-near-duplicates = "sai.data.bounded_near_duplicate_filter:mai
 sai-audit-cross-source-pilot-duplicates = "sai.data.cross_source_pilot_duplicates:main"
 sai-build-bounded-pilot-compiler-population = "sai.data.bounded_pilot_compiler_population:main"
 sai-aggregate-bounded-pilot-compiler = "sai.data.bounded_pilot_compiler_aggregate:main"
+sai-build-bounded-pilot-work-queue = "sai.data.bounded_pilot_work_queue:main"
 sai-build-data-yield-ledger = "sai.data.data_yield_ledger:main"
 sai-probe-text-payload = "sai.data.text_payload_probe:main"
 sai-segment-long-documents = "sai.data.structural_segmentation:main"
