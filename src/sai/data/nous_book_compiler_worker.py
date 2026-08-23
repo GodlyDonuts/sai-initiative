@@ -22,6 +22,7 @@ from sai.data.nous_label_worker import (
     DEFAULT_MODEL,
     NousLabelWorkerError,
     _post_json,
+    _post_json_sse,
 )
 
 RECEIPT_SCHEMA = "sai-nous-institutional-book-compiler-receipt-v2"
@@ -54,6 +55,7 @@ def execute_one(
     api_key: str,
     timeout_seconds: float,
     maximum_attempts: int,
+    stream_transport: bool = False,
     request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
     sleep_function: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
@@ -75,6 +77,7 @@ def execute_one(
         maximum_completion_tokens=4000,
         reasoning_effort="low",
         evidence_container_name="book_excerpt",
+        stream_transport=stream_transport,
     )
 
 
@@ -90,10 +93,31 @@ def main() -> int:
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--timeout-seconds", type=float, default=300.0)
     parser.add_argument("--maximum-attempts", type=int, default=5)
+    parser.add_argument(
+        "--stream-transport",
+        action="store_true",
+        help=(
+            "Request SSE and reconstruct one final response to avoid idle HTTP "
+            "timeouts."
+        ),
+    )
     args = parser.parse_args()
     api_key = os.environ.get(args.api_key_env, "")
     if not api_key:
         raise NousLabelWorkerError(f"{args.api_key_env} is required")
+    execute_function = execute_one
+    if args.stream_transport:
+
+        def execute_function(
+            candidate: dict[str, Any], **kwargs: Any
+        ) -> dict[str, Any]:
+            return execute_one(
+                candidate,
+                stream_transport=True,
+                request_function=_post_json_sse,
+                **kwargs,
+            )
+
     summary = run_shard(
         args.candidates,
         args.output_root,
@@ -105,7 +129,7 @@ def main() -> int:
         concurrency=args.concurrency,
         timeout_seconds=args.timeout_seconds,
         maximum_attempts=args.maximum_attempts,
-        execute_function=execute_one,
+        execute_function=execute_function,
         load_function=_load_book_jsonl,
         summary_schema=SUMMARY_SCHEMA,
         rubric_sha256=RUBRIC_SHA256,

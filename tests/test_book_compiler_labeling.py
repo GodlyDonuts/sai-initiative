@@ -292,6 +292,41 @@ def test_book_worker_emits_source_bound_non_training_receipt() -> None:
     assert receipt["judgment"]["raw_archive_source_is_training_ready"] is False
 
 
+def test_book_worker_records_stream_transport() -> None:
+    candidate = _candidate()
+
+    def request_function(**kwargs):
+        assert kwargs["body"]["stream"] is True
+        return (
+            {
+                "choices": [
+                    {
+                        "message": {"content": json.dumps(_judgment())},
+                        "finish_reason": "stop",
+                    }
+                ]
+            },
+            200,
+        )
+
+    receipt = execute_one(
+        candidate,
+        model="stealth/ox-alpha",
+        base_url="http://127.0.0.1:8645/v1",
+        api_key="loopback-only",
+        timeout_seconds=1,
+        maximum_attempts=1,
+        stream_transport=True,
+        request_function=request_function,
+    )
+    assert receipt["request_stream_transport"] is True
+    assert receipt["response_stream_transport"] == {
+        "requested": True,
+        "done_marker_observed": None,
+        "terminal_finish_reason_observed": True,
+    }
+
+
 def test_book_worker_repairs_a_strictly_invalid_first_response() -> None:
     candidate = _candidate()
     invalid = _judgment()
@@ -331,8 +366,7 @@ def test_book_worker_repairs_a_strictly_invalid_first_response() -> None:
     assert len(calls[1]["messages"]) == 4
     assert "style differs" in calls[1]["messages"][-1]["content"]
     assert (
-        "byte-for-byte quote from book_excerpt"
-        in calls[1]["messages"][-1]["content"]
+        "byte-for-byte quote from book_excerpt" in calls[1]["messages"][-1]["content"]
     )
     assert "quote from document" not in calls[1]["messages"][-1]["content"]
     assert len(set(receipt["attempt_request_sha256s"])) == 2
