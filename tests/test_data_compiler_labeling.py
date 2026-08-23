@@ -20,6 +20,7 @@ from sai.data.nous_compiler_worker import (
     execute_one,
     run_shard,
 )
+from sai.data.nous_label_worker import _parse_sse_chat_completion
 from sai.data.token_stream import canonical_sha256
 
 
@@ -400,6 +401,84 @@ def test_compiler_receipt_records_hashed_deterministic_quote_repair() -> None:
     )
     assert receipt["judgment"]["evidence_quotes"][0] in candidate["text"]
     assert receipt["raw_model_json_sha256"] == canonical_sha256(raw)
+
+
+def test_streaming_compiler_transport_is_explicit_and_hashed() -> None:
+    candidate = _candidate()
+    raw = _judgment(candidate)
+
+    def request_function(**kwargs):
+        assert kwargs["body"]["stream"] is True
+        return {
+            "id": "response-1",
+            "model": "stealth/ox-alpha",
+            "provider": "test",
+            "created": 1,
+            "choices": [
+                {"message": {"content": json.dumps(raw)}, "finish_reason": "stop"}
+            ],
+            "usage": {},
+        }, 200
+
+    receipt = execute_one(
+        candidate,
+        model="stealth/ox-alpha",
+        base_url="http://127.0.0.1:8645/v1",
+        api_key="not-persisted",
+        timeout_seconds=1.0,
+        maximum_attempts=1,
+        stream_transport=True,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+    assert receipt["request_stream_transport"] is True
+    assert receipt["credential_transport"] == "hermes_loopback_proxy"
+
+
+def test_sse_chat_completion_reconstruction_is_bounded_and_exact() -> None:
+    chunks = [
+        {
+            "id": "r",
+            "model": "m",
+            "created": 1,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {"content": '{"verdict":'},
+                    "finish_reason": None,
+                }
+            ],
+        },
+        {
+            "id": "r",
+            "model": "m",
+            "created": 1,
+            "choices": [
+                {
+                    "index": 0,
+                    "delta": {"content": '"keep"}'},
+                    "finish_reason": "stop",
+                }
+            ],
+        },
+        {
+            "id": "r",
+            "model": "m",
+            "created": 1,
+            "choices": [],
+            "usage": {
+                "prompt_tokens": 2,
+                "completion_tokens": 1,
+                "total_tokens": 3,
+            },
+        },
+    ]
+    lines = [f"data: {json.dumps(chunk)}\n".encode() for chunk in chunks]
+    lines.append(b"data: [DONE]\n")
+    response = _parse_sse_chat_completion(lines)
+    assert response["choices"][0]["message"]["content"] == '{"verdict":"keep"}'
+    assert response["choices"][0]["finish_reason"] == "stop"
+    assert response["usage"]["total_tokens"] == 3
 
 
 def test_stored_compiler_judgment_replays_exact_evidence() -> None:

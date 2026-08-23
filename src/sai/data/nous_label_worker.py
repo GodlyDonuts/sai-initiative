@@ -142,6 +142,111 @@ def _post_json(
     return payload, status
 
 
+def _parse_sse_chat_completion(lines: Any) -> dict[str, Any]:
+    """Reconstruct one bounded OpenAI chat completion from SSE chunks."""
+
+    response: dict[str, Any] = {}
+    content_parts: list[str] = []
+    finish_reason: str | None = None
+    usage: dict[str, Any] | None = None
+    consumed_bytes = 0
+    saw_done = False
+    for raw_line in lines:
+        if not isinstance(raw_line, bytes):
+            raise NousLabelWorkerError("model SSE response line differs")
+        consumed_bytes += len(raw_line)
+        if consumed_bytes > 4 << 20:
+            raise NousLabelWorkerError("model response exceeds size bound")
+        line = raw_line.strip()
+        if not line or line.startswith(b":"):
+            continue
+        if not line.startswith(b"data:"):
+            raise NousLabelWorkerError("model SSE response event differs")
+        data = line[5:].strip()
+        if data == b"[DONE]":
+            saw_done = True
+            break
+        try:
+            chunk = json.loads(data)
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise NousLabelWorkerError("model SSE response JSON differs") from error
+        if not isinstance(chunk, dict):
+            raise NousLabelWorkerError("model SSE response JSON differs")
+        for field in ("id", "model", "provider", "created"):
+            value = chunk.get(field)
+            if value is not None:
+                if field in response and response[field] != value:
+                    raise NousLabelWorkerError("model SSE response identity differs")
+                response[field] = value
+        chunk_usage = chunk.get("usage")
+        if chunk_usage is not None:
+            if not isinstance(chunk_usage, dict):
+                raise NousLabelWorkerError("model SSE response usage differs")
+            usage = chunk_usage
+        choices = chunk.get("choices", [])
+        if not isinstance(choices, list) or len(choices) > 1:
+            raise NousLabelWorkerError("model SSE response choices differ")
+        if not choices:
+            continue
+        choice = choices[0]
+        if not isinstance(choice, dict) or choice.get("index", 0) != 0:
+            raise NousLabelWorkerError("model SSE response choice differs")
+        delta = choice.get("delta", {})
+        if not isinstance(delta, dict):
+            raise NousLabelWorkerError("model SSE response delta differs")
+        content = delta.get("content")
+        if content is not None:
+            if not isinstance(content, str):
+                raise NousLabelWorkerError("model SSE response content differs")
+            content_parts.append(content)
+        current_finish = choice.get("finish_reason")
+        if current_finish is not None:
+            if not isinstance(current_finish, str):
+                raise NousLabelWorkerError("model SSE finish reason differs")
+            finish_reason = current_finish
+    if not saw_done or not content_parts:
+        raise NousLabelWorkerError("model SSE response is incomplete")
+    response["choices"] = [
+        {
+            "message": {"content": "".join(content_parts)},
+            "finish_reason": finish_reason,
+        }
+    ]
+    if usage is not None:
+        response["usage"] = usage
+    return response
+
+
+def _post_json_sse(
+    *,
+    base_url: str,
+    api_key: str,
+    body: dict[str, Any],
+    timeout_seconds: float,
+) -> tuple[dict[str, Any], int]:
+    """Post a recorded streaming request and reconstruct its final response."""
+
+    base_url = _validate_endpoint(base_url)
+    if body.get("stream") is not True:
+        raise NousLabelWorkerError("streaming transport request differs")
+    encoded = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode()
+    request = urllib.request.Request(
+        base_url.rstrip("/") + "/chat/completions",
+        data=encoded,
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "text/event-stream",
+            "Content-Type": "application/json",
+            "User-Agent": "sai-data-labeler/1",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+        status = response.status
+        payload = _parse_sse_chat_completion(response)
+    return payload, status
+
+
 def _connect_reachable(
     host: str, port: int, *, timeout_seconds: float
 ) -> socket.socket:

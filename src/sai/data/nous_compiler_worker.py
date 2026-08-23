@@ -28,6 +28,7 @@ from sai.data.nous_label_worker import (
     _json_object,
     _load_jsonl,
     _post_json,
+    _post_json_sse,
     _validate_endpoint,
 )
 from sai.data.token_stream import canonical_sha256
@@ -46,6 +47,7 @@ def execute_one(
     api_key: str,
     timeout_seconds: float,
     maximum_attempts: int,
+    stream_transport: bool = False,
     request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
     sleep_function: Callable[[float], None] = time.sleep,
 ) -> dict[str, Any]:
@@ -68,6 +70,7 @@ def execute_one(
         reasoning_effort=COMPILER_REASONING_EFFORT,
         evidence_container_name="document",
         evidence_repair_function=repair_evidence_quotes,
+        stream_transport=stream_transport,
     )
 
 
@@ -91,6 +94,7 @@ def execute_contract(
     ) = None,
     request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
     sleep_function: Callable[[float], None] = time.sleep,
+    stream_transport: bool = False,
 ) -> dict[str, Any]:
     """Execute one strict compiler contract without weakening its schema."""
 
@@ -104,6 +108,7 @@ def execute_contract(
         or any(character not in "0123456789abcdef" for character in rubric_sha256)
         or reasoning_effort not in {None, "none", "minimal", "low", "medium", "high"}
         or evidence_container_name not in {"document", "book_excerpt"}
+        or not isinstance(stream_transport, bool)
     ):
         raise NousLabelWorkerError("compiler contract identity or token bound differs")
     base_url = _validate_endpoint(base_url)
@@ -112,7 +117,7 @@ def execute_contract(
         "messages": build_messages_function(candidate),
         "temperature": 0,
         "max_tokens": maximum_completion_tokens,
-        "stream": False,
+        "stream": stream_transport,
     }
     if reasoning_effort is not None:
         body["reasoning"] = {"effort": reasoning_effort}
@@ -260,6 +265,7 @@ def execute_contract(
         "attempt_request_sha256s": attempt_request_sha256s,
         "successful_request_sha256": attempt_request_sha256s[-1],
         "request_reasoning_effort": reasoning_effort,
+        "request_stream_transport": stream_transport,
         "attempts": attempts,
         "response_identity": {
             "id": response.get("id") if isinstance(response.get("id"), str) else None,
@@ -438,10 +444,31 @@ def main() -> int:
     parser.add_argument("--concurrency", type=int, default=DEFAULT_COMPILER_CONCURRENCY)
     parser.add_argument("--timeout-seconds", type=float, default=300.0)
     parser.add_argument("--maximum-attempts", type=int, default=5)
+    parser.add_argument(
+        "--stream-transport",
+        action="store_true",
+        help=(
+            "Request SSE and reconstruct one final response to avoid idle HTTP "
+            "timeouts."
+        ),
+    )
     args = parser.parse_args()
     api_key = os.environ.get(args.api_key_env, "")
     if not api_key:
         raise NousLabelWorkerError(f"{args.api_key_env} is required")
+    execute_function = execute_one
+    if args.stream_transport:
+
+        def execute_function(
+            candidate: dict[str, Any], **kwargs: Any
+        ) -> dict[str, Any]:
+            return execute_one(
+                candidate,
+                stream_transport=True,
+                request_function=_post_json_sse,
+                **kwargs,
+            )
+
     summary = run_shard(
         args.candidates,
         args.output_root,
@@ -453,6 +480,7 @@ def main() -> int:
         concurrency=args.concurrency,
         timeout_seconds=args.timeout_seconds,
         maximum_attempts=args.maximum_attempts,
+        execute_function=execute_function,
     )
     print(json.dumps(summary, sort_keys=True))
     return 0
