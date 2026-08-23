@@ -203,10 +203,15 @@ The following factor isolation remains mandatory:
   bytes inside the current mechanical size window. This bounded sample cannot
   be extrapolated to the reservoir.
 - Six immutable audit populations contain 2,103 rows. The source-disjoint
-  Common Pile confirmation compiler is still completing; no source-wide
-  admission rate follows from those rows.
-- No bounded source pilot has yet completed all required rights, benchmark,
-  global deduplication, representation, and attribution gates.
+  Common Pile confirmation is complete at 224/224 compiler receipts, but no
+  source-wide admission rate follows from those rows.
+- Pressbooks and Public Domain Review completed bounded source pilots. Their
+  3,353 raw rows yielded 3,301 benchmark-disjoint rows and 3,290
+  within-source near-deduplicated rows; the full bounded cross-source replay
+  found zero additional groups. Attribution is exact, but external provenance,
+  rights verification, representation verification, and full-reservoir
+  deduplication remain open. Hermes compilation of the 3,290 survivors is in
+  progress.
 - Exact training-ready data remains zero bytes, and 4B training remains
   unauthorized.
 
