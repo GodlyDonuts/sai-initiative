@@ -4,8 +4,13 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import http.client
+import io
 import json
 import os
+import socket
+import ssl
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -29,6 +34,9 @@ SCHEMA = "sai-nous-agent-label-receipt-v1"
 DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 DEFAULT_MODEL = "stealth/ox-alpha"
 RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
+CONNECT_TIMEOUT_SECONDS = 5.0
+_ADDRESS_CACHE: dict[tuple[str, int], tuple[int, tuple[Any, ...]]] = {}
+_ADDRESS_CACHE_LOCK = threading.Lock()
 
 
 class NousLabelWorkerError(RuntimeError):
@@ -100,15 +108,24 @@ def _post_json(
     body: dict[str, Any],
     timeout_seconds: float,
 ) -> tuple[dict[str, Any], int]:
+    base_url = _validate_endpoint(base_url)
     encoded = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode()
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+        "User-Agent": "sai-data-labeler/1",
+    }
+    if base_url.startswith("https://"):
+        return _post_json_https(
+            base_url=base_url,
+            encoded=encoded,
+            headers=headers,
+            timeout_seconds=timeout_seconds,
+        )
     request = urllib.request.Request(
         base_url.rstrip("/") + "/chat/completions",
         data=encoded,
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "User-Agent": "sai-data-labeler/1",
-        },
+        headers=headers,
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
@@ -116,6 +133,100 @@ def _post_json(
         if response.read(1):
             raise NousLabelWorkerError("model response exceeds size bound")
         status = response.status
+    try:
+        payload = json.loads(response_bytes)
+    except (UnicodeDecodeError, json.JSONDecodeError) as error:
+        raise NousLabelWorkerError("model response JSON differs") from error
+    if not isinstance(payload, dict):
+        raise NousLabelWorkerError("model response JSON differs")
+    return payload, status
+
+
+def _connect_reachable(
+    host: str, port: int, *, timeout_seconds: float
+) -> socket.socket:
+    """Connect through a reachable address without giving one dead IP all timeout."""
+
+    cache_key = (host, port)
+    connect_timeout = min(CONNECT_TIMEOUT_SECONDS, max(0.25, timeout_seconds))
+    with _ADDRESS_CACHE_LOCK:
+        cached = _ADDRESS_CACHE.get(cache_key)
+        resolved = []
+        if cached is not None:
+            resolved.append(cached)
+        for family, socket_type, _protocol, _canonical, address in socket.getaddrinfo(
+            host, port, type=socket.SOCK_STREAM
+        ):
+            candidate = (family, address)
+            if socket_type == socket.SOCK_STREAM and candidate not in resolved:
+                resolved.append(candidate)
+        last_error: OSError | None = None
+        for family, address in resolved:
+            connection = socket.socket(family, socket.SOCK_STREAM)
+            try:
+                connection.settimeout(connect_timeout)
+                connection.connect(address)
+                connection.settimeout(timeout_seconds)
+                _ADDRESS_CACHE[cache_key] = (family, address)
+                return connection
+            except OSError as error:
+                last_error = error
+                connection.close()
+                if _ADDRESS_CACHE.get(cache_key) == (family, address):
+                    _ADDRESS_CACHE.pop(cache_key, None)
+        if last_error is not None:
+            raise last_error
+    raise OSError("Nous endpoint resolved no stream address")
+
+
+def _post_json_https(
+    *,
+    base_url: str,
+    encoded: bytes,
+    headers: dict[str, str],
+    timeout_seconds: float,
+) -> tuple[dict[str, Any], int]:
+    parsed = urllib.parse.urlsplit(base_url)
+    host = parsed.hostname
+    if host is None:
+        raise NousLabelWorkerError("Nous endpoint differs")
+    port = parsed.port or 443
+    raw_socket = _connect_reachable(host, port, timeout_seconds=timeout_seconds)
+    context = ssl.create_default_context()
+    connection = http.client.HTTPSConnection(
+        host,
+        port,
+        timeout=timeout_seconds,
+        context=context,
+    )
+    try:
+        try:
+            connection.sock = context.wrap_socket(raw_socket, server_hostname=host)
+        except OSError:
+            raw_socket.close()
+            raise
+        connection.sock.settimeout(timeout_seconds)
+        path = parsed.path.rstrip("/") + "/chat/completions"
+        connection.request("POST", path, body=encoded, headers=headers)
+        response = connection.getresponse()
+        response_bytes = response.read((4 << 20) + 1)
+        status = response.status
+        if status >= 300:
+            raise urllib.error.HTTPError(
+                base_url.rstrip("/") + "/chat/completions",
+                status,
+                response.reason,
+                response.headers,
+                io.BytesIO(response_bytes),
+            )
+        if len(response_bytes) > 4 << 20:
+            raise NousLabelWorkerError("model response exceeds size bound")
+    except urllib.error.HTTPError:
+        raise
+    except (OSError, http.client.HTTPException) as error:
+        raise urllib.error.URLError(error) from error
+    finally:
+        connection.close()
     try:
         payload = json.loads(response_bytes)
     except (UnicodeDecodeError, json.JSONDecodeError) as error:

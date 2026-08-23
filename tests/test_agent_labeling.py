@@ -18,7 +18,9 @@ from sai.data.agent_labeling import (
     normalize_model_judgment,
 )
 from sai.data.nous_label_worker import (
+    _ADDRESS_CACHE,
     NousLabelWorkerError,
+    _connect_reachable,
     execute_one,
     run_shard,
 )
@@ -47,6 +49,49 @@ def _candidate(text: str | None = None) -> dict:
     }
     row["candidate_identity_sha256"] = canonical_sha256(row)
     return row
+
+
+def test_reachable_address_selection_skips_dead_ip_and_caches_good_ip(
+    monkeypatch,
+) -> None:
+    attempts = []
+
+    class FakeSocket:
+        def __init__(self, family, socket_type):
+            self.family = family
+            self.socket_type = socket_type
+
+        def settimeout(self, _timeout):
+            return None
+
+        def connect(self, address):
+            attempts.append(address)
+            if address[0] == "192.0.2.1":
+                raise TimeoutError("blackholed")
+
+        def close(self):
+            return None
+
+    monkeypatch.setattr(
+        "sai.data.nous_label_worker.socket.getaddrinfo",
+        lambda *_args, **_kwargs: [
+            (2, 1, 6, "", ("192.0.2.1", 443)),
+            (2, 1, 6, "", ("192.0.2.2", 443)),
+        ],
+    )
+    monkeypatch.setattr(
+        "sai.data.nous_label_worker.socket.socket",
+        lambda family, socket_type: FakeSocket(family, socket_type),
+    )
+    _ADDRESS_CACHE.clear()
+    first = _connect_reachable("example.test", 443, timeout_seconds=10)
+    assert isinstance(first, FakeSocket)
+    assert attempts == [("192.0.2.1", 443), ("192.0.2.2", 443)]
+    attempts.clear()
+    second = _connect_reachable("example.test", 443, timeout_seconds=10)
+    assert isinstance(second, FakeSocket)
+    assert attempts == [("192.0.2.2", 443)]
+    _ADDRESS_CACHE.clear()
 
 
 def _raw_judgment(
