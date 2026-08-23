@@ -256,16 +256,41 @@ published and byte-replayed in Hugging Face commit
 Raw candidates and evidence-bearing judgments were not redistributed.
 
 The next Common Pile gate is now frozen rather than selected by intuition.
-Receipt `a48d9860193460e037c095f5483eb18b4b5199ec6b7be05eba8c6ebcfe562676`
+Receipt `350e96f2c1bbffa473eb7801fcd43548b03141754622c1ba0cd55a1e7bb9e625`
 combines the completed compiler aggregate with the independent v2
 contamination screen. Promotion requires at least four observed rows, at least
 50% representation-verification routing, zero quarantine or rights routes, and
 zero benchmark-overlap rows. It selects ArXiv Abstracts, GitHub Archive,
 LibreTexts, Pressbooks, Public Domain Review, Python Enhancement Proposals, and
-StackExchange for a 224-row confirmation using different parent files. This is
-confirmation workload selection, not training admission. The source-safe plan
-was byte-replayed from Hugging Face commit
-[`6618216352dbecfae8e3c92eef53d4e14e1e24f1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6618216352dbecfae8e3c92eef53d4e14e1e24f1).
+StackExchange for a 224-row confirmation. Confirmation rows must be exact-row
+and exact-content disjoint from discovery; acquisition uses a different pinned
+parent whenever one exists and otherwise reuses the only pinned parent with
+fail-closed discovery-line and content-hash exclusions. This is confirmation
+workload selection, not training admission. The executable plan was
+byte-replayed from Hugging Face commit
+[`77cb201f68dab8f447f3d3a6e81b63a9ee4407f5`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/77cb201f68dab8f447f3d3a6e81b63a9ee4407f5).
+The earlier receipt
+`a48d9860193460e037c095f5483eb18b4b5199ec6b7be05eba8c6ebcfe562676`
+and dataset commit
+[`6618216352dbecfae8e3c92eef53d4e14e1e24f1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6618216352dbecfae8e3c92eef53d4e14e1e24f1)
+are retained as superseded audit history: their universal different-parent
+requirement is infeasible for selected sources with only one pinned parent.
+
+The v2 confirmation population is now sealed under receipt
+`40e72050e1c5a44d0e7618413d6e731de23232be9982f8f4be5d13eada44b6a5`:
+224/224 rows, exactly 32 from each selected source, three different-parent
+lanes, and four single-parent lanes with enforced discovery exclusions. It
+verified 2,637,343,362 compressed parent bytes while holding at most one parent
+locally. An independent duplicate replay covered all 60,378 possible pairs
+across the 124-row discovery and 224-row confirmation populations and found
+zero byte-exact or normalized-token duplicates (receipt
+`6fd6b8491a627021d2cfd2db75c6eb8b495bcd48044254452583037eff2f8785`).
+The corrected benchmark boundary found 223/224 clean rows: six lanes were
+32/32 clean, while one GitHub Archive row contained two exact word-shingle
+hits. Therefore GitHub Archive cannot receive blanket source promotion, and no
+lane is training-ready until the remaining compiler, rights, full-corpus
+deduplication, and transformation gates close. Screen receipt:
+`02fa2ead3bd14689fb6f46bf7eaca4f1518342aea8e3c08393d44aac1eb9acba`.
 
 The official public-benchmark contamination boundary is executable, but its
 first code-shingle policy has been superseded. It

@@ -101,11 +101,39 @@ candidates and evidence-bearing judgments remain local, and every source stays
 
 Dataset commit
 [`6618216352dbecfae8e3c92eef53d4e14e1e24f1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6618216352dbecfae8e3c92eef53d4e14e1e24f1)
-adds the source-safe Common Pile confirmation plan under receipt
+preserves the first Common Pile confirmation plan under receipt
 `a48d9860193460e037c095f5483eb18b4b5199ec6b7be05eba8c6ebcfe562676`.
 It selects seven clean-signal lanes and 224 source-disjoint confirmation rows;
 it contains no candidate text and grants no bulk or training admission. The
-downloaded remote bytes replayed exactly against the local plan.
+downloaded remote bytes replayed exactly against the local plan. This version
+is superseded because its universal different-parent requirement is infeasible
+for selected collections with only one pinned parent.
+
+Dataset commit
+[`77cb201f68dab8f447f3d3a6e81b63a9ee4407f5`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/77cb201f68dab8f447f3d3a6e81b63a9ee4407f5)
+adds the executable v2 plan under receipt
+`350e96f2c1bbffa473eb7801fcd43548b03141754622c1ba0cd55a1e7bb9e625`.
+It keeps the same seven lanes and 224-row target, requires exact identity and
+content disjointness, selects a different pinned parent whenever available,
+and otherwise uses exact discovery-line and content-hash exclusions. The plan
+contains no candidate text and grants no bulk or training admission; its remote
+bytes replayed exactly against the local file.
+
+Dataset commit
+[`e12b599463c8dfe0ff88338aa00e6b472e8bc1af`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e12b599463c8dfe0ff88338aa00e6b472e8bc1af)
+publishes the source-safe evidence for the 224-row Common Pile confirmation:
+its population receipt, exact lineage, discovery/confirmation duplicate report,
+and corrected benchmark-contamination screen. All four remote files replayed
+byte-for-byte. Raw candidate text and future evidence-bearing compiler
+judgments were not uploaded. Population receipt
+`40e72050e1c5a44d0e7618413d6e731de23232be9982f8f4be5d13eada44b6a5`
+binds 224 rows, 32 per lane, and 2,637,343,362 fully verified compressed parent
+bytes. Duplicate receipt
+`6fd6b8491a627021d2cfd2db75c6eb8b495bcd48044254452583037eff2f8785`
+records zero flagged exact pairs. Benchmark-screen receipt
+`02fa2ead3bd14689fb6f46bf7eaca4f1518342aea8e3c08393d44aac1eb9acba`
+records 223 clean rows and one contaminated GitHub Archive row. These files
+remain audit evidence, not training data.
 
 ## Benchmark boundary mirror
 

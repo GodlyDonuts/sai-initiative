@@ -218,12 +218,31 @@ override contamination evidence.
 `sai.data.reservoir_audit_confirmation_plan` makes the next promotion
 deterministic. It binds a completed aggregate and corrected contamination
 screen, then requires zero observed benchmark overlap, zero quarantine/rights
-routes, and at least 500,000 ppm representation-verification signal. The first
-live plan selects seven Common Pile sources for 32 source-disjoint rows each:
+routes, and at least 500,000 ppm representation-verification signal. The
+executable live plan selects seven Common Pile sources for 32 source-disjoint
+rows each:
 ArXiv Abstracts, GitHub Archive, LibreTexts, Pressbooks, Public Domain Review,
 Python Enhancement Proposals, and StackExchange. Plan receipt
+`350e96f2c1bbffa473eb7801fcd43548b03141754622c1ba0cd55a1e7bb9e625`
+requires exact row and content disjointness from discovery, prefers a different
+pinned parent when available, and otherwise reuses the only pinned parent with
+exact discovery-line and content-hash exclusions. It still sets
+`bulk_training_admission=false` and `training_ready=false`. The earlier receipt
 `a48d9860193460e037c095f5483eb18b4b5199ec6b7be05eba8c6ebcfe562676`
-still sets `bulk_training_admission=false` and `training_ready=false`.
+is superseded because requiring a different parent for every selected source
+was infeasible for four single-parent source collections.
+
+The resulting confirmation population sealed 224/224 rows under receipt
+`40e72050e1c5a44d0e7618413d6e731de23232be9982f8f4be5d13eada44b6a5`.
+It contains 32 rows per selected lane, verifies 2,637,343,362 compressed parent
+bytes, and holds only one parent file at a time. Exact and normalized-token
+duplicate replay across discovery plus confirmation found zero flagged pairs
+among all 60,378 possible pairs. Corrected benchmark screening found one
+contaminated GitHub Archive row and 223 clean rows; the other six lanes were
+32/32 clean. The row is evidence against blanket GitHub Archive promotion, not
+permission to weaken the boundary. All source rows remain
+`training_ready=false` pending compiler, rights, full-source deduplication, and
+transformation gates.
 
 `sai.data.benchmark_boundary_index` builds a non-reversible official benchmark
 boundary for 18,235 rows across nine public benchmark views. The r1 13-token
