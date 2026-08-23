@@ -136,14 +136,18 @@ def reconstruct_page(response_bytes: bytes, source_type: str) -> dict[str, Any]:
     if not response_bytes or len(response_bytes) > MAXIMUM_RESPONSE_BYTES:
         raise PublicDomainReviewScopeAuditError("page response size differs")
     document = BeautifulSoup(response_bytes, "html.parser")
-    frozen_geometry_text = _parse_source_text(document, source_type)
     license_blocks = document.select("div.essay-license.essay__content")
     page_license_observed = any(
         "CC BY-SA" in block.get_text(" ", strip=True)
         and any(anchor.get("href") == CC_BY_SA_URL for anchor in block.find_all("a"))
         for block in license_blocks
     )
+    for block in license_blocks:
+        block.decompose()
+    frozen_geometry_text = _parse_source_text(document, source_type)
     scoped_document = BeautifulSoup(response_bytes, "html.parser")
+    for block in scoped_document.select("div.essay-license.essay__content"):
+        block.decompose()
     selected_quote_nodes = scoped_document.select(
         "div.essay__text-block blockquote, div.essay__text-block q, "
         "p.intro blockquote, p.intro q"

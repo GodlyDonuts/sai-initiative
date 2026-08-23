@@ -37,7 +37,7 @@ def test_reconstructs_essay_and_requires_exact_license_link() -> None:
         <p class="intro">An introduction.</p>
         <div class="essay__text-block"><p>Original synthesis.</p></div>
       </div>
-      <div class="essay-license essay__content">
+      <div class="essay-license essay__content essay__text-block">
         The text of this essay is published under a
         <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA</a>
         license.
@@ -51,6 +51,7 @@ def test_reconstructs_essay_and_requires_exact_license_link() -> None:
     )
     assert result["scoped_text"] == result["frozen_geometry_text"]
     assert result["page_specific_cc_by_sa_observed"] is True
+    assert "published under" not in result["frozen_geometry_text"]
 
 
 def test_nearby_license_text_does_not_substitute_for_exact_link() -> None:
