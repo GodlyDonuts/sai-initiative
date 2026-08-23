@@ -86,6 +86,209 @@ curriculum artifacts, and final training shards. The registry never treats a
 downloaded dataset as training-ready and records reference-only sources without
 copying bytes when their terms prohibit redistribution.
 
+### The eight-trillion data program
+
+Sai is now executing two related but deliberately separate programs:
+
+1. **An 8 TiB source reservoir.** This is a large, immutable inventory of
+   reality anchors and candidate training material. It provides breadth and
+   headroom for filtering; it is not itself a training set.
+2. **A prospective 8T-token training curriculum.** This is the maximum-horizon
+   schedule for turning qualified material into a moving-center spiral. It is a
+   curriculum contract, not authorization to train and not a claim that eight
+   trillion accepted tokens already exist.
+
+Conflating these two quantities would hide the most important work. Raw bytes
+become training tokens only after rights checks, normalization, exact and
+near-duplicate removal, benchmark decontamination, quality judgment, concept
+and prerequisite annotation, grounded transformation, and final replay. A
+source can be excellent and still require a different representation or a
+later curriculum position.
+
+#### Exact source-reservoir checkpoint
+
+The first live reservoir was sealed on 2026-08-23 from exact Hugging Face
+revisions. It contains **16,003 files and 8,797,534,711,475 bytes**
+(**8.0013112087 TiB**), exceeding the exact 8 TiB target by 1,441,689,267
+bytes. The selection includes every file from the specialist sources and only
+the minimum deterministic, path-ordered FineWeb-Edu prefix needed to cross the
+target.
+
+| Source | Exact revision | Files | Selected bytes | Function |
+| --- | --- | ---: | ---: | --- |
+| FinePDFs | `220bac3acbf07789502c621d2d33952f51ac7f86` | 3,573 | 5,375,642,953,643 | Global PDF reality anchors |
+| Institutional Books enriched text | `92fcdf938eb87edfe0fbf09d4f692fa3d8bc9bcd` | 4,916 | 870,263,633,412 | Books, human expression, and historical knowledge |
+| FineMath | `e92b25a616738fe95dc186b64dfb19f9c8525594` | 288 | 149,447,371,427 | Mathematical reality anchors |
+| Dolma 3 mix-150B | `afa92bfb22366821c5e6cd427cdd036b34b713ef` | 6,081 | 110,586,325,507 | Broad multidomain reality anchors |
+| SmolLM corpus | `3ba9d605774198c5868892d7a8deda78031a781f` | 340 | 673,074,320,609 | Curated education, code, and synthetic textbooks |
+| OpenWebMath | `fde8ef8de2300f5e778f56261843dab89f230815` | 114 | 27,431,041,597 | Mathematical exposition |
+| FineWeb-Edu deterministic fill | `87f09149ef4734204d70ed1d046ddc9ca3f2b8f9` | 691 | 1,591,089,065,280 | Broad educational-web coverage after specialists |
+
+The manifest is 7,809,055 bytes with file SHA-256
+`8b533e846f1c6f9ef636c5f6602d45447793a43b09be95882fc9f1f8173dadfd`
+and ordered-row SHA-256
+`0fd20de4d3a3371c95d72453319ed1c2e853d303731e0a00cfb076960906f97c`.
+The receipt SHA-256 is
+`62a5e8f63624220ed5d69525010d76cc3fab290137174c2b9e35f29a8d8ff32e`.
+The manifest, receipt, and spiral policy were replayed byte-for-byte after
+publication in Hugging Face dataset commit
+[`3e7f42416ea8ab3a74f8a0417a2b7f2fb98cd2e5`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/3e7f42416ea8ab3a74f8a0417a2b7f2fb98cd2e5).
+Every source revision was resolved exactly, an object from every source was
+access-probed, and every selected file is bound to its upstream LFS SHA-256.
+
+This checkpoint does **not** claim that 8 TiB is locally downloaded, unique,
+licensed as one combined corpus, quality-approved, translated, decontaminated,
+or training-ready. Institutional Books remains authenticated,
+reference-only material under its pinned early-access terms. The Stack v2 and
+manual-gated sources are excluded until their exact bytes can be accessed
+lawfully and reproducibly. Source inclusion also does not establish a final
+training percentage: origin is metadata, not an epistemic function or a fixed
+mixture allocation.
+
+#### Moving-center spiral for an 8T-token run
+
+The prospective schedule moves its center of gravity from foundations to
+synthesis and expertise while preserving both tails. Expert material begins in
+the first token stage, and foundational rehearsal remains present through the
+last 400B tokens.
+
+| Stage | Token interval | Stage tokens | Foundation | Intermediate | Advanced | Expert | Minimum cross-domain material |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Foundation | 0–2.0T | 2.0T | 55% | 30% | 12% | 3% | 1% |
+| Expansion | 2.0–4.8T | 2.8T | 25% | 45% | 23% | 7% | 4% |
+| Depth | 4.8–6.8T | 2.0T | 12% | 28% | 42% | 18% | 10% |
+| Synthesis | 6.8–7.6T | 0.8T | 10% | 20% | 35% | 35% | 30% |
+| Annealing | 7.6–8.0T | 0.4T | 10% | 18% | 30% | 42% | 20% |
+
+These percentages are the current prospective difficulty-band allocation, not
+a frozen source mixture. Within each stage, the compiler and proxy experiments
+must still discover which concept, style, source, and reasoning regions buy the
+largest source-disjoint marginal capability gain without causing retention
+loss. Annealing uses the highest-value mixture supported by that evidence; it
+does not simply become “all expert data.”
+
+The policy is executable in `sai.data.eight_trillion_spiral`. It binds exactly
+8,000,000,000,000 tokens, contiguous stage boundaries, exact per-band token
+allocations, nonzero early expertise, nonzero late foundations, and receipt
+SHA-256
+`ffa85e065bb7a3895af55bfa9ffdb7f65e236d05722e1ca8abea6161bf259bd2`.
+Both `training_authorized` and `four_b_training_authorized` remain false in the
+artifact: a long-horizon policy cannot authorize a run whose accepted stream
+does not yet exist.
+
+#### Synthetic data is a bridge compiler, not a prose factory
+
+Sai's synthetic advantage is intended to be **knowledge composition**. The
+model should not merely know biology and information theory independently; it
+should learn when and how their structures connect. Candidate pairings include
+biology × information theory, music × Fourier analysis, law × logic,
+architecture × structural engineering, history × economics, literature ×
+psychology, computer systems × thermodynamics, chemistry × quantum mechanics,
+and art × geometry. The pairing list is not a quota and novelty is not assumed
+merely because two domain labels appear in one prompt.
+
+Every admitted synthetic bridge must carry:
+
+- at least two genuinely distinct domain identities;
+- exact source anchors and immutable source hashes;
+- the concepts and prerequisite edges required to understand the bridge;
+- evidence that prerequisites were taught earlier or are explicitly rehearsed;
+- a relationship that is not a paraphrase or a superficial word collision;
+- an independently solved answer or deterministic verifier;
+- translation and transformation lineage; and
+- benchmark-overlap evidence sufficient to keep evaluation prompts out of
+  training.
+
+Generic ungrounded generation is forbidden. The compiler should prefer
+representations whose truth can be checked: executable code and tests,
+symbolic solvers, simulations, constraint systems, multiple independent
+solutions, cited synthesis from primary sources, and contradiction-seeking
+review. A model-generated explanation can improve presentation, but it cannot
+create a reality anchor or verify its own unsupported claim.
+
+The cross-domain generation loop is therefore:
+
+```text
+qualified reality anchors + concept/prerequisite graph
+    -> identify distant but structurally meaningful concept pairs
+    -> generate a task, derivation, explanation, or worked example
+    -> solve independently or execute a deterministic verifier
+    -> reject unsupported, duplicate, stylistically collapsed, or contaminated work
+    -> assign difficulty on linguistic, conceptual, and reasoning axes
+    -> place into the spiral only after prerequisite and retention checks
+```
+
+Gradient-space or capability-gap targeting can later choose underrepresented
+bridges, but it may not weaken those grounding requirements. Synthetic volume
+is never the target by itself; verified marginal learning is.
+
+#### Hermes and Institutional Books operating state
+
+Hermes is the compiler workforce, not an oracle whose output is accepted by
+default. The current Institutional Books program starts from 983,004 Harvard
+Library volumes totaling 242,051,626,500 upstream tokens. A metadata-first
+10,000-volume review queue spans 115 languages and 772 language×subject cells;
+9,409 rows are non-English translation-discovery candidates and 591 are
+English controls. This is coverage-first sampling, not a desired final language
+ratio.
+
+The first authenticated enriched-text pilot contains 185 candidates from 200
+source rows: 164 English and 21 non-English, with 14 OCR rejects and one token
+bound reject. Hermes has now completed the first production-schema judgment for
+an advanced 1917 geology volume. It retained the source as a historical
+scientific anchor, marked outdated claims as a risk, extracted 34 concepts, 11
+prerequisites, and six evidence-backed edges, and left the raw archive source
+explicitly non-training-ready. The successful request used 12,314 prompt and
+1,454 completion tokens after one invalid first response and one schema-bound
+repair. This single result proves the worker and repair path function; it does
+not estimate corpus-wide acceptance quality.
+
+Hermes routing depends on content type:
+
+- Preserve high-value English literature, rhetoric, letters, essays, and other
+  form-bearing expression instead of flattening it into generic model prose.
+- For non-English technical and factual work, create English representations
+  with exact source and translation lineage, while preserving source metadata.
+- For non-English literature, prefer a reputable admissible human translation.
+  If none exists, keep separately labeled literal and literary synthetic
+  translations and do not represent either as the original voice.
+- For papers, standards, reference works, and technical books, preserve the
+  source and derive multiple grounded representations such as prerequisite
+  maps, concise references, textbook explanations, worked examples, FAQs, and
+  misconception/correction pairs.
+- Reject or quarantine OCR damage, bibliographic ambiguity, missing rights
+  evidence, duplicative editions, unsupported factual claims, benchmark
+  material, and synthetic voice collapse.
+
+The next operational work is to expand sustainable, stratified compiler lanes;
+build cross-source exact and semantic duplicate families; populate the concept
+prerequisite graph; create verified English translations and grounded
+representations; and measure accepted bytes and tokens by domain, culture,
+style, complexity axis, and epistemic function. Only the accepted, replayable
+output of those steps can become a curriculum shard.
+
+#### Evidence and status vocabulary
+
+To keep progress legible, Sai uses these states consistently:
+
+- **Referenced:** exact upstream repository, revision, path, size, and object
+  hash are known.
+- **Locally present:** bytes were actually fetched and their content hash was
+  verified.
+- **Candidate:** the source passed mechanical parsing into a compiler queue.
+- **Judged:** a model or human produced a schema-valid assessment with a sealed
+  request/response receipt.
+- **Verified:** rights, content, transformations, evidence, and contamination
+  checks passed independently.
+- **Curriculum-ready:** concepts, prerequisites, difficulty axes, duplicate
+  family, and spiral placement are complete.
+- **Training-ready:** the final packed stream replays exactly and every required
+  gate is closed.
+
+The current truthful status is: the 8 TiB reservoir is **referenced and
+hash-bound**; the 8T-token spiral is **prospective**; one production book is
+**judged**; and the new reservoir as a whole is **not training-ready**.
+
 Every training population must pass these gates in order:
 
 1. **Source truth:** reopen exact source bytes; reject corruption, spam,
