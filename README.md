@@ -181,6 +181,9 @@ and the receipt file SHA-256 is
 `75d8c54fa7ed140562e9134e25b0f0b3e957f499ac64a313cd8a69db0be6de56`.
 Every selected revision is exact, every file is upstream-LFS-hash-bound, and
 at least one selected object per slice passed a byte-access probe.
+The source-safe manifest and receipt were uploaded and re-downloaded
+byte-for-byte in Hugging Face dataset commit
+[`e3bc9af2c0a6ca211dc3a32c32c512e508dc6dac`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e3bc9af2c0a6ca211dc3a32c32c512e508dc6dac).
 
 These are **physical Parquet bytes, not measured text-payload bytes**.
 FineWeb2-HQ, for example, includes large embedding columns, so treating its
