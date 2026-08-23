@@ -219,6 +219,39 @@ rows among 2,243 audited documents. These are hard admission exclusions. The
 post-filter 512-row semantic audit population is frozen at receipt
 `de365117bee119d224196a3a712518a2814214e130580bf643ef261c56327e1b`.
 
+#### Source-agnostic mechanical quality gate
+
+The answer-key incident is now covered by a reusable gate rather than a
+FineMath-only exception. Before semantic admission, the gate detects bare MCQ
+keys, scored answer sheets without problem statements, embedded control-byte
+corruption, Unicode replacement-character corruption, repeated-character
+gibberish, contextless link/markup/structured fragments, and heavily duplicated
+boilerplate. Hard-reject, context-review, and cleanup-review routes take
+precedence over a mechanical pass. A pass never implies semantic quality,
+rights clearance, decontamination, global deduplication, or training readiness.
+
+The first exact replay covers **8,323 distinct candidate rows** across 12 current
+populations, with zero candidate-identity overlap between those populations. It
+routed **8,313** to mechanical pass, held **9** for duplicated-boilerplate
+cleanup, and hard-rejected **1** contextless Cambridge physics mark-scheme row.
+That row independently triggered both the scored-answer-sheet detector and 136
+embedded backspace controls. An initially broader scoring-marker detector was
+rejected during development because it falsely matched citations, array indexes,
+PEPs, and papers; those cases are regression fixtures in the final policy.
+
+The source-safe publication is
+[`artifacts/sai_source_mechanical_quality_gate_publication_20260826_r1.json`](artifacts/sai_source_mechanical_quality_gate_publication_20260826_r1.json),
+with canonical receipt
+`c25127e13c579bb066b887d264da1905bd78f2f3d24c183bba547ea019a2bf66`
+and policy SHA-256
+`f85ae862121974b48210964b9a81abd55ae4a6a35cf7e7758840ba854f9faf0f`.
+The decision streams retain identities and measurements but no source text; they
+are excluded from Git history but published with all 12 receipts at immutable
+Hugging Face evidence commit
+[`8fcf0ba853617d8200ad0956684754d6390a0fa5`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8fcf0ba853617d8200ad0956684754d6390a0fa5).
+Every nonpass row is barred from direct admission, and all 8,323 rows remain
+`training_ready=false`.
+
 #### Cross-domain connection compiler
 
 Hermès has already proposed cross-domain metadata for **2,105 of 2,243**
@@ -237,6 +270,11 @@ prerequisite map, and verification questions. Generated rows remain
 decontamination, deduplication, and transfer ablations close. The development
 proposal receipt is
 `0ef933e21252d060a4691cc9f5c63441bd40f4a796d5952db6651298c3c133e5`.
+Generation now has a dependency-bound aggregate stage that requires exactly one
+receipt per pair and all 64 shard summaries, replays every normalized judgment,
+strips literal source quotes from derived candidates, and preserves only their
+SHA-256 bindings. Even after generation closes, the aggregate remains
+`training_ready=false` pending independent claim and transfer verification.
 
 ### The eight-trillion data program
 

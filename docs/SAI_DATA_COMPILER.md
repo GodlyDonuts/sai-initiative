@@ -194,6 +194,26 @@ This is metadata compilation only. Translation, synthesis, procedural
 generation, verification, adaptive selection, and packing are separate compiler
 stages that must preserve this lineage.
 
+### Source-agnostic mechanical quality gate
+
+Semantic judgments never override deterministic high-confidence junk evidence.
+`sai.data.source_quality_gate` replays provenance-bound candidate populations
+and emits text-free, per-identity decisions for contextless MCQ keys, scored
+answer sheets lacking their questions, embedded control and replacement
+character corruption, repeated-character gibberish, contextless link/markup or
+structured fragments, and duplicated boilerplate. Nonpass routes are excluded
+from direct admission. The gate deliberately distinguishes hard rejection from
+recoverable context and cleanup review, and its mechanical pass is not semantic
+admission.
+
+The first 12-population publication covers 8,323 distinct identities: 8,313
+mechanical passes, nine cleanup holds, and one hard rejection. Its policy hash is
+`f85ae862121974b48210964b9a81abd55ae4a6a35cf7e7758840ba854f9faf0f`
+and canonical publication receipt is
+`c25127e13c579bb066b887d264da1905bd78f2f3d24c183bba547ea019a2bf66`.
+All rows remain `training_ready=false`; the decision streams are evidence about
+admission work, not a compiled training corpus.
+
 `sai.data.reservoir_audit_decision` converts a completed, hash-valid aggregate
 into a create-only source-work ledger. It never extrapolates a coverage screen
 into an acceptance rate and never grants bulk admission. Instead it routes each

@@ -89,6 +89,15 @@ capacity, not accepted corpus volume.
   conservative FineMath survivors, while the broader completed Hermès audits
   already flag 36 answer-farm, 149 SEO/content-farm, and 97 corrupted rows.
   These remain exclusion evidence, not acceptable training examples.
+- A source-agnostic mechanical gate now replays 8,323 distinct candidates from
+  12 current populations. It routes 8,313 to mechanical pass, holds nine for
+  duplicated-boilerplate cleanup, and hard-rejects one contextless scored
+  physics answer sheet that also contains 136 embedded backspace controls.
+  There are zero cross-population candidate-identity overlaps. The source-safe
+  publication is under
+  `evidence/source-mechanical-quality-gate/20260826-r1/` with canonical receipt
+  `c25127e13c579bb066b887d264da1905bd78f2f3d24c183bba547ea019a2bf66`.
+  A mechanical pass is not semantic or training admission.
 - Completed Hermès receipts contain 6,751 proposed cross-domain assignments
   across 730 directed labels. A 512-pair, source-disjoint development proposal
   population has been frozen across 290 labels. No proposal is called
