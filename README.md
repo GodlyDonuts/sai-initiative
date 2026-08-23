@@ -312,6 +312,18 @@ removes the downloaded parent. Documents outside 200 bytes to 128 KiB are
 counted rather than silently truncated. Pilot rows still remain non-training
 data until full rights, near-duplicate, and representation verification close.
 
+Rights are independently fail-closed. The exact pinned Hugging Face cards for
+all seven confirmation candidates currently expose no top-level `license`
+field; source-specific READMEs instead describe their collection policy and,
+for several sources, point to per-document license metadata. The 224
+confirmation rows contain concrete CC0, Public Domain, CC BY, CC BY-SA,
+Apache-2.0, MIT, BSD-2-Clause, WTFPL, and two unversioned “GNU Free
+Documentation License” declarations. `sai.data.license_policy` canonicalizes
+only exact recognized aliases and attaches attribution/share-alike obligations.
+The unversioned GFDL label and every unknown value enter `rights_hold`; they are
+excluded from pilot selection. A recognized declaration still records
+`source_provenance_verified=false` and `legal_clearance_established=false`.
+
 The official public-benchmark contamination boundary is executable, but its
 first code-shingle policy has been superseded. It
 projects 18,235 rows from MMLU-Pro, HumanEval+, MBPP+, CorrectBench,

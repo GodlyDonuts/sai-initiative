@@ -262,6 +262,17 @@ outputs. It counts short and oversized documents instead of truncating them,
 and it remains `training_ready=false` until rights, near-duplicate, and
 representation verification are independently complete.
 
+`sai.data.license_policy` is a separate exact-declaration boundary. The pinned
+cards for the seven Common Pile confirmation sources do not provide one
+top-level license; their source READMEs and rows carry source-specific rights
+claims. The policy maps exact CC0, Public Domain, CC BY, CC BY-SA, Apache-2.0,
+MIT, BSD-2-Clause, and WTFPL aliases to canonical identifiers and explicit
+attribution/share-alike obligations. It deliberately does not guess a version
+for the two observed “GNU Free Documentation License” rows, and it sends every
+unknown or ambiguous value to `rights_hold`. Even a recognized declaration
+does not establish provenance or legal clearance. Streaming selection excludes
+rights-held rows while preserving counts in its receipt.
+
 `sai.data.benchmark_boundary_index` builds a non-reversible official benchmark
 boundary for 18,235 rows across nine public benchmark views. The r1 13-token
 word index contains 27,979,728 unique SHA-256 keys and its r1 8-token code index
