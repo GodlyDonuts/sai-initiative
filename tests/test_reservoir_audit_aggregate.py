@@ -16,13 +16,15 @@ def _receipt(
     score: int = 3,
     enabled_risks: tuple[str, ...] = (),
     reasoning_effort: str = "low",
+    epistemic_functions: tuple[str, ...] = ("reality_anchor",),
+    score_overrides: dict[str, int] | None = None,
 ) -> dict:
     return {
         "candidate_identity_sha256": "1" * 64,
         "request_reasoning_effort": reasoning_effort,
         "judgment": {
             "verdict": verdict,
-            "epistemic_functions": ["reality_anchor"],
+            "epistemic_functions": list(epistemic_functions),
             "domains": ["history"],
             "curriculum_phase": "integration" if verdict != "reject" else "reject",
             "source_language": language,
@@ -51,7 +53,9 @@ def _receipt(
                 )
                 for key in RISK_KEYS
             },
-            "scores": {key: score for key in SCORE_KEYS},
+            "scores": {
+                key: (score_overrides or {}).get(key, score) for key in SCORE_KEYS
+            },
         },
         "usage": {"prompt_tokens": 100, "completion_tokens": 20, "total_tokens": 120},
         "attempts": [
@@ -138,6 +142,48 @@ def test_aggregate_exposes_nondefault_reasoning_exception() -> None:
         (
             _receipt("retain", enabled_risks=("generic_synthetic_style",)),
             "transformation_review",
+        ),
+        (
+            _receipt(
+                "retain",
+                score=3,
+                score_overrides={"educational_value": 2},
+            ),
+            "quality_review",
+        ),
+        (
+            _receipt(
+                "retain",
+                score=3,
+                epistemic_functions=("human_expression",),
+            ),
+            "representation_verification",
+        ),
+        (
+            _receipt(
+                "retain",
+                score=3,
+                epistemic_functions=("procedural_reasoning",),
+                score_overrides={"reasoning_density": 2},
+            ),
+            "quality_review",
+        ),
+        (
+            _receipt(
+                "retain",
+                score=3,
+                epistemic_functions=("cross_domain_bridge",),
+                score_overrides={"cross_domain_bridge_value": 2},
+            ),
+            "quality_review",
+        ),
+        (
+            _receipt(
+                "retain",
+                score=3,
+                epistemic_functions=("knowledge_distillation",),
+            ),
+            "representation_verification",
         ),
         (_receipt("retain"), "representation_verification"),
     ],

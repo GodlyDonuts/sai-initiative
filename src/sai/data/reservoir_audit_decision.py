@@ -19,6 +19,7 @@ ROUTES = (
     "translation_review",
     "cleanup_review",
     "transformation_review",
+    "quality_review",
     "representation_verification",
 )
 LANES = {
@@ -28,6 +29,7 @@ LANES = {
     "translation_review": "english_translation_and_cultural_fidelity_review",
     "cleanup_review": "deterministic_cleanup_and_ocr_review",
     "transformation_review": "source_bound_transformation_verification",
+    "quality_review": "pedagogical_quality_review",
     "representation_verification": "representation_verification",
 }
 

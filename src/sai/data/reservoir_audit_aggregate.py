@@ -204,6 +204,45 @@ def _triage_route(judgment: dict[str, Any]) -> str:
         or risks["generic_synthetic_style"]
     ):
         return "transformation_review"
+    scores = judgment["scores"]
+    functions = set(judgment["epistemic_functions"])
+    reality_anchor_ready = bool(
+        functions & {"reality_anchor", "knowledge_distillation"}
+    ) and all(
+        scores[key] >= 3
+        for key in (
+            "information_density",
+            "educational_value",
+            "source_reliability",
+            "coherence",
+        )
+    )
+    human_expression_ready = "human_expression" in functions and all(
+        scores[key] >= 3
+        for key in ("writing_quality", "human_expression_value", "coherence")
+    )
+    procedural_reasoning_ready = "procedural_reasoning" in functions and all(
+        scores[key] >= 3
+        for key in ("reasoning_density", "educational_value", "coherence")
+    )
+    cross_domain_ready = "cross_domain_bridge" in functions and all(
+        scores[key] >= 3
+        for key in (
+            "cross_domain_bridge_value",
+            "educational_value",
+            "source_reliability",
+            "coherence",
+        )
+    )
+    if not any(
+        (
+            reality_anchor_ready,
+            human_expression_ready,
+            procedural_reasoning_ready,
+            cross_domain_ready,
+        )
+    ):
+        return "quality_review"
     return "representation_verification"
 
 

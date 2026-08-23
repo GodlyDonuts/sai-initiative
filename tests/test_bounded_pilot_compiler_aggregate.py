@@ -13,6 +13,7 @@ def _receipt(verdict: str = "retain", *, enabled_risks: tuple[str, ...] = ()) ->
     return {
         "judgment": {
             "verdict": verdict,
+            "epistemic_functions": ["reality_anchor"],
             "source_language": "english",
             "risks": {key: key in enabled_risks for key in RISK_KEYS},
             "scores": {key: 3 for key in SCORE_KEYS},
