@@ -322,6 +322,17 @@ begins only when its exact input receipt exists, preserves already-complete shar
 summaries, and retries only unresolved identities when the provider rate-limits a
 request.
 
+Provider admission is now bounded across independent processes, not merely
+inside each worker. A live replay of the 50 most recently completed receipts at
+implementation time contained **62 HTTP-429 retries** in addition to 50 valid
+responses, demonstrating that 32 simultaneous client attempts exceeded useful
+provider capacity. Subsequent loopback workers therefore share 16 OS-locked
+request slots across every compiler, bridge, prerequisite, book, and verifier
+process. The limiter changes only request timing: candidate identities, prompts,
+model, temperature, reasoning effort, and receipt hashes remain governed by the
+same contracts. Non-loopback endpoints are unaffected, and new receipts record
+the applied shared limit explicitly.
+
 Two previously interrupted but fully acquired teacher populations are now also
 dependency-staged for exact resumption. The first contains 1,024 byte-weighted
 documents across FinePDFs, FineWeb-Edu, SmolLM, FineMath, Dolma, and OpenWebMath;

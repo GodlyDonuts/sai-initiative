@@ -7,9 +7,11 @@ import concurrent.futures
 import fcntl
 import json
 import os
+import tempfile
 import time
 import urllib.error
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +43,88 @@ SUMMARY_SCHEMA = "sai-nous-data-compiler-shard-summary-v2"
 COMPILER_REASONING_EFFORT = "low"
 DEFAULT_COMPILER_CONCURRENCY = 4
 MAXIMUM_RESUME_RECEIPT_BYTES = 4 << 20
+DEFAULT_SHARED_PROVIDER_CONCURRENCY = 16
+HERMES_LOOPBACK_URL = "http://127.0.0.1:8645/v1"
+
+
+def _shared_provider_concurrency(base_url: str) -> int | None:
+    """Return the process-shared request ceiling for the local Hermes gateway."""
+
+    if base_url != HERMES_LOOPBACK_URL:
+        return None
+    raw = os.environ.get(
+        "SAI_NOUS_SHARED_PROVIDER_CONCURRENCY",
+        str(DEFAULT_SHARED_PROVIDER_CONCURRENCY),
+    )
+    try:
+        value = int(raw)
+    except ValueError as error:
+        raise NousLabelWorkerError("shared provider concurrency differs") from error
+    if not 1 <= value <= 64 or str(value) != raw:
+        raise NousLabelWorkerError("shared provider concurrency differs")
+    return value
+
+
+def _shared_provider_slot_root() -> Path:
+    default = Path(tempfile.gettempdir()) / (
+        f"sai-nous-provider-slots-{os.getuid()}-v1"
+    )
+    root = Path(os.environ.get("SAI_NOUS_SHARED_PROVIDER_SLOT_ROOT", str(default)))
+    if not root.is_absolute() or root == Path(root.anchor):
+        raise NousLabelWorkerError("shared provider slot root differs")
+    try:
+        root.mkdir(mode=0o700, exist_ok=True)
+        metadata = root.lstat()
+    except OSError as error:
+        raise NousLabelWorkerError(
+            "shared provider slot root is unavailable"
+        ) from error
+    if root.is_symlink() or not root.is_dir() or metadata.st_uid != os.getuid():
+        raise NousLabelWorkerError("shared provider slot root is unsafe")
+    return root
+
+
+@contextmanager
+def _shared_provider_request_slot(
+    base_url: str,
+    *,
+    sleep_function: Callable[[float], None] = time.sleep,
+) -> Iterator[int | None]:
+    """Bound accepted provider pressure across independent worker processes."""
+
+    concurrency = _shared_provider_concurrency(base_url)
+    if concurrency is None:
+        yield None
+        return
+    root = _shared_provider_slot_root()
+    while True:
+        for slot_index in range(concurrency):
+            path = root / f"slot_{slot_index:03d}.lock"
+            flags = os.O_CREAT | os.O_RDWR
+            if hasattr(os, "O_NOFOLLOW"):
+                flags |= os.O_NOFOLLOW
+            try:
+                descriptor = os.open(path, flags, 0o600)
+            except OSError as error:
+                raise NousLabelWorkerError(
+                    "shared provider slot cannot be opened"
+                ) from error
+            handle = os.fdopen(descriptor, "a+b")
+            if os.fstat(handle.fileno()).st_uid != os.getuid():
+                handle.close()
+                raise NousLabelWorkerError("shared provider slot is unsafe")
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                handle.close()
+                continue
+            try:
+                yield slot_index
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+                handle.close()
+            return
+        sleep_function(0.05)
 
 
 def execute_one(
@@ -135,16 +219,18 @@ def execute_contract(
     judgment = None
     evidence_repairs: list[dict[str, Any]] = []
     choice = None
+    shared_provider_concurrency = _shared_provider_concurrency(base_url)
     for attempt in range(1, maximum_attempts + 1):
         attempt_request_sha256 = canonical_sha256(body)
         attempt_request_sha256s.append(attempt_request_sha256)
         try:
-            response, status = request_function(
-                base_url=base_url,
-                api_key=api_key,
-                body=body,
-                timeout_seconds=timeout_seconds,
-            )
+            with _shared_provider_request_slot(base_url, sleep_function=sleep_function):
+                response, status = request_function(
+                    base_url=base_url,
+                    api_key=api_key,
+                    body=body,
+                    timeout_seconds=timeout_seconds,
+                )
             if status != 200:
                 raise NousLabelWorkerError("successful request returned non-200")
             choices = response.get("choices")
@@ -315,9 +401,10 @@ def execute_contract(
         "endpoint_origin": base_url.rstrip("/"),
         "credential_transport": (
             "hermes_loopback_proxy"
-            if base_url == "http://127.0.0.1:8645/v1"
+            if base_url == HERMES_LOOPBACK_URL
             else "direct_portal_bearer"
         ),
+        "shared_provider_concurrency_limit": shared_provider_concurrency,
         "requested_model": model,
         "request_sha256": request_sha256,
         "attempt_request_sha256s": attempt_request_sha256s,
