@@ -89,6 +89,16 @@ adds its deterministic source-work ledger under receipt
 The ledger is descriptive triage, not a source-yield estimate or training
 admission.
 
+Dataset commit
+[`90a87727f9b5e88b0268153001f19d47c091101d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/90a87727f9b5e88b0268153001f19d47c091101d)
+adds the completed 124-row Common Pile aggregate and its conservative work
+ledger under receipts
+`d79749882b8e306e87997a2e0f13bd558e0bef268356b696e6d140eab656bd22`
+and `e036d9d96bfc260fc3d64f6851db00213231545ac1aca2fc1bbe00ed4427ae58`.
+Both uploaded files replay byte-for-byte against local SHA-256 values. Raw
+candidates and evidence-bearing judgments remain local, and every source stays
+`training_ready=false`.
+
 ## Benchmark boundary mirror
 
 Dataset commit

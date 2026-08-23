@@ -202,6 +202,19 @@ translation, transformation, or representation verification. Its first live
 ledger paused FinePDF bulk expansion and rights-blocked OpenWebMath while
 prioritizing targeted FineWeb-Edu verification.
 
+The same ledger machinery has now replayed a completed 124-row Common Pile
+breadth screen spanning 31 sources. Aggregate receipt
+`d79749882b8e306e87997a2e0f13bd558e0bef268356b696e6d140eab656bd22`
+and work-ledger receipt
+`e036d9d96bfc260fc3d64f6851db00213231545ac1aca2fc1bbe00ed4427ae58`
+remain explicitly descriptive. The screen promotes ArXiv Abstracts, Public
+Domain Review, Python Enhancement Proposals, and StackExchange to larger
+source-specific confirmation, while pausing the observed Wikiteam, arXiv Paper,
+peS2o, and Wikimedia representations. USGPO is not promoted despite a 4/4
+compiler route because the independent corrected benchmark-word gate found
+3/4 overlaps. This is the intended multi-gate behavior: model preference cannot
+override contamination evidence.
+
 `sai.data.benchmark_boundary_index` builds a non-reversible official benchmark
 boundary for 18,235 rows across nine public benchmark views. The r1 13-token
 word index contains 27,979,728 unique SHA-256 keys and its r1 8-token code index

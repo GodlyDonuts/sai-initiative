@@ -236,6 +236,25 @@ first where the screen found recoverable signal. The aggregate receipt is
 the deterministic source-work ledger receipt is
 `7cd1a6b040eaa00a40eb37f2578045780815931d6f712a43d5bd33848a4e250e`.
 
+The 31-source Common Pile breadth audit has also completed all 124/124 compiler
+judgments under aggregate receipt
+`d79749882b8e306e87997a2e0f13bd558e0bef268356b696e6d140eab656bd22`.
+At four rows per source it is a discovery screen, not an acceptance-rate
+estimate. ArXiv Abstracts and Public Domain Review each routed 4/4 rows to
+representation verification with no quarantine; Python Enhancement Proposals
+and StackExchange each routed 3/4 there with one cleanup review. Those are
+high-priority candidates for a larger source-specific confirmation screen.
+Wikiteam routed 4/4 rows to quarantine, while arXiv Papers, peS2o, and Wikimedia
+each routed 3/4 there, so bulk expansion of those representations is paused.
+
+No compiler-only result can bypass an independent gate. USGPO illustrates why:
+Hermes routed 4/4 rows to representation verification, but the corrected exact
+word boundary independently found benchmark overlap in 3/4 rows. It is not a
+priority clean lane. The complete aggregate and conservative work ledger were
+published and byte-replayed in Hugging Face commit
+[`90a87727f9b5e88b0268153001f19d47c091101d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/90a87727f9b5e88b0268153001f19d47c091101d).
+Raw candidates and evidence-bearing judgments were not redistributed.
+
 The official public-benchmark contamination boundary is executable, but its
 first code-shingle policy has been superseded. It
 projects 18,235 rows from MMLU-Pro, HumanEval+, MBPP+, CorrectBench,
