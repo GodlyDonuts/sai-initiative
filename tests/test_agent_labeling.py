@@ -377,6 +377,54 @@ def test_bulk_shard_uses_one_comprehensive_judgment_per_document(
     assert summary["judgments_per_candidate"] == 1
 
 
+def test_shard_isolates_one_failed_judgment_and_preserves_other_receipts(
+    tmp_path: Path,
+) -> None:
+    first = _candidate()
+    second = deepcopy(first)
+    second["source"]["row_id"] = "chapter-2"
+    second["candidate_identity_sha256"] = canonical_sha256(
+        {
+            key: value
+            for key, value in second.items()
+            if key != "candidate_identity_sha256"
+        }
+    )
+    candidates = tmp_path / "candidates.jsonl"
+    candidates.write_text(json.dumps(first) + "\n" + json.dumps(second) + "\n")
+    output = tmp_path / "outputs"
+
+    def execute_function(row, slot, **kwargs):
+        if row["candidate_identity_sha256"] == first["candidate_identity_sha256"]:
+            raise NousLabelWorkerError("isolated invalid response")
+        receipt = {
+            "schema": "test-receipt",
+            "candidate_identity_sha256": row["candidate_identity_sha256"],
+            "annotator_slot": slot,
+        }
+        receipt["receipt_sha256"] = canonical_sha256(receipt)
+        return receipt
+
+    with pytest.raises(NousLabelWorkerError, match="completed receipts are resumable"):
+        run_shard(
+            candidates,
+            output,
+            model="stealth/ox-alpha",
+            base_url="https://inference-api.nousresearch.com/v1",
+            api_key="secret",
+            logical_shards=1,
+            shard_index=0,
+            concurrency=2,
+            timeout_seconds=1,
+            maximum_attempts=1,
+            judgments_per_candidate=1,
+            execute_function=execute_function,
+        )
+    assert not (output / f"{first['candidate_identity_sha256']}.slot0.json").exists()
+    assert (output / f"{second['candidate_identity_sha256']}.slot0.json").is_file()
+    assert not (output / "shard_00000.summary.json").exists()
+
+
 def test_candidate_and_worker_fail_closed_on_drift(tmp_path: Path) -> None:
     candidate = _candidate()
     mutated = deepcopy(candidate)

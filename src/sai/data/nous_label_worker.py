@@ -360,10 +360,43 @@ def run_shard(
         return receipt["receipt_sha256"]
 
     hashes = []
+    failures = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
-        futures = [pool.submit(work, item) for item in pending]
+        futures = {pool.submit(work, item): item for item in pending}
         for future in concurrent.futures.as_completed(futures):
-            hashes.append(future.result())
+            row, slot, _target = futures[future]
+            try:
+                hashes.append(future.result())
+            except Exception as error:  # noqa: BLE001 - isolate one remote judgment
+                failures.append(
+                    {
+                        "candidate_identity_sha256": row["candidate_identity_sha256"],
+                        "annotator_slot": slot,
+                        "error_type": type(error).__name__,
+                        "error": str(error)[:512],
+                    }
+                )
+            completed = len(hashes) + len(failures)
+            if completed % 100 == 0 or completed == len(pending):
+                print(
+                    json.dumps(
+                        {
+                            "event": "judgment_progress",
+                            "completed": completed,
+                            "created": len(hashes),
+                            "failed": len(failures),
+                            "pending": len(pending) - completed,
+                        },
+                        sort_keys=True,
+                    ),
+                    flush=True,
+                )
+    if failures:
+        first = failures[0]
+        raise NousLabelWorkerError(
+            f"{len(failures)} judgment(s) failed; completed receipts are resumable; "
+            f"first={json.dumps(first, sort_keys=True)}"
+        )
     summary = {
         "schema": "sai-nous-agent-label-shard-summary-v1",
         "status": "complete",
