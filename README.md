@@ -288,7 +288,9 @@ receipt is
 Source text and individual contamination decisions remain local. The 1,023
 survivors are staged for Hermès after the existing PEP compiler closes; neither
 the screen nor the 2.5-million-row parent is training-ready or authorized for
-bulk ingestion.
+bulk ingestion. All five source-safe evidence files were downloaded back and
+replayed byte-for-byte from Hugging Face dataset commit
+[`5047dee73c4acbdc0f2f1abf044ff5049d4d59e9`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5047dee73c4acbdc0f2f1abf044ff5049d4d59e9).
 
 The corrected reservoir rights inventory now binds **46 source lanes, 45 exact
 repository revisions, 42,600 files, and all 23,680,076,298,761 candidate

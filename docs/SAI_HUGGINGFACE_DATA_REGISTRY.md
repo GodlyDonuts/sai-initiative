@@ -584,4 +584,6 @@ and
 Those five source-safe files are eligible for publication; sampled text,
 individual contamination decisions, and machine-local paths are not. Hermès
 quality compilation, full-source ingestion, and training admission remain
-false.
+false. All five files were force-downloaded and replayed exactly from dataset
+commit
+[`5047dee73c4acbdc0f2f1abf044ff5049d4d59e9`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5047dee73c4acbdc0f2f1abf044ff5049d4d59e9).
