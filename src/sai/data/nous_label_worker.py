@@ -33,7 +33,7 @@ from sai.data.token_stream import canonical_sha256
 SCHEMA = "sai-nous-agent-label-receipt-v1"
 DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 DEFAULT_MODEL = "stealth/ox-alpha"
-RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504}
+RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504, 524}
 CONNECT_TIMEOUT_SECONDS = 5.0
 _ADDRESS_CACHE: dict[tuple[str, int], tuple[int, tuple[Any, ...]]] = {}
 _ADDRESS_CACHE_LOCK = threading.Lock()
@@ -41,6 +41,14 @@ _ADDRESS_CACHE_LOCK = threading.Lock()
 
 class NousLabelWorkerError(RuntimeError):
     """A request, response, or shard execution is invalid."""
+
+
+def _retryable_http_status(status: int, base_url: str) -> bool:
+    """Retry transport failures plus proxy-only credential refresh races."""
+
+    return status in RETRYABLE_STATUS or (
+        status == 401 and base_url == "http://127.0.0.1:8645/v1"
+    )
 
 
 def _validate_endpoint(value: str) -> str:
@@ -402,7 +410,10 @@ def execute_one(
                     "outcome": "transient_http_error",
                 }
             )
-            if error.code not in RETRYABLE_STATUS or attempt == maximum_attempts:
+            if (
+                not _retryable_http_status(error.code, base_url)
+                or attempt == maximum_attempts
+            ):
                 raise NousLabelWorkerError(
                     f"Nous request failed with HTTP {error.code}"
                 ) from error

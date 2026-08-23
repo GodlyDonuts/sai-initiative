@@ -24,13 +24,13 @@ from sai.data.data_compiler_labeling import (
 from sai.data.nous_label_worker import (
     DEFAULT_BASE_URL,
     DEFAULT_MODEL,
-    RETRYABLE_STATUS,
     NousLabelWorkerError,
     _assigned,
     _json_object,
     _load_jsonl,
     _post_json,
     _post_json_sse,
+    _retryable_http_status,
     _validate_endpoint,
 )
 from sai.data.token_stream import canonical_sha256
@@ -179,7 +179,10 @@ def execute_contract(
                     "request_sha256": attempt_request_sha256,
                 }
             )
-            if error.code not in RETRYABLE_STATUS or attempt == maximum_attempts:
+            if (
+                not _retryable_http_status(error.code, base_url)
+                or attempt == maximum_attempts
+            ):
                 raise NousLabelWorkerError(
                     f"Nous request failed with HTTP {error.code}"
                 ) from error
