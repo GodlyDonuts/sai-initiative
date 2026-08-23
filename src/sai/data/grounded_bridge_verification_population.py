@@ -131,6 +131,15 @@ def build_candidate(
     judgment = generator_receipt.get("judgment")
     if not isinstance(judgment, dict):
         raise GroundedBridgeVerificationPopulationError("generator judgment differs")
+    if (
+        hashlib.sha256(pair["anchor_a"]["text"].encode()).hexdigest()
+        != pair["anchor_a"]["source_content_sha256"]
+        or hashlib.sha256(pair["anchor_b"]["text"].encode()).hexdigest()
+        != pair["anchor_b"]["source_content_sha256"]
+    ):
+        raise GroundedBridgeVerificationPopulationError(
+            "source anchor content binding differs"
+        )
     expected_claims = [
         {
             "claim": claim["claim"],

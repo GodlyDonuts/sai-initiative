@@ -7,7 +7,11 @@ import json
 from typing import Any
 
 from sai.data.agent_labeling import _bounded_int, _exact
-from sai.data.grounded_bridge_verification_population import RECORD_SCHEMA
+from sai.data.grounded_bridge_aggregate import CANDIDATE_SCHEMA as GENERATED_SCHEMA
+from sai.data.grounded_bridge_verification_population import (
+    RECORD_SCHEMA,
+    _generated_text,
+)
 from sai.data.token_stream import canonical_sha256
 
 JUDGMENT_SCHEMA = "sai-grounded-cross-domain-bridge-verification-judgment-v1"
@@ -88,6 +92,7 @@ def _strings(
     if (
         not isinstance(value, list)
         or not minimum <= len(value) <= maximum
+        or any(not isinstance(item, str) for item in value)
         or len(value) != len(set(value))
     ):
         raise GroundedBridgeVerifierError(f"{label} differs")
@@ -103,6 +108,19 @@ def normalize_candidate(value: Any) -> dict[str, Any]:
         key: item for key, item in value.items() if key != "candidate_identity_sha256"
     }
     generated = value.get("generated")
+    if not isinstance(generated, dict):
+        raise GroundedBridgeVerifierError("bridge verification candidate differs")
+    try:
+        expected_generated_text = _generated_text(generated)
+    except (KeyError, TypeError) as error:
+        raise GroundedBridgeVerifierError(
+            "bridge verification generated structure differs"
+        ) from error
+    generated_unsigned = {
+        key: item
+        for key, item in generated.items()
+        if key != "candidate_identity_sha256"
+    }
     if (
         value.get("candidate_identity_sha256") != canonical_sha256(unsigned)
         or not isinstance(value.get("anchor_a_text"), str)
@@ -111,15 +129,38 @@ def normalize_candidate(value: Any) -> dict[str, Any]:
         or not value["anchor_b_text"]
         or not isinstance(value.get("generated_text"), str)
         or not value["generated_text"]
-        or not isinstance(generated, dict)
+        or generated.get("schema") != GENERATED_SCHEMA
+        or generated.get("candidate_identity_sha256")
+        != canonical_sha256(generated_unsigned)
         or not isinstance(generated.get("claims"), list)
         or not generated["claims"]
         or value.get("pair_identity_sha256") != generated.get("pair_identity_sha256")
         or value.get("generated_candidate_identity_sha256")
         != generated.get("candidate_identity_sha256")
+        or value.get("bridge_label") != generated.get("bridge_label")
+        or value.get("anchor_a_source_content_sha256")
+        != generated.get("anchor_a_source_content_sha256")
+        or value.get("anchor_a_candidate_identity_sha256")
+        != generated.get("anchor_a_candidate_identity_sha256")
+        or value.get("anchor_b_source_content_sha256")
+        != generated.get("anchor_b_source_content_sha256")
+        or value.get("anchor_b_candidate_identity_sha256")
+        != generated.get("anchor_b_candidate_identity_sha256")
+        or value.get("generator_receipt_sha256")
+        != generated.get("generator_receipt_sha256")
+        or value.get("generator_judgment_sha256")
+        != generated.get("generator_judgment_sha256")
+        or value.get("generated_text") != expected_generated_text
+        or generated.get("source_disjoint") is not True
+        or generated.get("source_quotes_retained_in_candidate") is not False
+        or generated.get("grounded_synthesis_verified") is not False
+        or generated.get("independent_claim_verification_complete") is not False
+        or generated.get("independent_transfer_verification_complete") is not False
+        or generated.get("training_ready") is not False
         or value.get("source_disjoint") is not True
         or value.get("same_model_family_as_generator") is not True
         or value.get("independent_request_verification_complete") is not False
+        or value.get("independent_model_family_verification_complete") is not False
         or value.get("bridge_verified") is not False
         or value.get("training_ready") is not False
     ):
@@ -262,6 +303,7 @@ def normalize_model_judgment(value: Any, candidate: dict[str, Any]) -> dict[str,
     defects = row["defects"]
     if (
         not isinstance(defects, list)
+        or any(not isinstance(defect, str) for defect in defects)
         or len(defects) != len(set(defects))
         or any(defect not in DEFECTS for defect in defects)
     ):

@@ -11,6 +11,7 @@ from sai.data.grounded_bridge_verifier_labeling import (
     build_messages,
     normalize_model_judgment,
 )
+from sai.data.token_stream import canonical_sha256
 from tests.test_grounded_bridge_aggregate import receipt
 from tests.test_grounded_bridge_verification_population import _bound_pair
 
@@ -86,3 +87,17 @@ def test_retain_with_failed_transfer_check_fails_closed() -> None:
     payload["defects"] = ["incorrect_transfer_solution"]
     with pytest.raises(GroundedBridgeVerifierError, match="inconsistent"):
         normalize_model_judgment(payload, candidate)
+
+
+def test_rehashed_generated_object_tamper_fails_closed() -> None:
+    candidate = deepcopy(_candidate())
+    candidate["generated"]["representations"][0]["text"] += " Tampered."
+    candidate["candidate_identity_sha256"] = canonical_sha256(
+        {
+            key: value
+            for key, value in candidate.items()
+            if key != "candidate_identity_sha256"
+        }
+    )
+    with pytest.raises(GroundedBridgeVerifierError, match="candidate"):
+        build_messages(candidate)
