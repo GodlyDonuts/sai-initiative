@@ -222,6 +222,51 @@ class DataCompilerLabelingError(RuntimeError):
     """A compiler judgment differs from the frozen polymath contract."""
 
 
+def evidence_quote_candidates(text: str, *, maximum: int = 12) -> list[str]:
+    """Expose deterministic exact anchors without changing the frozen rubric."""
+
+    if not isinstance(text, str) or not text or not 1 <= maximum <= 32:
+        raise DataCompilerLabelingError("evidence quote candidate geometry differs")
+    eligible = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if len(stripped) < 24:
+            continue
+        anchor = stripped[:240].rstrip()
+        if anchor and anchor in text and anchor not in eligible:
+            eligible.append(anchor)
+    selected = []
+    if eligible:
+        count = min(maximum, len(eligible))
+        indices = (
+            [0]
+            if count == 1
+            else [
+                round(offset * (len(eligible) - 1) / (count - 1))
+                for offset in range(count)
+            ]
+        )
+        selected.extend(eligible[index] for index in indices)
+    if len(selected) < maximum:
+        window = min(160, len(text))
+        count = maximum - len(selected)
+        starts = (
+            [0]
+            if count == 1 or len(text) == window
+            else [
+                round(offset * (len(text) - window) / (count - 1))
+                for offset in range(count)
+            ]
+        )
+        for start in starts:
+            anchor = text[start : start + window].strip()
+            if len(anchor) >= 24 and anchor in text and anchor not in selected:
+                selected.append(anchor)
+    if not selected or any(anchor not in text for anchor in selected):
+        raise DataCompilerLabelingError("evidence quote candidates differ")
+    return selected[:maximum]
+
+
 def build_messages(candidate: dict[str, Any]) -> list[dict[str, str]]:
     """Build one comprehensive, source-aware compiler request."""
 
@@ -238,6 +283,7 @@ def build_messages(candidate: dict[str, Any]) -> list[dict[str, str]]:
             "Return exactly the output_template keys and replace every value. "
             "Do not add schema, identity, markdown, or commentary."
         ),
+        "evidence_quote_candidates": evidence_quote_candidates(candidate["text"]),
         "document": candidate["text"],
     }
     return [

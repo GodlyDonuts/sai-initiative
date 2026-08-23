@@ -10,6 +10,7 @@ from sai.data.data_compiler_labeling import (
     RUBRIC_SHA256,
     DataCompilerLabelingError,
     build_messages,
+    evidence_quote_candidates,
     normalize_model_judgment,
     validate_normalized_judgment,
 )
@@ -142,6 +143,22 @@ def test_compiler_prompt_is_global_source_aware_and_not_scalar() -> None:
     assert "information_density" in envelope["output_schema"]["scores"]
     assert "human_expression_value" in envelope["output_schema"]["scores"]
     assert "cross_domain_bridge_value" in envelope["output_schema"]["scores"]
+    assert 1 <= len(envelope["evidence_quote_candidates"]) <= 12
+    assert all(
+        quote in envelope["document"] for quote in envelope["evidence_quote_candidates"]
+    )
+
+
+def test_evidence_quote_candidates_span_multiline_sources_exactly() -> None:
+    text = "\n".join(
+        f"Section {index}: exact LaTeX \\alpha_{{{index}}} and archival evidence "
+        f"remain byte-for-byte stable in this sufficiently long line."
+        for index in range(40)
+    )
+    anchors = evidence_quote_candidates(text)
+    assert len(anchors) == 12
+    assert anchors == evidence_quote_candidates(text)
+    assert all(anchor in text and 24 <= len(anchor) <= 240 for anchor in anchors)
 
 
 def test_compiler_accepts_translation_and_preservation_plan() -> None:
@@ -251,6 +268,7 @@ def test_general_compiler_retry_names_the_actual_document_envelope() -> None:
 
     repair = calls[1]["messages"][-1]["content"]
     assert "byte-for-byte quote from document" in repair
+    assert "evidence_quote_candidates" in repair
     assert "book_excerpt" not in repair
 
 

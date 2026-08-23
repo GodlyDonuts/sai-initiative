@@ -205,6 +205,12 @@ def execute_contract(
                             "the prior answer. Remove any claim or edge that cannot be "
                             "supported by a byte-for-byte quote from "
                             f"{evidence_container_name}."
+                            + (
+                                " Prefer copying evidence_quotes directly from "
+                                "evidence_quote_candidates."
+                                if evidence_container_name == "document"
+                                else ""
+                            )
                         ),
                     },
                 ]
