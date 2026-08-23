@@ -115,6 +115,14 @@ def _audit_row(root: Path) -> dict[str, Any]:
         raise DataYieldLedgerError("audit population binding differs")
     _bound_file(root, population)
     _bound_file(root, lineage)
+    if (
+        not isinstance(population.get("rows"), int)
+        or population["rows"] <= 0
+        or not isinstance(population.get("bytes"), int)
+        or population["bytes"] <= 0
+        or not receipt.get("by_source")
+    ):
+        raise DataYieldLedgerError("audit population accounting differs")
     if receipt.get("training_ready") is not False:
         raise DataYieldLedgerError("audit receipt makes an unsupported ready claim")
     return {
@@ -275,6 +283,8 @@ def build_ledger(
     if len({row["manifest_sha256"] for row in reservoirs}) != len(reservoirs):
         raise DataYieldLedgerError("ledger repeats a reservoir manifest")
     audits = [_audit_row(root) for root in audit_roots]
+    if len({row["receipt_sha256"] for row in audits}) != len(audits):
+        raise DataYieldLedgerError("ledger repeats an audit population")
     pilots = [_pilot_row(root) for root in pilot_roots]
     rights = (
         _rights_inventory(rights_inventory_path)

@@ -229,3 +229,15 @@ def test_ledger_rejects_rights_bytes_that_do_not_cover_reservoir(
             tmp_path / "ledger.json",
             rights_inventory_path=rights,
         )
+
+
+def test_ledger_rejects_repeated_audit_population(tmp_path: Path) -> None:
+    reservoir = _reservoir(tmp_path)
+    audit = _audit(tmp_path)
+    with pytest.raises(DataYieldLedgerError, match="repeats an audit population"):
+        build_ledger(
+            [reservoir],
+            [audit, audit],
+            [],
+            tmp_path / "ledger.json",
+        )

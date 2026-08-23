@@ -165,21 +165,22 @@ Together, the two reservoirs reference **23,680,076,298,761 physical bytes
 compilation.
 
 Those bytes are now independently accounted under source-safe conversion
-ledger v2 receipt
-`73c6ecaca197bae639cd2a66642d07af8a4fd4a26ce8ba8f3a6211a599ad244b`.
-The ledger hash-verifies both reservoir manifests, the 124-row discovery plus
-224-row confirmation populations, and corrected rights-inventory v2. Its
-current funnel is deliberately blunt: 21.5369 TiB referenced candidates, 348
-acquired audit rows, zero completed source pilots, and **0 training-ready
-bytes**. Of the candidate bytes, 7,899,196,133,417 require declared-license
+ledger release r3 receipt
+`b8d5e6278aa9a076c4d143807f6e09f64b75ab992564651f9fa94dbcf5cb2337`.
+The ledger hash-verifies both reservoir manifests, all six immutable audit
+populations containing 2,103 rows, and corrected rights-inventory v2. Duplicate
+audit receipts are rejected. Its current funnel is deliberately blunt:
+21.5369 TiB referenced candidates, 2,103 acquired audit rows, zero completed
+source pilots, and **0 training-ready bytes**. Of the candidate bytes,
+7,899,196,133,417 require declared-license
 obligation handling, 5,027,859,142,584 require per-row license evidence, and
 10,753,021,022,760 require source-terms resolution. Cross-inventory overlap and
 exact text-payload yield remain unresolved, so the candidate-byte sum cannot
 be used as a training-data claim. The text-free receipt (file SHA-256
-`74562e87fe36480e98a3c47c785156da71435ed424a75b558dab03b97c7d193a`)
+`6db524e74dc64bafe2b93261fe6f9b3ef99aef30de450b71ed2637801776c163`)
 was uploaded and replayed byte-for-byte in Hugging Face commit
-[`8c3baa4452d8bf06c2277e72f4dd79b5628e8d26`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8c3baa4452d8bf06c2277e72f4dd79b5628e8d26).
-Ledger v1 remains immutable historical evidence.
+[`4b468991397fb123f4bf73674803ac931c1dd2ff`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4b468991397fb123f4bf73674803ac931c1dd2ff).
+Earlier ledger releases remain immutable historical evidence.
 
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
 | --- | --- | ---: | ---: | --- |
