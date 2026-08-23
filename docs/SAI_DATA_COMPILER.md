@@ -391,6 +391,17 @@ same lineage and license obligations. Segmentation grants no quality decision,
 rights clearance, benchmark clearance, deduplication status, or training
 admission.
 
+`sai.data.external_exact_deduplication` provides the global normalized-exact
+layer after benchmark-disjoint representations exist. It streams immutable
+JSONL populations into fixed-width, text-free external-sort runs, reduces those
+runs with bounded fan-in, and selects the minimum document identity within each
+NFKC/casefold/whitespace-normalized SHA-256 group. Each apparent hash collision
+is replayed against the full normalized source text before a row is dropped.
+The survivor stream is deterministic across input ordering; a text-free drop
+manifest preserves custody; temporary indexes are removed. This gate does not
+claim semantic or near-duplicate completion and does not itself admit data to
+training.
+
 ## Institutional Books lane
 
 The Harvard Library Institutional Books release is now a pinned, separate

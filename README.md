@@ -519,6 +519,16 @@ preparatory compiler infrastructure, not a FinePDF admission result: segmented
 documents still require contamination screening, global deduplication, rights
 verification, representation verification, and curriculum placement.
 
+The first global deduplication layer is also executable as
+`sai-deduplicate-global-exact`. It external-sorts compact text-free indexes in
+bounded fan-in passes, groups documents by NFKC/casefold/whitespace-normalized
+SHA-256, selects the minimum immutable document identity, and replays every
+apparent collision against the full normalized source text before dropping it.
+Outputs are deterministic across input order, temporary indexes are removed,
+and the duplicate manifest contains identities and byte locators rather than
+source text. This closes normalized exact duplicates only; scalable semantic
+near-duplicate filtering remains a separate unresolved gate.
+
 NVIDIA's organic/translated Nemotron-CC v2.1, CC-Code v1, and Code v2
 repositories were investigated but are not counted: metadata is visible while
 the current user token receives HTTP 403 on the actual gated objects. The

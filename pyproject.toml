@@ -77,6 +77,7 @@ sai-audit-cross-source-pilot-duplicates = "sai.data.cross_source_pilot_duplicate
 sai-build-data-yield-ledger = "sai.data.data_yield_ledger:main"
 sai-probe-text-payload = "sai.data.text_payload_probe:main"
 sai-segment-long-documents = "sai.data.structural_segmentation:main"
+sai-deduplicate-global-exact = "sai.data.external_exact_deduplication:main"
 sai-build-reservoir-audit-population = "sai.data.reservoir_audit_population:main"
 sai-build-reservoir-audit-expansion = "sai.data.reservoir_audit_expansion:main"
 sai-aggregate-reservoir-audit = "sai.data.reservoir_audit_aggregate:main"
