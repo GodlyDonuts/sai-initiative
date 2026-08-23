@@ -327,8 +327,12 @@ inside each worker. A live replay of the 50 most recently completed receipts at
 implementation time contained **62 HTTP-429 retries** in addition to 50 valid
 responses, demonstrating that 32 simultaneous client attempts exceeded useful
 provider capacity. A subsequent 10-row frontier shard still exhausted all five
-retries on four rows at a 16-slot ceiling, so subsequent loopback workers now
-share **eight** OS-locked request slots across every compiler, bridge,
+retries on four rows at a 16-slot ceiling. The next accepted-capacity search
+measured 4.59 completed rows/minute at eight slots and 4.29 at sixteen. A
+prospective ten-slot probe then sustained 4.90 completed rows/minute over its
+first ten-minute comparison window, while HTTP-429 outcomes per completion fell
+from about 0.64 in the eight-slot cohort to 0.55. Subsequent loopback workers
+therefore share **ten** OS-locked request slots across every compiler, bridge,
 prerequisite, book, and verifier process. The limiter changes only request
 timing: candidate identities, prompts, model, temperature, reasoning effort,
 and receipt hashes remain governed by the same contracts. Non-loopback
