@@ -658,7 +658,7 @@ def test_streaming_compiler_transport_is_explicit_and_hashed() -> None:
     )
     assert receipt["request_stream_transport"] is True
     assert receipt["credential_transport"] == "hermes_loopback_proxy"
-    assert receipt["shared_provider_concurrency_limit"] == 16
+    assert receipt["shared_provider_concurrency_limit"] == 8
 
 
 def test_sse_chat_completion_reconstruction_is_bounded_and_exact() -> None:
