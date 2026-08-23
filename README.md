@@ -148,6 +148,41 @@ decontamination, exact and semantic deduplication, full-population Hermes,
 representation, prerequisite, and spiral-curriculum gates. Physical custody can
 therefore never be mistaken for silent admission.
 
+#### Full FineMath-4plus census
+
+Sai has now scanned the entire materialized FineMath-4plus snapshot rather than
+extrapolating from an audit sample. Sixty-four independent Stokes CPU jobs
+hash-verified and scanned **6,699,493 rows**, **34,126,971,204 UTF-8 text
+bytes**, and **9,573,187,002 upstream tokens**. All jobs exited successfully;
+the dependency-bound global aggregate completed in 15 seconds.
+
+The global content census found **zero byte-exact duplicate rows** and only
+**seven normalized duplicate rows** after NFKC, case folding, and whitespace
+normalization. Upstream marks every row `en`, but its own language confidence
+places 349,840 rows below 0.50 and another 591,870 between 0.50 and 0.70.
+Only 2,339,612 rows contain a nonzero math-extraction feature, demonstrating
+that the source name and provider quality score cannot replace direct content
+qualification.
+
+Three nested, non-admission measurement profiles quantify the available
+quality/length headroom:
+
+| Profile | Rows | UTF-8 text bytes | Upstream tokens |
+| --- | ---: | ---: | ---: |
+| Broad: English confidence ≥0.70, score ≥3, 64–32k tokens | 5,734,795 | 29,622,108,077 | 7,941,391,804 |
+| Core: English confidence ≥0.80, score ≥4, 128–32k tokens | 4,879,600 | 26,493,021,099 | 6,949,987,393 |
+| Elite: English confidence ≥0.90, score ≥5, 128–32k tokens | 250,540 | 1,570,280,996 | 402,534,176 |
+
+The complete source-safe publication receipt is
+`bb578f5e969e8d15d96ae40ae3511d4dd6d2d9c42e834e5c641204719d53e4c2`.
+All 64 shard receipts and the aggregate replayed byte-for-byte at Hugging Face
+commit
+[`db79c6bb4e7752aee2de8ce2414fcf5ef709e5c1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/db79c6bb4e7752aee2de8ce2414fcf5ef709e5c1).
+These profiles remain `training_ready=false`: official-boundary
+decontamination, semantic/subdocument deduplication, content-density analysis,
+Hermes judgment, rights obligations, and final curriculum assignment are still
+required.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:
