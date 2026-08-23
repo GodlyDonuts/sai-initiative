@@ -158,6 +158,21 @@ card.
 ## Frontier audit mirror
 
 Dataset commit
+[`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf)
+publishes the source-safe bounded-pilot compiler population receipt and its
+text-free 3,290-row lineage. The compiler input contains 1,948 Pressbooks and
+1,342 Public Domain Review survivors with exact pilot, decontamination,
+attribution, source-revision, file, and row bindings. Candidate text is not
+published. Receipt
+`b87e7c864fec79de60dc90576777b347dfd66bdbe40af40c42db9f91f422a372`
+and the remote receipt/lineage file SHA-256 values replayed as
+`b9d82b58176dc7ac9ff5952f5ecbb1e30e441405d8411fa56c3ce2101a7e8c17`
+and
+`b68ff632fa6c5fda2677a289569679387d29157771a1f382851e0ef983fe76a0`.
+Compiler judgments remain in progress and establish no verification or
+training admission.
+
+Dataset commit
 [`44fbdd30cedc89ac908057929468d3162651d645`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/44fbdd30cedc89ac908057929468d3162651d645)
 completes the source-safe Common Pile confirmation mirror with the aggregate,
 per-source decision, and frozen promotion-v2 receipt. The 224-row confirmation

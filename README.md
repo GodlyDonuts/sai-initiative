@@ -387,6 +387,25 @@ byte-for-byte from Hugging Face dataset commit
 [`f5ec9e07e987f008c52a29b31922c2e361c8472a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f5ec9e07e987f008c52a29b31922c2e361c8472a).
 Raw and transformed source text was deliberately not published.
 
+All 3,290 cross-source survivors are now joined back to their exact source
+revision, file, row, declaration, decontamination evidence, and pilot receipt
+in a compiler population. It contains 1,948 Pressbooks candidates and 1,342
+Public Domain Review candidates under receipt
+`b87e7c864fec79de60dc90576777b347dfd66bdbe40af40c42db9f91f422a372`.
+The candidate file SHA-256 is
+`9e2da348914c6c175bcb9d2fe3272caaa891923bdc27f211118b8e849f33f93a`;
+the text-free lineage SHA-256 is
+`b68ff632fa6c5fda2677a289569679387d29157771a1f382851e0ef983fe76a0`.
+Hermes compilation is running across 128 immutable identity shards with
+resumable create-only receipts. The compiler can recommend or reject
+representations, but its output remains a judgment rather than independent
+verification or admission.
+
+Only the source-safe receipt and text-free lineage were published and remotely
+replayed in Hugging Face dataset commit
+[`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf).
+The evidence-bearing candidate text remains local.
+
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
 field; source-specific READMEs instead describe their collection policy and,
