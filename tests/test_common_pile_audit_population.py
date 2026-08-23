@@ -1,5 +1,6 @@
 import copy
 import gzip
+import hashlib
 import json
 
 import pytest
@@ -109,3 +110,40 @@ def test_gzip_sampling_is_exact_deterministic_and_license_aware(tmp_path) -> Non
     parent["parent_file_sha256"] = "0" * 64
     with pytest.raises(CommonPileAuditError, match="identity"):
         sample_verified_gzip_parent(path, parent)
+
+
+def test_gzip_sampling_excludes_discovery_rows_and_content(tmp_path) -> None:
+    path = tmp_path / "source.json.gz"
+    with gzip.open(path, "wt", encoding="utf-8") as handle:
+        for index in range(10):
+            handle.write(
+                json.dumps(
+                    {
+                        "id": index,
+                        "text": f"row {index} " + "substantive source text " * 20,
+                        "license": "CC0-1.0",
+                    }
+                )
+                + "\n"
+            )
+    parent = {
+        "parent_file_bytes": path.stat().st_size,
+        "parent_file_sha256": sha256_file(path),
+        "parent_selection_key": "b" * 64,
+        "license": "fallback",
+    }
+    baseline = sample_verified_gzip_parent(path, parent, rows_per_source=2)
+    excluded_line = baseline[0]["locator"]["line_number"]
+    excluded_text = hashlib.sha256(baseline[1]["text"].encode()).hexdigest()
+    result = sample_verified_gzip_parent(
+        path,
+        parent,
+        rows_per_source=2,
+        excluded_line_numbers=frozenset({excluded_line}),
+        excluded_text_sha256s=frozenset({excluded_text}),
+    )
+    assert all(row["locator"]["line_number"] != excluded_line for row in result)
+    assert all(
+        hashlib.sha256(row["text"].encode()).hexdigest() != excluded_text
+        for row in result
+    )

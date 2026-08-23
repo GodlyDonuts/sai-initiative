@@ -149,6 +149,8 @@ def sample_verified_gzip_parent(
     parent: dict[str, Any],
     *,
     rows_per_source: int = ROWS_PER_SOURCE,
+    excluded_line_numbers: frozenset[int] = frozenset(),
+    excluded_text_sha256s: frozenset[str] = frozenset(),
 ) -> list[dict[str, Any]]:
     """Verify one compressed parent fully and select deterministic bottom-k rows."""
 
@@ -174,11 +176,17 @@ def sample_verified_gzip_parent(
                 text = text.strip()
                 if len(text.encode("utf-8")) < 200:
                     continue
+                text_sha256 = hashlib.sha256(text.encode()).hexdigest()
+                if (
+                    line_number in excluded_line_numbers
+                    or text_sha256 in excluded_text_sha256s
+                ):
+                    continue
                 native_id = _native_id(row)
                 key = hashlib.sha256(
                     (
                         f"{parent['parent_selection_key']}:{line_number}:"
-                        f"{native_id or ''}:{hashlib.sha256(text.encode()).hexdigest()}"
+                        f"{native_id or ''}:{text_sha256}"
                     ).encode()
                 ).hexdigest()
                 metadata = row.get("metadata")
