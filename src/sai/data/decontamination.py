@@ -126,7 +126,12 @@ class SortedDigestBoundary:
     """Memory-map a strictly ordered fixed-width SHA-256 membership index."""
 
     def __init__(
-        self, path: Path, *, expected_bytes: int, expected_sha256: str
+        self,
+        path: Path,
+        *,
+        expected_bytes: int,
+        expected_sha256: str,
+        materialize: bool = False,
     ) -> None:
         try:
             descriptor = os.open(path, os.O_RDONLY | os.O_CLOEXEC | os.O_NOFOLLOW)
@@ -147,6 +152,7 @@ class SortedDigestBoundary:
         finally:
             os.close(descriptor)
         self._rows = expected_bytes // 32
+        self._materialized: frozenset[bytes] | None = None
         previous = None
         for index in range(self._rows):
             value = self._mapping[index * 32 : (index + 1) * 32]
@@ -154,10 +160,17 @@ class SortedDigestBoundary:
                 self.close()
                 raise DecontaminationError("boundary index ordering differs")
             previous = value
+        if materialize:
+            self._materialized = frozenset(
+                self._mapping[index * 32 : (index + 1) * 32]
+                for index in range(self._rows)
+            )
 
     def __contains__(self, value: object) -> bool:
         if not isinstance(value, bytes) or len(value) != 32:
             return False
+        if self._materialized is not None:
+            return value in self._materialized
         low = 0
         high = self._rows
         while low < high:
@@ -185,9 +198,7 @@ class CombinedDigestBoundary:
         return any(value in member for member in self.members)
 
 
-def binary_boundary_index(
-    roots: list[Path],
-) -> tuple[
+def binary_boundary_index(roots: list[Path], *, materialize: bool = False) -> tuple[
     list[SortedDigestBoundary],
     list[SortedDigestBoundary],
     list[dict[str, Any]],
@@ -243,6 +254,7 @@ def binary_boundary_index(
                         root / index["file"],
                         expected_bytes=index["bytes"],
                         expected_sha256=index["sha256"],
+                        materialize=materialize,
                     )
                 )
             receipts.append(
@@ -402,6 +414,7 @@ def _compute(
     *,
     boundary_indexes: list[Path] | None = None,
     workers: int = 1,
+    materialize_boundary_indexes: bool = False,
 ) -> dict[str, Any]:
     if (
         not source.is_file()
@@ -423,7 +436,9 @@ def _compute(
         word_members.append(file_words)
         code_members.append(file_code)
         boundary_receipts.extend(file_receipts)
-    binary_words, binary_code, binary_receipts = binary_boundary_index(boundary_indexes)
+    binary_words, binary_code, binary_receipts = binary_boundary_index(
+        boundary_indexes, materialize=materialize_boundary_indexes
+    )
     word_members.extend(binary_words)
     code_members.extend(binary_code)
     boundary_receipts.extend(binary_receipts)
@@ -534,6 +549,7 @@ def build(
     *,
     boundary_indexes: list[Path] | None = None,
     workers: int = 1,
+    materialize_boundary_indexes: bool = False,
 ) -> dict[str, Any]:
     if output.exists() or receipt.exists():
         raise DecontaminationError("decontamination output already exists")
@@ -551,6 +567,7 @@ def build(
                 ),
                 boundary_indexes=boundary_indexes,
                 workers=workers,
+                materialize_boundary_indexes=materialize_boundary_indexes,
             )
     except BaseException:
         stage.unlink(missing_ok=True)
@@ -635,6 +652,14 @@ def main() -> None:
     build_parser.add_argument("--output", type=Path, required=True)
     build_parser.add_argument("--receipt", type=Path, required=True)
     build_parser.add_argument("--workers", type=int, default=1)
+    build_parser.add_argument(
+        "--materialize-boundary-indexes",
+        action="store_true",
+        help=(
+            "preload exact digest indexes into shared memory before forking; "
+            "this changes performance only, never decisions"
+        ),
+    )
     validate_parser = subparsers.add_parser("validate")
     validate_parser.add_argument("--receipt", type=Path, required=True)
     args = parser.parse_args()
@@ -646,6 +671,7 @@ def main() -> None:
             args.receipt,
             boundary_indexes=args.boundary_index,
             workers=args.workers,
+            materialize_boundary_indexes=args.materialize_boundary_indexes,
         )
     else:
         payload = validate(args.receipt)

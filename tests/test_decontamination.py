@@ -157,6 +157,37 @@ def test_build_and_replay_accepts_non_reversible_binary_boundary(
     assert validate(receipt) == report
 
 
+def test_materialized_binary_boundary_is_byte_exact_and_replays(tmp_path: Path) -> None:
+    benchmark_text = (
+        "one two three four five six seven eight nine ten eleven twelve thirteen"
+    )
+    boundary = write_digest_boundary(
+        tmp_path / "binary-boundary",
+        _shingles(benchmark_text.split(), 13),
+        {hashlib.sha256(b"unused-code-window").digest()},
+    )
+    source = write_jsonl(
+        tmp_path / "source.jsonl",
+        [
+            raw(0, "A clean document about the geometry of elliptic curves."),
+            raw(1, f"prefix {benchmark_text} suffix"),
+        ],
+    )
+    output = tmp_path / "admitted.jsonl"
+    receipt = tmp_path / "receipt.json"
+    report = build(
+        source,
+        [],
+        output,
+        receipt,
+        boundary_indexes=[boundary],
+        materialize_boundary_indexes=True,
+    )
+    assert report["accepted"] == 1
+    assert report["dropped"] == 1
+    assert validate(receipt) == report
+
+
 def test_parallel_build_is_byte_exact_and_replays_sequentially(tmp_path: Path) -> None:
     boundary = write_jsonl(
         tmp_path / "boundary.jsonl",
