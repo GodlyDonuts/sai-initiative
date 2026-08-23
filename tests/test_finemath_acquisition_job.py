@@ -15,4 +15,5 @@ def test_finemath_acquisition_is_exact_resumable_and_candidate_only() -> None:
     assert '"training_authorized": False' in script
     assert "hf_hub_download" in script
     assert "partial FineMath member differs" in script
+    assert 'mktemp -d "/tmp/sai-finemath-${SLURM_JOB_ID:?}.XXXXXX"' in script
     assert 'find "$STAGE" -type f -exec chmod 0444' in script

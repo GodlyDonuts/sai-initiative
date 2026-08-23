@@ -22,11 +22,17 @@ STAGE="$OUTPUT_ROOT/.finemath-4plus-e92b25a-r1.stage"
 test -x "$PYTHON"
 test ! -L "$PYTHON"
 test ! -e "$FINAL"
-mkdir -p "$STAGE" "${SLURM_TMPDIR:?}/hf-cache"
+TEMP_ROOT=$(mktemp -d "/tmp/sai-finemath-${SLURM_JOB_ID:?}.XXXXXX")
+case "$TEMP_ROOT" in
+  /tmp/sai-finemath-"$SLURM_JOB_ID".*) ;;
+  *) echo "sai: temporary directory differs" >&2; exit 2 ;;
+esac
+trap 'rm -rf -- "$TEMP_ROOT"' EXIT
+mkdir -p "$STAGE" "$TEMP_ROOT/hf-cache"
 
 env -i \
   PATH=/usr/bin:/bin \
-  HF_HOME="$SLURM_TMPDIR/hf-cache" \
+  HF_HOME="$TEMP_ROOT/hf-cache" \
   PYTHONDONTWRITEBYTECODE=1 \
   DATASET="$DATASET" \
   REVISION="$REVISION" \
