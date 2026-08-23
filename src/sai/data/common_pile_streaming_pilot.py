@@ -23,6 +23,7 @@ from sai.data.confirmation_promotion import SCHEMA as PROMOTION_SCHEMA
 from sai.data.decontamination import RAW_SCHEMA
 from sai.data.decontamination import build as build_decontaminated
 from sai.data.frontier_source_audit_population import load_frontier_reservoir
+from sai.data.license_policy import classify_declared_license
 from sai.data.reservoir_audit_aggregate import load_population
 from sai.data.token_stream import canonical_sha256, sha256_file
 
@@ -198,7 +199,7 @@ def select_bottom_k(
         or sha256_file(compressed_path) != parent["sha256"]
     ):
         raise CommonPileStreamingPilotError("pilot parent identity differs")
-    heap: list[tuple[int, str, int, str, str, str | None]] = []
+    heap: list[tuple[int, str, int, str, str, str, str | None]] = []
     counters: Counter[str] = Counter()
     try:
         with gzip.open(compressed_path, "rt", encoding="utf-8") as handle:
@@ -227,6 +228,10 @@ def select_bottom_k(
                 if not license_name or len(license_name) > 256:
                     counters["invalid_license_rows"] += 1
                     continue
+                license_classification = classify_declared_license(license_name)
+                if license_classification["rights_hold"]:
+                    counters["rights_hold_rows"] += 1
+                    continue
                 key = _selection_key(parent, line_number, {**row, "text": text})
                 item = (
                     -int(key, 16),
@@ -234,6 +239,7 @@ def select_bottom_k(
                     line_number,
                     text_sha256,
                     license_name,
+                    license_classification["canonical_license"],
                     _native_id(row),
                 )
                 counters["eligible_rows"] += 1
@@ -251,9 +257,18 @@ def select_bottom_k(
             "line_number": line_number,
             "text_sha256": text_sha256,
             "declared_license": license_name,
+            "canonical_license": canonical_license,
             "native_id": native_id,
         }
-        for _, key, line_number, text_sha256, license_name, native_id in sorted(
+        for (
+            _,
+            key,
+            line_number,
+            text_sha256,
+            license_name,
+            canonical_license,
+            native_id,
+        ) in sorted(
             heap, key=lambda item: item[2]
         )
     ]
@@ -307,9 +322,10 @@ def write_raw_population(
                             "revision": parent["revision"],
                             "source_file": parent["path"],
                             "row_index": line_number - 1,
-                            "license": descriptor["declared_license"],
-                            "domain": parent["domain"],
-                        },
+                        "license": descriptor["canonical_license"],
+                        "declared_license": descriptor["declared_license"],
+                        "domain": parent["domain"],
+                    },
                     }
                     target.write(
                         json.dumps(raw, ensure_ascii=False, sort_keys=True) + "\n"

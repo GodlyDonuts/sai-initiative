@@ -76,4 +76,8 @@ def test_bottom_k_excludes_audits_and_replays_raw_rows(tmp_path: Path) -> None:
     assert receipt["rows"] == 4
     assert all(row["schema"] == RAW_SCHEMA for row in written)
     assert all(row["source"]["domain"] == "technical" for row in written)
-    assert all(row["source"]["license"] == "CC-BY-SA-4.0" for row in written)
+    assert all(
+        row["source"]["license"] == "CC-BY-SA-4.0"
+        and row["source"]["declared_license"] == "CC-BY-SA-4.0"
+        for row in written
+    )
