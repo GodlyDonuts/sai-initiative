@@ -9,17 +9,19 @@ from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
 from sai.data.benchmark_contamination_screen import SCHEMA as SCREEN_SCHEMA
+from sai.data.common_pile_rights_audit import SCHEMA as RIGHTS_SCHEMA
 from sai.data.cross_population_duplicates import SCHEMA as DUPLICATE_SCHEMA
 from sai.data.reservoir_audit_aggregate import SCHEMA as AGGREGATE_SCHEMA
 from sai.data.reservoir_audit_population import SCHEMA as POPULATION_SCHEMA
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-confirmation-source-promotion-v1"
+SCHEMA = "sai-confirmation-source-promotion-v2"
 METHOD = {
     "minimum_confirmation_rows_per_source": 32,
     "minimum_representation_verification_ppm": 500_000,
     "maximum_quarantine_rows": 0,
     "maximum_rights_hold_rows": 0,
+    "maximum_rights_declaration_hold_rows": 0,
     "maximum_benchmark_contaminated_rows": 0,
     "maximum_exact_or_normalized_duplicate_pairs": 0,
     "exact_identity_disjointness_required": True,
@@ -61,6 +63,7 @@ def _validate_inputs(
     aggregate: dict[str, Any],
     screen: dict[str, Any],
     duplicates: dict[str, Any],
+    rights: dict[str, Any],
 ) -> None:
     population_sha = population.get("receipt_sha256")
     descriptors = duplicates.get("populations")
@@ -91,6 +94,12 @@ def _validate_inputs(
         or duplicates.get("sample_exact_duplicate_audit_complete") is not True
         or duplicates.get("training_ready") is not False
         or len(confirmation_descriptors) != 1
+        or rights.get("schema") != RIGHTS_SCHEMA
+        or rights.get("status")
+        != "complete_declaration_audit_not_legal_clearance"
+        or rights.get("population", {}).get("receipt_sha256") != population_sha
+        or rights.get("legal_clearance_established") is not False
+        or rights.get("training_ready") is not False
     ):
         raise ConfirmationPromotionError("confirmation evidence binding differs")
 
@@ -100,10 +109,11 @@ def decide_sources(
     aggregate: dict[str, Any],
     screen: dict[str, Any],
     duplicates: dict[str, Any],
+    rights: dict[str, Any],
 ) -> list[dict[str, Any]]:
     """Return deterministic pilot decisions without granting corpus admission."""
 
-    _validate_inputs(population, aggregate, screen, duplicates)
+    _validate_inputs(population, aggregate, screen, duplicates, rights)
     summary = aggregate.get("summary")
     routes_by_source = (
         summary.get("by_source_conservative_triage")
@@ -111,12 +121,15 @@ def decide_sources(
         else None
     )
     contamination_by_source = screen.get("summary", {}).get("by_source")
+    rights_by_source = rights.get("summary", {}).get("by_source")
     by_source = population.get("by_source")
     if (
         not isinstance(routes_by_source, dict)
         or not routes_by_source
         or not isinstance(contamination_by_source, dict)
         or set(routes_by_source) != set(contamination_by_source)
+        or not isinstance(rights_by_source, dict)
+        or set(routes_by_source) != set(rights_by_source)
         or not isinstance(by_source, dict)
         or set(routes_by_source) != set(by_source)
     ):
@@ -130,6 +143,7 @@ def decide_sources(
     for source_id in sorted(routes_by_source):
         routes = routes_by_source[source_id]
         contamination = contamination_by_source[source_id]
+        rights_summary = rights_by_source[source_id]
         observed_rows = by_source[source_id]
         if (
             isinstance(observed_rows, bool)
@@ -139,6 +153,8 @@ def decide_sources(
             or sum(routes.values()) != observed_rows
             or not isinstance(contamination, dict)
             or contamination.get("rows") != observed_rows
+            or not isinstance(rights_summary, dict)
+            or rights_summary.get("rows") != observed_rows
         ):
             raise ConfirmationPromotionError("confirmation source row custody differs")
         representation_rows = routes.get("representation_verification", 0)
@@ -152,6 +168,10 @@ def decide_sources(
             <= METHOD["maximum_quarantine_rows"],
             "zero_rights_hold": routes.get("rights_hold", 0)
             <= METHOD["maximum_rights_hold_rows"],
+            "zero_rights_declaration_hold": rights_summary.get(
+                "rights_hold_rows"
+            )
+            <= METHOD["maximum_rights_declaration_hold_rows"],
             "zero_benchmark_contamination": contamination.get(
                 "contaminated_rows"
             )
@@ -172,6 +192,9 @@ def decide_sources(
                 "representation_verification_ppm": representation_ppm,
                 "quarantine_rows": routes.get("quarantine", 0),
                 "rights_hold_rows": routes.get("rights_hold", 0),
+                "rights_declaration_hold_rows": rights_summary.get(
+                    "rights_hold_rows"
+                ),
                 "benchmark_contaminated_rows": contamination.get(
                     "contaminated_rows"
                 ),
@@ -195,9 +218,10 @@ def build_decision(
     aggregate_path: Path,
     screen_path: Path,
     duplicate_path: Path,
+    rights_path: Path,
     output_path: Path,
 ) -> dict[str, Any]:
-    """Seal a source-pilot decision from four independently replayable inputs."""
+    """Seal a source-pilot decision from five independently replayable inputs."""
 
     if output_path.exists() or output_path.is_symlink():
         raise ConfirmationPromotionError("promotion output already exists")
@@ -209,6 +233,7 @@ def build_decision(
         "aggregate": (aggregate_path, _load_json(aggregate_path, "aggregate")),
         "screen": (screen_path, _load_json(screen_path, "screen")),
         "duplicates": (duplicate_path, _load_json(duplicate_path, "duplicates")),
+        "rights": (rights_path, _load_json(rights_path, "rights")),
     }
     decisions = decide_sources(*(payload for _, payload in inputs.values()))
     selected = sorted(
@@ -251,6 +276,7 @@ def main() -> int:
     parser.add_argument("--aggregate", type=Path, required=True)
     parser.add_argument("--screen", type=Path, required=True)
     parser.add_argument("--duplicates", type=Path, required=True)
+    parser.add_argument("--rights", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = build_decision(
@@ -258,6 +284,7 @@ def main() -> int:
         args.aggregate,
         args.screen,
         args.duplicates,
+        args.rights,
         args.output,
     )
     print(json.dumps(result, sort_keys=True))

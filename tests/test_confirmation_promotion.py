@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sai.data.benchmark_contamination_screen import SCHEMA as SCREEN_SCHEMA
+from sai.data.common_pile_rights_audit import SCHEMA as RIGHTS_SCHEMA
 from sai.data.confirmation_promotion import decide_sources
 from sai.data.cross_population_duplicates import SCHEMA as DUPLICATE_SCHEMA
 from sai.data.reservoir_audit_aggregate import SCHEMA as AGGREGATE_SCHEMA
@@ -13,7 +14,9 @@ def _signed(payload: dict) -> dict:
     return payload
 
 
-def _evidence(*, contaminated: int = 0, quarantine: int = 0):
+def _evidence(
+    *, contaminated: int = 0, quarantine: int = 0, rights_hold: int = 0
+):
     source = "common_pile_example"
     population = _signed(
         {
@@ -72,7 +75,21 @@ def _evidence(*, contaminated: int = 0, quarantine: int = 0):
             "training_ready": False,
         }
     )
-    return population, aggregate, screen, duplicates
+    rights = _signed(
+        {
+            "schema": RIGHTS_SCHEMA,
+            "status": "complete_declaration_audit_not_legal_clearance",
+            "population": {"receipt_sha256": population["receipt_sha256"]},
+            "summary": {
+                "by_source": {
+                    source: {"rows": 32, "rights_hold_rows": rights_hold}
+                }
+            },
+            "legal_clearance_established": False,
+            "training_ready": False,
+        }
+    )
+    return population, aggregate, screen, duplicates, rights
 
 
 def test_clean_confirmation_authorizes_only_a_bounded_pilot() -> None:
@@ -93,3 +110,9 @@ def test_quarantine_blocks_source_pilot() -> None:
     decision = decide_sources(*_evidence(quarantine=1))[0]
     assert decision["bounded_streaming_source_pilot_authorized"] is False
     assert "zero_quarantine" in decision["failed_checks"]
+
+
+def test_ambiguous_rights_declaration_blocks_source_pilot() -> None:
+    decision = decide_sources(*_evidence(rights_hold=1))[0]
+    assert decision["bounded_streaming_source_pilot_authorized"] is False
+    assert "zero_rights_declaration_hold" in decision["failed_checks"]
