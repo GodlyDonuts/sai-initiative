@@ -53,7 +53,7 @@ def _valid_sha256(value: Any) -> bool:
     )
 
 
-def _load_population(
+def load_population(
     population_root: Path,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     candidates_path = population_root / "candidates.jsonl"
@@ -171,6 +171,40 @@ def _nested_counts(
     }
 
 
+def _triage_route(judgment: dict[str, Any]) -> str:
+    risks = judgment["risks"]
+    if (
+        judgment["verdict"] == "reject"
+        or risks["personal_or_secret_data"]
+        or risks["incoherent_or_corrupted"]
+    ):
+        return "quarantine"
+    if risks["license_or_provenance_unclear"]:
+        return "rights_hold"
+    if (
+        risks["factual_unreliability"]
+        or risks["weak_source_grounding"]
+        or judgment["scores"]["source_reliability"] < 3
+    ):
+        return "factual_grounding_review"
+    if judgment["source_language"] != "english":
+        return "translation_review"
+    if (
+        risks["ocr_or_extraction_damage"]
+        or risks["seo_or_content_farm"]
+        or risks["duplicated_boilerplate"]
+        or judgment["scores"]["formatting_quality"] < 3
+    ):
+        return "cleanup_review"
+    if (
+        risks["translation_loss"]
+        or risks["cultural_flattening"]
+        or risks["generic_synthetic_style"]
+    ):
+        return "transformation_review"
+    return "representation_verification"
+
+
 def summarize(
     lineage: list[dict[str, Any]], receipts: list[dict[str, Any]]
 ) -> dict[str, Any]:
@@ -197,9 +231,11 @@ def summarize(
         "cross_domain_bridges": Counter(),
     }
     score_sums = Counter()
+    triage_routes = Counter()
+    source_triage: dict[str, Counter[str]] = defaultdict(Counter)
     bridge_rows = 0
     potential_translation_rows = 0
-    for judgment in judgments:
+    for source, judgment in zip(lineage, judgments, strict=True):
         for key in (
             "verdict",
             "curriculum_phase",
@@ -224,6 +260,9 @@ def summarize(
             key for key in RISK_KEYS if judgment["risks"][key]
         )
         score_sums.update(judgment["scores"])
+        route = _triage_route(judgment)
+        triage_routes[route] += 1
+        source_triage[source["source_id"]][route] += 1
         bridge_rows += bool(judgment["cross_domain_bridges"])
         potential_translation_rows += (
             judgment["verdict"] != "reject"
@@ -250,12 +289,18 @@ def summarize(
         "mean_scores_milli": {
             key: (score_sums[key] * 1000) // len(judgments) for key in SCORE_KEYS
         },
+        "conservative_triage_routes": dict(sorted(triage_routes.items())),
+        "by_source_conservative_triage": {
+            source: dict(sorted(routes.items()))
+            for source, routes in sorted(source_triage.items())
+        },
         "rows_with_cross_domain_bridges": bridge_rows,
         "potential_translation_rows": potential_translation_rows,
         "usage": dict(sorted(usage.items())),
         "attempt_outcomes": dict(sorted(attempt_outcomes.items())),
         "rows_requiring_repair": repaired_rows,
         "model_judgments_are_verified_admissions": False,
+        "representation_verification_is_training_admission": False,
     }
 
 
@@ -266,7 +311,7 @@ def build_aggregate(
 
     if output_path.exists() or output_path.is_symlink():
         raise ReservoirAuditAggregateError("aggregate output already exists")
-    candidates, lineage, population_receipt = _load_population(population_root)
+    candidates, lineage, population_receipt = load_population(population_root)
     receipts = []
     receipt_hashes = []
     for candidate in candidates:

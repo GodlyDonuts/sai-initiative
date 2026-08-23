@@ -13,6 +13,7 @@ def _receipt(
     language: str = "english",
     bridge: bool = False,
     score: int = 3,
+    enabled_risks: tuple[str, ...] = (),
 ) -> dict:
     return {
         "judgment": {
@@ -40,7 +41,10 @@ def _receipt(
             "prerequisite_burden": 1,
             "cross_domain_bridges": ["history::economics"] if bridge else [],
             "risks": {
-                key: key == "translation_loss" and language != "english"
+                key: (
+                    key in enabled_risks
+                    or (key == "translation_loss" and language != "english")
+                )
                 for key in RISK_KEYS
             },
             "scores": {key: score for key in SCORE_KEYS},
@@ -72,9 +76,46 @@ def test_aggregate_reports_model_evidence_without_promoting_it() -> None:
     assert result["mean_scores_milli"]["writing_quality"] == 2500
     assert result["usage"]["total_tokens"] == 240
     assert result["rows_requiring_repair"] == 2
+    assert result["conservative_triage_routes"] == {
+        "factual_grounding_review": 1,
+        "representation_verification": 1,
+    }
     assert result["model_judgments_are_verified_admissions"] is False
 
 
 def test_aggregate_rejects_missing_receipt() -> None:
     with pytest.raises(ReservoirAuditAggregateError, match="inputs"):
         summarize([{"source_id": "one", "stratum": "one"}], [])
+
+
+@pytest.mark.parametrize(
+    ("receipt", "route"),
+    [
+        (_receipt("reject"), "quarantine"),
+        (
+            _receipt("retain", enabled_risks=("personal_or_secret_data",)),
+            "quarantine",
+        ),
+        (
+            _receipt("retain", enabled_risks=("license_or_provenance_unclear",)),
+            "rights_hold",
+        ),
+        (
+            _receipt("retain", enabled_risks=("weak_source_grounding",)),
+            "factual_grounding_review",
+        ),
+        (_receipt("retain", language="french"), "translation_review"),
+        (
+            _receipt("retain", enabled_risks=("ocr_or_extraction_damage",)),
+            "cleanup_review",
+        ),
+        (
+            _receipt("retain", enabled_risks=("generic_synthetic_style",)),
+            "transformation_review",
+        ),
+        (_receipt("retain"), "representation_verification"),
+    ],
+)
+def test_conservative_triage_route_precedence(receipt: dict, route: str) -> None:
+    result = summarize([{"source_id": "one", "stratum": "one"}], [receipt])
+    assert result["conservative_triage_routes"] == {route: 1}

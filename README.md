@@ -271,6 +271,25 @@ local whole-file rehash. The population receipt is
 This is a coverage-first diagnostic, not a statistically weighted corpus
 acceptance estimate.
 
+The exact/near-duplicate replay compared all **8,128 unordered pairs** in this
+128-row audit population. It found zero byte-identical, normalized-token
+identical, five-word-shingle Jaccard, or five-word-shingle containment matches
+at the frozen conservative thresholds. The report's canonical receipt is
+`ecd131b92a708d0cf002004b62a4c69e86b208a96afa2fea2631ca54e511fc2d`
+and its file SHA-256 is
+`0cd6e93fa4008728a409de82de29fda9e5f9ce5960316c91981d6f62b523568c`.
+This establishes that the diagnostic excerpts are not obvious copies of one
+another; it does **not** establish that the 8 TiB reservoir is globally
+deduplicated.
+
+Compiler judgments also pass through deterministic conservative routing. A
+model verdict of `retain` is quarantined for personal/secret data, held for
+rights ambiguity, sent to factual-grounding review for weak reliability, sent
+to translation review for non-English material, and sent through cleanup and
+transformation review before representation verification. Even
+`representation_verification` is not training admission. This prevents a
+confident semantic reviewer from silently overriding objective data gates.
+
 Hermes routing depends on content type:
 
 - Preserve high-value English literature, rhetoric, letters, essays, and other
