@@ -527,7 +527,10 @@ apparent collision against the full normalized source text before dropping it.
 Outputs are deterministic across input order, temporary indexes are removed,
 and the duplicate manifest contains identities and byte locators rather than
 source text. This closes normalized exact duplicates only; scalable semantic
-near-duplicate filtering remains a separate unresolved gate.
+near-duplicate filtering remains a separate unresolved gate. Sai will not reuse
+keep-one at subdocument granularity: [August 2026 matched evidence](https://arxiv.org/abs/2608.03089)
+favors frequency- and length-aware retention, so that policy requires its own
+unchanged/keep-one/adaptive source-disjoint comparison before corpus promotion.
 
 NVIDIA's organic/translated Nemotron-CC v2.1, CC-Code v1, and Code v2
 repositories were investigated but are not counted: metadata is visible while

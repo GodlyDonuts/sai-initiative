@@ -1,6 +1,6 @@
 # Sai 2026 Data Research Synthesis
 
-Status: current primary-source research boundary as of 2026-08-22. This is a
+Status: current primary-source research boundary as of 2026-08-23. This is a
 prospective prior for Sai experiments, not a copied mixture and not training
 authorization.
 
@@ -68,6 +68,65 @@ actual model evidence decides whether the admitted source improves capability.
 Primary source:
 [DataComp-LM paper](https://arxiv.org/abs/2406.11794).
 
+### Frequency- and length-aware subdocument deduplication
+
+August 2026 work from Tencent's Hunyuan team separates duplicate detection from
+copy retention. It segments at natural boundaries, globally counts normalized
+exact subdocument groups, and assigns retention budgets from group frequency
+and span length. In its FineWeb-Edu experiment, matched keep-one retention
+scored `52.14` versus `52.90` for the full frequency/length-aware pipeline;
+their subdocument-only variant scored `52.92`. The code-containing-web setting
+improved all five reported benchmarks and moved the unweighted average from
+`37.98` to `41.40`. These results are specific to the reported 30B-A3B training
+setup, but they directly reject “keep one copy of every repeated paragraph” as
+a consequence-free default.
+
+Sai therefore separates three decisions:
+
+1. whole-document normalized exact copies may use deterministic keep-one;
+2. subdocument copies require global frequency, span length, and surrounding
+   document context before deletion;
+3. semantic near-duplicates remain a separately measured gate.
+
+The prospective subdocument comparison must include unchanged, keep-one, and
+frequency/length-aware controls under identical data and compute. It must also
+preserve code structure and prevent isolated deletions from fragmenting prose.
+
+Primary source:
+[“Scalable Frequency- and Length-Aware Subdocument Deduplication for Large Language Model Pretraining”](https://arxiv.org/abs/2608.03089).
+
+### Coherent source-grounded synthetic books
+
+July 2026 controlled work isolates document organization from content and token
+count. Its pipeline retrieves real source material, clusters related material,
+plans hierarchical tables of contents, and writes source-grounded sections into
+complete books. It produced 686,000 textbooks totaling 32B tokens across more
+than 15,000 disciplines. The full-book representation beat a content-matched
+split control by `+1.02` mean points and a retrieval-pool-matched rephrase
+control by `+1.17`; random concatenation also remained below coherent books.
+
+For Sai, synthetic volume is therefore not the objective. The admissible unit
+is a source-bound knowledge work with exact anchor identities, a coherent
+concept hierarchy, multiple useful representations, and explicit separation
+from generic rephrasing. Cross-domain books should connect independently
+grounded concepts rather than invite a generator to invent both premises and
+conclusions.
+
+Primary source:
+[“Beyond Rephrasing: Book-Level Organization Improves Synthetic Textbook Data for Mid-Training”](https://arxiv.org/abs/2607.28109).
+
+### Curriculum ordering evidence
+
+EACL 2026 reports more than 200 pretraining runs up to 100B tokens. Curriculum
+warmup reduced the steps needed to reach baseline by 18–45%, and returning to
+mixed sampling retained improvements up to 3.5%. Compression ratio, MTLD
+lexical diversity, and Flesch readability were the strongest tested surface
+signals. These are useful observable axes, not semantic-prerequisite oracles;
+Sai's concept graph and model-centric learnability measurements remain separate.
+
+Primary source:
+[“Beyond Random Sampling: Efficient Language Model Pretraining via Curriculum Learning”](https://aclanthology.org/2026.eacl-long.271/).
+
 ### Vocabulary curricula
 
 Recent small-scale work reports gains from progressively expanding token
@@ -125,16 +184,20 @@ The following factor isolation remains mandatory:
 
 ## Current Sai evidence gaps
 
-- The completed tokenizer tournament was trained and measured on an
-  English-labeled FineWeb-Edu population only.
-- FineMath rows remain candidates pending blinded human review and subsequent
-  deduplication, decontamination, provenance, and prerequisite mapping.
-- Stack-Edu Python rows remain metadata/content nominations pending exact
-  license approval, opt-out replay, secret scanning, global deduplication,
-  benchmark decontamination, and source-addition evidence.
-- No science or technical source currently has complete admission evidence.
-- The live 500M-token curriculum test has not reached its terminal held-out or
-  benchmark result.
+- The two pinned reservoirs reference 23,680,076,298,761 physical candidate
+  bytes, but physical repository bytes are neither unique text nor training
+  data.
+- Two exact payload probes cover nine immutable members: 13,359,494,149
+  physical bytes yielded 22,576,343,154 UTF-8 text bytes and 17,638,716,209
+  bytes inside the current mechanical size window. This bounded sample cannot
+  be extrapolated to the reservoir.
+- Six immutable audit populations contain 2,103 rows. The source-disjoint
+  Common Pile confirmation compiler is still completing; no source-wide
+  admission rate follows from those rows.
+- No bounded source pilot has yet completed all required rights, benchmark,
+  global deduplication, representation, and attribution gates.
+- Exact training-ready data remains zero bytes, and 4B training remains
+  unauthorized.
 
 Until these gaps close, the correct output is better evidence—not a larger
 training run.
