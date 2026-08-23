@@ -225,7 +225,7 @@ def test_compiler_recovers_pdf_default_ignorables_as_literal_source_bytes() -> N
     assert repaired["evidence_quotes"] == [
         "A historian compares irri\u00adgation\u200b records,"
     ]
-    assert repairs[0]["algorithm"].startswith("nfkc-casefold-pdf-controls")
+    assert "pdf-controls" in repairs[0]["algorithm"]
     assert (
         normalize_model_judgment(raw, candidate)["evidence_quotes"]
         == repaired["evidence_quotes"]

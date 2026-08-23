@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-import re
 import unicodedata
+from array import array
 from typing import Any
 
 from sai.data.agent_labeling import (
@@ -17,7 +17,10 @@ from sai.data.agent_labeling import (
 from sai.data.token_stream import canonical_sha256
 
 JUDGMENT_SCHEMA = "sai-data-compiler-judgment-v2"
-QUOTE_RECOVERY_ALGORITHM = "nfkc-casefold-pdf-controls-whitespace-unique-source-span-v1"
+QUOTE_RECOVERY_ALGORITHM = (
+    "nfkd-character-map-casefold-pdf-controls-whitespace-unique-source-span-v1"
+)
+_IGNORABLE_PDF_CONTROLS = frozenset("\u00ad\u200b\u2060\ufeff")
 PHASES = ("grounding", "breadth", "integration", "reasoning_depth", "reject")
 VERDICTS = ("retain", "review", "reject")
 EPISTEMIC_FUNCTIONS = (
@@ -226,18 +229,48 @@ class DataCompilerLabelingError(RuntimeError):
     """A compiler judgment differs from the frozen polymath contract."""
 
 
+def _quote_normal_form_with_spans(
+    value: str,
+) -> tuple[str, array[int], array[int]]:
+    """Build one compatibility form plus a codepoint map back to literal text."""
+
+    characters: list[str] = []
+    starts = array("I")
+    ends = array("I")
+    for raw_index, raw_character in enumerate(value):
+        # These default-ignorable controls are routinely inserted by PDF/OCR
+        # extraction. They do not become evidence: a recovered result still
+        # returns the unique literal span, including intervening controls.
+        if raw_character in _IGNORABLE_PDF_CONTROLS:
+            continue
+        expanded = unicodedata.normalize(
+            "NFKD", unicodedata.normalize("NFKD", raw_character).casefold()
+        )
+        for character in expanded:
+            if character.isspace():
+                if not characters:
+                    continue
+                if characters[-1] == " ":
+                    ends[-1] = raw_index + 1
+                else:
+                    characters.append(" ")
+                    starts.append(raw_index)
+                    ends.append(raw_index + 1)
+                continue
+            characters.append(character)
+            starts.append(raw_index)
+            ends.append(raw_index + 1)
+    if characters and characters[-1] == " ":
+        characters.pop()
+        starts.pop()
+        ends.pop()
+    return "".join(characters), starts, ends
+
+
 def _quote_normal_form(value: str) -> str:
     """Normalize compatibility, case, PDF controls, and whitespace for recovery."""
 
-    # These default-ignorable controls are routinely inserted by PDF/OCR text
-    # extraction. They do not become training evidence: recovery still returns
-    # the unique literal source span, including every original codepoint.
-    without_pdf_controls = value.translate(
-        {ord(character): None for character in "\u00ad\u200b\u2060\ufeff"}
-    )
-    return " ".join(
-        unicodedata.normalize("NFKC", without_pdf_controls).casefold().split()
-    )
+    return _quote_normal_form_with_spans(value)[0]
 
 
 def _recover_unique_source_span(document: str, quote: str) -> tuple[str, int, int]:
@@ -249,28 +282,15 @@ def _recover_unique_source_span(document: str, quote: str) -> tuple[str, int, in
     target = _quote_normal_form(quote)
     if not target:
         raise DataCompilerLabelingError("evidence quote normalization is empty")
-    target_tokens = target.split(" ")
-    raw_tokens = list(re.finditer(r"\S+", document))
-    normalized_tokens: list[tuple[str, int]] = []
-    for raw_index, match in enumerate(raw_tokens):
-        normalized_tokens.extend(
-            (token, raw_index)
-            for token in _quote_normal_form(match.group()).split(" ")
-            if token
-        )
+    normalized_document, starts, ends = _quote_normal_form_with_spans(document)
     matches: set[tuple[int, int]] = set()
-    width = len(target_tokens)
-    for offset in range(0, len(normalized_tokens) - width + 1):
-        if [
-            token for token, _raw_index in normalized_tokens[offset : offset + width]
-        ] != target_tokens:
-            continue
-        first_raw = normalized_tokens[offset][1]
-        last_raw = normalized_tokens[offset + width - 1][1]
-        start = raw_tokens[first_raw].start()
-        end = raw_tokens[last_raw].end()
+    offset = normalized_document.find(target)
+    while offset >= 0:
+        start = starts[offset]
+        end = ends[offset + len(target) - 1]
         if _quote_normal_form(document[start:end]) == target:
             matches.add((start, end))
+        offset = normalized_document.find(target, offset + 1)
     if not matches:
         raise DataCompilerLabelingError(
             "evidence quote normalization has no exact source span"
