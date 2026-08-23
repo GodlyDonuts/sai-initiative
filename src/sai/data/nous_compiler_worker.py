@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import fcntl
 import json
 import os
 import time
@@ -615,19 +616,23 @@ def main() -> int:
                 **kwargs,
             )
 
-    summary = run_shard(
-        args.candidates,
-        args.output_root,
-        model=args.model,
-        base_url=args.base_url,
-        api_key=api_key,
-        logical_shards=args.logical_shards,
-        shard_index=args.shard_index,
-        concurrency=args.concurrency,
-        timeout_seconds=args.timeout_seconds,
-        maximum_attempts=args.maximum_attempts,
-        execute_function=execute_function,
-    )
+    args.output_root.mkdir(parents=True, exist_ok=True)
+    lock_path = args.output_root / f".shard_{args.shard_index:05d}.lock"
+    with lock_path.open("a+b") as lock_handle:
+        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
+        summary = run_shard(
+            args.candidates,
+            args.output_root,
+            model=args.model,
+            base_url=args.base_url,
+            api_key=api_key,
+            logical_shards=args.logical_shards,
+            shard_index=args.shard_index,
+            concurrency=args.concurrency,
+            timeout_seconds=args.timeout_seconds,
+            maximum_attempts=args.maximum_attempts,
+            execute_function=execute_function,
+        )
     print(json.dumps(summary, sort_keys=True))
     return 0
 
