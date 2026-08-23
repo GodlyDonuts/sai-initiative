@@ -508,6 +508,20 @@ candidate bytes, receipts, and text-free decisions were force-downloaded and
 replayed from Hugging Face dataset commit
 [`6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d).
 
+The next PDR compiler stage is now executable but has not been launched. Once
+the complete 3,290-row compiler population seals, it will join the clean PDR
+texts to their exact content and rights lanes, retain only identities routed to
+representation verification, and freeze at most six compiler-requested
+derivative types per source. The generation contract requires one exact source
+citation for every representation, preserves CC BY-SA attribution and
+share-alike obligations, and treats prerequisite edges and cross-domain
+connections as unverified candidates. Generated text is emitted separately
+from source text, with source citations represented by hashes in the candidate
+corpus. It remains nontraining until post-generation benchmark screening,
+global deduplication, source-claim verification, and independent representation
+verification complete. No representation generation or model training is
+authorized by the code-only preparation.
+
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
 field; source-specific READMEs instead describe their collection policy and,

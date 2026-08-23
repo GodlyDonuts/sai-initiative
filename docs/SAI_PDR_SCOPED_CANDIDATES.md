@@ -75,3 +75,23 @@ Hugging Face dataset commit
 The remote candidate file, all 1,253 candidate signatures, all 1,253 text-free
 contamination decisions, both receipts, and the zero-contamination conclusion
 reproduced exactly.
+
+## Grounded representation stage
+
+The clean materialized population can now be converted into an exact
+compiler-bound representation workload after the complete bounded compiler
+population closes. The population builder joins each clean PDR identity to its
+content route, rights route, compiler receipt, and requested derivative types.
+It never treats a model route as an admission decision and skips rows for which
+the compiler requested preservation only.
+
+The Hermès generation contract emits one entry for every requested derivative
+type, literal source citations, optional prerequisite-edge claims, and
+cross-domain bridge candidates whose external side is explicitly unverified.
+The aggregate separates generated text from source text, replaces published
+source citations with hashes, and carries CC BY-SA attribution and share-alike
+requirements into every derived record. Generated candidates remain
+`training_ready=false` until post-generation contamination screening, global
+deduplication, factual/source-claim verification, bridge anchoring, and
+independent representation review complete. This is code-only preparation; no
+generation or model training has been launched by this stage.
