@@ -214,6 +214,20 @@ and canonical publication receipt is
 All rows remain `training_ready=false`; the decision streams are evidence about
 admission work, not a compiled training corpus.
 
+### Grounded cross-domain bridge verification
+
+Cross-domain metadata becomes useful training material only through paired
+source evidence. The development compiler binds each generated bridge to two
+source-disjoint anchors and requires four representations: conceptual
+explanation, worked transfer problem, counterexample, and analogy limits. An
+independent Hermès request then checks every claim against its assigned exact
+anchor, verifies the shared structure and transfer solution, and routes the
+candidate to retain, revise, or reject. The same-family verifier never confers
+final verification: its source-text-free outputs remain
+`bridge_verified=false` and `training_ready=false` until an independent model
+family, benchmark decontamination, global deduplication, and measured transfer
+ablations close.
+
 `sai.data.reservoir_audit_decision` converts a completed, hash-valid aggregate
 into a create-only source-work ledger. It never extrapolates a coverage screen
 into an acceptance rate and never grants bulk admission. Instead it routes each

@@ -276,6 +276,17 @@ strips literal source quotes from derived candidates, and preserves only their
 SHA-256 bindings. Even after generation closes, the aggregate remains
 `training_ready=false` pending independent claim and transfer verification.
 
+A second, dependency-staged Hermès pass now verifies all 512 synthesized bridges
+against both restored exact anchors. It must cover every generated claim with a
+byte-exact quote and separately judge the shared structure, substantive domain
+link, worked transfer solution, counterexample, and analogy limits. Retention
+requires every check to pass; otherwise the bridge enters an explicit revision
+or rejection lane. This verifier is a separate request but uses the same model
+family, so its aggregate truthfully records
+`independent_model_family_verification_complete=false`, strips the private
+anchor text, and still requires decontamination, global deduplication, and
+transfer ablation before any bridge can become training-ready.
+
 ### The eight-trillion data program
 
 Sai is now executing two related but deliberately separate programs:
