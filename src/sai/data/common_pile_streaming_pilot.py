@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
+from sai.data.bounded_near_duplicate_filter import build_filter as build_near_duplicate
 from sai.data.common_pile_audit_population import (
     _declared_license,
     _native_id,
@@ -422,6 +423,13 @@ def build_pilot(
             boundary_indexes=boundary_roots,
             workers=1,
         )
+        near_duplicate_path = output_root / "bounded_near_deduplicated_candidates.jsonl"
+        near_duplicate_receipt_path = output_root / "near_duplicate_receipt.json"
+        near_duplicate = build_near_duplicate(
+            admitted_path,
+            near_duplicate_path,
+            near_duplicate_receipt_path,
+        )
         payload = {
             "schema": SCHEMA,
             "status": "complete_nontraining_pilot",
@@ -456,10 +464,27 @@ def build_pilot(
                 "output_bytes": admitted_path.stat().st_size,
                 "output_sha256": sha256_file(admitted_path),
             },
+            "near_duplicate_filter": {
+                "receipt_path": near_duplicate_receipt_path.name,
+                "receipt_file_sha256": sha256_file(near_duplicate_receipt_path),
+                "receipt_sha256": near_duplicate["receipt_sha256"],
+                "input_documents": near_duplicate["input"]["documents"],
+                "output_documents": near_duplicate["output"]["documents"],
+                "documents_dropped": near_duplicate["evidence"][
+                    "documents_dropped"
+                ],
+                "duplicate_groups": near_duplicate["evidence"][
+                    "duplicate_groups"
+                ],
+                "output_path": near_duplicate_path.name,
+                "output_bytes": near_duplicate_path.stat().st_size,
+                "output_sha256": sha256_file(near_duplicate_path),
+            },
             "parent_removed_after_pilot": True,
             "maximum_simultaneous_parent_files": 1,
             "full_source_ingestion_authorized": False,
-            "near_duplicate_screen_complete": False,
+            "bounded_pilot_near_duplicate_filter_complete": True,
+            "global_cross_source_near_duplicate_filter_complete": False,
             "rights_verification_complete": False,
             "representation_verification_complete": False,
             "training_ready": False,

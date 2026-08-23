@@ -257,9 +257,13 @@ both audits, excludes every audit line and content hash, performs deterministic
 bottom-k selection in a text-free first pass, and replays only those exact rows
 in source order. The downloaded parent is held one at a time and removed after
 full compressed-byte verification. The pilot applies the active binary
-benchmark boundary and normalized exact deduplication before sealing its local
-outputs. It counts short and oversized documents instead of truncating them,
-and it remains `training_ready=false` until rights, near-duplicate, and
+benchmark boundary and normalized exact deduplication before an exhaustive
+bounded-pilot near-duplicate join. That join covers every surviving unordered
+pair with exact SHA-256 five-word-shingle identities, frozen
+Jaccard/containment thresholds, and deterministic canonical survivors. Its
+receipt explicitly leaves global cross-source near-duplicate filtering open.
+The pilot counts short and oversized documents instead of truncating them, and
+it remains `training_ready=false` until rights, global deduplication, and
 representation verification are independently complete.
 
 `sai.data.license_policy` is a separate exact-declaration boundary. The pinned

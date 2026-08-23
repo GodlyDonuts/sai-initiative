@@ -307,10 +307,15 @@ when available, downloads only that parent, verifies the full compressed hash,
 excludes every audit line and content identity, and chooses deterministic
 bottom-k rows in a text-free first pass. A second pass replays the exact rows,
 writes provenance-complete raw candidates, applies the corrected official
-benchmark boundary and exact normalized deduplication, seals receipts, and
-removes the downloaded parent. Documents outside 200 bytes to 128 KiB are
-counted rather than silently truncated. Pilot rows still remain non-training
-data until full rights, near-duplicate, and representation verification close.
+benchmark boundary and exact normalized deduplication, and then runs an
+exhaustive bounded near-duplicate join over every surviving pilot pair. The
+join uses exact SHA-256 identities of five-word shingles, the frozen reservoir
+Jaccard/containment thresholds, deterministic canonical survivors, and a
+source-safe receipt; it does not claim that cross-source global deduplication
+is complete. The pilot then seals receipts and removes the downloaded parent.
+Documents outside 200 bytes to 128 KiB are counted rather than silently
+truncated. Pilot rows still remain non-training data until full rights,
+cross-source deduplication, and representation verification close.
 
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
