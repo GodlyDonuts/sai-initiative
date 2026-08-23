@@ -158,6 +158,20 @@ card.
 ## Frontier audit mirror
 
 Dataset commit
+[`35efe5b49e62a44dbd430f2c238116acbc571e82`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/35efe5b49e62a44dbd430f2c238116acbc571e82)
+publishes text-free external-provenance metadata for every one of the 3,290
+bounded pilot survivors. Exact parent replay recovered 2,844 unique Pressbooks
+chapter/book URLs and 1,342 Public Domain Review article URLs plus source row,
+native ID, declared license, and bibliographic fields. The parents were
+size/hash verified and removed. Manifest SHA-256 values replayed as
+`253e433031600aae7a5b1155122d2f93afd276f8e61d8c61663a5b6b87dfef40`
+and
+`d4228cc643ae4797b294cc1b697ee8f97c61082d7f00cbf7469f7af57e8eb4d1`.
+The source cards warn about license laundering and inaccurate metadata, so
+this is internal metadata lineage—not external page verification, rights
+provenance, legal clearance, or training admission.
+
+Dataset commit
 [`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf)
 publishes the source-safe bounded-pilot compiler population receipt and its
 text-free 3,290-row lineage. The compiler input contains 1,948 Pressbooks and

@@ -406,6 +406,25 @@ replayed in Hugging Face dataset commit
 [`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf).
 The evidence-bearing candidate text remains local.
 
+The original compressed parents were then replayed once more to recover the
+source metadata that a language-model judgment cannot reconstruct. Every one
+of the 3,290 retained identities now has a text-free binding to its original
+parent row, native ID, declared license, bibliographic metadata, and source
+URLs. Pressbooks contributes 1,948 complete records and 2,844 unique chapter or
+book URLs; Public Domain Review contributes 1,342 complete records and 1,342
+unique article URLs. The exact metadata-manifest SHA-256 values are
+`253e433031600aae7a5b1155122d2f93afd276f8e61d8c61663a5b6b87dfef40`
+and
+`d4228cc643ae4797b294cc1b697ee8f97c61082d7f00cbf7469f7af57e8eb4d1`.
+Both compressed parents were size/hash verified and removed after replay.
+
+This closes internal metadata lineage, not external rights provenance. The
+pinned Common Pile source cards explicitly warn that inaccurate metadata or
+license laundering can mislabel documents. Live source-page and work-level
+rights verification therefore remains mandatory. The text-free manifests and
+receipts were uploaded and byte-replayed in Hugging Face dataset commit
+[`35efe5b49e62a44dbd430f2c238116acbc571e82`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/35efe5b49e62a44dbd430f2c238116acbc571e82).
+
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
 field; source-specific READMEs instead describe their collection policy and,
