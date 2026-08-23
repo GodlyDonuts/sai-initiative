@@ -259,6 +259,37 @@ source-safe receipts were downloaded back and replayed byte-for-byte from
 Hugging Face dataset commit
 [`756d941130a01fabb042178bf94a67b230a64e4c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/756d941130a01fabb042178bf94a67b230a64e4c).
 
+#### CC0 arXiv temporal screen
+
+Sai next expanded scientific reality anchors using the exact 2,504,679-row
+`common-pile/arxiv_abstracts_filtered` snapshot at revision
+`dc1ceab4755eb037ec61e49cf1350dab7ceee6e7`. The 1,128,382,223 compressed
+source bytes expand to 3,473,188,609 reported in-memory bytes. A 32-row
+source-disjoint confirmation had already retained 32/32 abstracts, routed
+29/32 to representation verification, found one quarantine row, and observed
+zero benchmark overlap. That result justified a broad screen, not bulk source
+admission.
+
+The active r2 screen partitions the complete ordered snapshot into **32 equal
+temporal strata**, chooses one deterministic SHA-256 window per stratum, and
+selects 32 source-disjoint rows from each window. All 32 official
+dataset-server responses returned the exact pinned revision. The resulting
+**1,024-row** population is disjoint from 36 earlier arXiv audit identities.
+The official-public benchmark boundary rejected one row for one eligible code
+shingle and zero word shingles, leaving **1,023 rows**. An exhaustive
+**522,753-pair** exact/high-confidence near-duplicate replay found zero pairs.
+
+Every sampled row carries the same exact CC0 declaration. The independent
+declaration audit recognized `CC0-1.0` on 1,024/1,024 rows with zero rights
+holds, attribution obligations, or share-alike obligations, while explicitly
+not claiming source-provenance or legal clearance. The source-safe publication
+receipt is
+`0014f665fbbd09c691d03c8964fd7841bd8932e8ff4947c25e9b0b98eaeecdca`.
+Source text and individual contamination decisions remain local. The 1,023
+survivors are staged for Hermès after the existing PEP compiler closes; neither
+the screen nor the 2.5-million-row parent is training-ready or authorized for
+bulk ingestion.
+
 The corrected reservoir rights inventory now binds **46 source lanes, 45 exact
 repository revisions, 42,600 files, and all 23,680,076,298,761 candidate
 bytes**. Five lanes have an exact manifest declaration with obligations, 31
@@ -1001,6 +1032,8 @@ have 3,290 benchmark-screened, near-deduplicated rows; the new UltraData Math
 L2/L3 screen has 148/160 benchmark-disjoint rows awaiting Hermes compilation;
 a complete PEP parent census has 567 benchmark-disjoint, near-deduplicated
 survivors dependency-staged for Hermès compilation;
+a 1,024-row CC0 arXiv temporal screen has 1,023 benchmark-disjoint survivors,
+zero near-duplicate pairs, and complete declaration coverage awaiting Hermès;
 a live source-page probe observed matching declarations for 1,719 pilot rows
 without establishing governing scope; and the reservoir as a whole is **not
 training-ready**.

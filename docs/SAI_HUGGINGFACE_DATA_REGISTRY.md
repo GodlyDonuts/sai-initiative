@@ -542,3 +542,46 @@ staged; quality, representation verification, curriculum placement, and
 training admission remain false. All three files were force-downloaded and
 replayed byte-for-byte from dataset commit
 [`756d941130a01fabb042178bf94a67b230a64e4c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/756d941130a01fabb042178bf94a67b230a64e4c).
+
+## CC0 arXiv abstracts temporal screen
+
+Release `20260825-r2` binds 1,024 source-disjoint rows from exact
+`common-pile/arxiv_abstracts_filtered` revision
+`dc1ceab4755eb037ec61e49cf1350dab7ceee6e7`. The population uses 32 equal
+temporal strata, one deterministic 64-row dataset-server window per stratum,
+and SHA-256 bottom-32 selection inside each window. Every response returned the
+pinned revision; the 32 response receipts have file SHA-256
+`4e6d7f489e7efefb6d568b279a87ad012d9be1f90282fdc6e372185d906503b8`.
+
+The active benchmark boundary rejected one row with one eligible code-shingle
+hit and no word-shingle hit. All 522,753 unordered pairs among the 1,023 clean
+rows were then compared exactly; no duplicate pair or group was found. The
+declaration audit recognized `CC0-1.0` for all 1,024 source rows with zero
+rights holds, attribution obligations, or share-alike obligations. It remains
+a declaration audit, not source-provenance verification or legal clearance.
+
+Canonical receipt SHA-256 values are:
+
+- source population:
+  `ee78511de966815be8c39bf2b65ecb2881d422ee3ce39c22f90479e85af2c046`;
+- clean population:
+  `bb29883925207811857083b1fb4d5b166afd2d8d48b10b35b27f4d98405d8671`;
+- duplicate report:
+  `db28854afb609d6014a3b86f4dee47124b1005c0500f96624672f8b29041c65f`;
+- rights declaration audit:
+  `e4fb89a22676e0438e29be905872e024e2725ee1341db809072dbc6abae6fda6`;
+- source-safe publication:
+  `0014f665fbbd09c691d03c8964fd7841bd8932e8ff4947c25e9b0b98eaeecdca`.
+
+The publication, source-population, batch-receipt, duplicate-report, and rights
+files have SHA-256 values
+`adbaaef3848eecef8a617408ee5761f913b5f58efa749ad94603c2a6fd48e9bb`,
+`67e96dfe668c4f02b02c90044699e67e05df7c1b7442d2ae81306091df5f1deb`,
+`4e6d7f489e7efefb6d568b279a87ad012d9be1f90282fdc6e372185d906503b8`,
+`9b51a09558ece7191bf6841fd0630f913abde7482d7816bf5f7c7d61b3d757db`,
+and
+`0c1a7a5d894cd47a120da78cdcce4cb90d1268b19b1c2a4b918eaf12fc22c3ec`.
+Those five source-safe files are eligible for publication; sampled text,
+individual contamination decisions, and machine-local paths are not. Hermès
+quality compilation, full-source ingestion, and training admission remain
+false.

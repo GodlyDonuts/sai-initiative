@@ -218,6 +218,12 @@ The following factor isolation remains mandatory:
   are dependency-staged for Hermes compilation. This is full coverage of one
   narrow source parent, not evidence of source-wide quality or training-ready
   bytes.
+- A broad source-disjoint screen now covers 1,024 exact CC0 arXiv abstracts
+  across 32 temporal strata. One benchmark-overlap row was rejected; an
+  exhaustive 522,753-pair near-duplicate replay found zero pairs among the
+  1,023 survivors; and all 1,024 declarations normalized to `CC0-1.0` with no
+  rights holds. Hermès compilation remains pending, so this screen does not
+  authorize all 2,504,679 source rows or create training-ready bytes.
 - Pressbooks and Public Domain Review completed bounded source pilots. Their
   3,353 raw rows yielded 3,301 benchmark-disjoint rows and 3,290
   within-source near-deduplicated rows; the full bounded cross-source replay
