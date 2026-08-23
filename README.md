@@ -254,7 +254,10 @@ and the source-safe publication envelope is
 `3eeb07c28d575542d87a670396452a155f0c97aaaeaa15f19d526f210568168e`.
 Source text, individual decontamination decisions, and machine-local paths
 remain unpublished. The 567 candidates remain non-training-ready until
-Hermès quality compilation and representation verification close.
+Hermès quality compilation and representation verification close. The three
+source-safe receipts were downloaded back and replayed byte-for-byte from
+Hugging Face dataset commit
+[`756d941130a01fabb042178bf94a67b230a64e4c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/756d941130a01fabb042178bf94a67b230a64e4c).
 
 The corrected reservoir rights inventory now binds **46 source lanes, 45 exact
 repository revisions, 42,600 files, and all 23,680,076,298,761 candidate

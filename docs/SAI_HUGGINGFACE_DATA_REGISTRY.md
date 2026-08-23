@@ -539,4 +539,6 @@ Raw PEP text, Hermès excerpts, text-free lineage containing local source
 locators, individual decontamination decisions, and nested receipts containing
 absolute local paths remain unpublished. Hermès compilation is dependency-
 staged; quality, representation verification, curriculum placement, and
-training admission remain false.
+training admission remain false. All three files were force-downloaded and
+replayed byte-for-byte from dataset commit
+[`756d941130a01fabb042178bf94a67b230a64e4c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/756d941130a01fabb042178bf94a67b230a64e4c).
