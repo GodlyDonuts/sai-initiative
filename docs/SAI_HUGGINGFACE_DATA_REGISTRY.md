@@ -483,3 +483,27 @@ unpublished.
 
 Credentials never enter the registry. The local `.env` is ignored by Git,
 mode-restricted, and used only by authenticated clients.
+
+## UltraData Math L2/L3 tier audit
+
+Dataset commit
+[`28227ed9ba5a22887c2a0bb3bee20502e0982253`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/28227ed9ba5a22887c2a0bb3bee20502e0982253)
+adds three source-safe files under
+`evidence/ultradata-math-tier-audit/20260825-r1/`. They bind a deterministic
+160-row population from exact `openbmb/UltraData-Math` revision
+`fe10db8efd35597fd7fcff8ff576b5ec4ea5ff87`, 20 official dataset-server
+responses, and the active benchmark-screen result. Twelve rows were rejected
+for exact benchmark-shingle overlap, leaving 148 rows for dependency-staged
+Hermes compilation.
+
+The publication receipt has canonical SHA-256
+`e9211d5a5936c624e3253c3ac2bd2bd8c3cac4c5f9dd2889596171e2bb2a25dc`
+and file SHA-256
+`407aec6659ecfb68a1824c833f774dc08f6a58a7fafbf2a2a71f816a3e6c1504`.
+The population and batch-receipt files replayed remotely as
+`bed980b96d35a608b08c7c3cfdb94ca1bf872f1ea81e2cdcb60c6d3ed17435a5`
+and
+`b8663c7da4f64fd1533e03f2274e3187efb18b76f84d5be672067ea440e46d96`.
+No sampled source text, benchmark text, individual contamination decisions,
+credentials, or absolute local paths were published. This evidence grants no
+quality, mixture, bulk-ingestion, curriculum, or training admission.

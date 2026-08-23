@@ -217,8 +217,10 @@ format. The benchmark-disjoint population contains **148 rows** under receipt
 Hermes compilation is dependency-staged behind the two already-running source
 populations, so these 121.7B published upstream tokens remain source candidates,
 not accepted or training-ready Sai tokens. Raw sampled text and individual
-contamination decisions remain local; only source-safe receipts may be
-published.
+contamination decisions remain local. The source-safe publication envelope,
+population receipt, and 20 batch-custody receipts were uploaded and replayed
+byte-for-byte in Hugging Face dataset commit
+[`28227ed9ba5a22887c2a0bb3bee20502e0982253`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/28227ed9ba5a22887c2a0bb3bee20502e0982253).
 
 The corrected reservoir rights inventory now binds **46 source lanes, 45 exact
 repository revisions, 42,600 files, and all 23,680,076,298,761 candidate
