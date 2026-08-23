@@ -48,21 +48,74 @@ def execute_one(
 ) -> dict[str, Any]:
     """Compile one source into a source-bound transformation plan."""
 
+    return execute_contract(
+        candidate,
+        model=model,
+        base_url=base_url,
+        api_key=api_key,
+        timeout_seconds=timeout_seconds,
+        maximum_attempts=maximum_attempts,
+        request_function=request_function,
+        sleep_function=sleep_function,
+        build_messages_function=build_messages,
+        normalize_function=normalize_model_judgment,
+        rubric_sha256=RUBRIC_SHA256,
+        receipt_schema=RECEIPT_SCHEMA,
+        maximum_completion_tokens=2400,
+    )
+
+
+def execute_contract(
+    candidate: dict[str, Any],
+    *,
+    model: str,
+    base_url: str,
+    api_key: str,
+    timeout_seconds: float,
+    maximum_attempts: int,
+    build_messages_function: Callable[[dict[str, Any]], list[dict[str, str]]],
+    normalize_function: Callable[[Any, dict[str, Any]], dict[str, Any]],
+    rubric_sha256: str,
+    receipt_schema: str,
+    maximum_completion_tokens: int,
+    reasoning_effort: str | None = None,
+    request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
+    sleep_function: Callable[[float], None] = time.sleep,
+) -> dict[str, Any]:
+    """Execute one strict compiler contract without weakening its schema."""
+
+    if (
+        isinstance(maximum_completion_tokens, bool)
+        or not 1 <= maximum_completion_tokens <= 16_384
+        or not isinstance(receipt_schema, str)
+        or not receipt_schema
+        or not isinstance(rubric_sha256, str)
+        or len(rubric_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in rubric_sha256)
+        or reasoning_effort not in {None, "none", "minimal", "low", "medium", "high"}
+    ):
+        raise NousLabelWorkerError("compiler contract identity or token bound differs")
     base_url = _validate_endpoint(base_url)
     body = {
         "model": model,
-        "messages": build_messages(candidate),
+        "messages": build_messages_function(candidate),
         "temperature": 0,
-        "max_tokens": 2400,
+        "max_tokens": maximum_completion_tokens,
         "stream": False,
     }
+    if reasoning_effort is not None:
+        body["reasoning"] = {"effort": reasoning_effort}
     request_sha256 = canonical_sha256(body)
+    base_messages = list(body["messages"])
     attempts = []
+    attempt_request_sha256s = []
     response = None
     raw_judgment = None
     judgment = None
     choice = None
     for attempt in range(1, maximum_attempts + 1):
+        attempt_request_sha256 = canonical_sha256(body)
+        attempt_request_sha256s.append(attempt_request_sha256)
         try:
             response, status = request_function(
                 base_url=base_url,
@@ -81,9 +134,14 @@ def execute_one(
             ):
                 raise NousLabelWorkerError("model response message differs")
             raw_judgment = _json_object(choice["message"].get("content"))
-            judgment = normalize_model_judgment(raw_judgment, candidate)
+            judgment = normalize_function(raw_judgment, candidate)
             attempts.append(
-                {"attempt": attempt, "http_status": status, "outcome": "valid"}
+                {
+                    "attempt": attempt,
+                    "http_status": status,
+                    "outcome": "valid",
+                    "request_sha256": attempt_request_sha256,
+                }
             )
             break
         except urllib.error.HTTPError as error:
@@ -92,6 +150,7 @@ def execute_one(
                     "attempt": attempt,
                     "http_status": error.code,
                     "outcome": "transient_http_error",
+                    "request_sha256": attempt_request_sha256,
                 }
             )
             if error.code not in RETRYABLE_STATUS or attempt == maximum_attempts:
@@ -104,22 +163,44 @@ def execute_one(
                     "attempt": attempt,
                     "http_status": None,
                     "outcome": "transient_transport_error",
+                    "request_sha256": attempt_request_sha256,
                 }
             )
             if attempt == maximum_attempts:
                 raise NousLabelWorkerError(
                     "Nous request exhausted transient retries"
                 ) from error
-        except (NousLabelWorkerError, RuntimeError):
+        except (NousLabelWorkerError, RuntimeError) as error:
             attempts.append(
                 {
                     "attempt": attempt,
                     "http_status": 200,
                     "outcome": "invalid_model_output",
+                    "request_sha256": attempt_request_sha256,
                 }
             )
             if attempt == maximum_attempts:
                 raise
+            prior_content = None
+            if isinstance(choice, dict) and isinstance(choice.get("message"), dict):
+                value = choice["message"].get("content")
+                if isinstance(value, str) and 0 < len(value) <= (1 << 20):
+                    prior_content = value
+            if prior_content is not None:
+                body["messages"] = [
+                    *base_messages,
+                    {"role": "assistant", "content": prior_content},
+                    {
+                        "role": "user",
+                        "content": (
+                            "Your JSON failed strict validation: "
+                            f"{str(error)[:256]}. Return a corrected complete JSON "
+                            "object with the exact same required keys. Do not defend "
+                            "the prior answer. Remove any claim or edge that cannot be "
+                            "supported by a byte-for-byte quote from book_excerpt."
+                        ),
+                    },
+                ]
         sleep_function(min(30.0, float(2 ** (attempt - 1))))
     if response is None or judgment is None or choice is None or raw_judgment is None:
         raise NousLabelWorkerError("Nous request produced no compiler response")
@@ -137,10 +218,10 @@ def execute_one(
         for field in ("prompt_tokens", "completion_tokens", "total_tokens")
     }
     receipt = {
-        "schema": RECEIPT_SCHEMA,
+        "schema": receipt_schema,
         "status": "complete",
         "candidate_identity_sha256": candidate["candidate_identity_sha256"],
-        "rubric_sha256": RUBRIC_SHA256,
+        "rubric_sha256": rubric_sha256,
         "endpoint_origin": base_url.rstrip("/"),
         "credential_transport": (
             "hermes_loopback_proxy"
@@ -149,6 +230,9 @@ def execute_one(
         ),
         "requested_model": model,
         "request_sha256": request_sha256,
+        "attempt_request_sha256s": attempt_request_sha256s,
+        "successful_request_sha256": attempt_request_sha256s[-1],
+        "request_reasoning_effort": reasoning_effort,
         "attempts": attempts,
         "response_identity": {
             "id": response.get("id") if isinstance(response.get("id"), str) else None,
@@ -198,6 +282,10 @@ def run_shard(
     timeout_seconds: float,
     maximum_attempts: int,
     execute_function: Callable[..., dict[str, Any]] = execute_one,
+    load_function: Callable[[Path], list[dict[str, Any]]] = _load_jsonl,
+    summary_schema: str = SUMMARY_SCHEMA,
+    rubric_sha256: str = RUBRIC_SHA256,
+    output_suffix: str = "compiler",
 ) -> dict[str, Any]:
     """Run one persistent compiler shard while isolating individual failures."""
 
@@ -209,11 +297,23 @@ def run_shard(
         or isinstance(concurrency, bool)
         or not 1 <= concurrency <= 64
         or not api_key
+        or not isinstance(summary_schema, str)
+        or not summary_schema
+        or not isinstance(output_suffix, str)
+        or not output_suffix
+        or len(output_suffix) > 64
+        or any(
+            character not in "abcdefghijklmnopqrstuvwxyz0123456789-"
+            for character in output_suffix
+        )
+        or not isinstance(rubric_sha256, str)
+        or len(rubric_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in rubric_sha256)
     ):
         raise NousLabelWorkerError("compiler worker geometry or credential differs")
     candidates = [
         row
-        for row in _load_jsonl(candidates_path)
+        for row in load_function(candidates_path)
         if _assigned(row["candidate_identity_sha256"], logical_shards, shard_index)
     ]
     base_url = _validate_endpoint(base_url)
@@ -221,7 +321,9 @@ def run_shard(
     pending = []
     skipped = 0
     for row in candidates:
-        target = output_root / f"{row['candidate_identity_sha256']}.compiler.json"
+        target = output_root / (
+            f"{row['candidate_identity_sha256']}.{output_suffix}.json"
+        )
         if target.exists():
             skipped += 1
         else:
@@ -277,10 +379,10 @@ def run_shard(
             f"first={json.dumps(failures[0], sort_keys=True)}"
         )
     summary = {
-        "schema": SUMMARY_SCHEMA,
+        "schema": summary_schema,
         "status": "complete",
         "model": model,
-        "rubric_sha256": RUBRIC_SHA256,
+        "rubric_sha256": rubric_sha256,
         "logical_shards": logical_shards,
         "shard_index": shard_index,
         "candidate_rows": len(candidates),

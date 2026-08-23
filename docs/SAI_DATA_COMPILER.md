@@ -184,3 +184,25 @@ no portal credential, enables no tools, and marks every output
 This is metadata compilation only. Translation, synthesis, procedural
 generation, verification, adaptive selection, and packing are separate compiler
 stages that must preserve this lineage.
+
+## Institutional Books lane
+
+The Harvard Library Institutional Books release is now a pinned, separate
+reality-anchor lane. Its exact source revisions, Early-Access terms, metadata
+join, book record, translation policy, and executable boundary are documented in
+[`SAI_INSTITUTIONAL_BOOKS_COMPILER.md`](SAI_INSTITUTIONAL_BOOKS_COMPILER.md).
+
+Book judgments do not use the generic scalar `difficulty`. They record
+linguistic, conceptual, and reasoning complexity independently and propose
+evidence-backed prerequisite edges. Archive-supplied identifiers, OCR scores,
+duplicate barcodes, and rights evidence remain outside model control.
+
+Non-English technical works route to faithful English representations. For
+literature, poetry, and drama, the compiler first seeks a reputable human English
+translation; otherwise it requires separately labeled literal and literary
+translations and preserves the original-language anchor.
+
+The initial spiral policy retains basic material in every phase at
+65%, 40%, 20%, 10%, and 10%, while expert exposure rises from 2% to 35%.
+Band admission is prerequisite-graph-based and never replaces the three
+complexity axes with a single score.

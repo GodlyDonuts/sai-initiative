@@ -61,6 +61,31 @@ derives grounded representations, protects form-bearing human expression,
 constructs verified cross-domain and procedural reasoning, and leaves final
 sampling to a coverage- and model-responsive curriculum controller.
 
+The first large book reservoir is now pinned in
+[`docs/SAI_INSTITUTIONAL_BOOKS_COMPILER.md`](docs/SAI_INSTITUTIONAL_BOOKS_COMPILER.md).
+Its 983,004 Harvard Library volumes are screened metadata-first rather than
+blindly downloaded. Sai separates archive facts from model inferences, measures
+linguistic/conceptual/reasoning complexity independently, builds cited
+prerequisite edges, and uses a spiral schedule that never stops rehearsing
+fundamentals. Valuable non-English technical works route to English; literature
+must use a reputable human translation or separately labeled literal and
+literary synthetic translations. Dataset terms and per-volume rights evidence
+remain independent admission gates.
+
+The first metadata-only book queue now contains 10,000 duplicate-safe volumes
+across 772 language×subject cells: 9,409 non-English and 591 English. This is a
+translation-discovery workload, not a fixed training ratio. Authenticated access
+has now replayed the first exact enriched-text shard and built a separate
+185-volume compiler pilot. The gated text remains local under the pinned IDI
+terms; it is not redistributed through GitHub or Hugging Face.
+
+The durable data catalog is
+[`Godlydonuts/Sai`](https://huggingface.co/datasets/Godlydonuts/Sai). It separates
+upstream source references, model judgments, verified representations,
+curriculum artifacts, and final training shards. The registry never treats a
+downloaded dataset as training-ready and records reference-only sources without
+copying bytes when their terms prohibit redistribution.
+
 Every training population must pass these gates in order:
 
 1. **Source truth:** reopen exact source bytes; reject corruption, spam,
