@@ -172,6 +172,30 @@ this is internal metadata lineage—not external page verification, rights
 provenance, legal clearance, or training admission.
 
 Dataset commit
+[`be6becc19c2e2e1bccfa12640b9f5ca4368da43c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/be6becc19c2e2e1bccfa12640b9f5ca4368da43c)
+publishes the text-free live rights-page probe for the bounded pilots. The
+probe covered all 3,290 retained records through 1,160 frozen targets: 901
+unique Pressbooks work pages, 258 Public Domain Review essay pages, and one
+official Public Domain Review reuse-policy page for 1,084
+collection/conjecture records. Public Domain Review returned 259 HTTP 200
+responses with matching CC BY-SA evidence, covering all 1,342 records.
+Pressbooks returned 193 HTTP 200 responses, of which 182 contained the expected
+declaration and covered 377 records; the other Pressbooks outcomes were 632
+HTTP 403, four HTTP 401, two HTTP 404, and 70 exhausted transport retries.
+Overall, 1,719 records had matching page evidence. No HTML was persisted and
+no response was truncated.
+
+The page probe is a bounded temporal observation, not a rights decision. It
+does not establish which page region a declaration governs, cure upstream
+license laundering, or convert a blocked response into permission. Its receipt
+therefore retains false values for rights-provenance verification, legal
+clearance, training readiness, and 4B authorization. Receipt SHA-256 is
+`2483d76d4c596541044cd45eda8c73ad0b6539c5e5767f6f3529865f8ee5b5de`;
+the `results.jsonl` SHA-256 is
+`5f85c155881a820153136bfb2c4c774cd9f16a468f6fb1a0be207893db1966e8`.
+Both remote files replayed byte-for-byte.
+
+Dataset commit
 [`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf)
 publishes the source-safe bounded-pilot compiler population receipt and its
 text-free 3,290-row lineage. The compiler input contains 1,948 Pressbooks and

@@ -425,6 +425,31 @@ rights verification therefore remains mandatory. The text-free manifests and
 receipts were uploaded and byte-replayed in Hugging Face dataset commit
 [`35efe5b49e62a44dbd430f2c238116acbc571e82`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/35efe5b49e62a44dbd430f2c238116acbc571e82).
 
+A bounded live page probe has now measured that next boundary without storing
+source HTML. It froze 901 unique Pressbooks work pages, 258 retained Public
+Domain Review essay pages, and the official Public Domain Review reuse-policy
+page that covers the 1,084 retained collection/conjecture records. Those 1,160
+targets cover every one of the 3,290 pilot records exactly. Public Domain
+Review returned HTTP 200 plus the expected CC BY-SA evidence on all 259
+targets, covering 1,342 records. Pressbooks returned 193 HTTP 200 responses;
+182 contained the expected declaration, covering 377 records. Its remaining
+targets produced 632 HTTP 403, four HTTP 401, two HTTP 404, and 70 exhausted
+transport retries. Across both sources, matching evidence was observed for
+1,719 records. No response was truncated and no source page body was written
+to disk.
+
+This is temporal page evidence, not legal clearance. In particular, a license
+string appearing on a page does not prove that it governs every retained text
+span, while a blocked page cannot be treated as negative rights evidence. The
+receipt therefore deliberately keeps `rights_provenance_verified=false`,
+`legal_clearance_established=false`, and `training_ready=false` for the full
+population. Receipt
+`2483d76d4c596541044cd45eda8c73ad0b6539c5e5767f6f3529865f8ee5b5de`
+and results SHA-256
+`5f85c155881a820153136bfb2c4c774cd9f16a468f6fb1a0be207893db1966e8`
+were uploaded and byte-replayed from Hugging Face dataset commit
+[`be6becc19c2e2e1bccfa12640b9f5ca4368da43c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/be6becc19c2e2e1bccfa12640b9f5ca4368da43c).
+
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
 field; source-specific READMEs instead describe their collection policy and,
@@ -826,8 +851,9 @@ To keep progress legible, Sai uses these states consistently:
 The current truthful status is: the 8 TiB reservoir is **referenced and
 hash-bound**; the 8T-token spiral is **prospective**; one production book and
 224 Common Pile confirmation rows are **judged**; two bounded source pilots
-have 3,290 benchmark-screened, near-deduplicated rows; and the reservoir as a
-whole is **not training-ready**.
+have 3,290 benchmark-screened, near-deduplicated rows; a live source-page probe
+observed matching declarations for 1,719 of them without establishing governing
+scope; and the reservoir as a whole is **not training-ready**.
 
 Every training population must pass these gates in order:
 

@@ -208,10 +208,14 @@ The following factor isolation remains mandatory:
 - Pressbooks and Public Domain Review completed bounded source pilots. Their
   3,353 raw rows yielded 3,301 benchmark-disjoint rows and 3,290
   within-source near-deduplicated rows; the full bounded cross-source replay
-  found zero additional groups. Attribution is exact, but external provenance,
-  rights verification, representation verification, and full-reservoir
-  deduplication remain open. Hermes compilation of the 3,290 survivors is in
-  progress.
+  found zero additional groups. Attribution and text-free external metadata
+  lineage are exact. A live, no-HTML-persistence probe covered all 3,290 rows
+  through 1,160 source/policy targets and observed expected declaration
+  evidence for 1,719 records. It also measured 632 Pressbooks HTTP 403
+  responses and 70 exhausted transport retries, so governing-scope
+  adjudication, rights verification, representation verification, and
+  full-reservoir deduplication remain open. Hermes compilation of the 3,290
+  survivors is in progress.
 - Exact training-ready data remains zero bytes, and 4B training remains
   unauthorized.
 
