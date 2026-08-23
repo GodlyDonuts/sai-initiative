@@ -152,14 +152,41 @@ def _pilot(tmp_path: Path) -> Path:
     return root
 
 
+def _rights(tmp_path: Path) -> Path:
+    path = tmp_path / "rights.json"
+    _seal(
+        path,
+        {
+            "schema": "sai-reservoir-rights-inventory-v2",
+            "source_rows": [
+                {
+                    "source_id": "source",
+                    "bytes": 1234,
+                    "rights_work_route": (
+                        "recognized_declaration_obligations_required"
+                    ),
+                }
+            ],
+            "summary": {"sources": 1, "physical_candidate_bytes": 1234},
+            "training_ready": False,
+        },
+    )
+    return path
+
+
 def test_ledger_separates_candidate_volume_from_ready_bytes(tmp_path: Path) -> None:
     output = tmp_path / "ledger.json"
     payload = build_ledger(
-        [_reservoir(tmp_path)], [_audit(tmp_path)], [_pilot(tmp_path)], output
+        [_reservoir(tmp_path)],
+        [_audit(tmp_path)],
+        [_pilot(tmp_path)],
+        output,
+        rights_inventory_path=_rights(tmp_path),
     )
     assert payload["reservoir_candidates"]["referenced_candidate_bytes_sum"] == 1234
     assert payload["audit_populations"]["population_rows_sum"] == 1
     assert payload["bounded_source_pilots"]["near_deduplicated_rows_sum"] == 1
+    assert payload["rights_routing"]["physical_candidate_bytes"] == 1234
     assert payload["training_ready"]["exact_bytes"] == 0
     assert payload["claims"]["raw_reservoir_bytes_are_not_training_ready_bytes"]
 
@@ -182,3 +209,23 @@ def test_ledger_rejects_tampered_nested_pilot_receipt(tmp_path: Path) -> None:
     nested.write_text(json.dumps(payload))
     with pytest.raises(DataYieldLedgerError, match="receipt hash differs"):
         build_ledger([reservoir], [], [pilot], tmp_path / "ledger.json")
+
+
+def test_ledger_rejects_rights_bytes_that_do_not_cover_reservoir(
+    tmp_path: Path,
+) -> None:
+    reservoir = _reservoir(tmp_path)
+    rights = _rights(tmp_path)
+    payload = json.loads(rights.read_text())
+    payload.pop("receipt_sha256")
+    payload["source_rows"][0]["bytes"] = 1233
+    payload["summary"]["physical_candidate_bytes"] = 1233
+    _seal(rights, payload)
+    with pytest.raises(DataYieldLedgerError, match="rights and reservoir bytes differ"):
+        build_ledger(
+            [reservoir],
+            [],
+            [],
+            tmp_path / "ledger.json",
+            rights_inventory_path=rights,
+        )

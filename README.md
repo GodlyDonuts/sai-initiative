@@ -164,17 +164,22 @@ Together, the two reservoirs reference **23,680,076,298,761 physical bytes
 (21.5369039313 TiB)** before cross-reservoir deduplication and quality
 compilation.
 
-Those bytes are now independently accounted under the source-safe conversion
-ledger receipt
-`b6a984a0552f2fc58352d5d66a79c4cdd8d771aff26f82a0f12e0fb0cf4bcea8`.
-The ledger hash-verifies both reservoir manifests and the 124-row discovery
-plus 224-row confirmation populations. Its current funnel is deliberately
-blunt: 21.5369 TiB referenced candidates, 348 acquired audit rows, zero
-completed source pilots, and **0 training-ready bytes**. It also records that
-cross-inventory overlap and exact text-payload yield remain unresolved, so the
-candidate-byte sum cannot be used as a training-data claim. The text-free
-receipt was uploaded and replayed byte-for-byte in Hugging Face commit
-[`22eb617b741bc21c38d154f36fe040e8652e7b2a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/22eb617b741bc21c38d154f36fe040e8652e7b2a).
+Those bytes are now independently accounted under source-safe conversion
+ledger v2 receipt
+`73c6ecaca197bae639cd2a66642d07af8a4fd4a26ce8ba8f3a6211a599ad244b`.
+The ledger hash-verifies both reservoir manifests, the 124-row discovery plus
+224-row confirmation populations, and corrected rights-inventory v2. Its
+current funnel is deliberately blunt: 21.5369 TiB referenced candidates, 348
+acquired audit rows, zero completed source pilots, and **0 training-ready
+bytes**. Of the candidate bytes, 7,899,196,133,417 require declared-license
+obligation handling, 5,027,859,142,584 require per-row license evidence, and
+10,753,021,022,760 require source-terms resolution. Cross-inventory overlap and
+exact text-payload yield remain unresolved, so the candidate-byte sum cannot
+be used as a training-data claim. The text-free receipt (file SHA-256
+`74562e87fe36480e98a3c47c785156da71435ed424a75b558dab03b97c7d193a`)
+was uploaded and replayed byte-for-byte in Hugging Face commit
+[`8c3baa4452d8bf06c2277e72f4dd79b5628e8d26`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8c3baa4452d8bf06c2277e72f4dd79b5628e8d26).
+Ledger v1 remains immutable historical evidence.
 
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
 | --- | --- | ---: | ---: | --- |

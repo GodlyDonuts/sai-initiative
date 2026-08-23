@@ -38,6 +38,19 @@ verification result, and an upstream quality label is not a Sai admission.
 ## Conversion-yield ledger
 
 Dataset commit
+[`8c3baa4452d8bf06c2277e72f4dd79b5628e8d26`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/8c3baa4452d8bf06c2277e72f4dd79b5628e8d26)
+adds the current rights-routed ledger v2 under receipt
+`73c6ecaca197bae639cd2a66642d07af8a4fd4a26ce8ba8f3a6211a599ad244b`.
+It binds the same 23,680,076,298,761 candidate bytes to corrected rights
+inventory v2 and routes 7,899,196,133,417 bytes to declared-license obligation
+handling, 5,027,859,142,584 bytes to per-row evidence, and
+10,753,021,022,760 bytes to source-terms resolution. The ledger still records
+zero completed pilots and zero training-ready bytes; it grants neither legal
+clearance nor training admission. The remote file SHA-256 replayed exactly as
+`74562e87fe36480e98a3c47c785156da71435ed424a75b558dab03b97c7d193a`.
+Ledger v1 below is retained as immutable historical evidence.
+
+Dataset commit
 [`22eb617b741bc21c38d154f36fe040e8652e7b2a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/22eb617b741bc21c38d154f36fe040e8652e7b2a)
 adds the first source-safe conversion-yield ledger under receipt
 `b6a984a0552f2fc58352d5d66a79c4cdd8d771aff26f82a0f12e0fb0cf4bcea8`.

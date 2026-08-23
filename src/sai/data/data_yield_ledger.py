@@ -10,7 +10,7 @@ from typing import Any
 from sai.data.agent_labeling import _atomic_create
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-data-conversion-yield-ledger-v1"
+SCHEMA = "sai-data-conversion-yield-ledger-v2"
 TARGET_TRAINING_READY_BYTES = 8 * 1024**4
 
 
@@ -217,11 +217,55 @@ def _pilot_row(root: Path) -> dict[str, Any]:
     }
 
 
+def _rights_inventory(path: Path) -> dict[str, Any]:
+    receipt = _load_receipt(path)
+    if receipt.get("schema") != "sai-reservoir-rights-inventory-v2":
+        raise DataYieldLedgerError("ledger rights inventory schema differs")
+    source_rows = receipt.get("source_rows")
+    if not isinstance(source_rows, list) or not source_rows:
+        raise DataYieldLedgerError("ledger rights inventory sources differ")
+    route_bytes: dict[str, int] = {}
+    source_ids = set()
+    for row in source_rows:
+        if (
+            not isinstance(row, dict)
+            or not isinstance(row.get("source_id"), str)
+            or row["source_id"] in source_ids
+            or not isinstance(row.get("bytes"), int)
+            or row["bytes"] <= 0
+            or not isinstance(row.get("rights_work_route"), str)
+        ):
+            raise DataYieldLedgerError("ledger rights source row differs")
+        source_ids.add(row["source_id"])
+        route = row["rights_work_route"]
+        route_bytes[route] = route_bytes.get(route, 0) + row["bytes"]
+    summary = receipt.get("summary")
+    if (
+        not isinstance(summary, dict)
+        or summary.get("sources") != len(source_rows)
+        or summary.get("physical_candidate_bytes") != sum(route_bytes.values())
+        or receipt.get("training_ready") is not False
+    ):
+        raise DataYieldLedgerError("ledger rights summary differs")
+    return {
+        "path": str(path.resolve()),
+        "receipt_sha256": receipt["receipt_sha256"],
+        "source_count": len(source_rows),
+        "physical_candidate_bytes": sum(route_bytes.values()),
+        "route_bytes": dict(sorted(route_bytes.items())),
+        "source_wide_rights_clearance_established": False,
+        "legal_clearance_established": False,
+        "training_ready": False,
+    }
+
+
 def build_ledger(
     reservoir_receipts: list[Path],
     audit_roots: list[Path],
     pilot_roots: list[Path],
     output_path: Path,
+    *,
+    rights_inventory_path: Path | None = None,
 ) -> dict[str, Any]:
     """Verify all inputs and seal conversion-stage byte/row accounting."""
 
@@ -232,10 +276,17 @@ def build_ledger(
         raise DataYieldLedgerError("ledger repeats a reservoir manifest")
     audits = [_audit_row(root) for root in audit_roots]
     pilots = [_pilot_row(root) for root in pilot_roots]
+    rights = (
+        _rights_inventory(rights_inventory_path)
+        if rights_inventory_path is not None
+        else None
+    )
     source_ids = [row["source_id"] for row in pilots]
     if len(source_ids) != len(set(source_ids)):
         raise DataYieldLedgerError("ledger repeats a pilot source")
     referenced_bytes = sum(row["referenced_candidate_bytes"] for row in reservoirs)
+    if rights is not None and rights["physical_candidate_bytes"] != referenced_bytes:
+        raise DataYieldLedgerError("ledger rights and reservoir bytes differ")
     training_ready_bytes = 0
     payload = {
         "schema": SCHEMA,
@@ -254,6 +305,7 @@ def build_ledger(
             "population_bytes_sum": sum(row["population_bytes"] for row in audits),
             "training_ready": False,
         },
+        "rights_routing": rights,
         "bounded_source_pilots": {
             "pilots": pilots,
             "source_count": len(pilots),
@@ -299,6 +351,7 @@ def main() -> int:
     )
     parser.add_argument("--audit-root", type=Path, action="append", default=[])
     parser.add_argument("--pilot-root", type=Path, action="append", default=[])
+    parser.add_argument("--rights-inventory", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = build_ledger(
@@ -306,6 +359,7 @@ def main() -> int:
         args.audit_root,
         args.pilot_root,
         args.output,
+        rights_inventory_path=args.rights_inventory,
     )
     print(json.dumps(result, sort_keys=True))
     return 0
