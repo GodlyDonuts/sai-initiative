@@ -196,6 +196,23 @@ the `results.jsonl` SHA-256 is
 Both remote files replayed byte-for-byte.
 
 Dataset commit
+[`e1a2f00a121cbfec417cabe657111e5cb6a2de30`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e1a2f00a121cbfec417cabe657111e5cb6a2de30)
+publishes the resulting 3,290-row text-free, fail-closed adjudication queue.
+Observed evidence routes 377 Pressbooks records to book/section scope review,
+258 PDR records to essay license/exception review, and 1,084 PDR records to
+policy-scope and embedded-material review. Unresolved Pressbooks outcomes route
+52 records with HTTP 200 but no expected canonical pattern to declaration
+review, 1,300 records behind HTTP 401/403 to source-owned-statement review, two
+records on HTTP 404 pages to moved/withdrawn-source review, and 217 records with
+exhausted transport outcomes to manual source-existence review. The queue did
+not bypass access controls and makes no automated legal decision. Receipt
+SHA-256 is
+`afc84f09628ca9153c626d1f527f715b23bb967a644a19ca3f719db5825fe7c3`;
+queue SHA-256 is
+`8273f615b97e13a7cd7815078acc4b60666a1874e2b32355eed507ab1e638335`.
+Both remote files replayed byte-for-byte.
+
+Dataset commit
 [`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf)
 publishes the source-safe bounded-pilot compiler population receipt and its
 text-free 3,290-row lineage. The compiler input contains 1,948 Pressbooks and

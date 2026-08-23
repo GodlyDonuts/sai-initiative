@@ -450,6 +450,20 @@ and results SHA-256
 were uploaded and byte-replayed from Hugging Face dataset commit
 [`be6becc19c2e2e1bccfa12640b9f5ca4368da43c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/be6becc19c2e2e1bccfa12640b9f5ca4368da43c).
 
+The probe has also been joined back to every exact identity as a fail-closed
+adjudication queue. It routes 377 records to Pressbooks book/section scope
+review, 258 to PDR essay license/exception review, and 1,084 to PDR policy and
+embedded-third-party-material review. The unresolved Pressbooks population is
+separated into 52 records whose HTTP 200 page lacked the expected canonical
+pattern, 1,300 behind HTTP 401/403, two on missing pages, and 217 attached to
+exhausted transport outcomes. Access controls were not bypassed and no route is
+an automated legal decision. Queue receipt
+`afc84f09628ca9153c626d1f527f715b23bb967a644a19ca3f719db5825fe7c3`
+and queue SHA-256
+`8273f615b97e13a7cd7815078acc4b60666a1874e2b32355eed507ab1e638335`
+were uploaded and byte-replayed from Hugging Face dataset commit
+[`e1a2f00a121cbfec417cabe657111e5cb6a2de30`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e1a2f00a121cbfec417cabe657111e5cb6a2de30).
+
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
 field; source-specific READMEs instead describe their collection policy and,

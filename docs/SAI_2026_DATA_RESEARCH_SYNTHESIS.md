@@ -212,10 +212,12 @@ The following factor isolation remains mandatory:
   lineage are exact. A live, no-HTML-persistence probe covered all 3,290 rows
   through 1,160 source/policy targets and observed expected declaration
   evidence for 1,719 records. It also measured 632 Pressbooks HTTP 403
-  responses and 70 exhausted transport retries, so governing-scope
-  adjudication, rights verification, representation verification, and
-  full-reservoir deduplication remain open. Hermes compilation of the 3,290
-  survivors is in progress.
+  responses and 70 exhausted transport retries. A text-free per-identity queue
+  now separates all seven observed/access/missing/transport adjudication paths
+  without making an automated legal decision. Governing-scope adjudication,
+  rights verification, representation verification, and full-reservoir
+  deduplication remain open. Hermes compilation of the 3,290 survivors is in
+  progress.
 - Exact training-ready data remains zero bytes, and 4B training remains
   unauthorized.
 
