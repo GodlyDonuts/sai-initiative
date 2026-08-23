@@ -135,6 +135,41 @@ def test_preserves_prose_code_math_and_structured_context() -> None:
         assert mechanical_quality_evidence(text)["decision"] == "pass_mechanical_gate"
 
 
+def test_routes_contextless_catalog_form_without_rejecting_real_questions() -> None:
+    catalog_form = """Type of book:
+Type of book
+Full title of book:
+Die Psalmen. Uebersetzt von Moses Mendelssohn
+Text is presented as a translation?
+Name of original text:
+Textual and cultural sources for the book
+Are there sources mentioned in the book itself?
+List of sources:"""
+    result = mechanical_quality_evidence(catalog_form)
+    assert result["decision"] == "context_review"
+    assert "contextless_metadata_form" in result["reasons"]
+    assert result["measurements"]["metadata_field_line_count"] == 7
+
+    questions = "\n".join(
+        f"What physical principle explains observation {index}?" for index in range(12)
+    )
+    assert mechanical_quality_evidence(questions)["decision"] == (
+        "pass_mechanical_gate"
+    )
+
+    bibliographic_essay = (
+        "Title: Geometry across cultures\n"
+        + (
+            "The essay explains how historians compare primary evidence, preserve "
+            "cultural context, and distinguish documented influence from analogy. "
+        )
+        * 8
+    )
+    assert mechanical_quality_evidence(bibliographic_essay)["decision"] == (
+        "pass_mechanical_gate"
+    )
+
+
 def test_build_replay_and_tamper_detection(tmp_path) -> None:
     good = (
         "This source provides a coherent explanation with definitions, evidence, "

@@ -58,6 +58,14 @@ POLICY = {
             "maximum_alpha_words": 8,
             "minimum_digit_symbol_ppm": 750_000,
         },
+        "contextless_metadata_form": {
+            "minimum_nonempty_lines": 6,
+            "maximum_utf8_bytes": 4_096,
+            "minimum_metadata_field_lines": 4,
+            "minimum_metadata_field_line_ppm": 400_000,
+            "maximum_median_line_characters": 80,
+            "maximum_line_alpha_words": 16,
+        },
     },
     "cleanup_review": {
         "duplicated_boilerplate": {
@@ -83,6 +91,13 @@ _REPEATED_ALPHANUMERIC = re.compile(r"([A-Za-z0-9])\1{63,}")
 _SCORE_MARKER = re.compile(r"(?m)^\s*\[\s*(?:\d{1,2}|[MAB]\d)\s*\]\s*$", re.IGNORECASE)
 _NUMBERED_OR_LETTERED_PART = re.compile(
     r"(?m)^\s*(?:\d{1,3}\s*[a-h]?|[a-h])(?:[.)\]:-]|\s|$)", re.IGNORECASE
+)
+_METADATA_FIELD_LINE = re.compile(
+    r"(?i)^\s*(?:(?:full\s+)?title|type(?:\s+of)?|name(?:\s+of)?|author|"
+    r"translator|translation\s+date|publication\s+date|original\s+language|"
+    r"language|isbn|edition|source(?:s)?|list\s+of|are\s+there|is\s+there|"
+    r"text\s+is\s+presented|rights(?:\s+status)?|license|genre|subject|"
+    r"keywords?)\b[^\n]{0,160}$"
 )
 
 
@@ -150,6 +165,19 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
     url_line_ppm = _ppm(url_lines, len(nonempty_lines))
     duplicate_character_ppm = _ppm(repeated_line_characters, total_line_characters)
     digit_symbol_ppm = _ppm(digit_symbol_count, codepoints)
+    metadata_field_line_count = sum(
+        bool(_METADATA_FIELD_LINE.fullmatch(line)) for line in nonempty_lines
+    )
+    metadata_field_line_ppm = _ppm(metadata_field_line_count, len(nonempty_lines))
+    line_character_counts = sorted(len(line) for line in nonempty_lines)
+    median_line_characters = (
+        line_character_counts[(len(line_character_counts) - 1) // 2]
+        if line_character_counts
+        else 0
+    )
+    maximum_line_alpha_words = max(
+        (len(_ALPHA_WORD.findall(line)) for line in nonempty_lines), default=0
+    )
 
     flags = {
         "contextless_mcq_answer_key": answer_key["contextless_answer_key"],
@@ -211,6 +239,32 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
                 "minimum_digit_symbol_ppm"
             ]
         ),
+        "contextless_metadata_form": bool(
+            len(nonempty_lines)
+            >= POLICY["context_review"]["contextless_metadata_form"][
+                "minimum_nonempty_lines"
+            ]
+            and utf8_bytes
+            <= POLICY["context_review"]["contextless_metadata_form"][
+                "maximum_utf8_bytes"
+            ]
+            and metadata_field_line_count
+            >= POLICY["context_review"]["contextless_metadata_form"][
+                "minimum_metadata_field_lines"
+            ]
+            and metadata_field_line_ppm
+            >= POLICY["context_review"]["contextless_metadata_form"][
+                "minimum_metadata_field_line_ppm"
+            ]
+            and median_line_characters
+            <= POLICY["context_review"]["contextless_metadata_form"][
+                "maximum_median_line_characters"
+            ]
+            and maximum_line_alpha_words
+            <= POLICY["context_review"]["contextless_metadata_form"][
+                "maximum_line_alpha_words"
+            ]
+        ),
         "duplicated_boilerplate": bool(
             len(nonempty_lines)
             >= POLICY["cleanup_review"]["duplicated_boilerplate"][
@@ -243,6 +297,7 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
             "url_only_link_index",
             "markup_only_fragment",
             "contextless_structured_fragment",
+            "contextless_metadata_form",
         )
         if flags[key]
     ]
@@ -276,6 +331,10 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
             "html_tag_count": tag_count,
             "visible_alpha_words": visible_words,
             "digit_symbol_ppm": digit_symbol_ppm,
+            "metadata_field_line_count": metadata_field_line_count,
+            "metadata_field_line_ppm": metadata_field_line_ppm,
+            "median_line_characters": median_line_characters,
+            "maximum_line_alpha_words": maximum_line_alpha_words,
             "maximum_repeated_line_count": maximum_repeated_line_count,
             "duplicate_line_character_ppm": duplicate_character_ppm,
         },
