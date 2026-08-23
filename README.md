@@ -522,6 +522,18 @@ global deduplication, source-claim verification, and independent representation
 verification complete. No representation generation or model training is
 authorized by the code-only preparation.
 
+A single high-throughput verification pass is also dependency-staged after the
+post-generation screen. It compares every generated representation with its
+exact source in a fresh request, requires literal evidence from both texts, and
+routes outputs into retain, revise, or reject lanes using strict entailment,
+factual-fidelity, uncertainty, cultural-specificity, prose-quality, and copying
+checks. Because the verifier uses the same model family as the generator, a
+retained row records `same_model_family_verification_complete=true` while
+keeping `independent_model_family_verification_complete=false`,
+`representation_verified=false`, and `training_ready=false`. This gives Sai a
+fast quality filter without mislabeling same-family agreement as independent
+truth.
+
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
 field; source-specific READMEs instead describe their collection policy and,

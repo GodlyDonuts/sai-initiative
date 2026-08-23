@@ -95,3 +95,14 @@ requirements into every derived record. Generated candidates remain
 deduplication, factual/source-claim verification, bridge anchoring, and
 independent representation review complete. This is code-only preparation; no
 generation or model training has been launched by this stage.
+
+The prepared verifier performs one separate source/generated comparison per
+benchmark-disjoint representation. It fails closed on weak entailment, factual
+drift, external embellishment, lost uncertainty, cultural flattening, generic
+model voice, misleading titles, and excessive copying. Retain requires perfect
+source-entailment and factual-fidelity scores plus conservative minimum quality
+scores and no defect flags. Revision records keep the generated text and a
+source-safe work brief; rejection records retain hashes and defect classes but
+not rejected text. The verifier is the same model family as the generator, so
+the aggregate explicitly leaves independent-model-family verification and final
+representation verification incomplete.

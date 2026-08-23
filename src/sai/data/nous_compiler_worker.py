@@ -109,7 +109,8 @@ def execute_contract(
         or len(rubric_sha256) != 64
         or any(character not in "0123456789abcdef" for character in rubric_sha256)
         or reasoning_effort not in {None, "none", "minimal", "low", "medium", "high"}
-        or evidence_container_name not in {"document", "book_excerpt"}
+        or evidence_container_name
+        not in {"document", "book_excerpt", "source_document"}
         or not isinstance(stream_transport, bool)
     ):
         raise NousLabelWorkerError("compiler contract identity or token bound differs")
