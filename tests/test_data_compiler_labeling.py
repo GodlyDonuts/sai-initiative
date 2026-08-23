@@ -427,6 +427,65 @@ def test_compiler_retry_explains_concept_label_geometry() -> None:
     assert "nested objects" in repair
 
 
+@pytest.mark.parametrize(
+    ("mutation", "expected"),
+    [
+        (
+            lambda raw: raw["risks"].pop("weak_source_grounding"),
+            "risks must be a JSON object with exactly these keys",
+        ),
+        (
+            lambda raw: raw["recommended_representations"].append("invented_lane"),
+            "recommended_representations must be a JSON list of 1..8",
+        ),
+    ],
+)
+def test_compiler_retry_explains_exact_object_and_enum_geometry(
+    mutation, expected
+) -> None:
+    candidate = _candidate()
+    calls = []
+
+    def request_function(**kwargs):
+        calls.append(kwargs["body"])
+        raw = _judgment(candidate)
+        if len(calls) == 1:
+            mutation(raw)
+        return {
+            "id": f"response-{len(calls)}",
+            "model": "stealth/ox-alpha",
+            "provider": "test",
+            "created": 1,
+            "choices": [
+                {
+                    "message": {"content": json.dumps(raw)},
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1, "total_tokens": 2},
+        }, 200
+
+    execute_one(
+        candidate,
+        model="stealth/ox-alpha",
+        base_url="https://inference-api.nousresearch.com/v1",
+        api_key="not-persisted",
+        timeout_seconds=1.0,
+        maximum_attempts=2,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+
+    repair = calls[1]["messages"][-1]["content"]
+    assert expected in repair
+    if "risks" in expected:
+        assert "weak_source_grounding" in repair
+        assert "license_or_provenance_unclear" in repair
+    else:
+        assert "original_english" in repair
+        assert "cross_domain_problems" in repair
+
+
 def test_compiler_receipt_records_hashed_deterministic_quote_repair() -> None:
     candidate = _candidate()
     raw = _judgment(candidate)

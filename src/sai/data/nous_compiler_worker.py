@@ -14,6 +14,8 @@ from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
 from sai.data.data_compiler_labeling import (
+    REPRESENTATIONS,
+    RISK_KEYS,
     RUBRIC_SHA256,
     build_messages,
     normalize_model_judgment,
@@ -218,6 +220,26 @@ def execute_contract(
                         "be at most 96 characters. Do not repeat a concept and do "
                         "not use title case, symbols as standalone entries, or "
                         "nested objects."
+                    )
+                elif (
+                    evidence_container_name == "document"
+                    and "risks fields differ" in str(error)
+                ):
+                    validation_hint = (
+                        " risks must be a JSON object with exactly these keys, "
+                        "each mapped to true or false: "
+                        + ", ".join(RISK_KEYS)
+                        + ". Do not omit, rename, or add any risk key."
+                    )
+                elif (
+                    evidence_container_name == "document"
+                    and "recommended representations differs" in str(error)
+                ):
+                    validation_hint = (
+                        " recommended_representations must be a JSON list of 1..8 "
+                        "unique strings chosen only from: "
+                        + ", ".join(REPRESENTATIONS)
+                        + ". Do not invent, repeat, or combine labels."
                     )
                 body["messages"] = [
                     *base_messages,
