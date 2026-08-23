@@ -78,5 +78,16 @@ This does not estimate full-reservoir or semantic duplication. Only lineage,
 population receipts, duplicate receipts, and the combined statistics were
 published; raw candidate text and evidence-bearing judgments remain local.
 
+Dataset commit
+[`bd7d7cd92bfe61d8b9b0dfda8790d11d0fa3cdef`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bd7d7cd92bfe61d8b9b0dfda8790d11d0fa3cdef)
+adds the completed 128-row original-reservoir aggregate under receipt
+`c0706f92535aded29c679fff5c35798a6380c01b58dc9bdf95ffd155f9a76359`.
+Commit
+[`e388950b30231779215b688b1defbfcbf785f3df`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e388950b30231779215b688b1defbfcbf785f3df)
+adds its deterministic source-work ledger under receipt
+`7cd1a6b040eaa00a40eb37f2578045780815931d6f712a43d5bd33848a4e250e`.
+The ledger is descriptive triage, not a source-yield estimate or training
+admission.
+
 Credentials never enter the registry. The local `.env` is ignored by Git,
 mode-restricted, and used only by authenticated clients.

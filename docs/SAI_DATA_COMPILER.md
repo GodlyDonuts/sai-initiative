@@ -194,6 +194,14 @@ This is metadata compilation only. Translation, synthesis, procedural
 generation, verification, adaptive selection, and packing are separate compiler
 stages that must preserve this lineage.
 
+`sai.data.reservoir_audit_decision` converts a completed, hash-valid aggregate
+into a create-only source-work ledger. It never extrapolates a coverage screen
+into an acceptance rate and never grants bulk admission. Instead it routes each
+source toward rights resolution, quarantine confirmation, cleanup, grounding,
+translation, transformation, or representation verification. Its first live
+ledger paused FinePDF bulk expansion and rights-blocked OpenWebMath while
+prioritizing targeted FineWeb-Edu verification.
+
 ## Institutional Books lane
 
 The Harvard Library Institutional Books release is now a pinned, separate

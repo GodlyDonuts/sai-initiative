@@ -211,6 +211,31 @@ re-downloaded byte-for-byte in Hugging Face dataset commit
 Raw candidates and evidence-bearing compiler judgments were deliberately not
 redistributed through that public commit.
 
+The first complete 128-row compiler screen materially changed the acquisition
+strategy. Although Hermes marked 98 rows `retain`, the independent conservative
+routing layer sent only 22 rows (17.2%) directly to representation verification;
+the other 106 still require quarantine, rights, cleanup, factual-grounding, or
+translation work. This is exactly why model preference is never an admission
+decision.
+
+| Original-reservoir source | Screen rows | Representation verification | Main measured obstacle | Current work decision |
+| --- | ---: | ---: | --- | --- |
+| FineWeb-Edu fill | 24 | 9 (37.5%) | 7 factual, 5 cleanup, 3 quarantine | Priority targeted verification |
+| Dolma 3 mix-150B | 24 | 8 (33.3%) | 8 quarantine, 5 cleanup, 3 factual | Targeted recovery and verification |
+| FineMath | 16 | 3 (18.8%) | 7 cleanup, 5 factual | Targeted recovery and verification |
+| FinePDFs | 40 | 2 (5.0%) | 21 quarantine, 9 translation, 6 cleanup | Bulk expansion paused |
+| SmolLM corpus | 16 | 0 | 9 factual, 5 cleanup, 2 quarantine | Targeted recovery and verification |
+| OpenWebMath | 8 | 0 | 7 rights holds, 1 quarantine | Rights-blocked pending resolution |
+
+These are exact descriptive results for a coverage-first screen, not estimated
+full-source acceptance rates. They are still decisive for resource allocation:
+Sai will not build its center of gravity around raw FinePDF volume, will not
+silently count unresolved OpenWebMath bytes, and will spend verification effort
+first where the screen found recoverable signal. The aggregate receipt is
+`c0706f92535aded29c679fff5c35798a6380c01b58dc9bdf95ffd155f9a76359`;
+the deterministic source-work ledger receipt is
+`7cd1a6b040eaa00a40eb37f2578045780815931d6f712a43d5bd33848a4e250e`.
+
 [PleIAs Common Corpus](https://huggingface.co/datasets/PleIAs/common_corpus)
 adds a distinct 2.27T-token, traceable open corpus rather than another opaque
 web mixture. Its rows expose collection, open-status, license, language,
