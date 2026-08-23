@@ -587,3 +587,43 @@ quality compilation, full-source ingestion, and training admission remain
 false. All five files were force-downloaded and replayed exactly from dataset
 commit
 [`5047dee73c4acbdc0f2f1abf044ff5049d4d59e9`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5047dee73c4acbdc0f2f1abf044ff5049d4d59e9).
+
+## CC0 arXiv abstracts complete text-free census
+
+Release `20260825-r1` streamed both exact pinned parents one at a time and
+replayed their SHA-256 identities before and after scanning. It covered
+2,504,679 rows, 1,128,382,223 compressed bytes, and 2,388,470,891 UTF-8 text
+bytes without retaining source text. The scanner distinguished physical gzip
+line coordinates from embedded upstream-provenance coordinates and replayed
+all 1,060 protected audit locators against all 1,060 expected full-text hashes.
+All source provenance values parsed and increased strictly; 1,654 missing
+upstream positions account for 1,062,885 rows whose embedded coordinate differs
+from their physical line.
+
+The mechanical funnel is exact:
+
+- 2,504,679 scanned rows;
+- 1,060 prior-audit rows excluded;
+- 45,463 rows below the 200-byte floor;
+- zero oversized rows and zero exact-content duplicate rows;
+- 2,458,156 mechanically eligible unique rows;
+- 2,380,856,330 mechanically eligible UTF-8 text bytes.
+
+Canonical receipt SHA-256 values are:
+
+- full census:
+  `507561b16269da59bfe5f85ab9ae64e4f9b8b88d815078812d06f843e0cf2708`;
+- source-safe publication:
+  `00cc4bcd19ec550adef2f323e57b81746db7d52c07a6555fdeda16d86bfa52a3`;
+- portable conversion-yield ledger r7:
+  `b638e13a2e7cc74118071f14e29e6dbe0f0a0234f3d150644dc281a2dfe04c47`.
+
+The corresponding file SHA-256 values are
+`9dabab688f69ad4c6a9b6639e6c41ce3495f30c8fd7bcd5028a7bdbc75e5f086`,
+`cf7706c396c9fd5f7112c419d52e78285755cb1ca209c22506c2ad76b2c7f16d`,
+and
+`9fb929317de7de7aecdee12b97b91150e99ffe3876ca92c49bd32655a68089bc`.
+Only these three text-free receipts are eligible for publication. The raw
+parents, individual rows, and audit text remain unpublished. Benchmark
+screening, source-wide near-duplicate filtering, Hermès quality compilation,
+curriculum placement, bulk ingestion, and training admission remain false.

@@ -165,25 +165,27 @@ Together, the two reservoirs reference **23,680,076,298,761 physical bytes
 compilation.
 
 Those bytes are now independently accounted under source-safe conversion
-ledger release r6 receipt
-`1970d1ecdb70ccc6f554ee9927df49eb2b42d15ed3a516bc955862748a545fb6`.
+ledger release r7 receipt
+`b638e13a2e7cc74118071f14e29e6dbe0f0a0234f3d150644dc281a2dfe04c47`.
 The ledger hash-verifies both reservoir manifests, all six immutable audit
 populations containing 2,103 rows, corrected rights-inventory v2, and both exact
-bounded text-payload probes. Duplicate audit or probe receipts are rejected. Its
-current funnel is deliberately blunt: 21.5369 TiB referenced candidates, 2,103
-acquired audit rows, 17,638,716,209 mechanically useful bytes measured in nine
-bounded members, two completed source pilots containing 3,290 bounded
-near-deduplicated rows, and **0 training-ready bytes**.
+bounded text-payload probes. It also binds the first complete source census:
+2,504,679 pinned arXiv abstracts with 2,458,156 mechanically eligible rows and
+2,380,856,330 mechanically eligible text bytes. Duplicate audit, probe, or
+full-census receipts are rejected. Its current funnel is deliberately blunt:
+21.5369 TiB referenced candidates, 2,103 acquired audit rows, 17,638,716,209
+mechanically useful bytes measured in nine bounded members, two completed
+source pilots containing 3,290 bounded near-deduplicated rows, one complete
+source census, and **0 training-ready bytes**.
 The bounded measurement is not extrapolated to the reservoir. Of the candidate bytes,
 7,899,196,133,417 require declared-license
 obligation handling, 5,027,859,142,584 require per-row license evidence, and
 10,753,021,022,760 require source-terms resolution. Cross-inventory overlap and
 full-reservoir text-payload yield remains unresolved, so the candidate-byte sum cannot
-be used as a training-data claim. The text-free r6 receipt (file SHA-256
-`36b2dcc3542b9a282eb4836fcf1d64883d3c75624c33ab25464998bca007cb86`)
-was uploaded and replayed byte-for-byte in Hugging Face commit
-[`f5ec9e07e987f008c52a29b31922c2e361c8472a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f5ec9e07e987f008c52a29b31922c2e361c8472a).
-Earlier ledger releases remain immutable historical evidence.
+be used as a training-data claim. The path-portable text-free r7 receipt has file
+SHA-256
+`9fb929317de7de7aecdee12b97b91150e99ffe3876ca92c49bd32655a68089bc`;
+earlier ledger releases remain immutable historical evidence.
 
 | Candidate slice | Exact revision | Files | Physical bytes | Intended comparison |
 | --- | --- | ---: | ---: | --- |
@@ -291,6 +293,24 @@ the screen nor the 2.5-million-row parent is training-ready or authorized for
 bulk ingestion. All five source-safe evidence files were downloaded back and
 replayed byte-for-byte from Hugging Face dataset commit
 [`5047dee73c4acbdc0f2f1abf044ff5049d4d59e9`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5047dee73c4acbdc0f2f1abf044ff5049d4d59e9).
+
+The complete text-free parent census then streamed both exact gzip parents,
+verified all 2,504,679 rows and 1,128,382,223 compressed bytes, and removed each
+parent before acquiring the next. It replayed all **1,060/1,060** protected
+locator and full-text identities across the earlier audit populations. The
+embedded provenance is valid and strictly monotonic for every row; parent 0
+contains 1,654 upstream source-position gaps, explaining why physical gzip
+lines and embedded provenance differ for 1,062,885 rows without constituting
+lineage failures.
+
+After excluding the protected audit rows and 45,463 mechanically short rows,
+the census measured **2,458,156 unique eligible rows and 2,380,856,330 eligible
+UTF-8 text bytes**. This is a complete mechanical ceiling, not a quality,
+benchmark-disjoint, near-deduplicated, curriculum-ready, or training-ready
+population. The census receipt is
+`507561b16269da59bfe5f85ab9ae64e4f9b8b88d815078812d06f843e0cf2708`
+and its source-safe publication envelope is
+`00cc4bcd19ec550adef2f323e57b81746db7d52c07a6555fdeda16d86bfa52a3`.
 
 The corrected reservoir rights inventory now binds **46 source lanes, 45 exact
 repository revisions, 42,600 files, and all 23,680,076,298,761 candidate
@@ -1036,6 +1056,9 @@ a complete PEP parent census has 567 benchmark-disjoint, near-deduplicated
 survivors dependency-staged for Hermès compilation;
 a 1,024-row CC0 arXiv temporal screen has 1,023 benchmark-disjoint survivors,
 zero near-duplicate pairs, and complete declaration coverage awaiting Hermès;
+the complete arXiv parent census measures 2,458,156 mechanically eligible
+unique rows and 2,380,856,330 text bytes while leaving every downstream
+quality, contamination, deduplication, and training gate open;
 a live source-page probe observed matching declarations for 1,719 pilot rows
 without establishing governing scope; and the reservoir as a whole is **not
 training-ready**.

@@ -224,6 +224,12 @@ The following factor isolation remains mandatory:
   1,023 survivors; and all 1,024 declarations normalized to `CC0-1.0` with no
   rights holds. Hermès compilation remains pending, so this screen does not
   authorize all 2,504,679 source rows or create training-ready bytes.
+- A subsequent text-free census now covers all 2,504,679 exact arXiv rows and
+  both pinned parents. It replays 1,060 protected locator/full-text identities,
+  excludes 45,463 short rows, and measures 2,458,156 mechanically eligible
+  unique rows containing 2,380,856,330 UTF-8 text bytes. This is an exact
+  source-wide mechanical ceiling, not a benchmark, quality, deduplication,
+  curriculum, or training admission.
 - Pressbooks and Public Domain Review completed bounded source pilots. Their
   3,353 raw rows yielded 3,301 benchmark-disjoint rows and 3,290
   within-source near-deduplicated rows; the full bounded cross-source replay

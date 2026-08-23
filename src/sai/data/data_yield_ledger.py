@@ -8,10 +8,26 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
+from sai.data.arxiv_abstracts_audit_population import (
+    REPOSITORY as ARXIV_REPOSITORY,
+)
+from sai.data.arxiv_abstracts_audit_population import (
+    REVISION as ARXIV_REVISION,
+)
+from sai.data.arxiv_abstracts_audit_population import (
+    SOURCE_ID as ARXIV_SOURCE_ID,
+)
+from sai.data.arxiv_abstracts_audit_population import (
+    SOURCE_ORIGINAL_BYTES as ARXIV_SOURCE_ORIGINAL_BYTES,
+)
+from sai.data.arxiv_abstracts_audit_population import (
+    SOURCE_ROWS as ARXIV_SOURCE_ROWS,
+)
+from sai.data.arxiv_abstracts_full_census import SCHEMA as ARXIV_CENSUS_SCHEMA
 from sai.data.common_pile_streaming_pilot import SCHEMA as COMMON_PILE_PILOT_SCHEMA
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-data-conversion-yield-ledger-v3"
+SCHEMA = "sai-data-conversion-yield-ledger-v4"
 TARGET_TRAINING_READY_BYTES = 8 * 1024**4
 
 
@@ -90,7 +106,7 @@ def _reservoir_row(path: Path) -> dict[str, Any]:
     if receipt.get("training_ready") is not False:
         raise DataYieldLedgerError("reservoir receipt makes an unsupported ready claim")
     return {
-        "path": str(path.resolve()),
+        "path": f"{path.parent.name}/{path.name}",
         "schema": schema,
         "receipt_sha256": receipt["receipt_sha256"],
         "manifest_sha256": manifest["sha256"],
@@ -127,7 +143,7 @@ def _audit_row(root: Path) -> dict[str, Any]:
     if receipt.get("training_ready") is not False:
         raise DataYieldLedgerError("audit receipt makes an unsupported ready claim")
     return {
-        "root": str(root.resolve()),
+        "root": root.name,
         "receipt_sha256": receipt["receipt_sha256"],
         "population_rows": population.get("rows"),
         "population_bytes": population.get("bytes"),
@@ -197,7 +213,7 @@ def _pilot_row(root: Path) -> dict[str, Any]:
     ):
         raise DataYieldLedgerError("pilot nested output coverage differs")
     return {
-        "root": str(root.resolve()),
+        "root": root.name,
         "source_id": receipt.get("source_id"),
         "receipt_sha256": receipt["receipt_sha256"],
         "raw_rows": raw.get("rows"),
@@ -254,7 +270,7 @@ def _rights_inventory(path: Path) -> dict[str, Any]:
     ):
         raise DataYieldLedgerError("ledger rights summary differs")
     return {
-        "path": str(path.resolve()),
+        "path": f"{path.parent.name}/{path.name}",
         "receipt_sha256": receipt["receipt_sha256"],
         "source_count": len(source_rows),
         "physical_candidate_bytes": sum(route_bytes.values()),
@@ -334,7 +350,7 @@ def _text_payload_probe(path: Path) -> dict[str, Any]:
     ):
         raise DataYieldLedgerError("ledger text payload summary differs")
     return {
-        "path": str(path.resolve()),
+        "path": f"{path.parent.name}/{path.name}",
         "receipt_sha256": receipt["receipt_sha256"],
         "plan_receipt_sha256": plan["receipt_sha256"],
         "selected_members": len(measurements),
@@ -350,6 +366,65 @@ def _text_payload_probe(path: Path) -> dict[str, Any]:
     }
 
 
+def _full_source_census(path: Path) -> dict[str, Any]:
+    receipt = _load_receipt(path)
+    snapshot = receipt.get("source_snapshot")
+    totals = receipt.get("totals")
+    if (
+        receipt.get("schema") != ARXIV_CENSUS_SCHEMA
+        or receipt.get("status") != "complete_text_free_full_parent_census"
+        or receipt.get("source_id") != ARXIV_SOURCE_ID
+        or not isinstance(snapshot, dict)
+        or snapshot.get("repository") != ARXIV_REPOSITORY
+        or snapshot.get("revision") != ARXIV_REVISION
+        or snapshot.get("compressed_bytes") != ARXIV_SOURCE_ORIGINAL_BYTES
+        or snapshot.get("rows") != ARXIV_SOURCE_ROWS
+        or not isinstance(totals, dict)
+        or totals.get("scanned_rows") != ARXIV_SOURCE_ROWS
+        or totals.get("provenance_valid_rows") != ARXIV_SOURCE_ROWS
+        or totals.get("invalid_provenance_rows") != 0
+        or totals.get("non_monotonic_provenance_rows") != 0
+        or not isinstance(totals.get("text_bytes"), int)
+        or totals["text_bytes"] <= 0
+        or not isinstance(totals.get("mechanically_eligible_unique_rows"), int)
+        or totals["mechanically_eligible_unique_rows"] <= 0
+        or not isinstance(totals.get("mechanically_eligible_unique_text_bytes"), int)
+        or not 0
+        < totals["mechanically_eligible_unique_text_bytes"]
+        <= totals["text_bytes"]
+        or totals.get("audit_position_excluded_identities")
+        != receipt.get("audit_excluded_positions")
+        or receipt.get("complete_parent_census") is not True
+        or receipt.get("parents_removed_after_census") is not True
+        or receipt.get("source_text_persisted") is not False
+        or receipt.get("benchmark_contamination_screen_complete") is not False
+        or receipt.get("near_duplicate_filter_complete") is not False
+        or receipt.get("hermes_judgments_complete") is not False
+        or receipt.get("quality_compilation_complete") is not False
+        or receipt.get("full_source_ingestion_authorized") is not False
+        or receipt.get("training_ready") is not False
+    ):
+        raise DataYieldLedgerError("ledger full source census differs")
+    return {
+        "path": path.name,
+        "source_id": ARXIV_SOURCE_ID,
+        "receipt_sha256": receipt["receipt_sha256"],
+        "source_rows": ARXIV_SOURCE_ROWS,
+        "compressed_parent_bytes": ARXIV_SOURCE_ORIGINAL_BYTES,
+        "text_utf8_bytes": totals["text_bytes"],
+        "mechanically_eligible_unique_rows": totals[
+            "mechanically_eligible_unique_rows"
+        ],
+        "mechanically_eligible_unique_text_bytes": totals[
+            "mechanically_eligible_unique_text_bytes"
+        ],
+        "benchmark_contamination_screen_complete": False,
+        "near_duplicate_filter_complete": False,
+        "hermes_judgments_complete": False,
+        "training_ready": False,
+    }
+
+
 def build_ledger(
     reservoir_receipts: list[Path],
     audit_roots: list[Path],
@@ -358,6 +433,7 @@ def build_ledger(
     *,
     rights_inventory_path: Path | None = None,
     text_payload_probe_paths: list[Path] | None = None,
+    full_source_census_paths: list[Path] | None = None,
 ) -> dict[str, Any]:
     """Verify all inputs and seal conversion-stage byte/row accounting."""
 
@@ -382,6 +458,13 @@ def build_ledger(
         text_payload_probes
     ):
         raise DataYieldLedgerError("ledger repeats a text payload probe")
+    full_source_censuses = [
+        _full_source_census(path) for path in (full_source_census_paths or [])
+    ]
+    if len({row["receipt_sha256"] for row in full_source_censuses}) != len(
+        full_source_censuses
+    ):
+        raise DataYieldLedgerError("ledger repeats a full source census")
     source_ids = [row["source_id"] for row in pilots]
     if len(source_ids) != len(set(source_ids)):
         raise DataYieldLedgerError("ledger repeats a pilot source")
@@ -425,6 +508,26 @@ def build_ledger(
             "full_reservoir_text_payload_bytes_measured": False,
             "training_ready": False,
         },
+        "complete_source_censuses": {
+            "censuses": full_source_censuses,
+            "source_count": len(full_source_censuses),
+            "source_rows_sum": sum(row["source_rows"] for row in full_source_censuses),
+            "compressed_parent_bytes_sum": sum(
+                row["compressed_parent_bytes"] for row in full_source_censuses
+            ),
+            "text_utf8_bytes_sum": sum(
+                row["text_utf8_bytes"] for row in full_source_censuses
+            ),
+            "mechanically_eligible_unique_rows_sum": sum(
+                row["mechanically_eligible_unique_rows"] for row in full_source_censuses
+            ),
+            "mechanically_eligible_unique_text_bytes_sum": sum(
+                row["mechanically_eligible_unique_text_bytes"]
+                for row in full_source_censuses
+            ),
+            "all_required_training_gates_complete": False,
+            "training_ready": False,
+        },
         "bounded_source_pilots": {
             "pilots": pilots,
             "source_count": len(pilots),
@@ -454,7 +557,9 @@ def build_ledger(
             "raw_reservoir_bytes_are_not_training_ready_bytes": True,
             "audit_rows_are_not_training_ready_rows": True,
             "bounded_pilot_rows_are_not_training_ready_rows": True,
+            "mechanically_eligible_census_bytes_are_not_training_ready_bytes": True,
             "source_text_persisted_in_ledger": False,
+            "absolute_local_paths_persisted": False,
             "four_b_training_authorized": False,
         },
     }
@@ -472,6 +577,7 @@ def main() -> int:
     parser.add_argument("--pilot-root", type=Path, action="append", default=[])
     parser.add_argument("--rights-inventory", type=Path)
     parser.add_argument("--text-payload-probe", type=Path, action="append", default=[])
+    parser.add_argument("--full-source-census", type=Path, action="append", default=[])
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = build_ledger(
@@ -481,6 +587,7 @@ def main() -> int:
         args.output,
         rights_inventory_path=args.rights_inventory,
         text_payload_probe_paths=args.text_payload_probe,
+        full_source_census_paths=args.full_source_census,
     )
     print(json.dumps(result, sort_keys=True))
     return 0

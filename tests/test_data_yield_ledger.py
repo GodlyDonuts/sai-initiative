@@ -5,6 +5,22 @@ from pathlib import Path
 
 import pytest
 
+from sai.data.arxiv_abstracts_audit_population import (
+    REPOSITORY as ARXIV_REPOSITORY,
+)
+from sai.data.arxiv_abstracts_audit_population import (
+    REVISION as ARXIV_REVISION,
+)
+from sai.data.arxiv_abstracts_audit_population import (
+    SOURCE_ID as ARXIV_SOURCE_ID,
+)
+from sai.data.arxiv_abstracts_audit_population import (
+    SOURCE_ORIGINAL_BYTES as ARXIV_SOURCE_ORIGINAL_BYTES,
+)
+from sai.data.arxiv_abstracts_audit_population import (
+    SOURCE_ROWS as ARXIV_SOURCE_ROWS,
+)
+from sai.data.arxiv_abstracts_full_census import SCHEMA as ARXIV_CENSUS_SCHEMA
 from sai.data.common_pile_streaming_pilot import SCHEMA as COMMON_PILE_PILOT_SCHEMA
 from sai.data.data_yield_ledger import DataYieldLedgerError, build_ledger
 from sai.data.token_stream import canonical_sha256, sha256_file
@@ -234,6 +250,45 @@ def _text_probe(tmp_path: Path) -> Path:
     return receipt
 
 
+def _full_census(tmp_path: Path) -> Path:
+    receipt = tmp_path / "arxiv-full-census.json"
+    _seal(
+        receipt,
+        {
+            "schema": ARXIV_CENSUS_SCHEMA,
+            "status": "complete_text_free_full_parent_census",
+            "source_id": ARXIV_SOURCE_ID,
+            "source_snapshot": {
+                "repository": ARXIV_REPOSITORY,
+                "revision": ARXIV_REVISION,
+                "compressed_bytes": ARXIV_SOURCE_ORIGINAL_BYTES,
+                "rows": ARXIV_SOURCE_ROWS,
+            },
+            "totals": {
+                "scanned_rows": ARXIV_SOURCE_ROWS,
+                "provenance_valid_rows": ARXIV_SOURCE_ROWS,
+                "invalid_provenance_rows": 0,
+                "non_monotonic_provenance_rows": 0,
+                "text_bytes": 2_388_470_891,
+                "mechanically_eligible_unique_rows": 2_458_156,
+                "mechanically_eligible_unique_text_bytes": 2_380_856_330,
+                "audit_position_excluded_identities": 1_060,
+            },
+            "audit_excluded_positions": 1_060,
+            "complete_parent_census": True,
+            "parents_removed_after_census": True,
+            "source_text_persisted": False,
+            "benchmark_contamination_screen_complete": False,
+            "near_duplicate_filter_complete": False,
+            "hermes_judgments_complete": False,
+            "quality_compilation_complete": False,
+            "full_source_ingestion_authorized": False,
+            "training_ready": False,
+        },
+    )
+    return receipt
+
+
 def test_ledger_separates_candidate_volume_from_ready_bytes(tmp_path: Path) -> None:
     output = tmp_path / "ledger.json"
     payload = build_ledger(
@@ -243,6 +298,7 @@ def test_ledger_separates_candidate_volume_from_ready_bytes(tmp_path: Path) -> N
         output,
         rights_inventory_path=_rights(tmp_path),
         text_payload_probe_paths=[_text_probe(tmp_path)],
+        full_source_census_paths=[_full_census(tmp_path)],
     )
     assert payload["reservoir_candidates"]["referenced_candidate_bytes_sum"] == 1234
     assert payload["audit_populations"]["population_rows_sum"] == 1
@@ -251,8 +307,15 @@ def test_ledger_separates_candidate_volume_from_ready_bytes(tmp_path: Path) -> N
     assert (
         payload["bounded_text_payload_probes"]["measured_useful_text_utf8_bytes"] == 150
     )
+    assert (
+        payload["complete_source_censuses"][
+            "mechanically_eligible_unique_text_bytes_sum"
+        ]
+        == 2_380_856_330
+    )
     assert payload["training_ready"]["exact_bytes"] == 0
     assert payload["claims"]["raw_reservoir_bytes_are_not_training_ready_bytes"]
+    assert str(tmp_path) not in json.dumps(payload)
 
 
 def test_ledger_rejects_tampered_receipt(tmp_path: Path) -> None:
