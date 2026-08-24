@@ -1590,6 +1590,19 @@ The dependency graph was verified with `scontrol`: no row-level shard can begin
 before the census-derived policy exists, and aggregation requires the whole
 array. No GPU is requested by this graph.
 
+The next semantic boundary is also implemented but remains dependency-staged.
+It streams every hash-verified bounded candidate, balances by collection × open
+type × four token-length bands, keeps at most 32 lowest seeded identities per
+stratum, and then round-robins strata into at most 8,192 private beginning /
+middle / end excerpts. This prevents large collections and easy short records
+from monopolizing Hermès attention. The sample retains exact full-text hashes
+and locators but never places full source text in Git. Sixty-four identity-
+disjoint Hermès shards will apply the frozen polymath compiler rubric; their
+aggregate remains nontraining and cannot promote a row. This layer measures
+writing quality, knowledge density, reliability, pedagogy, reasoning, cultural
+and human-expression value, cross-domain potential, risks, and curriculum
+placement before any candidate-family promotion decision.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
