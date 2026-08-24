@@ -54,6 +54,7 @@ def test_locator_strips_text_and_binds_reconstruction_identity() -> None:
     assert "text" not in row
     assert row["virtual_row_index"] == 7
     assert row["source_row_index"] == 11
+    assert row["text_characters"] == len(_candidate()["text"])
     assert row["code_document"] is True
     assert row["locator_sha256"] == canonical_sha256(
         {key: value for key, value in row.items() if key != "locator_sha256"}
