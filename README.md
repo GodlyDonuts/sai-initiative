@@ -179,12 +179,15 @@ benchmark cleanliness remains a separate evaluation-claim axis.
 The practical graph is live. Initial full-replay array `820240` was stopped
 before any final locator or receipt existed after measured network throughput
 proved it inefficient; its 2.85 MB of unclosed partial files were permanently
-removed. Replacement PleIAs locator array `820410_[0-127%128]` launched all 128
-fixed source partitions under the byte-cap runtime; 117 were admitted
-immediately and the final 11 remain scheduler-managed behind the account
+removed. The first byte-cap staging `820410` was also stopped before a final
+locator existed when Slurm denied extension of its unsafe 12-hour limit; its
+0.50 MB of unclosed partials were removed. Final PleIAs locator array
+`820530_[0-127%128]` launched all 128 fixed source partitions with the same
+scientific bytes and a 24-hour termination margin; 118 were admitted
+immediately and the remainder stay scheduler-managed behind the account
 concurrency ceiling. Book practical admission `820358` is staged after the
 existing mechanical filter aggregate, and combined PleIAs exact-dedup/byte-
-balance admission `820512` is staged after both `820410` and `820358`. At
+balance admission `820649` is staged after both `820530` and `820358`. At
 launch, 60/64 book gate shards had accepted
 358,031 of 358,120 examined works (99.975%) and accounted for 64,830,934,694
 materialized enriched tokens, with zero nonempty gate error logs. The complete
