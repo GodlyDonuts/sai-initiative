@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+import sai.data.hard_reject_exclusion as exclusion
 from sai.data.hard_reject_exclusion import (
     HardRejectExclusionError,
     build_hard_reject_exclusion,
@@ -173,3 +174,44 @@ def test_hard_reject_requires_exact_candidate_and_attribution_coverage(
             tmp_path / "output" / "receipt.json",
         )
 
+
+def test_hard_reject_detects_input_change_during_replay(
+    tmp_path: Path, monkeypatch
+) -> None:
+    pilot, judgments, _ = _evidence(tmp_path)
+    rejected = _document("reject-row", "A low-quality worksheet.")
+    retained = _document("keep-row", "A useful explanation.")
+    candidates = tmp_path / "materialized.jsonl"
+    attribution = tmp_path / "attribution.jsonl"
+    _write(candidates, [rejected, retained])
+    _write(
+        attribution,
+        [
+            _attribution("reject-row", rejected["identity_sha256"]),
+            _attribution("keep-row", retained["identity_sha256"]),
+        ],
+    )
+    original = exclusion.normalize_document
+    changed = False
+
+    def mutate_after_binding(value: dict) -> dict:
+        nonlocal changed
+        if not changed:
+            with candidates.open("a") as handle:
+                handle.write("\n")
+            changed = True
+        return original(value)
+
+    monkeypatch.setattr(exclusion, "normalize_document", mutate_after_binding)
+    with pytest.raises(HardRejectExclusionError, match="changed during replay"):
+        build_hard_reject_exclusion(
+            [candidates],
+            [attribution],
+            pilot,
+            judgments,
+            tmp_path / "output" / "candidates.jsonl",
+            tmp_path / "output" / "attribution.jsonl",
+            tmp_path / "output" / "exclusions.jsonl",
+            tmp_path / "output" / "receipt.json",
+        )
+    assert not (tmp_path / "output" / "candidates.jsonl").exists()

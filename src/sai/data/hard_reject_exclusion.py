@@ -43,13 +43,15 @@ def _verify_self_hash(value: dict[str, Any], field: str) -> str:
     return claimed
 
 
-def _descriptor(path: Path, rows: int) -> dict[str, Any]:
-    return {
+def _descriptor(path: Path, rows: int | None = None) -> dict[str, Any]:
+    value = {
         "path": str(path.resolve()),
         "bytes": path.stat().st_size,
         "sha256": sha256_file(path),
-        "rows": rows,
     }
+    if rows is not None:
+        value["rows"] = rows
+    return value
 
 
 def _load_rejections(
@@ -195,6 +197,8 @@ def build_hard_reject_exclusion(
     for path in [*candidate_paths, *attribution_paths]:
         if not path.is_file() or path.is_symlink():
             raise HardRejectExclusionError("hard-reject input is missing or unsafe")
+    candidate_inputs = [_descriptor(path) for path in candidate_paths]
+    attribution_inputs = [_descriptor(path) for path in attribution_paths]
     stages = {
         output_candidates: _staged_path(output_candidates),
         output_attribution: _staged_path(output_attribution),
@@ -264,11 +268,23 @@ def build_hard_reject_exclusion(
         with stages[exclusion_manifest].open("x") as output:
             for row_id in sorted(rejections):
                 output.write(json.dumps(rejections[row_id], sort_keys=True) + "\n")
+        if any(
+            path.stat().st_size != descriptor["bytes"]
+            or sha256_file(path) != descriptor["sha256"]
+            for path, descriptor in zip(
+                [*candidate_paths, *attribution_paths],
+                [*candidate_inputs, *attribution_inputs],
+                strict=True,
+            )
+        ):
+            raise HardRejectExclusionError("hard-reject input changed during replay")
         for destination, stage in stages.items():
             os.replace(stage, destination)
     except BaseException:
         for stage in stages.values():
             stage.unlink(missing_ok=True)
+        for destination in stages:
+            destination.unlink(missing_ok=True)
         raise
 
     payload = {
@@ -276,12 +292,8 @@ def build_hard_reject_exclusion(
         "status": "complete_exact_hard_reject_exclusion",
         "evidence": evidence,
         "inputs": {
-            "candidates": [
-                _descriptor(path, 0) | {"rows": None} for path in candidate_paths
-            ],
-            "attribution": [
-                _descriptor(path, 0) | {"rows": None} for path in attribution_paths
-            ],
+            "candidates": candidate_inputs,
+            "attribution": attribution_inputs,
         },
         "counts": dict(sorted(counts.items())),
         "outputs": {
