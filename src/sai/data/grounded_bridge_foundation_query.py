@@ -130,10 +130,21 @@ def _database(path: Path) -> sqlite3.Connection:
     return database
 
 
-def build_query(candidate_root: Path, output_root: Path) -> dict[str, Any]:
+def build_query(
+    candidate_root: Path,
+    output_root: Path,
+    durable_receipt: Path | None = None,
+) -> dict[str, Any]:
     """Index every bridge shingle and anchor without retaining source text."""
 
-    if output_root.exists() or output_root.is_symlink():
+    if (
+        output_root.exists()
+        or output_root.is_symlink()
+        or (
+            durable_receipt is not None
+            and (durable_receipt.exists() or durable_receipt.is_symlink())
+        )
+    ):
         raise GroundedBridgeFoundationQueryError("bridge query output differs")
     receipt = _load_receipt(candidate_root / "receipt.json")
     unsigned_receipt = {
@@ -289,6 +300,12 @@ def build_query(candidate_root: Path, output_root: Path) -> dict[str, Any]:
         payload["receipt_sha256"] = canonical_sha256(payload)
         _atomic_create(stage / "receipt.json", payload)
         os.replace(stage, output_root)
+        if durable_receipt is not None:
+            try:
+                _atomic_create(durable_receipt, payload)
+            except BaseException:
+                shutil.rmtree(output_root, ignore_errors=True)
+                raise
         return payload
     except BaseException:
         if database is not None:
@@ -301,8 +318,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--durable-receipt", type=Path)
     args = parser.parse_args()
-    result = build_query(args.candidate_root, args.output_root)
+    result = build_query(args.candidate_root, args.output_root, args.durable_receipt)
     print(
         json.dumps(
             {"status": result["status"], "receipt_sha256": result["receipt_sha256"]},

@@ -149,9 +149,11 @@ def test_query_is_reproducible_and_rejects_tampered_database(tmp_path: Path) -> 
     _candidate_root(candidates)
     first = tmp_path / "first"
     second = tmp_path / "second"
-    first_result = build_query(candidates, first)
+    evidence = tmp_path / "evidence" / "query-receipt.json"
+    first_result = build_query(candidates, first, evidence)
     second_result = build_query(candidates, second)
     assert first_result == second_result
+    assert json.loads(evidence.read_text()) == first_result
     assert (first / "queries.sqlite3").read_bytes() == (
         second / "queries.sqlite3"
     ).read_bytes()
@@ -294,6 +296,7 @@ def test_aggregate_reconciles_anchor_split_and_holds_only_overlap(
         source_custody={"final_shard_receipt_sha256": "e" * 64},
     )
     output = tmp_path / "aggregate"
+    evidence = tmp_path / "evidence" / "aggregate-receipt.json"
     result = aggregate_scans(
         query,
         tmp_path / "pleias",
@@ -301,7 +304,9 @@ def test_aggregate_reconciles_anchor_split_and_holds_only_overlap(
         output,
         pleias_logical_shards=1,
         book_logical_shards=1,
+        durable_receipt=evidence,
     )
+    assert json.loads(evidence.read_text()) == result
     assert result["global_foundation_scan_complete"] is True
     assert result["global_deduplication_against_foundation_complete"] is True
     assert result["source_disjoint_against_foundation_complete"] is True

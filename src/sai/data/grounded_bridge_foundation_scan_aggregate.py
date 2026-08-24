@@ -174,6 +174,7 @@ def aggregate_scans(
     *,
     pleias_logical_shards: int = 128,
     book_logical_shards: int = 64,
+    durable_receipt: Path | None = None,
 ) -> dict[str, Any]:
     """Prove all-shard coverage and decide every bridge document and pair."""
 
@@ -182,6 +183,10 @@ def aggregate_scans(
         or output_root.is_symlink()
         or pleias_logical_shards <= 0
         or book_logical_shards <= 0
+        or (
+            durable_receipt is not None
+            and (durable_receipt.exists() or durable_receipt.is_symlink())
+        )
     ):
         raise GroundedBridgeFoundationScanAggregateError("aggregate arguments differ")
     boundary = QueryBoundary(query_root)
@@ -424,6 +429,12 @@ def aggregate_scans(
         payload["receipt_sha256"] = canonical_sha256(payload)
         _atomic_create(stage / "receipt.json", payload)
         os.replace(stage, output_root)
+        if durable_receipt is not None:
+            try:
+                _atomic_create(durable_receipt, payload)
+            except BaseException:
+                shutil.rmtree(output_root, ignore_errors=True)
+                raise
         return payload
     except BaseException:
         shutil.rmtree(stage, ignore_errors=True)
@@ -438,6 +449,7 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--pleias-logical-shards", type=int, default=128)
     parser.add_argument("--book-logical-shards", type=int, default=64)
+    parser.add_argument("--durable-receipt", type=Path)
     args = parser.parse_args()
     result = aggregate_scans(
         args.query_root,
@@ -446,6 +458,7 @@ def main() -> int:
         args.output_root,
         pleias_logical_shards=args.pleias_logical_shards,
         book_logical_shards=args.book_logical_shards,
+        durable_receipt=args.durable_receipt,
     )
     print(
         json.dumps(
