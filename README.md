@@ -173,6 +173,16 @@ content hash, and subtracts exact admitted Books UTF-8 bytes from the shared
 2,000,000,000,000-byte ceiling before writing final PleIAs locators. Official
 benchmark cleanliness remains a separate evaluation-claim axis.
 
+The practical graph is live. PleIAs locator array `820240_[0-127%128]` launched
+all 128 fixed source partitions; 117 were admitted immediately and the final 11
+remain scheduler-managed behind the account concurrency ceiling. Book practical
+admission `820358` is staged after the existing mechanical filter aggregate,
+and combined PleIAs exact-dedup/byte-balance admission `820359` is staged after
+both `820240` and `820358`. At launch, 60/64 book gate shards had accepted
+358,031 of 358,120 examined works (99.975%) and accounted for 64,830,934,694
+materialized enriched tokens, with zero nonempty gate error logs. The complete
+repository regression suite passes: **1,316 tests, 2 dependency warnings**.
+
 The next book stage is now code-frozen as a bounded **8,192-work semantic
 population**, not a bulk promotion of every mechanical pass. After `818508`, it
 replays the exact private filter and pinned 983,004-row metadata file, then uses
