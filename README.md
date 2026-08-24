@@ -174,6 +174,13 @@ quarantine, rights, risk, translation, or quality hold. Even the survivors are
 only candidates for independent semantic and representation verification; no
 Hermès judgment directly admits training text.
 
+Job `818518` is staged behind the conservative decision receipt and constructs
+a second private population containing only those strict survivors. It replays
+every decision hash against the original candidate identity and preserves the
+bounded excerpts without publishing them. That subset is the sole input
+eligible for an independent model-family pass; a survivor count of zero remains
+a valid negative result and must not be repaired by relaxing the policy.
+
 The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
 If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
 trains on that smaller verified corpus rather than padding with weak web text,
