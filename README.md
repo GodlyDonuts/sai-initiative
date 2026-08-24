@@ -2889,6 +2889,22 @@ copied with all eight dispatch markers beneath the authorized durable evidence
 root. These are materialization/census measurements, not final admission
 counts.
 
+Deadline projection then identified 13 additional originals with more than
+three measured hours remaining. They were transitioned through the same
+cancel-before-recovery boundary, bringing accelerated custody to 21 identities
+and 168 nonoverlapping segment tasks while leaving faster originals intact. The
+second dispatch receipt has SHA-256
+`24c82b088aab91d359911877f87720812a7070b5f18cc028d5d9d4edc72b99e7`.
+During admission, `ec65` cancelled 29 segment identities in one or two seconds
+with zero output. The host is now excluded from every census recovery request;
+only those exact failed segment indices were resubmitted as repair arrays
+`819092`–`819097` and `819101`–`819107`. Each existing merge was rewired to an
+AND dependency on termination of its surviving original array and successful
+completion of its repair array. The 13-row repair receipt has SHA-256
+`de4a13f40b4958210b9545cb7a8b6883b5f0e2ecd9cb2654b69f8d87f1a11829`.
+Both receipts and all 21 dispatch markers are read-only in the durable evidence
+root; no healthy segment was duplicated or cancelled.
+
 The dependency graph already stages the complete PleIAs virtual pipeline:
 subdocument signatures, global signature aggregation, exact deletion decisions,
 internal rewrite replay, cross-source decisions, final locator reconstruction,
