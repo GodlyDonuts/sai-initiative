@@ -314,7 +314,10 @@ def test_ledger_separates_candidate_volume_from_ready_bytes(tmp_path: Path) -> N
         == 2_380_856_330
     )
     assert payload["training_ready"]["exact_bytes"] == 0
+    assert payload["training_ready"]["maximum_bytes"] == 2_000_000_000_000
+    assert payload["training_ready"]["capacity_exhaustion_required"] is False
     assert payload["claims"]["raw_reservoir_bytes_are_not_training_ready_bytes"]
+    assert payload["claims"]["final_corpus_may_be_smaller_than_maximum"]
     assert str(tmp_path) not in json.dumps(payload)
 
 

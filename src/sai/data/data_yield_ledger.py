@@ -27,8 +27,8 @@ from sai.data.arxiv_abstracts_full_census import SCHEMA as ARXIV_CENSUS_SCHEMA
 from sai.data.common_pile_streaming_pilot import SCHEMA as COMMON_PILE_PILOT_SCHEMA
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-data-conversion-yield-ledger-v4"
-TARGET_TRAINING_READY_BYTES = 8 * 1024**4
+SCHEMA = "sai-data-conversion-yield-ledger-v5"
+MAXIMUM_TRAINING_READY_BYTES = 2_000_000_000_000
 
 
 class DataYieldLedgerError(RuntimeError):
@@ -548,9 +548,13 @@ def build_ledger(
         "training_ready": {
             "exact_bytes": training_ready_bytes,
             "exact_tib": 0.0,
-            "target_bytes": TARGET_TRAINING_READY_BYTES,
-            "target_tib": 8,
-            "remaining_bytes": TARGET_TRAINING_READY_BYTES - training_ready_bytes,
+            "maximum_bytes": MAXIMUM_TRAINING_READY_BYTES,
+            "maximum_tb_decimal": 2.0,
+            "maximum_tib": MAXIMUM_TRAINING_READY_BYTES / 1024**4,
+            "remaining_capacity_bytes": (
+                MAXIMUM_TRAINING_READY_BYTES - training_ready_bytes
+            ),
+            "capacity_exhaustion_required": False,
             "complete": False,
         },
         "claims": {
@@ -560,6 +564,7 @@ def build_ledger(
             "mechanically_eligible_census_bytes_are_not_training_ready_bytes": True,
             "source_text_persisted_in_ledger": False,
             "absolute_local_paths_persisted": False,
+            "final_corpus_may_be_smaller_than_maximum": True,
             "four_b_training_authorized": False,
         },
     }
