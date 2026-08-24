@@ -2941,6 +2941,18 @@ separately built 32K, 48K, and 64K candidates. Every stage is CPU-only,
 non-requeueing, create-only, and pinned to an immutable runtime; no 4B training
 job is part of this graph.
 
+The four-hour closure pass verified that the older physical PleIAs
+materialize/rewrite branch had zero consumers in the final ledger: byte
+allocation job `818779` depends only on virtual PleIAs aggregate `818642` and
+virtual Books aggregate `818644`. Its 15 still-pending jobs (`818564`–`818570`,
+`818574`–`818575`, `818577`–`818578`, and `818583`–`818586`) were therefore
+cancelled before any task started, preventing redundant multi-terabyte writes.
+The ten source-disjoint, non-model virtual reconstruction, tokenizer-sampling,
+and curriculum arrays that feed the final ledger were raised to 32-way
+admission. This changes no source identity, selected row, model request,
+decision, or output byte. The exact scheduler receipt is
+`artifacts/sai_four_hour_corpus_acceleration_20260824_r1.json`.
+
 `sai.data.virtual_spiral_curriculum_index` adds the curriculum layer after the
 two final component aggregates close. It emits source-text-free Parquet rows
 that bind component/shard identity, final content hash, exact UTF-8 byte count,
