@@ -1789,6 +1789,16 @@ word counts, and requires final retokenization. Aggregate `818570` verifies all
 128 rewritten files from one repository snapshot. Cross-source deduplication and
 training admission remain false after this PleIAs-only rewrite.
 
+The rewrite is re-signed before any cross-source claim: array
+`818574_[0-127%32]`, staged after aggregate `818570`, reopens each verified final
+remote shard and rebuilds the same sixteen text-free signature partitions from
+the post-deletion content SHA-256. This prevents chunks already removed by the
+PleIAs-only pass from inflating later global frequencies. Aggregate `818575`
+replays all 128 rewritten receipt identities, final text-byte totals, signature
+partitions, and document counts. It is the exact final PleIAs input to the
+cross-source book/PleIAs comparison; both jobs are CPU-only, requeue-disabled,
+and do not claim training admission.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
