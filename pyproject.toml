@@ -133,6 +133,7 @@ sai-gate-institutional-books-mechanically = "sai.data.institutional_books_mechan
 sai-filter-institutional-books-mechanically = "sai.data.institutional_books_mechanical_filter:main"
 sai-build-institutional-books-semantic-population = "sai.data.institutional_books_semantic_population:main"
 sai-decide-institutional-books-semantically = "sai.data.institutional_books_semantic_decision:main"
+sai-build-institutional-books-independent-population = "sai.data.institutional_books_independent_population:main"
 sai-decontaminate-grounded-bridges = "sai.data.grounded_bridge_decontamination:main"
 sai-split-documents = "sai.data.split:main"
 sai-build-tokenizers = "sai.tokenizer.build:main"

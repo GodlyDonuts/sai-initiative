@@ -24,6 +24,9 @@ from sai.data.token_stream import canonical_sha256, sha256_file
 
 SCHEMA = "sai-institutional-books-compiler-aggregate-v1"
 DEFAULT_LOGICAL_SHARDS = 10_000
+INDEPENDENT_POPULATION_SCHEMA = (
+    "sai-institutional-books-independent-candidate-population-v1"
+)
 
 
 class InstitutionalBooksAggregateError(RuntimeError):
@@ -74,7 +77,9 @@ def _load_json(path: Path, label: str) -> dict[str, Any]:
 
 
 def _validate_receipt(
-    receipt: dict[str, Any], candidate: dict[str, Any]
+    receipt: dict[str, Any],
+    candidate: dict[str, Any],
+    expected_model: str = DEFAULT_MODEL,
 ) -> dict[str, Any]:
     unsigned = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
     judgment = receipt.get("judgment")
@@ -90,7 +95,7 @@ def _validate_receipt(
         or receipt.get("receipt_sha256") != canonical_sha256(unsigned)
         or receipt.get("candidate_identity_sha256")
         != candidate["candidate_identity_sha256"]
-        or receipt.get("requested_model") != DEFAULT_MODEL
+        or receipt.get("requested_model") != expected_model
         or receipt.get("rubric_sha256") != RUBRIC_SHA256
         or receipt.get("request_reasoning_effort") != "low"
         or receipt.get("api_key_persisted") is not False
@@ -119,6 +124,7 @@ def _validate_population(root: Path) -> tuple[list[dict[str, Any]], dict[str, An
     output = receipt.get("output")
     pilot = receipt.get("schema") == POPULATION_SCHEMA
     semantic = receipt.get("schema") == SEMANTIC_POPULATION_SCHEMA
+    independent = receipt.get("schema") == INDEPENDENT_POPULATION_SCHEMA
     common_valid = (
         receipt.get("receipt_sha256") == canonical_sha256(unsigned)
         and receipt.get("training_ready") is False
@@ -138,7 +144,15 @@ def _validate_population(root: Path) -> tuple[list[dict[str, Any]], dict[str, An
         and receipt.get("source_text_publishable") is False
         and receipt.get("semantic_admission_complete") is False
     )
-    if not common_valid or not (pilot_valid or semantic_valid):
+    independent_valid = (
+        independent
+        and receipt.get("status")
+        == "complete_nontraining_private_independent_book_candidate_population"
+        and receipt.get("source_text_private") is True
+        and receipt.get("source_text_publishable") is False
+        and receipt.get("independent_verification_complete") is False
+    )
+    if not common_valid or not (pilot_valid or semantic_valid or independent_valid):
         raise InstitutionalBooksAggregateError("book population receipt differs")
     output_path = Path(str(output.get("path")))
     path = output_path if output_path.is_absolute() else root / output_path
@@ -166,6 +180,7 @@ def build_aggregate(
     judgments_root: Path,
     output_path: Path,
     logical_shards: int = DEFAULT_LOGICAL_SHARDS,
+    expected_model: str = DEFAULT_MODEL,
 ) -> dict[str, Any]:
     """Replay every candidate, receipt, and nonempty shard into one summary."""
 
@@ -177,6 +192,8 @@ def build_aggregate(
         or logical_shards <= 0
     ):
         raise InstitutionalBooksAggregateError("book logical shards differ")
+    if not isinstance(expected_model, str) or not expected_model:
+        raise InstitutionalBooksAggregateError("book expected model differs")
     candidates, population = _validate_population(population_root)
     expected_receipts = {
         judgments_root / f"{candidate['candidate_identity_sha256']}.book-compiler.json"
@@ -203,7 +220,9 @@ def build_aggregate(
             f"{candidate['candidate_identity_sha256']}.book-compiler.json"
         )
         receipt = _validate_receipt(
-            _load_json(path, "book compiler receipt"), candidate
+            _load_json(path, "book compiler receipt"),
+            candidate,
+            expected_model,
         )
         receipts.append(receipt)
         receipt_hashes.append(receipt["receipt_sha256"])
@@ -226,7 +245,7 @@ def build_aggregate(
             summary.get("schema") != SUMMARY_SCHEMA
             or summary.get("status") != "complete"
             or summary.get("receipt_sha256") != canonical_sha256(unsigned)
-            or summary.get("model") != DEFAULT_MODEL
+            or summary.get("model") != expected_model
             or summary.get("rubric_sha256") != RUBRIC_SHA256
             or summary.get("logical_shards") != logical_shards
             or summary.get("shard_index") != index
@@ -287,6 +306,7 @@ def build_aggregate(
             "rows": len(candidates),
         },
         "logical_shards": logical_shards,
+        "model": expected_model,
         "nonempty_shards": len(nonempty_shards),
         "ordered_shard_summaries_sha256": canonical_sha256(summary_hashes),
         "ordered_compiler_receipts_sha256": canonical_sha256(receipt_hashes),
@@ -320,12 +340,14 @@ def main() -> int:
     parser.add_argument("--judgments-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--logical-shards", type=int, default=DEFAULT_LOGICAL_SHARDS)
+    parser.add_argument("--expected-model", default=DEFAULT_MODEL)
     args = parser.parse_args()
     result = build_aggregate(
         args.population_root,
         args.judgments_root,
         args.output,
         args.logical_shards,
+        args.expected_model,
     )
     print(json.dumps(result, sort_keys=True))
     return 0
