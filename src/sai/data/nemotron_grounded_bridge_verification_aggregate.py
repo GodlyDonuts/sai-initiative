@@ -347,7 +347,7 @@ def build_aggregate(
             },
             "usage": dict(sorted(usage.items())),
             "source_text_persisted_in_outputs": False,
-            "same_model_family_as_generator": True,
+            "same_model_family_as_generator": False,
             "independent_request_verification_complete": True,
             "independent_model_family_verification_complete": True,
             "benchmark_decontamination_complete": False,
