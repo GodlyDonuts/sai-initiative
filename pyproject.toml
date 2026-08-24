@@ -135,6 +135,7 @@ sai-build-institutional-books-semantic-population = "sai.data.institutional_book
 sai-decide-institutional-books-semantically = "sai.data.institutional_books_semantic_decision:main"
 sai-build-institutional-books-independent-population = "sai.data.institutional_books_independent_population:main"
 sai-compare-institutional-books-independently = "sai.data.institutional_books_independent_agreement:main"
+sai-decontaminate-institutional-books-fully = "sai.data.institutional_books_full_decontamination:main"
 sai-decontaminate-grounded-bridges = "sai.data.grounded_bridge_decontamination:main"
 sai-split-documents = "sai.data.split:main"
 sai-build-tokenizers = "sai.tokenizer.build:main"
