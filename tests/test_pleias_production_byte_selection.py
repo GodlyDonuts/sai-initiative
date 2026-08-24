@@ -35,6 +35,16 @@ def test_diversity_pass_precedes_deterministic_refill():
     assert size == 75
 
 
+def test_first_pass_gives_every_stratum_equal_byte_opportunity():
+    rows = [(f"d{index:02d}", "dominant", 10) for index in range(10)]
+    rows.extend((f"r{index:02d}", f"rare-{index}", 10) for index in range(9))
+    selected, strata, size = choose_rows(rows, 100)
+    assert size == 100
+    assert strata["dominant"] == 10
+    assert set(strata) == {"dominant", *(f"rare-{index}" for index in range(9))}
+    assert len(selected) == 10
+
+
 def test_rejects_duplicate_or_invalid_candidates():
     with pytest.raises(PleiasProductionByteSelectionError):
         choose_rows([("a", "books", 1), ("a", "books", 2)], 10)
@@ -134,6 +144,7 @@ def test_build_selection_replays_dedup_databases_without_text(tmp_path):
     output = tmp_path / "selection"
     result = build_selection(exact_root, near_root, output, 15)
     assert result["counts"]["post_near_candidate_rows"] == 2
+    assert result["counts"]["post_near_candidate_strata"] == 2
     assert result["counts"]["selected_rows"] == 1
     assert result["counts"]["selected_text_utf8_bytes"] == 10
     assert result["selection_contains_source_text"] is False

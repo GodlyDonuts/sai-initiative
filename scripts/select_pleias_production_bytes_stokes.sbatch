@@ -23,4 +23,4 @@ python -m sai.data.pleias_production_byte_selection \
   --exact-root "${sai_exact}" \
   --near-root "${sai_near}" \
   --output-root "${sai_output}" \
-  --maximum-bytes 2000000000000
+  --maximum-bytes 1900000000000

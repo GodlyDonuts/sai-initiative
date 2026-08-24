@@ -67,7 +67,13 @@ def choose_rows(
         for _identity, stratum, size in normalized:
             by_stratum[stratum] += size
         return {row[0] for row in normalized}, dict(by_stratum), total
-    stratum_cap = maximum_bytes * MAXIMUM_SINGLE_STRATUM_PPM // 1_000_000
+    stratum_count = len({row[1] for row in normalized})
+    stratum_cap = min(
+        maximum_bytes * MAXIMUM_SINGLE_STRATUM_PPM // 1_000_000,
+        maximum_bytes // stratum_count,
+    )
+    if stratum_cap <= 0:
+        raise PleiasProductionByteSelectionError("stratum share differs")
     selected: set[str] = set()
     by_stratum = Counter()
     selected_bytes = 0
@@ -121,12 +127,17 @@ def build_selection(
         output.execute("PRAGMA temp_store=FILE")
         output.execute("ATTACH DATABASE ? AS exact", (str(exact_database.resolve()),))
         output.execute("ATTACH DATABASE ? AS near", (str(near_database.resolve()),))
-        candidate_rows, candidate_bytes = output.execute(
-            "SELECT COUNT(*), COALESCE(SUM(k.text_utf8_bytes), 0) "
+        candidate_rows, candidate_bytes, candidate_strata = output.execute(
+            "SELECT COUNT(*), COALESCE(SUM(k.text_utf8_bytes), 0), "
+            "COUNT(DISTINCT k.stratum) "
             "FROM exact.keep k LEFT JOIN near.drops d ON "
             "d.source_row_identity_sha256=k.source_row_identity_sha256 "
             "WHERE d.source_row_identity_sha256 IS NULL"
         ).fetchone()
+        if candidate_rows <= 0 or candidate_bytes <= 0 or candidate_strata <= 0:
+            raise PleiasProductionByteSelectionError(
+                "post-dedup candidate population is empty"
+            )
         output.execute(
             "CREATE TABLE chosen ("
             "identity TEXT PRIMARY KEY, stratum TEXT NOT NULL, bytes INTEGER NOT NULL"
@@ -152,7 +163,12 @@ def build_selection(
             )
             selected_bytes = candidate_bytes
         else:
-            stratum_cap = maximum_bytes * MAXIMUM_SINGLE_STRATUM_PPM // 1_000_000
+            stratum_cap = min(
+                maximum_bytes * MAXIMUM_SINGLE_STRATUM_PPM // 1_000_000,
+                maximum_bytes // candidate_strata,
+            )
+            if stratum_cap <= 0:
+                raise PleiasProductionByteSelectionError("stratum share differs")
             for identity, stratum, size in output.execute(candidates_sql):
                 if (
                     selected_bytes + size <= maximum_bytes
@@ -253,12 +269,14 @@ def build_selection(
                 "source_row_identity_sha256_ascending"
             ),
             "first_pass_maximum_single_stratum_ppm": MAXIMUM_SINGLE_STRATUM_PPM,
+            "first_pass_equal_byte_opportunity_across_all_strata": True,
             "second_pass_refills_unused_capacity_across_all_strata": True,
             "oversized_last_document_is_skipped": True,
         },
         "counts": {
             "post_near_candidate_rows": candidate_rows,
             "post_near_candidate_text_utf8_bytes": candidate_bytes,
+            "post_near_candidate_strata": candidate_strata,
             "selected_rows": selected_rows,
             "selected_text_utf8_bytes": selected_bytes,
             "selected_tokens": selected_tokens,
