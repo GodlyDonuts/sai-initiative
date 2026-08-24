@@ -673,6 +673,15 @@ and copied byte-identically to the authorized Stokes evidence root. The
 envelope explicitly permits a final core smaller than 2TB and grants no
 training admission.
 
+The signed conversion ledger now enforces the same boundary in executable
+form. Revision r8 reports the historical reservoirs separately as 21.537 TiB
+of overlapping, unverified candidate references, sets the final corpus maximum
+to exactly **2,000,000,000,000 bytes**, and records that exhausting this
+capacity is not required. It still reports zero training-ready bytes because
+the active source-wide gates are unfinished; this prevents candidate volume
+from being mislabeled as usable data. Its canonical receipt is
+`73ceef1e075697c16acfdad40963f04ee1e744b19ef45fa91472fdbf86202b87`.
+
 #### Exact source-reservoir checkpoint
 
 Reservoir v2 was sealed on 2026-08-23 from exact Hugging Face revisions. It
