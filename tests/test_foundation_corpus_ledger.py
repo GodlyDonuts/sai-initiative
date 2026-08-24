@@ -34,6 +34,9 @@ def _components(tmp_path):
                 "split::development::documents": 1,
                 "split::train::text_utf8_bytes": 400,
                 "split::development::text_utf8_bytes": 200,
+                "semantic_genre::technical_nonfiction::documents": 3,
+                "semantic_domain::science::documents": 3,
+                "curriculum_band_vote::intermediate::documents": 3,
             },
             "complete_benchmark_disjoint_book_coverage": True,
             "private_storage_only": True,
@@ -58,6 +61,11 @@ def _components(tmp_path):
                 "split::development::documents": 1,
                 "split::train::text_utf8_bytes": 1_000,
                 "split::development::text_utf8_bytes": 200,
+                "semantic_stratum::reference::documents": 5,
+                "quality_floor_milli::4000::documents": 5,
+                "difficulty_mean_milli::2500::documents": 5,
+                "curriculum_phase::foundation::documents": 5,
+                "semantic_domain::science::documents": 5,
             },
             "complete_final_pleias_document_coverage": True,
             "all_remote_lfs_identities_verified": True,
@@ -87,6 +95,14 @@ def test_ledger_uses_exact_post_rewrite_bytes_without_padding(tmp_path):
     }
     assert result["policy"]["ceiling_is_not_a_target"] is True
     assert result["policy"]["padding_for_volume_prohibited"] is True
+    assert result["components"][0]["metadata_counts"] == {
+        "curriculum_band_vote::intermediate::documents": 3,
+        "semantic_domain::science::documents": 3,
+        "semantic_genre::technical_nonfiction::documents": 3,
+    }
+    assert (
+        result["combined_metadata_counts"]["semantic_domain::science::documents"] == 8
+    )
     assert result["final_corpus_complete"] is False
     assert result["source_disjoint_split_complete"] is True
     assert result["semantic_quality_metadata_complete_for_listed_components"] is True

@@ -1889,6 +1889,10 @@ difficulty, and curriculum phase plus at least one domain; every final book must
 carry independently agreed curriculum metadata, exactly one genre, at least one
 domain, and at least one curriculum-band vote. The 2 TB ledger accepts neither
 component unless both semantic-quality and curriculum coverage are complete.
+The ledger also preserves the exact per-component and combined domain, genre,
+semantic-stratum, quality-floor, difficulty, curriculum-phase, and
+curriculum-band counters. This makes breadth and difficulty imbalance visible
+before tokenization or scheduling instead of hiding them behind one byte total.
 
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight

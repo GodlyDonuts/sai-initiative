@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,15 @@ from sai.data.token_stream import canonical_sha256
 
 SCHEMA = "sai-foundation-corpus-ledger-v1"
 DEFAULT_BYTE_CEILING = 2_000_000_000_000
+METADATA_PREFIXES = (
+    "semantic_domain::",
+    "semantic_genre::",
+    "semantic_stratum::",
+    "quality_floor_milli::",
+    "difficulty_mean_milli::",
+    "curriculum_phase::",
+    "curriculum_band_vote::",
+)
 
 
 class FoundationCorpusLedgerError(RuntimeError):
@@ -29,6 +39,23 @@ def _positive_count(value: Any, label: str) -> int:
     if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
         raise FoundationCorpusLedgerError(f"{label} differs")
     return value
+
+
+def _metadata_counts(component: dict[str, Any], label: str) -> dict[str, int]:
+    totals = component.get("totals")
+    if not isinstance(totals, dict):
+        raise FoundationCorpusLedgerError(f"{label} metadata differs")
+    selected = {
+        key: value
+        for key, value in totals.items()
+        if isinstance(key, str) and key.startswith(METADATA_PREFIXES)
+    }
+    if not selected or any(
+        isinstance(value, bool) or not isinstance(value, int) or value <= 0
+        for value in selected.values()
+    ):
+        raise FoundationCorpusLedgerError(f"{label} metadata differs")
+    return dict(sorted(selected.items()))
 
 
 def build_ledger(
@@ -104,6 +131,10 @@ def build_ledger(
         or train_bytes + development_bytes != total_bytes
     ):
         raise FoundationCorpusLedgerError("source-disjoint split accounting differs")
+    book_metadata = _metadata_counts(books, "book")
+    pleias_metadata = _metadata_counts(pleias, "PleIAs")
+    combined_metadata: Counter[str] = Counter(book_metadata)
+    combined_metadata.update(pleias_metadata)
     components = [
         {
             "component": "institutional_books",
@@ -113,6 +144,7 @@ def build_ledger(
             "aggregate_receipt_sha256": books["receipt_sha256"],
             "documents": book_documents,
             "post_rewrite_text_utf8_bytes": book_bytes,
+            "metadata_counts": book_metadata,
         },
         {
             "component": "pleias_common_corpus",
@@ -122,6 +154,7 @@ def build_ledger(
             "aggregate_receipt_sha256": pleias["receipt_sha256"],
             "documents": pleias_documents,
             "post_rewrite_text_utf8_bytes": pleias_bytes,
+            "metadata_counts": pleias_metadata,
         },
     ]
     payload = {
@@ -145,6 +178,7 @@ def build_ledger(
             "train_text_utf8_bytes": train_bytes,
             "development_text_utf8_bytes": development_bytes,
         },
+        "combined_metadata_counts": dict(sorted(combined_metadata.items())),
         "byte_ceiling_respected": True,
         "benchmark_decontamination_complete_for_listed_components": True,
         "cross_source_subdocument_deduplication_complete_for_listed_components": True,
