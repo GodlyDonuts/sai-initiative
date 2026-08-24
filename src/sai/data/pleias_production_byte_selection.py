@@ -17,7 +17,7 @@ from sai.data.pleias_production_normalized_exact_dedup import SCHEMA as EXACT_SC
 from sai.data.pleias_production_normalized_exact_dedup import _load_signed
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-pleias-production-byte-selection-v1"
+SCHEMA = "sai-pleias-production-byte-selection-v2"
 MAXIMUM_SINGLE_STRATUM_PPM = 200_000
 
 
