@@ -8,6 +8,7 @@ def _judgment() -> dict:
         "verdict": "retain",
         "current_language": "english",
         "genre": "science",
+        "domains": ["natural_sciences"],
         "confidence_ppm": 950_000,
         "quality": {
             "overall_quality": 4,
