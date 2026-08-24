@@ -24,9 +24,9 @@ export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
 
 python -m sai.data.pleias_practical_admission \
   --manifest /lustre/fs1/home/sa305415/sai-initiative/artifacts/sai_hf_materialized_source_lake_20260825_r1/manifest.jsonl \
-  --scan-root /lustre/fs1/home/sa305415/sai_data_sources/pleias-practical-locators-20260826-r1 \
+  --scan-root /lustre/fs1/home/sa305415/sai_data_sources/pleias-practical-locators-20260826-r2 \
   --books-receipt /lustre/fs1/home/sa305415/sai_data_sources/institutional-books-practical-admission-20260826-r1/receipt.json \
-  --output-root /lustre/fs1/home/sa305415/sai_data_sources/pleias-practical-admission-20260826-r1 \
+  --output-root /lustre/fs1/home/sa305415/sai_data_sources/pleias-practical-admission-20260826-r2 \
   --logical-shards 128 \
   --total-text-byte-ceiling 2000000000000 \
   --output-shards 128 \

@@ -109,6 +109,7 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
             "source": {
                 "manifest_sha256": sha256_file(manifest),
                 "selected_paths_sha256": canonical_sha256(["data/file.parquet"]),
+                "scanned_parent_count": 1,
             },
             "selected": {
                 "rows": 3,
@@ -121,6 +122,8 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
                 "sha256": sha256_file(locator_path),
             },
             "practical_candidate_complete": True,
+            "complete_assigned_parent_scan": True,
+            "deterministic_byte_cap_sampling_complete": True,
             "byte_cap_respected": True,
             "training_ready": False,
         }

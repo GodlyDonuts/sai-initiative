@@ -27,7 +27,7 @@ set +a
 export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
 
 sai_manifest=/lustre/fs1/home/sa305415/sai-initiative/artifacts/sai_hf_materialized_source_lake_20260825_r1/manifest.jsonl
-sai_parent=/lustre/fs1/home/sa305415/sai_data_sources/pleias-practical-locators-20260826-r1
+sai_parent=/lustre/fs1/home/sa305415/sai_data_sources/pleias-practical-locators-20260826-r2
 sai_output=${sai_parent}/shards/shard_$(printf '%05d' "${SLURM_ARRAY_TASK_ID}")
 
 mkdir -p "${sai_parent}/shards" "${TMPDIR:-/tmp}"
@@ -38,6 +38,7 @@ python -m sai.data.pleias_practical_locator_scan \
   --logical-shards 128 \
   --shard-index "${SLURM_ARRAY_TASK_ID}" \
   --token-env HF_TOKEN \
-  --sample-ppm 200000 \
+  --sample-ppm 1000000 \
   --maximum-text-bytes 15625000000 \
+  --stop-at-byte-cap \
   --scratch-root "${TMPDIR:-/tmp}"

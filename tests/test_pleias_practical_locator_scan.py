@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from sai.data.pleias_practical_locator_scan import _hash_selected, _route
+from sai.data.pleias_practical_locator_scan import (
+    _hash_selected,
+    _ordered_parents,
+    _route,
+)
 
 
 def _row(text: str, **updates):
@@ -44,3 +48,18 @@ def test_hash_selection_is_deterministic_and_full_rate_accepts():
     identity = "0" * 64
     assert _hash_selected(identity, 1_000_000)
     assert _hash_selected(identity, 1) == _hash_selected(identity, 1)
+
+
+def test_early_stop_parent_order_is_deterministic_and_not_path_ordered():
+    parents = [
+        {
+            "source_path": f"common_corpus_{index}/part.parquet",
+            "sha256": f"{index:x}" * 64,
+        }
+        for index in range(1, 9)
+    ]
+    ordered, method = _ordered_parents(parents, True)
+    repeated, repeated_method = _ordered_parents(list(reversed(parents)), True)
+    assert method == repeated_method == "canonical_source_identity_sha256"
+    assert ordered == repeated
+    assert ordered != parents

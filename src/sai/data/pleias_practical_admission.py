@@ -165,6 +165,7 @@ def build_admission(
     seen_paths: set[str] = set()
     receipt_hashes = []
     scan_counts: Counter[str] = Counter()
+    all_assigned_parents_scanned = True
     output_root.mkdir(parents=True)
 
     with tempfile.TemporaryDirectory(
@@ -180,6 +181,9 @@ def build_admission(
                 selected_paths = {row["source_path"] for row in selected_parents}
                 descriptor = receipt.get("output", {})
                 locator_path = shard_root / descriptor.get("path", "")
+                scanned_parent_count = receipt.get("source", {}).get(
+                    "scanned_parent_count"
+                )
                 if (
                     receipt.get("status")
                     != "complete_pleias_practical_locator_scan_shard"
@@ -192,6 +196,11 @@ def build_admission(
                         [row["source_path"] for row in selected_parents]
                     )
                     or receipt.get("practical_candidate_complete") is not True
+                    or receipt.get("deterministic_byte_cap_sampling_complete")
+                    is not True
+                    or isinstance(scanned_parent_count, bool)
+                    or not isinstance(scanned_parent_count, int)
+                    or not 1 <= scanned_parent_count <= len(selected_parents)
                     or receipt.get("training_ready") is not False
                     or receipt.get("byte_cap_respected") is not True
                     or not locator_path.is_file()
@@ -203,6 +212,10 @@ def build_admission(
                 ):
                     raise PleiasPracticalAdmissionError("scan shard differs")
                 seen_paths.update(selected_paths)
+                all_assigned_parents_scanned = bool(
+                    all_assigned_parents_scanned
+                    and receipt.get("complete_assigned_parent_scan") is True
+                )
                 parquet = pq.ParquetFile(locator_path)
                 observed_rows = 0
                 observed_bytes = 0
@@ -240,6 +253,7 @@ def build_admission(
                         "candidate_text_utf8_bytes": observed_bytes,
                         "candidate_source_token_count": observed_tokens,
                         "locator_parquet_bytes": descriptor["bytes"],
+                        "scanned_source_parents": scanned_parent_count,
                     }
                 )
                 receipt_hashes.append(receipt["receipt_sha256"])
@@ -334,6 +348,7 @@ def build_admission(
             "manifest_sha256": sha256_file(manifest_path),
             "source_parent_count": len(manifest),
             "source_parent_bytes": sum(row["bytes"] for row in manifest),
+            "scanned_source_parent_count": scan_counts["scanned_source_parents"],
             "scan_logical_shards": logical_shards,
             "ordered_scan_receipts_sha256": canonical_sha256(receipt_hashes),
             "books_admission_receipt_sha256": books["receipt_sha256"],
@@ -365,7 +380,9 @@ def build_admission(
             "descriptors": descriptors,
             "ordered_descriptors_sha256": canonical_sha256(descriptors),
         },
-        "complete_source_parent_coverage": True,
+        "complete_source_identity_partition_coverage": True,
+        "complete_source_parent_content_scan": all_assigned_parents_scanned,
+        "deterministic_byte_cap_sampling_complete": True,
         "global_exact_content_deduplication_complete": True,
         "global_near_deduplication_complete": False,
         "official_benchmark_decontamination_complete": False,

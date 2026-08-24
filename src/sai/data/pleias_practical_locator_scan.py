@@ -74,6 +74,20 @@ def _hash_selected(identity: str, sample_ppm: int) -> bool:
     return int(identity[:16], 16) % 1_000_000 < sample_ppm
 
 
+def _ordered_parents(
+    parents: list[dict[str, Any]], stop_at_byte_cap: bool
+) -> tuple[list[dict[str, Any]], str]:
+    ordered = list(parents)
+    if not stop_at_byte_cap:
+        return ordered, "source_path"
+    ordered.sort(
+        key=lambda row: canonical_sha256(
+            {"source_path": row["source_path"], "source_sha256": row["sha256"]}
+        )
+    )
+    return ordered, "canonical_source_identity_sha256"
+
+
 def _route(row: dict[str, Any]) -> tuple[str, bytes | None, str | None]:
     language = row.get("language")
     if not isinstance(language, str) or language.strip().casefold() != "english":
@@ -116,6 +130,7 @@ def run_shard(
     token: str,
     sample_ppm: int,
     maximum_text_bytes: int,
+    stop_at_byte_cap: bool = False,
     scratch_root: Path | None = None,
 ) -> dict[str, Any]:
     """Scan an identity-disjoint source shard and emit source-safe locators."""
@@ -138,6 +153,8 @@ def run_shard(
     parents = select_shard(manifest, logical_shards, shard_index)
     if not parents:
         raise PleiasPracticalLocatorScanError("practical scan shard is empty")
+    assigned_paths_sha256 = canonical_sha256([row["source_path"] for row in parents])
+    parents, parent_scan_order = _ordered_parents(parents, stop_at_byte_cap)
     output_root.mkdir(parents=True)
     output_path = output_root / "locators.parquet"
     temporary = output_root / f".locators.partial.{uuid.uuid4().hex}.parquet"
@@ -243,6 +260,11 @@ def run_shard(
                 ),
                 flush=True,
             )
+            if (
+                stop_at_byte_cap
+                and maximum_text_bytes - selected_bytes < MINIMUM_TEXT_BYTES
+            ):
+                break
     except BaseException:
         writer.close()
         temporary.unlink(missing_ok=True)
@@ -257,8 +279,10 @@ def run_shard(
         "source": {
             "manifest_sha256": sha256_file(manifest_path),
             "selected_parent_count": len(parents),
-            "selected_paths_sha256": canonical_sha256(
-                [row["source_path"] for row in parents]
+            "scanned_parent_count": len(parent_receipts),
+            "selected_paths_sha256": assigned_paths_sha256,
+            "ordered_scanned_paths_sha256": canonical_sha256(
+                [row["source_path"] for row in parent_receipts]
             ),
             "ordered_parent_receipts_sha256": canonical_sha256(parent_receipts),
         },
@@ -271,6 +295,8 @@ def run_shard(
             "maximum_text_bytes_per_row": MAXIMUM_TEXT_BYTES,
             "sample_ppm": sample_ppm,
             "maximum_text_bytes_per_shard": maximum_text_bytes,
+            "parent_scan_order": parent_scan_order,
+            "stop_at_byte_cap": stop_at_byte_cap,
             "model_semantic_gate_required": False,
         },
         "counts": dict(sorted(counts.items())),
@@ -287,6 +313,12 @@ def run_shard(
         },
         "all_source_rows_accounted": counts["source_rows"]
         == sum(row["rows"] for row in parent_receipts),
+        "complete_assigned_parent_scan": len(parent_receipts) == len(parents),
+        "deterministic_byte_cap_sampling_complete": bool(
+            not stop_at_byte_cap
+            or len(parent_receipts) == len(parents)
+            or maximum_text_bytes - selected_bytes < MINIMUM_TEXT_BYTES
+        ),
         "byte_cap_respected": selected_bytes <= maximum_text_bytes,
         "practical_candidate_complete": True,
         "global_exact_deduplication_complete": False,
@@ -307,6 +339,7 @@ def main() -> int:
     parser.add_argument("--shard-index", type=int, required=True)
     parser.add_argument("--sample-ppm", type=int, required=True)
     parser.add_argument("--maximum-text-bytes", type=int, required=True)
+    parser.add_argument("--stop-at-byte-cap", action="store_true")
     parser.add_argument("--token-env", default="HF_TOKEN")
     parser.add_argument("--scratch-root", type=Path)
     args = parser.parse_args()
@@ -318,6 +351,7 @@ def main() -> int:
         os.environ.get(args.token_env, ""),
         args.sample_ppm,
         args.maximum_text_bytes,
+        args.stop_at_byte_cap,
         args.scratch_root,
     )
     print(
