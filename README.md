@@ -138,6 +138,27 @@ is never copied into this candidate corpus. This is still only a mechanically
 filtered source: it deliberately remains `training_ready=false` until benchmark
 decontamination, global semantic deduplication, and semantic admission finish.
 
+The next book stage is now code-frozen as a bounded **8,192-work semantic
+population**, not a bulk promotion of every mechanical pass. After `818508`, it
+replays the exact private filter and pinned 983,004-row metadata file, then uses
+a stable round-robin over normalized subject × genre × four length bands. This
+forces broad intellectual and stylistic coverage while preventing the largest
+archive categories from dominating by frequency. Each chosen work contributes
+only a deterministic beginning/middle/end excerpt to the private Hermès review
+queue; all full text remains on Stokes. The population is explicitly
+non-training, non-publishable, and still requires Hermès semantic judgment,
+rights review, benchmark decontamination, and global semantic deduplication.
+Unselected books are not inferred to be good or bad—they simply receive no
+admission claim. The repository implementation and tamper-aware replay entry
+point are `institutional_books_semantic_population.py` and
+`sai-build-institutional-books-semantic-population`.
+
+The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
+If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
+trains on that smaller verified corpus rather than padding with weak web text,
+unreviewed books, or synthetic repetition. Quality, provenance, coverage, and
+learnability take priority over byte count.
+
 The durable data catalog is
 [`Godlydonuts/Sai`](https://huggingface.co/datasets/Godlydonuts/Sai). It separates
 upstream source references, model judgments, verified representations,

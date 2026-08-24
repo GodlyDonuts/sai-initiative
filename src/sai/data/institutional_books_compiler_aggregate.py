@@ -11,6 +11,9 @@ from typing import Any
 from sai.data.agent_labeling import _atomic_create
 from sai.data.book_compiler_labeling import RUBRIC_SHA256
 from sai.data.institutional_books_pilot import RECEIPT_SCHEMA as POPULATION_SCHEMA
+from sai.data.institutional_books_semantic_population import (
+    SCHEMA as SEMANTIC_POPULATION_SCHEMA,
+)
 from sai.data.nous_book_compiler_worker import (
     RECEIPT_SCHEMA,
     SUMMARY_SCHEMA,
@@ -114,19 +117,33 @@ def _validate_population(root: Path) -> tuple[list[dict[str, Any]], dict[str, An
     receipt = _load_json(receipt_path, "book population receipt")
     unsigned = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
     output = receipt.get("output")
-    if (
-        receipt.get("schema") != POPULATION_SCHEMA
-        or receipt.get("status") != "complete"
-        or receipt.get("receipt_sha256") != canonical_sha256(unsigned)
-        or receipt.get("book_text_downloaded") is not True
-        or receipt.get("training_ready") is not False
-        or receipt.get("four_b_training_authorized") is not False
-        or not isinstance(output, dict)
-    ):
+    pilot = receipt.get("schema") == POPULATION_SCHEMA
+    semantic = receipt.get("schema") == SEMANTIC_POPULATION_SCHEMA
+    common_valid = (
+        receipt.get("receipt_sha256") == canonical_sha256(unsigned)
+        and receipt.get("training_ready") is False
+        and receipt.get("four_b_training_authorized") is False
+        and isinstance(output, dict)
+    )
+    pilot_valid = (
+        pilot
+        and receipt.get("status") == "complete"
+        and receipt.get("book_text_downloaded") is True
+    )
+    semantic_valid = (
+        semantic
+        and receipt.get("status")
+        == "complete_nontraining_private_semantic_candidate_population"
+        and receipt.get("source_text_private") is True
+        and receipt.get("source_text_publishable") is False
+        and receipt.get("semantic_admission_complete") is False
+    )
+    if not common_valid or not (pilot_valid or semantic_valid):
         raise InstitutionalBooksAggregateError("book population receipt differs")
-    path = Path(str(output.get("path")))
+    output_path = Path(str(output.get("path")))
+    path = output_path if output_path.is_absolute() else root / output_path
     if (
-        not path.is_absolute()
+        not path.resolve().is_relative_to(root.resolve())
         or path.parent.resolve() != root.resolve()
         or path.name != "candidates.jsonl"
         or path.stat().st_size != output.get("bytes")
@@ -134,7 +151,12 @@ def _validate_population(root: Path) -> tuple[list[dict[str, Any]], dict[str, An
     ):
         raise InstitutionalBooksAggregateError("book population bytes differ")
     candidates = _load_book_jsonl(path)
-    if len(candidates) != receipt.get("statistics", {}).get("candidate_rows"):
+    expected_rows = (
+        receipt.get("statistics", {}).get("candidate_rows")
+        if pilot
+        else output.get("rows")
+    )
+    if len(candidates) != expected_rows:
         raise InstitutionalBooksAggregateError("book population coverage differs")
     return candidates, receipt
 
