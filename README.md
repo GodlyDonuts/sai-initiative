@@ -1494,11 +1494,10 @@ candidate bytes, receipts, and text-free decisions were force-downloaded and
 replayed from Hugging Face dataset commit
 [`6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d).
 
-The next PDR compiler stage is now executable but has not been launched. Once
-the complete 3,290-row compiler population seals, it will join the clean PDR
-texts to their exact content and rights lanes, retain only identities routed to
-representation verification, and freeze at most six compiler-requested
-derivative types per source. The generation contract requires one exact source
+The PDR compiler stage is now active. It joins the clean PDR texts to their
+exact content and rights lanes, retains only identities routed to representation
+verification, and freezes at most six compiler-requested derivative types per
+source. The generation contract requires one exact source
 citation for every representation, preserves CC BY-SA attribution and
 share-alike obligations, and treats prerequisite edges and cross-domain
 connections as unverified candidates. Generated text is emitted separately
@@ -1519,6 +1518,22 @@ keeping `independent_model_family_verification_complete=false`,
 `representation_verified=false`, and `training_ready=false`. This gives Sai a
 fast quality filter without mislabeling same-family agreement as independent
 truth.
+
+The first complete representation population exposed one fail-closed boundary
+misalignment before any generation request was accepted: a collection caption
+contained only 145 UTF-8 bytes, below the worker's 200-byte grounding minimum,
+so the worker correctly rejected the full 759-row input. The corrected
+`20260826-r2` population now freezes the same 200..262,144-byte source envelope
+at population construction, records exclusions separately, and retains 758
+fully replayable rows. Exactly one short caption was excluded; no oversized row
+was present. The corrected population has receipt
+`36c8f6f7dbf5c15800481bb48f85b80a230846e7ad81f87601b40a6cee56acda`
+and candidate-file SHA-256
+`c083178562d27103085600d140fd979e6aeb0f78d7ed84345b759d92ceec6df6`.
+Two lock-protected Hermès generation lanes are active against only this corrected
+population, with four requests per lane under the shared ten-request gateway
+ceiling. All generated outputs remain nontraining and still require the full
+verification sequence above.
 
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`

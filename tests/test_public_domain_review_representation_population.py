@@ -105,6 +105,13 @@ def test_build_candidate_skips_preservation_only_plan() -> None:
     assert build_candidate(_source(), _lane(), compiler) is None
 
 
+def test_build_candidate_skips_text_too_short_for_grounded_generation() -> None:
+    source = _source()
+    source["text"] = "A contextless collection caption."
+    source["scoped_text_sha256"] = hashlib.sha256(source["text"].encode()).hexdigest()
+    assert build_candidate(source, _lane(), _compiler()) is None
+
+
 def test_build_candidate_rejects_rights_drift() -> None:
     source = _source()
     source["source"]["license"] = "CC-BY-4.0"

@@ -29,6 +29,8 @@ from sai.data.token_stream import canonical_sha256, sha256_file
 SCHEMA = "sai-public-domain-review-representation-population-v1"
 RECORD_SCHEMA = "sai-public-domain-review-representation-candidate-v1"
 MAXIMUM_REQUESTED_REPRESENTATIONS = 6
+MINIMUM_SOURCE_TEXT_BYTES = 200
+MAXIMUM_SOURCE_TEXT_BYTES = 262_144
 DERIVATIVE_PRIORITY = (
     "conceptual_summary",
     "concise_reference",
@@ -210,6 +212,9 @@ def build_candidate(
         raise PublicDomainReviewRepresentationPopulationError(
             "representation candidate binding differs"
         )
+    text_bytes = len(text.encode())
+    if not MINIMUM_SOURCE_TEXT_BYTES <= text_bytes <= MAXIMUM_SOURCE_TEXT_BYTES:
+        return None
     requested = select_derivative_representations(
         judgment.get("recommended_representations")
     )
@@ -301,6 +306,7 @@ def build_population(
         )
     output_rows = []
     skipped_without_derivative = 0
+    skipped_outside_text_envelope = 0
     for source in priority:
         original_identity = source["original_candidate_identity_sha256"]
         lane = lanes_by_original.get(original_identity)
@@ -322,7 +328,11 @@ def build_population(
         compiler = _validate_compiler_receipt(_load_receipt(receipt_path), generic)
         row = build_candidate(source, lane, compiler)
         if row is None:
-            skipped_without_derivative += 1
+            text_bytes = len(source["text"].encode())
+            if not MINIMUM_SOURCE_TEXT_BYTES <= text_bytes <= MAXIMUM_SOURCE_TEXT_BYTES:
+                skipped_outside_text_envelope += 1
+            else:
+                skipped_without_derivative += 1
         else:
             output_rows.append(row)
     identities = [row["candidate_identity_sha256"] for row in output_rows]
@@ -362,6 +372,14 @@ def build_population(
                     len(row["text"].encode()) for row in output_rows
                 ),
             },
+            "source_text_byte_envelope": {
+                "minimum": MINIMUM_SOURCE_TEXT_BYTES,
+                "maximum": MAXIMUM_SOURCE_TEXT_BYTES,
+                "decision": "exclude_before_generation",
+            },
+            "skipped_outside_source_text_byte_envelope": (
+                skipped_outside_text_envelope
+            ),
             "skipped_without_derivative_representation": skipped_without_derivative,
             "requested_representation_counts": dict(sorted(types.items())),
             "source_text_persisted": True,
