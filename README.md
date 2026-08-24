@@ -508,6 +508,10 @@ aggregate receipt is
 The aggregate's four exact files were checksum-replayed into the authorized
 Stokes evidence root at
 `grounded-bridge-verification-aggregate/20260826-r1`.
+The source-safe generation and same-family verification aggregates were also
+published together and force-downloaded byte-identically from Hugging Face
+dataset commit
+[`d553b1f935e3bc62dc42fbbe56e326eb4c973fce`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/d553b1f935e3bc62dc42fbbe56e326eb4c973fce).
 This is meaningful positive quality evidence, but not admission: the aggregate
 explicitly keeps `bridge_verification_complete=false` until the independent
 Nemotron family, benchmark decontamination, global deduplication, and transfer
