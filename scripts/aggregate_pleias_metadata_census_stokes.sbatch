@@ -16,10 +16,10 @@ source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
 
 sai_manifest=/lustre/fs1/home/sa305415/sai-initiative/artifacts/sai_hf_materialized_source_lake_20260825_r1/manifest.jsonl
-sai_root=/lustre/fs1/home/sa305415/sai_data_sources/pleias-metadata-census-20260826-r1
+sai_root=/lustre/fs1/home/sa305415/sai_data_sources/pleias-metadata-census-20260826-r2
 
 python -m sai.data.pleias_metadata_census aggregate \
   --manifest "${sai_manifest}" \
   --shards-root "${sai_root}/shards" \
-  --logical-shards 64 \
+  --logical-shards 128 \
   --output "${sai_root}/aggregate.json"
