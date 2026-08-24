@@ -229,6 +229,10 @@ code flags, and signed digests—never source text. Aggregate `818572` requires 
 signature document count equals the exact benchmark-disjoint book count. Both
 jobs are CPU-only, requeue-disabled, and remain nontraining inputs to the final
 cross-source decision.
+The clean book manifest and final private rows preserve the independently agreed
+genre and shared semantic domains, as well as the exact agreement and benchmark
+screen record hashes. Deduplication therefore cannot erase the quality and
+pedagogical metadata needed by the later spiral scheduler.
 
 The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
 If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
@@ -1773,6 +1777,10 @@ Stokes payloads and downloads instead of risking the storage quota. Array
 requires every shard and re-verifies all 128 LFS identities from one repository
 snapshot. Both jobs are CPU-only, have requeue disabled, and remain nontraining
 until the final cross-source/subdocument dedup and corpus ledger close.
+Materialization also preserves the exact semantic stratum plus its conservative
+quality floor and mean from the selection database. Both later rewrite schemas
+carry those fields unchanged, so curriculum and mixture construction do not
+have to infer quality from a collection name after text transformations.
 
 To avoid pulling a second 2 TB copy onto Stokes for subdocument deduplication,
 the remotely verified candidate shards are reopened one at a time and segmented
