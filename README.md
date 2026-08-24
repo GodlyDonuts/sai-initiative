@@ -1863,6 +1863,29 @@ size and SHA-256 are replayed; only the small signed receipt is then created on
 Lustre. Upload failure leaves no durable partial output, so the shard remains
 resumable. This means the 1.5 TB remote component ceiling does not require a
 second 1.5 TB copy beneath the 1 TB Stokes user quota.
+
+The destination account's public LFS allowance is nevertheless already closed:
+the 8.802 TB source lake is present, the authenticated account is not on a paid
+plan, and Hugging Face rejected even the small compressed lake manifest while
+ordinary metadata commits remained available. Running the original materialize
+→ upload → download → rewrite graph would therefore create multiple terabyte-
+scale copies and fail at publication. Array `818564` is held before execution;
+all upstream census, semantic, descriptor, exact/near-deduplication, and byte-
+selection jobs remain active or dependency-staged through `818563`.
+
+Sai now has a storage-virtual alternative that reuses the exact raw PleIAs LFS
+objects already present at their pinned source-lake identities. Each of 128
+parent-disjoint workers reopens only selected rows, replays content identity and
+semantic metadata, applies the complete official benchmark boundary, and emits
+sixteen normalized subdocument-signature partitions plus a source-safe retained-
+locator Parquet. Locators preserve repository, revision, parent/row identity,
+rights, language, quality, difficulty, curriculum, and content hashes but never
+source text. The aggregate requires exact selection-row and selected-byte
+coverage. Existing external-memory deduplication accepts this virtual coverage
+without pretending the documents were materialized. This removes the first
+roughly 1.5 TB duplicate upload while preserving deterministic reconstruction;
+final cross-source decisions, reconstruction hashes, tokenization, curriculum
+packing, and durable training custody still must close before admission.
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not

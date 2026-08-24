@@ -130,3 +130,48 @@ def test_global_decision_emits_text_free_shard_deletions(tmp_path):
     assert result["decision_contains_source_text"] is False
     assert repeated not in (output / "receipt.json").read_text()
     assert result["cross_source_subdocument_deduplication_complete"] is False
+
+
+def test_global_decision_accepts_complete_virtual_document_coverage(tmp_path):
+    root = tmp_path / "signatures"
+    row = signature_rows(
+        _candidate(
+            "c" * 64,
+            "A unique opening about geology.",
+            "A recurring reference footer long enough to segment and hash.",
+        ),
+        0,
+        0,
+    )
+    _signature_shard(root, 0, row)
+    _signature_shard(root, 1, [])
+    bucket_totals = {
+        f"bucket_{bucket:02x}_signatures": sum(
+            int(item["normalized_sha256"][0], 16) == bucket for item in row
+        )
+        for bucket in range(16)
+    }
+    aggregate = _signed(
+        {
+            "schema": "sai-pleias-subdocument-signature-aggregate-v1",
+            "shards": {"logical_shards": 2},
+            "totals": {"signatures": len(row), **bucket_totals},
+            "complete_materialized_document_coverage": False,
+            "complete_virtual_document_coverage": True,
+            "source_text_persisted": False,
+            "training_ready": False,
+        }
+    )
+    (root / "aggregate.json").write_text(json.dumps(aggregate, sort_keys=True))
+    bucket_index = int(row[0]["normalized_sha256"][0], 16)
+    result = build_decision(
+        root,
+        tmp_path / "decision",
+        2,
+        bucket_index,
+        chunk_records=1,
+        maximum_open_runs=2,
+        temporary_root=tmp_path,
+    )
+    assert result["counts"]["signatures"] >= 1
+    assert result["decision_contains_source_text"] is False

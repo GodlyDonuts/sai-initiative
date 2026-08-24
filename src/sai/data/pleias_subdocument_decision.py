@@ -304,7 +304,10 @@ def build_decision(
     )
     if (
         aggregate.get("shards", {}).get("logical_shards") != logical_shards
-        or aggregate.get("complete_materialized_document_coverage") is not True
+        or not (
+            aggregate.get("complete_materialized_document_coverage") is True
+            or aggregate.get("complete_virtual_document_coverage") is True
+        )
         or aggregate.get("source_text_persisted") is not False
     ):
         raise PleiasSubdocumentDecisionError("signature aggregate differs")
