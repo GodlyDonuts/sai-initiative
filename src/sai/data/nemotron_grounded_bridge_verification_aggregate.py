@@ -35,6 +35,8 @@ from sai.data.grounded_bridge_verifier_labeling import (
 from sai.data.nemotron_grounded_bridge_verifier import (
     DEFAULT_BASE_URL,
     DEFAULT_MODEL,
+    OPENROUTER_BASE_URL,
+    OPENROUTER_FREE_MODEL,
     OUTPUT_SUFFIX,
     REASONING_EFFORT,
     RECEIPT_SCHEMA,
@@ -52,7 +54,7 @@ from sai.data.token_stream import canonical_sha256, sha256_file
 
 SCHEMA = (
     "sai-grounded-cross-domain-independent-model-family-"
-    "bridge-verification-aggregate-v1"
+    "bridge-verification-aggregate-v2"
 )
 RETAINED_SCHEMA = (
     "sai-independent-model-family-retained-grounded-cross-domain-bridge-v1"
@@ -68,6 +70,24 @@ RAW_JUDGMENT_KEYS = tuple(INDEPENDENT_RUBRIC)
 
 class NemotronBridgeVerificationAggregateError(RuntimeError):
     """The verification population, receipt, shard, or route differs."""
+
+
+def request_transport(receipt: dict[str, Any]) -> str | None:
+    """Bind an allowed endpoint/model pair to the canonical Nemotron host."""
+
+    pair = (receipt.get("requested_model"), receipt.get("endpoint_origin"))
+    if pair == (DEFAULT_MODEL, DEFAULT_BASE_URL):
+        return "nvidia_direct"
+    if pair != (OPENROUTER_FREE_MODEL, OPENROUTER_BASE_URL):
+        return None
+    identity = receipt.get("response_identity")
+    if not isinstance(identity, dict):
+        return None
+    if identity.get("provider") != "Nvidia":
+        return None
+    if identity.get("model") not in {DEFAULT_MODEL, OPENROUTER_FREE_MODEL}:
+        return None
+    return "openrouter_nvidia_free"
 
 
 def load_same_family_routes(
@@ -197,14 +217,14 @@ def validate_receipt(
         ) from error
     attempt_hashes = receipt.get("attempt_request_sha256s")
     attempts = receipt.get("attempts")
+    transport = request_transport(receipt)
     if (
         receipt.get("schema") != RECEIPT_SCHEMA
         or receipt.get("status") != "complete"
         or receipt.get("receipt_sha256") != canonical_sha256(unsigned)
         or receipt.get("candidate_identity_sha256")
         != candidate["candidate_identity_sha256"]
-        or receipt.get("requested_model") != DEFAULT_MODEL
-        or receipt.get("endpoint_origin") != DEFAULT_BASE_URL
+        or transport is None
         or receipt.get("credential_transport") != "direct_portal_bearer"
         or receipt.get("rubric_sha256") != INDEPENDENT_RUBRIC_SHA256
         or receipt.get("request_reasoning_effort") != REASONING_EFFORT
@@ -260,7 +280,8 @@ def _validate_summaries(
         if (
             summary.get("schema") != SUMMARY_SCHEMA
             or summary.get("status") != "complete"
-            or summary.get("model") != DEFAULT_MODEL
+            or summary.get("model")
+            not in {DEFAULT_MODEL, OPENROUTER_FREE_MODEL}
             or summary.get("rubric_sha256") != INDEPENDENT_RUBRIC_SHA256
             or summary.get("logical_shards") != logical_shards
             or summary.get("shard_index") != index
@@ -433,6 +454,7 @@ def build_aggregate(
     receipts = []
     receipt_hashes = []
     usage: Counter[str] = Counter()
+    transport_counts: Counter[str] = Counter()
     for candidate in candidates:
         path = judgments_root / (
             f"{candidate['candidate_identity_sha256']}.{OUTPUT_SUFFIX}.json"
@@ -440,6 +462,12 @@ def build_aggregate(
         receipt = validate_receipt(_load_receipt(path), candidate)
         receipts.append(receipt)
         receipt_hashes.append(receipt["receipt_sha256"])
+        transport = request_transport(receipt)
+        if transport is None:  # pragma: no cover - validate_receipt rejects it
+            raise NemotronBridgeVerificationAggregateError(
+                "bridge verification transport differs"
+            )
+        transport_counts[transport] += 1
         route, row = route_candidate(
             candidate,
             receipt,
@@ -493,7 +521,25 @@ def build_aggregate(
                 "receipt_sha256": same_family_aggregate["receipt_sha256"],
             },
             "requested_model": DEFAULT_MODEL,
-            "endpoint_origin": DEFAULT_BASE_URL,
+            "endpoint_origin": (
+                DEFAULT_BASE_URL
+                if set(transport_counts) == {"nvidia_direct"}
+                else None
+            ),
+            "request_transport_counts": dict(sorted(transport_counts.items())),
+            "allowed_request_transports": {
+                "nvidia_direct": {
+                    "endpoint_origin": DEFAULT_BASE_URL,
+                    "requested_model": DEFAULT_MODEL,
+                },
+                "openrouter_nvidia_free": {
+                    "endpoint_origin": OPENROUTER_BASE_URL,
+                    "requested_model": OPENROUTER_FREE_MODEL,
+                    "required_response_provider": "Nvidia",
+                    "canonical_model": DEFAULT_MODEL,
+                },
+            },
+            "all_request_transports_bind_canonical_model": True,
             "same_family_rubric_sha256": SAME_FAMILY_RUBRIC_SHA256,
             "independent_rubric_sha256": INDEPENDENT_RUBRIC_SHA256,
             "logical_shards": logical_shards,

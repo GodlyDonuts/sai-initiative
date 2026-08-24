@@ -86,7 +86,7 @@ def test_finalizer_reuses_only_schema_valid_sealed_outputs(tmp_path: Path) -> No
     _write_receipt(
         aggregate_root,
         "sai-grounded-cross-domain-independent-model-family-bridge-"
-        "verification-aggregate-v1",
+        "verification-aggregate-v2",
         "complete_independent_model_family_bridge_verification_routes",
         "aggregate",
     )

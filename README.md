@@ -536,9 +536,17 @@ ablation close.
 
 An independent-family lane now replays the same 512 immutable source-paired
 candidates through `nvidia/nemotron-3-ultra-550b-a55b`. Its receipts bind the
-NVIDIA endpoint, independent rubric, exact source quotes, every generated
-claim, and one verdict per identity; thirteen bounded direct requests operate over
-disjoint locked shards. Even an independent retain is not admission. A
+canonical model identity, independent rubric, exact source quotes, every
+generated claim, and one verdict per identity. Two transports are fail-closed:
+the direct NVIDIA endpoint with the canonical model name, or OpenRouter's exact
+`:free` alias only when the response reports provider `Nvidia` and the canonical
+Nemotron model. The aggregate records counts by transport and rejects every
+other endpoint/model/provider combination. Rate-safe workers operate over
+disjoint locked shards. A deterministic quote recovery step may replace a
+model-rendered citation only with its unique normalization-equivalent literal
+span in the assigned anchor; every repair records the raw/recovered hashes and
+source offsets, while ambiguous or invented evidence still fails closed. Even
+an independent retain is not admission. A
 dependency-staged post-generation screen canonicalizes every retained bridge
 thesis, shared structure, claim, representation, prerequisite map, analogy
 limit, and verification question, then compares all word/code shingles against
@@ -548,7 +556,7 @@ transfer ablation remain mandatory.
 
 The resumable execution entry point is
 `run_nemotron_grounded_bridge_verification_local.sh`. It assigns each of the 64
-identity shards to exactly one of thirteen lanes, permits one request per lane,
+identity shards to locked resumable lanes, permits bounded requests per lane,
 uses the canonical pre-existing independent-Nemotron receipt root, skips only
 an already sealed shard summary, and refuses to aggregate unless all 512
 receipts and all 64 summaries exist. Per-shard atomic locks prevent a resumed
@@ -2952,6 +2960,8 @@ and curriculum arrays that feed the final ledger were raised to 32-way
 admission. This changes no source identity, selected row, model request,
 decision, or output byte. The exact scheduler receipt is
 `artifacts/sai_four_hour_corpus_acceleration_20260824_r1.json`.
+It was force-downloaded byte-identically from Hugging Face dataset commit
+[`5d4038c59a95cb8042d2e8b499173c8229448cea`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5d4038c59a95cb8042d2e8b499173c8229448cea).
 
 `sai.data.virtual_spiral_curriculum_index` adds the curriculum layer after the
 two final component aggregates close. It emits source-text-free Parquet rows
@@ -3037,15 +3047,15 @@ completion watcher builds the query after independent bridge verification,
 copies candidates and hash evidence to Stokes, creates a read-only immutable
 runtime, and dependency-stages 128 PleIAs scans, 64 Books scans, their aggregate,
 and reconciliation behind the already-frozen final foundation jobs. The full
-implementation currently passes **1,299 tests**, including deterministic replay,
+implementation currently passes **1,304 tests**, including deterministic replay,
 tamper rejection, exact overlap ownership, source-key aliases, conflicting
 anchor splits, and compiler-to-query integration.
 
 The live connection-data verification population contains 512 grounded bridge
 candidates. Same-family review has sealed all 512 identities and all 64 shard
 summaries: 500 retain, 12 revise, and zero reject. The source-independent
-Nemotron Ultra pass has so far sealed 414/512 identities and 40/64 summaries:
-382 retain, 27 revise, and 5 reject. These are partial verifier routes, not an
+Nemotron Ultra pass has so far sealed 444/512 identities and 44/64 summaries:
+409 retain, 30 revise, and 5 reject. These are partial verifier routes, not an
 admission result; final retention requires both complete families, conservative
 disagreement handling, official-boundary decontamination, global foundation
 overlap reconciliation, and positive transfer measurement.

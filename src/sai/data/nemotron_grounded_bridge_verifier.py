@@ -14,6 +14,7 @@ from sai.data.nemotron_grounded_bridge_verifier_labeling import (
     build_messages,
     normalize_candidate,
     normalize_model_judgment,
+    repair_evidence_quotes,
     validation_hint,
 )
 from sai.data.nous_compiler_worker import execute_contract, run_shard_locked
@@ -30,6 +31,8 @@ OUTPUT_SUFFIX = "grounded-bridge-independent-model-family-verification"
 DEFAULT_CONCURRENCY = 2
 DEFAULT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b"
 DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1"
+OPENROUTER_FREE_MODEL = f"{DEFAULT_MODEL}:free"
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
 
 def load_candidates(path: Path) -> list[dict[str, Any]]:
@@ -79,6 +82,7 @@ def execute_one(
         maximum_completion_tokens=5_200,
         reasoning_effort=REASONING_EFFORT,
         evidence_container_name="source_document",
+        evidence_repair_function=repair_evidence_quotes,
         validation_hint_function=validation_hint,
         request_function=request_function,
         sleep_function=sleep_function,

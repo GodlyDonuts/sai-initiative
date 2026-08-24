@@ -9,10 +9,12 @@ independent-model-family binding on top of that untouched contract.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Any
 
 from sai.data.agent_labeling import _bounded_int, _exact
+from sai.data.data_compiler_labeling import _recover_unique_source_span
 from sai.data.grounded_bridge_verifier_labeling import (
     DEFECTS,
     VERDICTS,
@@ -204,6 +206,85 @@ def build_messages(candidate: dict[str, Any]) -> list[dict[str, str]]:
             ),
         },
     ]
+
+
+def _repair_quote(
+    value: Any, text: str, path: str
+) -> tuple[Any, list[dict[str, Any]]]:
+    if not isinstance(value, str) or value in text:
+        return value, []
+    exact, start, end = _recover_unique_source_span(text, value)
+    return exact, [
+        {
+            "path": path,
+            "model_quote_utf8_sha256": hashlib.sha256(value.encode()).hexdigest(),
+            "recovered_quote_utf8_sha256": hashlib.sha256(
+                exact.encode()
+            ).hexdigest(),
+            "source_span_codepoint_start": start,
+            "source_span_codepoint_end": end,
+        }
+    ]
+
+
+def _repair_quotes(
+    values: Any, text: str, path: str
+) -> tuple[Any, list[dict[str, Any]]]:
+    if not isinstance(values, list):
+        return values, []
+    repaired = []
+    repairs = []
+    for index, value in enumerate(values):
+        exact, found = _repair_quote(value, text, f"{path}[{index}]")
+        repaired.append(exact)
+        repairs.extend(found)
+    return repaired, repairs
+
+
+def repair_evidence_quotes(
+    payload: Any, candidate: dict[str, Any]
+) -> tuple[Any, list[dict[str, Any]]]:
+    """Recover only unique normalization-equivalent bridge evidence spans."""
+
+    if not isinstance(payload, dict):
+        return payload, []
+    candidate = normalize_candidate(candidate)
+    result = dict(payload)
+    repairs = []
+    checks = result.get("claim_checks")
+    claims = candidate["generated"]["claims"]
+    if isinstance(checks, list):
+        updated = []
+        for index, check in enumerate(checks):
+            if not isinstance(check, dict):
+                updated.append(check)
+                continue
+            check = dict(check)
+            if (
+                index < len(claims)
+                and check.get("supported") is True
+                and claims[index]["anchor_side"] in {"A", "B"}
+            ):
+                side = claims[index]["anchor_side"]
+                anchor = candidate[
+                    "anchor_a_text" if side == "A" else "anchor_b_text"
+                ]
+                check["evidence_quote"], found = _repair_quote(
+                    check.get("evidence_quote"),
+                    anchor,
+                    f"claim_checks[{index}].evidence_quote",
+                )
+                repairs.extend(found)
+            updated.append(check)
+        result["claim_checks"] = updated
+    for key, text in (
+        ("anchor_a_evidence_quotes", candidate["anchor_a_text"]),
+        ("anchor_b_evidence_quotes", candidate["anchor_b_text"]),
+        ("generated_evidence_quotes", candidate["generated_text"]),
+    ):
+        result[key], found = _repair_quotes(result.get(key), text, key)
+        repairs.extend(found)
+    return result, repairs
 
 
 def normalize_model_judgment(value: Any, candidate: dict[str, Any]) -> dict[str, Any]:

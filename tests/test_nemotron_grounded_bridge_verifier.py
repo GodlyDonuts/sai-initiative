@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from copy import deepcopy
 import json
+
+import pytest
 
 from sai.data.nemotron_grounded_bridge_verifier import (
     DEFAULT_BASE_URL,
@@ -9,7 +12,9 @@ from sai.data.nemotron_grounded_bridge_verifier import (
     execute_one,
 )
 from sai.data.nemotron_grounded_bridge_verifier_labeling import (
+    NemotronBridgeVerifierError,
     normalize_model_judgment,
+    repair_evidence_quotes,
 )
 from tests.test_grounded_bridge_verifier_labeling import _candidate, _retain
 
@@ -64,3 +69,74 @@ def test_execute_one_seals_independent_family_bridge_verification() -> None:
     assert result["judgment"]["independent_model_family_verification_complete"] is True
     assert result["judgment"]["bridge_verified"] is False
     assert result["training_ready"] is False
+
+
+def test_bridge_evidence_repair_recovers_unique_literal_spans() -> None:
+    candidate = _candidate()
+    payload = deepcopy(_retain(candidate))
+    literal = candidate["anchor_a_text"]
+    payload["anchor_a_evidence_quotes"] = [literal.upper()]
+    for check in payload["claim_checks"]:
+        if check["anchor_side"] == "A":
+            check["evidence_quote"] = literal.upper()
+    repaired, repairs = repair_evidence_quotes(payload, candidate)
+    assert repaired["anchor_a_evidence_quotes"] == [literal]
+    assert all(
+        check["evidence_quote"] == literal
+        for check in repaired["claim_checks"]
+        if check["anchor_side"] == "A"
+    )
+    assert any(row["path"] == "anchor_a_evidence_quotes[0]" for row in repairs)
+    assert normalize_model_judgment(repaired, candidate)["verdict"] == "retain"
+
+
+def test_bridge_evidence_repair_rejects_invented_quote() -> None:
+    candidate = _candidate()
+    payload = deepcopy(_retain(candidate))
+    payload["anchor_a_evidence_quotes"] = ["invented source evidence"]
+    with pytest.raises(RuntimeError, match="no exact source span"):
+        repair_evidence_quotes(payload, candidate)
+
+
+def test_execute_one_seals_quote_repair_receipt() -> None:
+    candidate = _candidate()
+    payload = deepcopy(_retain(candidate))
+    literal = candidate["anchor_a_text"]
+    payload["anchor_a_evidence_quotes"] = [literal.upper()]
+
+    def request_function(**_kwargs):
+        return (
+            {
+                "id": "independent-bridge-verification-repair-1",
+                "model": DEFAULT_MODEL,
+                "provider": "nvidia",
+                "created": 1,
+                "choices": [
+                    {
+                        "message": {"content": json.dumps(payload)},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 20,
+                    "total_tokens": 30,
+                },
+            },
+            200,
+        )
+
+    result = execute_one(
+        candidate,
+        model=DEFAULT_MODEL,
+        base_url=DEFAULT_BASE_URL,
+        api_key="nvidia-only",
+        timeout_seconds=10,
+        maximum_attempts=1,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+    assert result["judgment"]["anchor_a_evidence_quotes"] == [literal]
+    assert result["deterministic_evidence_quote_repairs"][0]["path"] == (
+        "anchor_a_evidence_quotes[0]"
+    )

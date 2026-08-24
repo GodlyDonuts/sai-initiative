@@ -12,12 +12,15 @@ from sai.data.nemotron_grounded_bridge_verification_aggregate import (
     REVISION_SCHEMA,
     NemotronBridgeVerificationAggregateError,
     request_accounting,
+    request_transport,
     route_candidate,
     validate_receipt,
 )
 from sai.data.nemotron_grounded_bridge_verifier import (
     DEFAULT_BASE_URL,
     DEFAULT_MODEL,
+    OPENROUTER_BASE_URL,
+    OPENROUTER_FREE_MODEL,
     RECEIPT_SCHEMA,
     execute_one,
 )
@@ -90,6 +93,54 @@ def test_validate_receipt_accepts_exact_nvidia_binding_then_fails_on_drift() -> 
     assert validate_receipt(receipt, candidate)["schema"] == RECEIPT_SCHEMA
     drifted = deepcopy(receipt)
     drifted["endpoint_origin"] = "https://openrouter.ai/api/v1"
+    drifted["receipt_sha256"] = canonical_sha256(
+        {key: value for key, value in drifted.items() if key != "receipt_sha256"}
+    )
+    with pytest.raises(NemotronBridgeVerificationAggregateError, match="receipt"):
+        validate_receipt(drifted, candidate)
+
+
+def test_validate_receipt_accepts_exact_openrouter_nvidia_free_alias() -> None:
+    candidate = _candidate()
+    payload = _retain(candidate)
+
+    def request_function(**_kwargs):
+        return (
+            {
+                "id": "openrouter-nvidia-bridge-verification-1",
+                "model": OPENROUTER_FREE_MODEL,
+                "provider": "Nvidia",
+                "created": 1,
+                "choices": [
+                    {
+                        "message": {"content": json.dumps(payload)},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 10,
+                    "completion_tokens": 20,
+                    "total_tokens": 30,
+                },
+            },
+            200,
+        )
+
+    receipt = execute_one(
+        candidate,
+        model=OPENROUTER_FREE_MODEL,
+        base_url=OPENROUTER_BASE_URL,
+        api_key="openrouter-free-only",
+        timeout_seconds=10,
+        maximum_attempts=1,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+    assert request_transport(receipt) == "openrouter_nvidia_free"
+    assert validate_receipt(receipt, candidate)["schema"] == RECEIPT_SCHEMA
+
+    drifted = deepcopy(receipt)
+    drifted["response_identity"]["provider"] = "DifferentProvider"
     drifted["receipt_sha256"] = canonical_sha256(
         {key: value for key, value in drifted.items() if key != "receipt_sha256"}
     )
