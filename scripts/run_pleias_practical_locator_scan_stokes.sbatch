@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=8G
-#SBATCH --time=12:00:00
+#SBATCH --time=24:00:00
 #SBATCH --array=0-127%128
 #SBATCH --exclude=ec65
 #SBATCH --no-requeue
@@ -27,7 +27,7 @@ set +a
 export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
 
 sai_manifest=/lustre/fs1/home/sa305415/sai-initiative/artifacts/sai_hf_materialized_source_lake_20260825_r1/manifest.jsonl
-sai_parent=/lustre/fs1/home/sa305415/sai_data_sources/pleias-practical-locators-20260826-r2
+sai_parent=/lustre/fs1/home/sa305415/sai_data_sources/pleias-practical-locators-20260826-r3
 sai_output=${sai_parent}/shards/shard_$(printf '%05d' "${SLURM_ARRAY_TASK_ID}")
 
 mkdir -p "${sai_parent}/shards" "${TMPDIR:-/tmp}"
