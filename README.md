@@ -1735,6 +1735,17 @@ requires every shard and re-verifies all 128 LFS identities from one repository
 snapshot. Both jobs are CPU-only, have requeue disabled, and remain nontraining
 until the final cross-source/subdocument dedup and corpus ledger close.
 
+To avoid pulling a second 2 TB copy onto Stokes for subdocument deduplication,
+the remotely verified candidate shards are reopened one at a time and segmented
+losslessly at natural prose/code boundaries. Only component/shard/document/chunk
+locators, character spans, normalized SHA-256 identities, lengths, and code flags
+are retained locally; no source text enters the signature index. This makes a
+global frequency/length-aware boilerplate decision possible with a comparatively
+small external index, followed by targeted remote-shard rewrites. Signature array
+`818566_[0-127%32]` is staged after materialization aggregate `818565`; aggregate
+`818567` requires all identities. Both are CPU-only, requeue-disabled, and still
+mark global subdocument and cross-source deduplication incomplete.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
