@@ -42,6 +42,8 @@ def _components(tmp_path):
             "cross_source_subdocument_deduplication_complete": True,
             "token_count_requires_recomputation": True,
             "source_disjoint_split_complete": True,
+            "semantic_quality_metadata_complete": True,
+            "curriculum_metadata_complete": True,
             "training_ready": False,
         },
     )
@@ -63,6 +65,8 @@ def _components(tmp_path):
             "cross_source_subdocument_deduplication_complete": True,
             "token_count_requires_recomputation": True,
             "source_disjoint_split_complete": True,
+            "semantic_quality_metadata_complete": True,
+            "curriculum_metadata_complete": True,
             "training_ready": False,
         },
     )
@@ -85,6 +89,8 @@ def test_ledger_uses_exact_post_rewrite_bytes_without_padding(tmp_path):
     assert result["policy"]["padding_for_volume_prohibited"] is True
     assert result["final_corpus_complete"] is False
     assert result["source_disjoint_split_complete"] is True
+    assert result["semantic_quality_metadata_complete_for_listed_components"] is True
+    assert result["curriculum_metadata_complete_for_listed_components"] is True
     assert result["training_ready"] is False
 
 

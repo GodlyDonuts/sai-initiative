@@ -1883,6 +1883,13 @@ nonempty and records their exact post-rewrite byte totals. This split is for
 held-out data/model selection and remains separate from all official public
 benchmark boundaries.
 
+The same aggregate boundary now fails closed on metadata coverage. Every final
+PleIAs row must contribute exactly one semantic stratum, quality floor,
+difficulty, and curriculum phase plus at least one domain; every final book must
+carry independently agreed curriculum metadata, exactly one genre, at least one
+domain, and at least one curriculum-band vote. The 2 TB ledger accepts neither
+component unless both semantic-quality and curriculum coverage are complete.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash

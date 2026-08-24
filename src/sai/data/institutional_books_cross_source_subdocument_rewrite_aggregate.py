@@ -35,6 +35,33 @@ class InstitutionalBooksCrossSourceSubdocumentRewriteAggregateError(RuntimeError
     """Private shard coverage, deletion accounting, or custody differs."""
 
 
+def _metadata_coverage_complete(totals: Counter[str]) -> bool:
+    """Require agreed genre, domain, and curriculum evidence for every book."""
+
+    documents = totals["documents"]
+
+    def dimension(prefix: str) -> int:
+        values = [
+            value
+            for key, value in totals.items()
+            if key.startswith(prefix) and key.endswith("::documents")
+        ]
+        if not values or any(
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+            for value in values
+        ):
+            return -1
+        return sum(values)
+
+    return (
+        documents > 0
+        and totals["documents_with_consensus_curriculum_metadata"] == documents
+        and dimension("semantic_genre::") == documents
+        and dimension("semantic_domain::") >= documents
+        and dimension("curriculum_band_vote::") >= documents
+    )
+
+
 def build_aggregate(
     filtered_root: Path,
     decontamination_root: Path,
@@ -74,9 +101,9 @@ def build_aggregate(
         root = rewrite_root / "shards" / f"shard_{shard_index:05d}"
         receipt = _load_json(root / "receipt.json")
         descriptor = receipt.get("output")
-        output_valid = descriptor is None and receipt.get("counts", {}).get(
-            "documents", 0
-        ) == 0
+        output_valid = (
+            descriptor is None and receipt.get("counts", {}).get("documents", 0) == 0
+        )
         if isinstance(descriptor, dict):
             path = root / descriptor.get("path", "")
             output_valid = (
@@ -85,8 +112,7 @@ def build_aggregate(
                 and path.stat().st_nlink == 1
                 and path.stat().st_size == descriptor.get("bytes")
                 and sha256_file(path) == descriptor.get("sha256")
-                and descriptor.get("rows")
-                == receipt.get("counts", {}).get("documents")
+                and descriptor.get("rows") == receipt.get("counts", {}).get("documents")
             )
             if output_valid:
                 totals["private_output_file_bytes"] += descriptor["bytes"]
@@ -108,8 +134,7 @@ def build_aggregate(
             or receipt.get("cross_source_subdocument_deduplication_complete")
             is not True
             or receipt.get("source_disjoint_split_complete") is not True
-            or receipt.get("source_disjoint_split_policy_sha256")
-            != SPLIT_POLICY_SHA256
+            or receipt.get("source_disjoint_split_policy_sha256") != SPLIT_POLICY_SHA256
             or not isinstance(counts, dict)
             or counts.get("filtered_source_rows") != source.get("retained_rows", 0)
             or counts.get("output_text_utf8_bytes", 0)
@@ -126,8 +151,7 @@ def build_aggregate(
     if (
         totals["documents"] != len(clean)
         or totals["candidate_deletion_chunks"] != expected_decisions
-        or totals["split::train::documents"]
-        + totals["split::development::documents"]
+        or totals["split::train::documents"] + totals["split::development::documents"]
         != totals["documents"]
         or totals["split::train::text_utf8_bytes"]
         + totals["split::development::text_utf8_bytes"]
@@ -135,6 +159,10 @@ def build_aggregate(
     ):
         raise InstitutionalBooksCrossSourceSubdocumentRewriteAggregateError(
             "private global accounting differs"
+        )
+    if not _metadata_coverage_complete(totals):
+        raise InstitutionalBooksCrossSourceSubdocumentRewriteAggregateError(
+            "semantic curriculum metadata coverage differs"
         )
     payload = {
         "schema": SCHEMA,
@@ -161,6 +189,8 @@ def build_aggregate(
         "cross_source_subdocument_deduplication_complete": True,
         "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
         "source_disjoint_split_complete": True,
+        "semantic_quality_metadata_complete": True,
+        "curriculum_metadata_complete": True,
         "token_count_requires_recomputation": True,
         "training_ready": False,
         "four_b_training_authorized": False,

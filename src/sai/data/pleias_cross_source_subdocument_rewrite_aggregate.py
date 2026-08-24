@@ -33,6 +33,34 @@ class PleiasCrossSourceSubdocumentRewriteAggregateError(RuntimeError):
     """Shard coverage, global accounting, or remote identity differs."""
 
 
+def _metadata_coverage_complete(totals: Counter[str]) -> bool:
+    """Require one exact semantic/curriculum assignment for every document."""
+
+    documents = totals["documents"]
+
+    def dimension(prefix: str) -> int:
+        values = [
+            value
+            for key, value in totals.items()
+            if key.startswith(prefix) and key.endswith("::documents")
+        ]
+        if not values or any(
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+            for value in values
+        ):
+            return -1
+        return sum(values)
+
+    return (
+        documents > 0
+        and dimension("semantic_stratum::") == documents
+        and dimension("quality_floor_milli::") == documents
+        and dimension("curriculum_phase::") == documents
+        and dimension("difficulty_mean_milli::") == documents
+        and dimension("semantic_domain::") >= documents
+    )
+
+
 def build_aggregate(
     source_root: Path,
     decision_root: Path,
@@ -125,8 +153,7 @@ def build_aggregate(
             "global deletion accounting differs"
         )
     if (
-        totals["split::train::documents"]
-        + totals["split::development::documents"]
+        totals["split::train::documents"] + totals["split::development::documents"]
         != totals["documents"]
         or totals["split::train::text_utf8_bytes"]
         + totals["split::development::text_utf8_bytes"]
@@ -134,6 +161,10 @@ def build_aggregate(
     ):
         raise PleiasCrossSourceSubdocumentRewriteAggregateError(
             "source-disjoint split accounting differs"
+        )
+    if not _metadata_coverage_complete(totals):
+        raise PleiasCrossSourceSubdocumentRewriteAggregateError(
+            "semantic curriculum metadata coverage differs"
         )
     api = HfApi(token=token)
     info = api.dataset_info(DESTINATION_REPOSITORY, files_metadata=True)
@@ -155,9 +186,7 @@ def build_aggregate(
         "schema": SCHEMA,
         "status": "complete_nontraining_pleias_cross_source_rewritten",
         "source": {
-            "cross_source_decision_aggregate_receipt_sha256": decision[
-                "receipt_sha256"
-            ]
+            "cross_source_decision_aggregate_receipt_sha256": decision["receipt_sha256"]
         },
         "shards": {
             "logical_shards": logical_shards,
@@ -174,6 +203,8 @@ def build_aggregate(
         "cross_source_subdocument_deduplication_complete": True,
         "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
         "source_disjoint_split_complete": True,
+        "semantic_quality_metadata_complete": True,
+        "curriculum_metadata_complete": True,
         "token_count_requires_recomputation": True,
         "training_ready": False,
         "four_b_training_authorized": False,
