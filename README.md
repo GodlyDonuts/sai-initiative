@@ -181,6 +181,13 @@ bounded excerpts without publishing them. That subset is the sole input
 eligible for an independent model-family pass; a survivor count of zero remains
 a valid negative result and must not be repaired by relaxing the policy.
 
+Independent array `818519_[0-15%8]` is dependency-staged behind that subset and
+replays the same source-bound book rubric with
+`nvidia/nemotron-3-ultra-550b-a55b`, not the Hermès/OpenRouter model family.
+Aggregate `818520` verifies every independent receipt, model identity, rubric
+hash, shard summary, and usage total. This remains a verification measurement;
+only later agreement and decontamination logic may advance bytes.
+
 The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
 If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
 trains on that smaller verified corpus rather than padding with weak web text,
