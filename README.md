@@ -2874,10 +2874,18 @@ The live Institutional Books materializer has completed **all 64 of 64** private
 shards. Final identity 48 retained 5,955 of 5,964 selected rows, excluded nine,
 and sealed 1,159,146,835 enriched tokens under shard receipt SHA-256
 `354d1fdc656bcda98548a8cd10769f6766464a6be048417344ed3c94e762d3fa`.
-Create-only aggregate job `818440` is replaying all immutable shard receipts and
-private payload hashes before any book quality gate can release. The PleIAs
-metadata census has completed at least **79 of 128** canonical shards. At the four-hour acceleration
-cutoff, eight still-running identities—1, 42, 69, 72, 74, 75, 84, and 95—had
+Create-only aggregate job `818440` completed its full replay in 11:42 with zero
+exit status. It accounts for 382,961 selected rows, 382,166 materialized rows,
+795 exclusions, 69,845,861,132 enriched tokens, and 86,116,375,079 private bytes
+across 4,664 files. Its semantic receipt SHA-256 is
+`ab15d696872cdbd593aef53733b38473b3b72fe4db78b41fcbff8a55be0d9c77`;
+the aggregate file SHA-256 is
+`0745b4667a94f73a6a1bc20ab184388fcc91d7b39225b75e9129e46c8b44148f`,
+mirrored read-only beneath the authorized durable evidence root. That receipt
+released all 64 independent mechanical-filter identities in array `818505`.
+The PleIAs metadata census has completed at least **79 of 128** canonical
+shards. At the four-hour acceleration cutoff, eight still-running
+identities—1, 42, 69, 72, 74, 75, 84, and 95—had
 measured projected remaining runtimes between 1.35× and 3.68× their remaining
 walltime. Those originals were terminated before any recovery work began; their
 partial directories were moved intact to the durable evidence root. Independent
