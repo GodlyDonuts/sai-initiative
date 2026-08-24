@@ -37,6 +37,12 @@ ALLOWED_HTTPS_BASE_URLS = {
     "inference-api.nousresearch.com": "https://inference-api.nousresearch.com/v1",
     "openrouter.ai": "https://openrouter.ai/api/v1",
     "integrate.api.nvidia.com": "https://integrate.api.nvidia.com/v1",
+    "generativelanguage.googleapis.com": (
+        "https://generativelanguage.googleapis.com/v1beta/openai"
+    ),
+    "api.groq.com": "https://api.groq.com/openai/v1",
+    "api.cohere.com": "https://api.cohere.com/compatibility/v1",
+    "api.cerebras.ai": "https://api.cerebras.ai/v1",
 }
 RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504, 524}
 CONNECT_TIMEOUT_SECONDS = 5.0

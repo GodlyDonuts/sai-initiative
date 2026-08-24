@@ -20,6 +20,8 @@ from sai.data.data_compiler_labeling import (
     REPRESENTATIONS,
     RISK_KEYS,
     RUBRIC_SHA256,
+    STYLES,
+    TRANSLATION_DISPOSITIONS,
     build_messages,
     normalize_model_judgment,
     repair_evidence_quotes,
@@ -347,6 +349,20 @@ def execute_contract(
                         "be at most 96 characters. Do not repeat a concept and do "
                         "not use title case, symbols as standalone entries, or "
                         "nested objects."
+                    )
+                elif "style differs" in str(error):
+                    validation_hint = (
+                        " style must be exactly one of: "
+                        + ", ".join(STYLES)
+                        + ". Do not invent, combine, or qualify a style label."
+                    )
+                elif "translation disposition differs" in str(error):
+                    validation_hint = (
+                        " translation_disposition must be exactly one string chosen "
+                        "only from: "
+                        + ", ".join(TRANSLATION_DISPOSITIONS)
+                        + ". If source_language is english, use "
+                        "not_needed_english and translation_priority=0."
                     )
                 elif (
                     evidence_container_name == "document"

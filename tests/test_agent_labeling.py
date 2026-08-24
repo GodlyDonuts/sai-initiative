@@ -253,6 +253,10 @@ def test_execute_one_records_lineage_without_key() -> None:
     for endpoint in (
         "https://openrouter.ai/api/v1",
         "https://integrate.api.nvidia.com/v1",
+        "https://generativelanguage.googleapis.com/v1beta/openai",
+        "https://api.groq.com/openai/v1",
+        "https://api.cohere.com/compatibility/v1",
+        "https://api.cerebras.ai/v1",
     ):
         alternate = execute_one(
             candidate,
