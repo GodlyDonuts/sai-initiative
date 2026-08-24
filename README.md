@@ -1622,6 +1622,16 @@ Nemotron array `818542_[0-31%8]`, and comparison job `818543`, all after the
 primary Hermès aggregate `818539`. `scontrol` verified the exact dependencies;
 requeue is disabled and no GPU is requested.
 
+The final semantic-stratum decision is fail-closed. A stratum needs at least
+eight primary rows, at least 75% primary representation-verification routes,
+zero primary quarantine/rights routes, and at least 3.5/4 mean information
+density, educational value, source reliability, and coherence. It also needs
+at least two complete independent rows, at least 75% independent
+representation-verification routes, zero independent quarantine/rights routes,
+and at least 75% exact cross-family route agreement. Passing this gate advances
+a stratum only to full-content decontamination and global deduplication—not to
+training.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
