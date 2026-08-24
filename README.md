@@ -204,6 +204,13 @@ eligible code-shingle overlap is held. Its output contains only identities,
 hashes, byte/token counts, and overlap counts; global semantic deduplication is
 still required before any admission.
 
+Evidence job `818524` is staged behind the full-text screen. It copies a fixed
+allowlist of text-free aggregates, decisions, agreements, and clean identity
+manifests into the authorized durable evidence root, then seals every byte in a
+hash manifest. Candidate excerpts, compiler evidence quotes, and full book text
+are explicitly excluded. A separate local collector is already waiting for the
+same source-safe files so no temporary shard is the sole evidence copy.
+
 The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
 If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
 trains on that smaller verified corpus rather than padding with weak web text,
