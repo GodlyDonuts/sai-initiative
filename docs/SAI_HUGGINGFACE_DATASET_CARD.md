@@ -89,6 +89,12 @@ capacity, not accepted corpus volume.
   conservative FineMath survivors, while the broader completed Hermès audits
   already flag 36 answer-farm, 149 SEO/content-farm, and 97 corrupted rows.
   These remain exclusion evidence, not acceptable training examples.
+- Common Pile expansion is now source-specific and receipt-gated. The
+  post-audit decision replays all 3,290 bounded Pressbooks/Public Domain Review
+  judgments and 128 shard summaries, then applies explicit retain, reject,
+  quarantine, rights-hold, educational-value, reliability, and coherence
+  thresholds. Passing this gate authorizes candidate materialization only;
+  it is not rights clearance or training admission.
 - A source-agnostic mechanical gate now replays 10,371 distinct candidates from
   13 current populations. It routes 10,360 to mechanical pass, holds nine for
   duplicated-boilerplate cleanup, routes one short contextless bibliographic

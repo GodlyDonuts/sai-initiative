@@ -880,6 +880,18 @@ resumable create-only receipts. The compiler can recommend or reject
 representations, but its output remains a judgment rather than independent
 verification or admission.
 
+The post-audit expansion decision is now implemented in
+`sai.data.common_pile_full_source_promotion`. It cannot run on a partial audit:
+it replays all 3,290 compiler receipts, all 128 shard summaries, the combined
+cross-source survivor population, and both bounded pilot receipts. Promotion
+is per source and requires at least 1,024 bounded rows, at least 85% `retain`,
+at most 5% `reject`, at most 15% quarantine, at most 2.5% rights hold, and
+source-specific educational-value, reliability, and coherence floors. A pass
+authorizes only full-source **candidate materialization**. It does not authorize
+raw-source admission, training, or the 4B run. This makes the expansion path
+automatic at audit closure while keeping bad rows and weak sources out of the
+compiled stream.
+
 Only the source-safe receipt and text-free lineage were published and remotely
 replayed in Hugging Face dataset commit
 [`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf).

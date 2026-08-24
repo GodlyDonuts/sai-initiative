@@ -276,6 +276,14 @@ and
 Compiler judgments remain in progress and establish no verification or
 training admission.
 
+The repository now contains a fail-closed post-audit expansion decision,
+`sai.data.common_pile_full_source_promotion`. It refuses partial receipt or
+shard populations and replays the combined 3,290-row survivor population,
+every compiler receipt, all 128 shard summaries, both pilot receipts, and the
+zero-drop cross-source result. Its source-specific floors authorize only
+full-source candidate materialization; they cannot promote raw source files,
+grant rights clearance, mark data training-ready, or authorize the 4B run.
+
 Dataset commit
 [`44fbdd30cedc89ac908057929468d3162651d645`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/44fbdd30cedc89ac908057929468d3162651d645)
 completes the source-safe Common Pile confirmation mirror with the aggregate,
