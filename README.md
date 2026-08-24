@@ -1650,6 +1650,14 @@ semantic decision `818544`, with aggregate `818548` after every array identity.
 The exact dependencies were verified with `scontrol`; both jobs are CPU-only,
 have requeue disabled, and preserve one-output-per-shard custody.
 
+Global exact deduplication is disk-backed rather than memory-bound. A single
+SQLite decision streams every source-safe content-hash index and assigns each
+full-content SHA-256 to the lowest stable source-row identity. A second 128-way
+rewrite retains exactly those identities and seals aggregate accounting. This
+removes duplicates across source parents and shards without placing source text
+in the decision database. Near-duplicate and cross-source deduplication remain
+separate later gates, so even this output is still nontraining.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
