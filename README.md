@@ -1929,6 +1929,14 @@ objects plus verified reconstruction locators rather than pretending a second
 payload copy exists. All seven stages are CPU-only, requeue-disabled, and
 nontraining; final tokenization and curriculum packing remain open.
 
+Custody job `818649`, strictly after ledger `818645`, then hash-manifests the
+13,974-object pinned source lake, final private-book aggregate, virtual PleIAs
+aggregate, complete cross-source decision, exact foundation ledger, and the
+clean runtime Git commit. It atomically creates byte-identical receipts in both
+the working corpus root and authorized durable evidence root. The receipt
+explicitly keeps Hugging Face metadata publication, final tokenization,
+curriculum packing, final-corpus completion, and training readiness false.
+
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
