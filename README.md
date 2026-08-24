@@ -1645,6 +1645,11 @@ Outputs retain the original provenance and license columns and remain
 `training_ready=false`; global deduplication is explicitly unfinished at this
 stage.
 
+Full-content decontamination is staged as array `818547_[0-127%64]` after
+semantic decision `818544`, with aggregate `818548` after every array identity.
+The exact dependencies were verified with `scontrol`; both jobs are CPU-only,
+have requeue disabled, and preserve one-output-per-shard custody.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
