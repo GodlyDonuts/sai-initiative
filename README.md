@@ -1722,12 +1722,12 @@ primary Hermès aggregate `818539`. `scontrol` verified the exact dependencies;
 requeue is disabled and no GPU is requested.
 
 The final semantic-stratum decision is fail-closed. A stratum needs at least
-eight primary rows, at least 75% primary representation-verification routes,
-zero primary quarantine/rights routes, and at least 3.5/4 mean information
+16 primary rows, at least 87.5% primary representation-verification routes,
+zero primary quarantine/rights routes, and at least 3.75/4 mean information
 density, educational value, source reliability, and coherence. It also needs
-at least two complete independent rows, at least 75% independent
+at least four complete independent rows, at least 87.5% independent
 representation-verification routes, zero independent quarantine/rights routes,
-and at least 75% exact cross-family route agreement. Passing this gate advances
+and at least 87.5% exact cross-family route agreement. Passing this gate advances
 a stratum only to full-content decontamination and global deduplication—not to
 training.
 

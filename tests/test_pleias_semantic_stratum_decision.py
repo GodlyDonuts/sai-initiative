@@ -30,8 +30,10 @@ def _comparison(route="representation_verification", agree=True):
 
 
 def test_advances_only_strong_cross_family_supported_strata():
-    primary = [("science::open::512to4095", _judgment()) for _ in range(8)]
+    primary = [("science::open::512to4095", _judgment()) for _ in range(16)]
     comparison = [
+        ("science::open::512to4095", _comparison()),
+        ("science::open::512to4095", _comparison()),
         ("science::open::512to4095", _comparison()),
         ("science::open::512to4095", _comparison()),
     ]
@@ -43,38 +45,54 @@ def test_advances_only_strong_cross_family_supported_strata():
     assert result[0]["primary"]["prerequisite_burden_mean_milli"] == 2_000
     assert result[0]["primary"]["dominant_curriculum_phase"] == "integration"
     assert result[0]["primary"]["recurring_concepts"] == [
-        {"concept": "orbital mechanics", "votes": 8}
+        {"concept": "orbital mechanics", "votes": 16}
     ]
     assert result[0]["automatic_training_admission"] is False
 
 
 def test_holds_on_any_primary_blocking_route():
     stratum = "science::open::512to4095"
-    primary = [(stratum, _judgment()) for _ in range(7)] + [
+    primary = [(stratum, _judgment()) for _ in range(15)] + [
         (stratum, _judgment(verdict="reject"))
     ]
-    comparison = [(stratum, _comparison()), (stratum, _comparison())]
+    comparison = [(stratum, _comparison()) for _ in range(4)]
     result = decide_strata(primary, comparison)[0]
     assert result["decision"] == "hold_semantic_stratum"
     assert "primary_blocking_route_present" in result["reasons"]
 
 
-def test_holds_without_two_complete_independent_rows():
+def test_holds_without_four_complete_independent_rows():
     stratum = "books::culture::ge32768"
-    primary = [(stratum, _judgment()) for _ in range(8)]
-    result = decide_strata(primary, [(stratum, _comparison())])[0]
+    primary = [(stratum, _judgment()) for _ in range(16)]
+    result = decide_strata(
+        primary, [(stratum, _comparison()) for _ in range(3)]
+    )[0]
     assert result["decision"] == "hold_semantic_stratum"
     assert "insufficient_independent_rows" in result["reasons"]
 
 
 def test_holds_cross_family_disagreement_and_independent_block():
     stratum = "code::source::4096to32767"
-    primary = [(stratum, _judgment()) for _ in range(8)]
+    primary = [(stratum, _judgment()) for _ in range(16)]
     comparison = [
         (stratum, _comparison("quarantine", agree=False)),
+        (stratum, _comparison("representation_verification", agree=True)),
+        (stratum, _comparison("representation_verification", agree=True)),
         (stratum, _comparison("representation_verification", agree=True)),
     ]
     result = decide_strata(primary, comparison)[0]
     assert result["decision"] == "hold_semantic_stratum"
     assert "independent_blocking_route_present" in result["reasons"]
     assert "cross_family_route_agreement_below_threshold" in result["reasons"]
+
+
+def test_holds_when_primary_representation_rate_is_only_eighty_one_percent():
+    stratum = "technical::open::512to4095"
+    primary = [(stratum, _judgment()) for _ in range(13)] + [
+        (stratum, _judgment(risk="duplicated_boilerplate")) for _ in range(3)
+    ]
+    comparison = [(stratum, _comparison()) for _ in range(4)]
+    result = decide_strata(primary, comparison)[0]
+    assert result["primary"]["representation_verification_ppm"] == 812_500
+    assert result["decision"] == "hold_semantic_stratum"
+    assert "primary_representation_rate_below_threshold" in result["reasons"]
