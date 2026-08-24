@@ -294,6 +294,8 @@ def build_screen(
             "full_source_content_sha256": decision["full_source_content_sha256"],
             "full_source_utf8_bytes": decision["full_source_utf8_bytes"],
             "token_count_o200k_base_gen": agreement["token_count_o200k_base_gen"],
+            "agreed_genre": agreement["agreed_genre"],
+            "shared_domains": agreement["shared_domains"],
             "benchmark_decontamination_complete": True,
             "global_semantic_deduplication_complete": False,
             "source_text_persisted": False,

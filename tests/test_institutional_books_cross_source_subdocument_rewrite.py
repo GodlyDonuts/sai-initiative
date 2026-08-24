@@ -31,6 +31,10 @@ def test_private_book_rewrite_preserves_source_lineage_and_hashes_output():
         "source_book_id": "book-1",
         "candidate_identity_sha256": identity,
         "full_source_content_sha256": source_sha,
+        "agreement_record_sha256": "b" * 64,
+        "decontamination_record_sha256": "c" * 64,
+        "agreed_genre": "technical_nonfiction",
+        "shared_domains": ["physics", "art_history"],
         "benchmark_decontamination_complete": True,
         "training_ready": False,
     }
@@ -56,6 +60,8 @@ def test_private_book_rewrite_preserves_source_lineage_and_hashes_output():
     assert result["pre_cross_source_content_sha256"] == source_sha
     assert result["content_sha256"] != source_sha
     assert result["source_path"] == "parent.parquet"
+    assert result["semantic_genre"] == "technical_nonfiction"
+    assert result["semantic_domains"] == ["physics", "art_history"]
     assert result["token_count_requires_recomputation"] is True
     assert counts["deleted_chunks"] == 2
     assert result["training_ready"] is False

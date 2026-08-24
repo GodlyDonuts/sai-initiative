@@ -63,6 +63,10 @@ def _schema(source_schema):
         + fields
         + [
             pa.field("source_content_sha256", pa.string()),
+            pa.field("quality_agreement_record_sha256", pa.string()),
+            pa.field("benchmark_decontamination_record_sha256", pa.string()),
+            pa.field("semantic_genre", pa.string()),
+            pa.field("semantic_domains", pa.list_(pa.string())),
             pa.field("pre_cross_source_content_sha256", pa.string()),
             pa.field("content_sha256", pa.string()),
             pa.field("word_count", pa.int64()),
@@ -93,6 +97,16 @@ def rewrite_row(
         or clean.get("benchmark_decontamination_complete") is not True
         or row.get("barcode_src") != clean.get("source_book_id")
         or content_sha256 != clean.get("full_source_content_sha256")
+        or not isinstance(clean.get("agreement_record_sha256"), str)
+        or not isinstance(clean.get("decontamination_record_sha256"), str)
+        or not isinstance(clean.get("agreed_genre"), str)
+        or not clean["agreed_genre"]
+        or not isinstance(clean.get("shared_domains"), list)
+        or not clean["shared_domains"]
+        or any(
+            not isinstance(domain, str) or not domain
+            for domain in clean["shared_domains"]
+        )
         or not isinstance(text, str)
         or not isinstance(content_sha256, str)
         or not isinstance(identity, str)
@@ -123,6 +137,12 @@ def rewrite_row(
         {
             "schema": OUTPUT_SCHEMA,
             "source_content_sha256": content_sha256,
+            "quality_agreement_record_sha256": clean["agreement_record_sha256"],
+            "benchmark_decontamination_record_sha256": clean[
+                "decontamination_record_sha256"
+            ],
+            "semantic_genre": clean["agreed_genre"],
+            "semantic_domains": clean["shared_domains"],
             "pre_cross_source_content_sha256": content_sha256,
             "content_sha256": hashlib.sha256(rewritten.encode()).hexdigest(),
             "word_count": len(_WORD.findall(rewritten)),
