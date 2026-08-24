@@ -38,6 +38,12 @@ ordering beat a same-record order control before scaling.
 
 Data decisions precede tokenizer, architecture, and scale decisions.
 
+The final-corpus size is now a **quality ceiling, not a volume target**. Sai may
+retain at most 2,000,000,000,000 exact UTF-8 text bytes at the final ledger, and
+it may retain substantially less. No source, duplicate, synthetic example, or
+low-confidence row is admitted merely to fill that ceiling. Exact post-rewrite
+bytes, not upstream archive sizes or token estimates, determine compliance.
+
 The latest open-recipe evidence is reconciled in
 [`docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md`](docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md).
 Sai uses progressive composition with continuous broad rehearsal, retains
@@ -480,6 +486,16 @@ family, so its aggregate truthfully records
 `independent_model_family_verification_complete=false`, strips the private
 anchor text, and still requires decontamination, global deduplication, and
 transfer ablation before any bridge can become training-ready.
+
+That same-family verification has now closed with **512/512** exact receipts and
+**64/64** shard summaries. It routed **500** candidates to retain, **12** to
+revision, and **0** to reject, consuming 4,671,875 model tokens. The canonical
+aggregate receipt is
+`adfa6897750ad1f883df1ffbb829fc45df0f1d228c789aba3ac013c6dc4a2a13`.
+This is meaningful positive quality evidence, but not admission: the aggregate
+explicitly keeps `bridge_verification_complete=false` until the independent
+Nemotron family, benchmark decontamination, global deduplication, and transfer
+ablation close.
 
 An independent-family lane now replays the same 512 immutable source-paired
 candidates through `nvidia/nemotron-3-ultra-550b-a55b`. Its receipts bind the
@@ -1811,6 +1827,21 @@ PleIAs passages; identity order is only the later tie-breaker. Aggregate
 all component/shard partitions, and exact deletion accounting. No receipt stores
 source text, and rewrite/training admission remain false until both component
 rewrites and the final corpus ledger replay these decisions.
+
+The exact global decisions now feed two separately controlled final writers.
+Private Institutional Books array `818583_[0-63%16]` reopens only the
+benchmark-disjoint book identities, replays source/content/chunk hashes, and
+emits exact post-deletion private Parquet shards; aggregate `818584` requires
+all clean books and all globally assigned book deletions. It explicitly records
+`huggingface_redistribution_authorized=false`, so no book text is uploaded.
+PleIAs array `818585_[0-127%8]` applies the same verified replay to the final
+internally deduplicated remote shards, uploads only under
+`final/nontraining/pleias-cross-source/20260826-r1/`, verifies every LFS byte and
+SHA-256, and removes temporary local text; aggregate `818586` verifies all 128
+identities and global deletion accounting. All four jobs are independent
+single-CPU, requeue-disabled requests, strictly dependency-bound to `818578`.
+Both outputs still require exact final retokenization and corpus-ledger
+admission; neither authorizes training.
 
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
