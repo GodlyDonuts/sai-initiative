@@ -31,6 +31,7 @@ def _inputs(root: Path) -> tuple[Path, Path, Path]:
                 "admitted_enriched_tokens": 250,
             },
             "semantic_model_review_required": False,
+            "huggingface_redistribution_authorized": False,
             "official_benchmark_decontamination_complete": False,
             "practical_pretraining_ready": True,
             "training_ready": True,
@@ -88,6 +89,11 @@ def test_audit_seals_exact_ready_totals(tmp_path: Path) -> None:
         "source_token_count": 1_000,
     }
     assert result["practical_training_corpus_ready"] is True
+    assert result["quality"]["row_level_rights_labels_complete"] is True
+    assert (
+        result["custody"]["institutional_books_public_redistribution_allowed"]
+        is False
+    )
     assert result["four_b_training_authorized"] is False
 
 

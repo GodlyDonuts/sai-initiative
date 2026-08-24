@@ -68,6 +68,7 @@ def build_audit(
         or books.get("practical_pretraining_ready") is not True
         or books.get("training_ready") is not True
         or books.get("semantic_model_review_required") is not False
+        or books.get("huggingface_redistribution_authorized") is not False
         or books.get("official_benchmark_decontamination_complete") is not False
         or pleias.get("status") != "complete_practical_pleias_pretraining_admission"
         or pleias.get("practical_pretraining_ready") is not True
@@ -151,7 +152,7 @@ def build_audit(
         "quality": {
             "english_only": True,
             "mechanical_non_slop_gate_complete": True,
-            "explicit_reusable_rights_complete": True,
+            "row_level_rights_labels_complete": True,
             "global_exact_content_deduplication_complete": True,
             "semantic_model_review_required_for_bulk_core": False,
         },
@@ -159,6 +160,8 @@ def build_audit(
             "huggingface_repository": publication["remote_repository"],
             "locator_and_manifest_publication_complete": True,
             "private_book_text_uploaded": False,
+            "institutional_books_public_redistribution_allowed": False,
+            "institutional_books_commercial_use_requires_provider_contact": True,
             "pleias_reconstructable_from_pinned_upstream": True,
         },
         "official_benchmark_decontamination_complete": False,
