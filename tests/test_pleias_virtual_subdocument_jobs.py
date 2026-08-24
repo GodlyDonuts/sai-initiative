@@ -30,3 +30,24 @@ def test_virtual_signature_aggregate_and_decision_are_dependency_ready() -> None
     assert "sai.data.pleias_subdocument_decision" in decision
     assert "pleias-virtual-subdocument-signatures-20260826-r1" in decision
     assert "pleias-virtual-subdocument-decision-20260826-r1" in decision
+
+
+def test_virtual_internal_rewrite_jobs_preserve_source_safe_custody() -> None:
+    shard = Path(
+        "scripts/run_pleias_virtual_internal_rewrite_signature_stokes.sbatch"
+    ).read_text()
+    aggregate = Path(
+        "scripts/aggregate_pleias_virtual_internal_rewrite_signature_stokes.sbatch"
+    ).read_text()
+    assert "#SBATCH --array=0-127%8" in shard
+    assert "#SBATCH --gres" not in shard
+    assert "#SBATCH --no-requeue" in shard
+    assert "sai_scratch=${TMPDIR:-/tmp}" in shard
+    assert "sai.data.pleias_virtual_internal_rewrite_signature shard" in shard
+    assert "pleias-virtual-subdocument-decision-20260826-r1" in shard
+    assert '--scratch-root "${sai_scratch}"' in shard
+    assert "upload" not in shard.casefold()
+    assert (
+        "sai.data.pleias_virtual_internal_rewrite_signature aggregate" in aggregate
+    )
+    assert "pleias-virtual-internal-signatures-20260826-r1" in aggregate
