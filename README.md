@@ -406,6 +406,15 @@ rows among 2,243 audited documents. These are hard admission exclusions. The
 post-filter 512-row semantic audit population is frozen at receipt
 `de365117bee119d224196a3a712518a2814214e130580bf643ef261c56327e1b`.
 
+That exact 512-row population is now under a three-perspective Hermès semantic
+audit rather than being inferred from the FineMath source label. Four disjoint,
+resumable local segments cover 64 stable identity shards and request three
+independent `stealth/ox-alpha` judgments per candidate: 1,536 total judgments.
+The worker skips only already sealed slot receipts and retries transport/schema
+failures without changing candidate bytes. This audit can qualify or reject the
+small 434.5 MB conservative math lane, but it cannot admit the broader 34.1 GB
+FineMath text population and cannot override benchmark or deduplication gates.
+
 #### Source-agnostic mechanical quality gate
 
 The answer-key incident is now covered by a reusable gate rather than a
@@ -1905,6 +1914,20 @@ signatures eligible for the existing cross-source comparison. Both jobs are
 CPU-only, requeue-disabled, and remain explicitly nontraining. This eliminates
 the second large upload/download cycle without weakening identity, deletion, or
 coverage checks.
+
+The quota-safe graph now continues through the complete final join. Sixteen
+independent cross-source jobs `818638_[0-15%16]` wait on both the clean-book
+signature aggregate `818572` and virtual post-internal PleIAs aggregate
+`818636`; aggregate `818639` verifies every book/PleIAs deletion partition.
+From that one decision, PleIAs reconstruction array `818641_[0-127%8]` replays
+both deletion layers and emits only final reconstruction locators, followed by
+aggregate `818642`. Private-book array `818643_[0-63%16]` emits the physically
+partitioned final book payload and aggregate `818644`. Ledger `818645` has an
+AND dependency on both component aggregates, binds exact surviving UTF-8 bytes
+under the 2 TB ceiling, and records PleIAs custody honestly as pinned raw
+objects plus verified reconstruction locators rather than pretending a second
+payload copy exists. All seven stages are CPU-only, requeue-disabled, and
+nontraining; final tokenization and curriculum packing remain open.
 
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
