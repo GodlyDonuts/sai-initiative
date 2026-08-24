@@ -22,6 +22,7 @@ sai_judgments=artifacts/sai_grounded_bridge_independent_nemotron_20260826_r1/jud
 sai_aggregate=artifacts/sai_grounded_bridge_independent_nemotron_aggregate_20260826_r1
 sai_decontamination=artifacts/sai_grounded_bridge_decontamination_20260826_r1
 sai_boundary=artifacts/sai_official_benchmark_boundary_index_20260824_r2
+sai_finalizer_lock=artifacts/.sai_grounded_bridge_nemotron_finalizer.lock
 sai_logical_shards=64
 sai_lanes=13
 sai_expected=512
@@ -80,21 +81,15 @@ if [[ "${sai_receipts}" != "${sai_expected}" || \
   exit 1
 fi
 
-if [[ ! -e "${sai_aggregate}" ]]; then
-  python3 -m sai.data.nemotron_grounded_bridge_verification_aggregate \
-    --population-root "${sai_population}" \
-    --same-family-aggregate-root "${sai_same_family}" \
-    --judgments-root "${sai_judgments}" \
-    --output-root "${sai_aggregate}" \
-    --logical-shards "${sai_logical_shards}"
-fi
-
-if [[ ! -e "${sai_decontamination}" ]]; then
-  python3 -m sai.data.grounded_bridge_decontamination \
-    --aggregate-root "${sai_aggregate}" \
-    --boundary-index "${sai_boundary}" \
-    --output-root "${sai_decontamination}"
-fi
+python3 -m sai.data.nemotron_grounded_bridge_finalizer \
+  --population-root "${sai_population}" \
+  --same-family-aggregate-root "${sai_same_family}" \
+  --judgments-root "${sai_judgments}" \
+  --aggregate-root "${sai_aggregate}" \
+  --boundary-index "${sai_boundary}" \
+  --decontamination-root "${sai_decontamination}" \
+  --lock-path "${sai_finalizer_lock}" \
+  --logical-shards "${sai_logical_shards}"
 
 printf '{"event":"nemotron_grounded_bridge_verification_complete","receipts":%s,"summaries":%s}\n' \
   "${sai_receipts}" "${sai_summaries}"

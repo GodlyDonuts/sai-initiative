@@ -540,6 +540,15 @@ pinned official-public benchmark boundary to independently retained rows. Neithe
 stage can set `training_ready=true`; global deduplication and the prospective
 transfer ablation remain open afterward.
 
+The terminal aggregate and benchmark screen are also serialized under one
+process-shared file lock. A resumed launcher reopens a pre-existing terminal
+output only when it contains a sealed receipt; an empty, partial, or symlinked
+output fails closed. This prevents an obsolete or duplicate watchdog from
+racing the joint Hermès/Nemotron retention aggregate. A live runtime audit
+removed two pre-fix watchdogs before completion while leaving all scientific
+requests and sealed judgments untouched; the corrected single finalizer remains
+bound to the same-family aggregate and the official benchmark boundary.
+
 NVIDIA's streamed endpoint does not currently supply token-usage fields for
 these receipts. The independent aggregate therefore records exact provider
 attempt counts and outcome counts, plus the number of receipts missing provider
