@@ -49,19 +49,7 @@ run_segment() {
   done
 }
 
-run_segment 0 15 >"${sai_log_root}/segment-00-15.log" 2>&1 &
-sai_a=$!
-run_segment 16 31 >"${sai_log_root}/segment-16-31.log" 2>&1 &
-sai_b=$!
-run_segment 32 47 >"${sai_log_root}/segment-32-47.log" 2>&1 &
-sai_c=$!
-run_segment 48 63 >"${sai_log_root}/segment-48-63.log" 2>&1 &
-sai_d=$!
-
-wait "${sai_a}"
-wait "${sai_b}"
-wait "${sai_c}"
-wait "${sai_d}"
+run_segment 0 63 >"${sai_log_root}/segment-00-63.log" 2>&1
 
 printf '{"event":"finemath_semantic_audit_complete","logical_shards":%s}\n' \
   "${sai_logical_shards}"

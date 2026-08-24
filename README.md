@@ -407,13 +407,16 @@ post-filter 512-row semantic audit population is frozen at receipt
 `de365117bee119d224196a3a712518a2814214e130580bf643ef261c56327e1b`.
 
 That exact 512-row population is now under a three-perspective Hermès semantic
-audit rather than being inferred from the FineMath source label. Four disjoint,
-resumable local segments cover 64 stable identity shards and request three
-independent `stealth/ox-alpha` judgments per candidate: 1,536 total judgments.
-The worker skips only already sealed slot receipts and retries transport/schema
-failures without changing candidate bytes. This audit can qualify or reject the
-small 434.5 MB conservative math lane, but it cannot admit the broader 34.1 GB
-FineMath text population and cannot override benchmark or deduplication gates.
+audit rather than being inferred from the FineMath source label. The first
+four-request geometry produced repeated upstream HTTP 429 responses and only
+one sealed judgment; it was stopped without deleting that receipt. One
+resumable request stream now walks all 64 stable identity shards and requests
+three independent `stealth/ox-alpha` judgments per candidate: 1,536 total
+judgments. The worker skips only already sealed slot receipts and retries
+transport/schema failures without changing candidate bytes. This audit can
+qualify or reject the small 434.5 MB conservative math lane, but it cannot admit
+the broader 34.1 GB FineMath text population and cannot override benchmark or
+deduplication gates.
 
 #### Source-agnostic mechanical quality gate
 
