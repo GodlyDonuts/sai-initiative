@@ -755,9 +755,35 @@ candidates**, and joined every survivor to an exact public-domain attribution
 record. The compressed parent was removed after the one-host census.
 
 All 567 survivors now form a create-only Hermès compiler population with
-8,822,685 excerpt bytes and complete text-free lineage. Compilation is
-dependency-staged after the already-running UltraData tier audit so the proxy
-is not overloaded and no identity is scored twice. The census receipt is
+8,822,685 excerpt bytes and complete text-free lineage. Compilation is now
+complete with exact **567/567 identity and 128/128 shard coverage**. The
+conservative work routes are 322 representation verification, 162 cleanup,
+61 quarantine, 18 pedagogical-quality review, and 4 factual-grounding review;
+no row entered rights hold. Thus 56.79% of the screen is a strong
+representation-verification candidate and 10.76% is explicitly barred, while
+the remaining rows require named work rather than blanket acceptance. This is
+measured row-level routing, not a claim that compressed source bytes have the
+same yield.
+
+The 61 quarantine identities are sealed in a source-text-free exclusion
+manifest with SHA-256
+`3d85c28357ff604302928f42cfe3d50accc31cfdc08024643edc51dbc52248e7`
+and canonical receipt
+`66f2f73426c516c3609c09cc564c81ba07b9c6f7b4f121f2ee00debe61425668`.
+They extend Sai's global materialization deny list from 767 to **828 exact
+identities**; the r3 registry has SHA-256
+`14e9d8daa480bee1491ad5268e869c7f471a6c6d6e3bff9189474a44d0fb6d60`
+and canonical receipt
+`94765522fcd09a57ae33af7ec8f03686905cef594ba67014f4a2a1a2ddff48d0`.
+The aggregate, decision, source-specific exclusions, and merged registry were
+downloaded back and byte-replayed from Hugging Face commits
+[`fdd420afbff2a8b72781ef6e4665816d3f703c88`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/fdd420afbff2a8b72781ef6e4665816d3f703c88),
+[`42157867e731a8f2bbc67763e16bce5125827257`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/42157867e731a8f2bbc67763e16bce5125827257),
+[`ec293907f802e0fc232d170b27e50a11a90792b1`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/ec293907f802e0fc232d170b27e50a11a90792b1),
+and
+[`f1bb37328d2ea18e47b673e73206c52c1447b7b9`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f1bb37328d2ea18e47b673e73206c52c1447b7b9).
+All four evidence sets are hash-matched in the authorized Stokes evidence
+root. The census receipt is
 `c1f18f641a31672cda7d2b10caf60769df766aa7edea62418d1089645319c92b`,
 the compiler-population receipt is
 `255e9aa09ec8d2f00c01db05b8eabb6bd06d9f93c77d59b1ed6e8ce2caf7a5ba`,
@@ -765,7 +791,7 @@ and the source-safe publication envelope is
 `3eeb07c28d575542d87a670396452a155f0c97aaaeaa15f19d526f210568168e`.
 Source text, individual decontamination decisions, and machine-local paths
 remain unpublished. The 567 candidates remain non-training-ready until
-Hermès quality compilation and representation verification close. The three
+representation verification closes. The three
 source-safe receipts were downloaded back and replayed byte-for-byte from
 Hugging Face dataset commit
 [`756d941130a01fabb042178bf94a67b230a64e4c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/756d941130a01fabb042178bf94a67b230a64e4c).
@@ -1888,10 +1914,12 @@ hash-bound**; the 8T-token spiral is **prospective**; one production book, 224
 Common Pile confirmation rows, and both bounded source pilots are **judged**;
 the two pilots contain 3,290 benchmark-screened, near-deduplicated rows and
 have passed the source-specific full-candidate-materialization gate without
-becoming training-ready; the new UltraData Math
-L2/L3 screen has 148/160 benchmark-disjoint rows awaiting Hermes compilation;
-a complete PEP parent census has 567 benchmark-disjoint, near-deduplicated
-survivors dependency-staged for Hermès compilation;
+becoming training-ready; the UltraData Math L2/L3 screen has 148
+benchmark-disjoint Hermès judgments with only 2 direct representation routes
+and therefore requires targeted recovery rather than bulk admission; the
+complete PEP candidate census has 567/567 Hermès judgments, including 322
+representation-verification routes and 61 exact quarantines now enforced by
+the 828-row global deny list;
 a 1,024-row CC0 arXiv temporal screen has 1,023 benchmark-disjoint survivors,
 zero near-duplicate pairs, and complete declaration coverage awaiting Hermès;
 the complete arXiv parent census measures 2,458,156 mechanically eligible
