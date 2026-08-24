@@ -1869,9 +1869,18 @@ Single-CPU ledger job `818588` has an AND dependency on both component
 aggregates. It sums exact post-rewrite UTF-8 text bytes, rejects totals above
 2,000,000,000,000, records unused headroom rather than filling it, and binds
 private versus redistributable custody separately. The ledger deliberately
-keeps final tokenization, source-disjoint split construction, curriculum
-scheduling, synthetic-bridge admission, final-corpus completion, and training
-authorization false.
+keeps final tokenization, curriculum scheduling, synthetic-bridge admission,
+final-corpus completion, and training authorization false.
+
+The component rewrites now construct the source-disjoint split in-row rather
+than in a later lossy sidecar. A fixed SHA-256 policy assigns 5% of group buckets
+to development: every row from one pinned PleIAs source parent stays together,
+and every Institutional Books row sharing the two-family work-ID candidate set
+stays together. The component aggregates require exact train+development
+document/byte accounting; the foundation ledger requires both lanes to be
+nonempty and records their exact post-rewrite byte totals. This split is for
+held-out data/model selection and remains separate from all official public
+benchmark boundaries.
 
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight

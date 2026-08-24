@@ -21,6 +21,15 @@ from sai.data.cross_source_subdocument_rewrite import (
     rewrite_text,
 )
 from sai.data.decontamination import _WORD
+from sai.data.foundation_source_split import (
+    POLICY as SPLIT_POLICY,
+)
+from sai.data.foundation_source_split import (
+    POLICY_SHA256 as SPLIT_POLICY_SHA256,
+)
+from sai.data.foundation_source_split import (
+    assign_source_group,
+)
 from sai.data.institutional_books_full_decontamination import CLEAN_SCHEMA
 from sai.data.institutional_books_materializer import OUTPUT_SCHEMA as SOURCE_ROW_SCHEMA
 from sai.data.institutional_books_subdocument_signature import (
@@ -72,6 +81,10 @@ def _schema(source_schema):
             pa.field("pre_cross_source_content_sha256", pa.string()),
             pa.field("content_sha256", pa.string()),
             pa.field("word_count", pa.int64()),
+            pa.field("source_group_sha256", pa.string()),
+            pa.field("source_group_bucket", pa.int32()),
+            pa.field("corpus_split", pa.string()),
+            pa.field("source_split_policy_sha256", pa.string()),
             pa.field("token_count_requires_recomputation", pa.bool_()),
             pa.field("cross_source_subdocument_transform_sha256", pa.string()),
             pa.field("text", pa.string()),
@@ -134,6 +147,14 @@ def rewrite_row(
         decisions=decisions,
         code_document=False,
     )
+    source_group, corpus_split, source_group_bucket = assign_source_group(
+        COMPONENT,
+        {
+            "work_id_candidates": clean["consensus_curriculum"][
+                "work_id_candidates"
+            ]
+        },
+    )
     result = {
         key: value
         for key, value in row.items()
@@ -167,6 +188,10 @@ def rewrite_row(
             "pre_cross_source_content_sha256": content_sha256,
             "content_sha256": hashlib.sha256(rewritten.encode()).hexdigest(),
             "word_count": len(_WORD.findall(rewritten)),
+            "source_group_sha256": source_group,
+            "source_group_bucket": source_group_bucket,
+            "corpus_split": corpus_split,
+            "source_split_policy_sha256": SPLIT_POLICY_SHA256,
             "token_count_requires_recomputation": True,
             "cross_source_subdocument_transform_sha256": transform,
             "text": rewritten,
@@ -261,6 +286,10 @@ def run_shard(
                         counts["output_text_utf8_bytes"] += len(
                             result["text"].encode()
                         )
+                        counts[f"split::{result['corpus_split']}::documents"] += 1
+                        counts[
+                            f"split::{result['corpus_split']}::text_utf8_bytes"
+                        ] += len(result["text"].encode())
                         output_bytes = len(result["text"].encode())
                         counts[
                             f"semantic_genre::{result['semantic_genre']}::documents"
@@ -346,6 +375,8 @@ def run_shard(
             ),
         },
         "counts": dict(sorted(counts.items())),
+        "source_disjoint_split_policy": SPLIT_POLICY,
+        "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
         "ordered_document_identities_sha256": ordered_identities.hexdigest(),
         "ordered_transform_digests_sha256": ordered_transforms.hexdigest(),
         "output": output,
@@ -353,6 +384,7 @@ def run_shard(
         "huggingface_redistribution_authorized": False,
         "benchmark_decontamination_complete": True,
         "cross_source_subdocument_deduplication_complete": True,
+        "source_disjoint_split_complete": True,
         "token_count_requires_recomputation": True,
         "training_ready": False,
         "four_b_training_authorized": False,

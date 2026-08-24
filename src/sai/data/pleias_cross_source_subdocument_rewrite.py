@@ -21,6 +21,15 @@ from sai.data.cross_source_subdocument_rewrite import (
     rewrite_text,
 )
 from sai.data.decontamination import _WORD
+from sai.data.foundation_source_split import (
+    POLICY as SPLIT_POLICY,
+)
+from sai.data.foundation_source_split import (
+    POLICY_SHA256 as SPLIT_POLICY_SHA256,
+)
+from sai.data.foundation_source_split import (
+    assign_source_group,
+)
 from sai.data.pleias_final_subdocument_signature import COMPONENT
 from sai.data.pleias_production_materializer import (
     DESTINATION_REPOSITORY,
@@ -68,6 +77,10 @@ def _schema():
         + fields
         + [
             pa.field("word_count", pa.int64()),
+            pa.field("source_group_sha256", pa.string()),
+            pa.field("source_group_bucket", pa.int32()),
+            pa.field("corpus_split", pa.string()),
+            pa.field("source_split_policy_sha256", pa.string()),
             pa.field("pre_cross_source_content_sha256", pa.string()),
             pa.field("content_sha256", pa.string()),
             pa.field("cross_source_subdocument_transform_sha256", pa.string()),
@@ -107,6 +120,15 @@ def rewrite_row(
             isinstance(collection, str) and "github" in collection.casefold()
         ),
     )
+    source_group, corpus_split, source_group_bucket = assign_source_group(
+        COMPONENT,
+        {
+            "source_repository": row.get("source_repository"),
+            "source_revision": row.get("source_revision"),
+            "source_path": row.get("source_path"),
+            "source_parent_sha256": row.get("source_parent_sha256"),
+        },
+    )
     result = {
         key: value
         for key, value in row.items()
@@ -123,6 +145,10 @@ def rewrite_row(
         {
             "schema": OUTPUT_SCHEMA,
             "word_count": len(_WORD.findall(rewritten)),
+            "source_group_sha256": source_group,
+            "source_group_bucket": source_group_bucket,
+            "corpus_split": corpus_split,
+            "source_split_policy_sha256": SPLIT_POLICY_SHA256,
             "pre_cross_source_content_sha256": content_sha256,
             "content_sha256": hashlib.sha256(rewritten.encode()).hexdigest(),
             "cross_source_subdocument_transform_sha256": transform,
@@ -216,6 +242,10 @@ def run_shard(
                     counts["output_text_utf8_bytes"] += len(
                         result["text"].encode()
                     )
+                    counts[f"split::{result['corpus_split']}::documents"] += 1
+                    counts[
+                        f"split::{result['corpus_split']}::text_utf8_bytes"
+                    ] += len(result["text"].encode())
                     stratum = result["semantic_stratum"]
                     quality_floor = result["semantic_quality_floor_milli"]
                     counts[f"semantic_stratum::{stratum}::documents"] += 1
@@ -291,12 +321,15 @@ def run_shard(
             ),
         },
         "counts": dict(sorted(counts.items())),
+        "source_disjoint_split_policy": SPLIT_POLICY,
+        "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
         "ordered_transform_digests_sha256": ordered_transforms.hexdigest(),
         "remote_output": remote,
         "local_payload_removed_after_remote_verification": True,
         "benchmark_decontamination_complete": True,
         "pleias_internal_subdocument_deduplication_complete": True,
         "cross_source_subdocument_deduplication_complete": True,
+        "source_disjoint_split_complete": True,
         "token_count_requires_recomputation": True,
         "training_ready": False,
         "four_b_training_authorized": False,

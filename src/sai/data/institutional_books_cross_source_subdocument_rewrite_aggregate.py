@@ -12,6 +12,7 @@ from sai.data.agent_labeling import _atomic_create
 from sai.data.cross_source_subdocument_decision_aggregate import (
     SCHEMA as DECISION_SCHEMA,
 )
+from sai.data.foundation_source_split import POLICY_SHA256 as SPLIT_POLICY_SHA256
 from sai.data.institutional_books_cross_source_subdocument_rewrite import (
     SHARD_SCHEMA,
 )
@@ -106,6 +107,9 @@ def build_aggregate(
             or receipt.get("huggingface_redistribution_authorized") is not False
             or receipt.get("cross_source_subdocument_deduplication_complete")
             is not True
+            or receipt.get("source_disjoint_split_complete") is not True
+            or receipt.get("source_disjoint_split_policy_sha256")
+            != SPLIT_POLICY_SHA256
             or not isinstance(counts, dict)
             or counts.get("filtered_source_rows") != source.get("retained_rows", 0)
             or counts.get("output_text_utf8_bytes", 0)
@@ -122,6 +126,12 @@ def build_aggregate(
     if (
         totals["documents"] != len(clean)
         or totals["candidate_deletion_chunks"] != expected_decisions
+        or totals["split::train::documents"]
+        + totals["split::development::documents"]
+        != totals["documents"]
+        or totals["split::train::text_utf8_bytes"]
+        + totals["split::development::text_utf8_bytes"]
+        != totals["output_text_utf8_bytes"]
     ):
         raise InstitutionalBooksCrossSourceSubdocumentRewriteAggregateError(
             "private global accounting differs"
@@ -149,6 +159,8 @@ def build_aggregate(
         "huggingface_redistribution_authorized": False,
         "benchmark_decontamination_complete": True,
         "cross_source_subdocument_deduplication_complete": True,
+        "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
+        "source_disjoint_split_complete": True,
         "token_count_requires_recomputation": True,
         "training_ready": False,
         "four_b_training_authorized": False,

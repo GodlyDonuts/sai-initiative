@@ -40,6 +40,7 @@ def test_private_book_rewrite_preserves_source_lineage_and_hashes_output():
         "training_ready": False,
     }
     curriculum = {
+        "work_id_candidates": ["work-a"],
         "shared_prerequisites": ["geometry"],
         "shared_concepts": ["perspective"],
         "source_text_persisted": False,
@@ -75,6 +76,7 @@ def test_private_book_rewrite_preserves_source_lineage_and_hashes_output():
     assert json.loads(result["curriculum_metadata_json"])["shared_concepts"] == [
         "perspective"
     ]
+    assert result["corpus_split"] in {"train", "development"}
     assert result["token_count_requires_recomputation"] is True
     assert counts["deleted_chunks"] == 2
     assert result["training_ready"] is False

@@ -19,6 +19,10 @@ def test_rewrite_row_preserves_internal_lineage_and_rewrites_exact_chunks():
     row = {
         "schema": SOURCE_SCHEMA,
         "source_row_identity_sha256": identity,
+        "source_repository": "PleIAs/common_corpus",
+        "source_revision": "d" * 40,
+        "source_path": "data/00001.parquet",
+        "source_parent_sha256": "e" * 64,
         "content_sha256": hashlib.sha256(text.encode()).hexdigest(),
         "pre_dedup_content_sha256": "b" * 64,
         "subdocument_transform_sha256": "c" * 64,
@@ -60,6 +64,8 @@ def test_rewrite_row_preserves_internal_lineage_and_rewrites_exact_chunks():
     assert result["subdocument_transform_sha256"] == "c" * 64
     assert result["semantic_quality_floor_milli"] == 7_500
     assert result["semantic_difficulty_mean_milli"] == 3_000
+    assert result["corpus_split"] in {"train", "development"}
+    assert len(result["source_group_sha256"]) == 64
     assert result["content_sha256"] != row["content_sha256"]
     assert counts["deleted_chunks"] == 2
     assert result["training_ready"] is False

@@ -13,6 +13,7 @@ from sai.data.agent_labeling import _atomic_create
 from sai.data.cross_source_subdocument_decision_aggregate import (
     SCHEMA as DECISION_SCHEMA,
 )
+from sai.data.foundation_source_split import POLICY_SHA256 as SPLIT_POLICY_SHA256
 from sai.data.pleias_cross_source_subdocument_rewrite import (
     DESTINATION_PREFIX,
     SHARD_SCHEMA,
@@ -90,6 +91,9 @@ def build_aggregate(
             != decision["receipt_sha256"]
             or rewritten.get("cross_source_subdocument_deduplication_complete")
             is not True
+            or rewritten.get("source_disjoint_split_complete") is not True
+            or rewritten.get("source_disjoint_split_policy_sha256")
+            != SPLIT_POLICY_SHA256
             or rewritten.get("local_payload_removed_after_remote_verification")
             is not True
             or not isinstance(counts, dict)
@@ -119,6 +123,17 @@ def build_aggregate(
     if totals["candidate_deletion_chunks"] != expected_decisions:
         raise PleiasCrossSourceSubdocumentRewriteAggregateError(
             "global deletion accounting differs"
+        )
+    if (
+        totals["split::train::documents"]
+        + totals["split::development::documents"]
+        != totals["documents"]
+        or totals["split::train::text_utf8_bytes"]
+        + totals["split::development::text_utf8_bytes"]
+        != totals["output_text_utf8_bytes"]
+    ):
+        raise PleiasCrossSourceSubdocumentRewriteAggregateError(
+            "source-disjoint split accounting differs"
         )
     api = HfApi(token=token)
     info = api.dataset_info(DESTINATION_REPOSITORY, files_metadata=True)
@@ -157,6 +172,8 @@ def build_aggregate(
         "benchmark_decontamination_complete": True,
         "pleias_internal_subdocument_deduplication_complete": True,
         "cross_source_subdocument_deduplication_complete": True,
+        "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
+        "source_disjoint_split_complete": True,
         "token_count_requires_recomputation": True,
         "training_ready": False,
         "four_b_training_authorized": False,

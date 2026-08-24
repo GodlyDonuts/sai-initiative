@@ -61,6 +61,20 @@ def build_ledger(
     pleias_documents = _positive_count(
         pleias.get("totals", {}).get("documents"), "PleIAs documents"
     )
+    train_documents = books.get("totals", {}).get(
+        "split::train::documents", 0
+    ) + pleias.get("totals", {}).get("split::train::documents", 0)
+    development_documents = books.get("totals", {}).get(
+        "split::development::documents", 0
+    ) + pleias.get("totals", {}).get("split::development::documents", 0)
+    train_bytes = books.get("totals", {}).get(
+        "split::train::text_utf8_bytes", 0
+    ) + pleias.get("totals", {}).get("split::train::text_utf8_bytes", 0)
+    development_bytes = books.get("totals", {}).get(
+        "split::development::text_utf8_bytes", 0
+    ) + pleias.get("totals", {}).get(
+        "split::development::text_utf8_bytes", 0
+    )
     if (
         books.get("complete_benchmark_disjoint_book_coverage") is not True
         or books.get("private_storage_only") is not True
@@ -68,17 +82,26 @@ def build_ledger(
         or books.get("benchmark_decontamination_complete") is not True
         or books.get("cross_source_subdocument_deduplication_complete") is not True
         or books.get("token_count_requires_recomputation") is not True
+        or books.get("source_disjoint_split_complete") is not True
         or pleias.get("complete_final_pleias_document_coverage") is not True
         or pleias.get("all_remote_lfs_identities_verified") is not True
         or pleias.get("benchmark_decontamination_complete") is not True
         or pleias.get("cross_source_subdocument_deduplication_complete") is not True
         or pleias.get("token_count_requires_recomputation") is not True
+        or pleias.get("source_disjoint_split_complete") is not True
     ):
         raise FoundationCorpusLedgerError("component completion differs")
     total_bytes = book_bytes + pleias_bytes
     total_documents = book_documents + pleias_documents
     if total_bytes > byte_ceiling:
         raise FoundationCorpusLedgerError("foundation bytes exceed quality ceiling")
+    if (
+        train_documents <= 0
+        or development_documents <= 0
+        or train_documents + development_documents != total_documents
+        or train_bytes + development_bytes != total_bytes
+    ):
+        raise FoundationCorpusLedgerError("source-disjoint split accounting differs")
     components = [
         {
             "component": "institutional_books",
@@ -115,13 +138,17 @@ def build_ledger(
             "documents": total_documents,
             "post_rewrite_text_utf8_bytes": total_bytes,
             "remaining_byte_headroom": byte_ceiling - total_bytes,
+            "train_documents": train_documents,
+            "development_documents": development_documents,
+            "train_text_utf8_bytes": train_bytes,
+            "development_text_utf8_bytes": development_bytes,
         },
         "byte_ceiling_respected": True,
         "benchmark_decontamination_complete_for_listed_components": True,
         "cross_source_subdocument_deduplication_complete_for_listed_components": True,
         "synthetic_bridge_component_admitted": False,
         "final_tokenization_complete": False,
-        "source_disjoint_split_complete": False,
+        "source_disjoint_split_complete": True,
         "curriculum_schedule_complete": False,
         "final_corpus_complete": False,
         "token_count_requires_recomputation": True,
