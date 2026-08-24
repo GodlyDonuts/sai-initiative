@@ -71,3 +71,41 @@ def test_virtual_cross_source_jobs_join_exact_component_signatures() -> None:
     assert "upload" not in decision.casefold()
     assert "sai.data.cross_source_subdocument_decision_aggregate" in aggregate
     assert "virtual-cross-source-subdocument-decision-20260826-r1" in aggregate
+
+
+def test_virtual_final_reconstruction_jobs_do_not_persist_pleias_text() -> None:
+    shard = Path(
+        "scripts/reconstruct_pleias_virtual_cross_source_stokes.sbatch"
+    ).read_text()
+    aggregate = Path(
+        "scripts/aggregate_pleias_virtual_cross_source_reconstruction_stokes.sbatch"
+    ).read_text()
+    assert "#SBATCH --array=0-127%8" in shard
+    assert "#SBATCH --gres" not in shard
+    assert "#SBATCH --no-requeue" in shard
+    assert "sai_scratch=${TMPDIR:-/tmp}" in shard
+    assert "sai.data.pleias_virtual_cross_source_reconstruction shard" in shard
+    assert "pleias-virtual-internal-signatures-20260826-r1" in shard
+    assert "virtual-cross-source-subdocument-decision-20260826-r1" in shard
+    assert "upload" not in shard.casefold()
+    assert "sai.data.pleias_virtual_cross_source_reconstruction aggregate" in aggregate
+
+
+def test_virtual_book_rewrite_uses_the_same_cross_source_decision() -> None:
+    shard = Path(
+        "scripts/rewrite_institutional_books_virtual_cross_source_stokes.sbatch"
+    ).read_text()
+    aggregate = Path(
+        "scripts/aggregate_institutional_books_virtual_cross_source_stokes.sbatch"
+    ).read_text()
+    assert "#SBATCH --array=0-63%16" in shard
+    assert "#SBATCH --gres" not in shard
+    assert "#SBATCH --no-requeue" in shard
+    assert "sai.data.institutional_books_cross_source_subdocument_rewrite" in shard
+    assert "virtual-cross-source-subdocument-decision-20260826-r1" in shard
+    assert "institutional-books-virtual-cross-source-rewritten-20260826-r1" in shard
+    assert (
+        "sai.data.institutional_books_cross_source_subdocument_rewrite_aggregate"
+        in aggregate
+    )
+    assert "virtual-cross-source-subdocument-decision-20260826-r1" in aggregate
