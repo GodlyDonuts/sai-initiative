@@ -716,3 +716,30 @@ semantic deduplication.
 The README and receipt were force-downloaded and replayed byte-for-byte from
 dataset commit
 [`985b5bae55c694825d3ba4cfaffa01774d04287c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/985b5bae55c694825d3ba4cfaffa01774d04287c).
+
+## Common Pile bounded compiler closure
+
+Release `20260826-r1` under
+`evidence/common-pile-bounded-compiler/20260826-r1/` closes all 3,290 candidate
+identities and all 128 immutable compiler shards. The aggregate records 3,163
+`retain`, 116 `review`, and 11 `reject` verdicts. Conservative routing holds
+1,458 rows for representation verification, 707 for cleanup review, 429 for
+quality review, 357 for factual-grounding review, 240 in quarantine, 73 for
+transformation review, 21 on rights hold, and five for translation review.
+
+Pressbooks passed the source-specific gate with 1,829/1,948 retained and 11
+rejected. Public Domain Review passed with 1,334/1,342 retained and no rejects.
+The gate authorizes full-source candidate materialization only. It does not
+authorize training, redistribution of source text, global near/semantic dedup
+acceptance, rights clearance, or representation verification.
+
+The aggregate and promotion canonical receipts are
+`ca9884af6ec7e5ef8f2b39a7fcbbe8892423be0e53b75006fcbf987f7ae76484` and
+`99f96fcf15a4bdd69fdf451c1220d544c7d008c7682abdfc303450b4797075b2`.
+The README, aggregate, and promotion file SHA-256 values are respectively
+`94b7eedb126c53d72231c135a932bcb5a99d11f1e3f305a2e5aeb126048c067d`,
+`11a620cb1d3ba4f0a80ae33f89243464356c8f6079466df652fec40350f31626`, and
+`4cd2b32b2a73b7aec0311510c577fdea156bf8117b8c04d81a7af796daf900f6`.
+All three files were force-downloaded and replayed byte-for-byte from dataset
+commit
+[`7a447380b42cf631581a1604b249accecbb153bc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7a447380b42cf631581a1604b249accecbb153bc).

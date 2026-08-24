@@ -1499,6 +1499,21 @@ or training authorization. Source-safe aggregate, decision, and promotion
 receipts were uploaded and byte-replayed in Hugging Face dataset commit
 [`44fbdd30cedc89ac908057929468d3162651d645`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/44fbdd30cedc89ac908057929468d3162651d645).
 
+The complete bounded compiler gate has now closed across all 3,290 rows and
+128 immutable shards. Hermès returned 3,163 `retain`, 116 `review`, and 11
+`reject` verdicts, while deterministic routing held 240 rows in quarantine and
+21 on rights review. Pressbooks retained 1,829/1,948 rows with 11 rejects;
+Public Domain Review retained 1,334/1,342 with zero rejects. Both sources pass
+the frozen threshold for **full-source candidate materialization only**. This
+is not verification or training admission: global near/semantic deduplication,
+rights resolution, representation verification, and final curriculum custody
+remain open. The aggregate and source decision have canonical receipts
+`ca9884af6ec7e5ef8f2b39a7fcbbe8892423be0e53b75006fcbf987f7ae76484`
+and `99f96fcf15a4bdd69fdf451c1220d544c7d008c7682abdfc303450b4797075b2`.
+All three source-safe release files were force-downloaded and replayed
+byte-for-byte from Hugging Face dataset commit
+[`7a447380b42cf631581a1604b249accecbb153bc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7a447380b42cf631581a1604b249accecbb153bc).
+
 The next operational work is to expand sustainable, stratified compiler lanes;
 build cross-source exact and semantic duplicate families; populate the concept
 prerequisite graph; create verified English translations and grounded
@@ -1525,9 +1540,11 @@ To keep progress legible, Sai uses these states consistently:
   gate is closed.
 
 The current truthful status is: the 8 TiB reservoir is **referenced and
-hash-bound**; the 8T-token spiral is **prospective**; one production book and
-224 Common Pile confirmation rows are **judged**; two bounded source pilots
-have 3,290 benchmark-screened, near-deduplicated rows; the new UltraData Math
+hash-bound**; the 8T-token spiral is **prospective**; one production book, 224
+Common Pile confirmation rows, and both bounded source pilots are **judged**;
+the two pilots contain 3,290 benchmark-screened, near-deduplicated rows and
+have passed the source-specific full-candidate-materialization gate without
+becoming training-ready; the new UltraData Math
 L2/L3 screen has 148/160 benchmark-disjoint rows awaiting Hermes compilation;
 a complete PEP parent census has 567 benchmark-disjoint, near-deduplicated
 survivors dependency-staged for Hermès compilation;

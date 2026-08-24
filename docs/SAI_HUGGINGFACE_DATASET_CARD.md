@@ -184,7 +184,10 @@ capacity, not accepted corpus volume.
   training-ready text.
 - Six immutable audit populations contain 2,103 rows.
 - Two bounded Common Pile pilots contain 3,290 benchmark-disjoint,
-  within-source near-deduplicated candidates with attribution manifests.
+  within-source near-deduplicated candidates with attribution manifests. The
+  complete 128-shard Hermès pass produced 3,163 `retain`, 116 `review`, and 11
+  `reject` verdicts. Both sources passed the frozen gate for full-source
+  candidate materialization only; no row is training-ready from this decision.
 - A complete Common Pile PEP census yields 567 benchmark-disjoint,
   near-deduplicated candidates awaiting Hermès compilation.
 - A 1,024-row CC0 arXiv temporal screen leaves 1,023 benchmark-disjoint rows and
