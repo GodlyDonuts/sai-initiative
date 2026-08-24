@@ -97,6 +97,7 @@ def _open_database(path: Path) -> sqlite3.Connection:
         CREATE TABLE winners (
             content_sha256 TEXT PRIMARY KEY,
             identity_sha256 TEXT NOT NULL,
+            output_shard INTEGER NOT NULL,
             text_utf8_bytes INTEGER NOT NULL,
             source_token_count INTEGER NOT NULL,
             license TEXT NOT NULL,
@@ -109,17 +110,24 @@ def _open_database(path: Path) -> sqlite3.Connection:
 
 _UPSERT = """
 INSERT INTO winners (
-    content_sha256, identity_sha256, text_utf8_bytes,
+    content_sha256, identity_sha256, output_shard, text_utf8_bytes,
     source_token_count, license, row_json
-) VALUES (?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, ?, ?)
 ON CONFLICT(content_sha256) DO UPDATE SET
     identity_sha256=excluded.identity_sha256,
+    output_shard=excluded.output_shard,
     text_utf8_bytes=excluded.text_utf8_bytes,
     source_token_count=excluded.source_token_count,
     license=excluded.license,
     row_json=excluded.row_json
 WHERE excluded.identity_sha256 < winners.identity_sha256
 """
+
+
+def _output_shard(source_path: str, output_shards: int) -> int:
+    if not isinstance(source_path, str) or not source_path or output_shards < 1:
+        raise PleiasPracticalAdmissionError("source-local output partition differs")
+    return int(canonical_sha256({"source_path": source_path})[:16], 16) % output_shards
 
 
 def build_admission(
@@ -233,6 +241,7 @@ def build_admission(
                             (
                                 row["content_sha256"],
                                 row["source_row_identity_sha256"],
+                                _output_shard(row["source_path"], output_shards),
                                 row["text_utf8_bytes"],
                                 row["source_token_count"],
                                 row["license"],
@@ -304,15 +313,21 @@ def build_admission(
                 shard_rows = shard_bytes = shard_tokens = 0
 
             cursor = database.execute(
-                "SELECT content_sha256, text_utf8_bytes, source_token_count, "
-                "license, row_json FROM winners ORDER BY content_sha256"
+                "SELECT output_shard, text_utf8_bytes, "
+                "source_token_count, license, row_json FROM winners "
+                "ORDER BY output_shard, content_sha256"
             )
-            for content_sha256, text_bytes, tokens, license_name, row_json in cursor:
+            for (
+                target,
+                text_bytes,
+                tokens,
+                license_name,
+                row_json,
+            ) in cursor:
                 if admitted_bytes + text_bytes > maximum_pleias_bytes:
                     byte_cap_excluded_rows += 1
                     byte_cap_excluded_bytes += text_bytes
                     continue
-                target = int(content_sha256[:2], 16) * output_shards // 256
                 if current_index != target:
                     close_writer()
                     current_index = target
@@ -362,6 +377,7 @@ def build_admission(
             "explicit_reusable_rights_only": True,
             "mechanical_non_slop_gate_required": True,
             "exact_content_duplicate_policy": "smallest_identity_sha256_wins",
+            "output_partition_policy": "canonical_source_path_sha256_modulo",
             "semantic_model_review_required": False,
             "total_books_plus_pleias_text_byte_ceiling": total_text_byte_ceiling,
             "reserved_books_text_utf8_bytes": books_bytes,

@@ -10,6 +10,7 @@ from sai.data.institutional_books_practical_admission import (
 from sai.data.pleias_practical_admission import (
     _UPSERT,
     _open_database,
+    _output_shard,
     _valid_locator,
     build_admission,
 )
@@ -51,18 +52,26 @@ def test_sqlite_exact_dedup_keeps_smallest_identity(tmp_path: Path) -> None:
     try:
         connection.execute(
             _UPSERT,
-            ("3" * 64, "f" * 64, 10, 20, "public domain", '{"winner":false}'),
+            ("3" * 64, "f" * 64, 1, 10, 20, "public domain", '{"winner":false}'),
         )
         connection.execute(
             _UPSERT,
-            ("3" * 64, "0" * 64, 11, 21, "cc0", '{"winner":true}'),
+            ("3" * 64, "0" * 64, 2, 11, 21, "cc0", '{"winner":true}'),
         )
         row = connection.execute(
-            "SELECT identity_sha256, text_utf8_bytes, row_json FROM winners"
+            "SELECT identity_sha256, output_shard, text_utf8_bytes, row_json "
+            "FROM winners"
         ).fetchone()
-        assert row == ("0" * 64, 11, '{"winner":true}')
+        assert row == ("0" * 64, 2, 11, '{"winner":true}')
     finally:
         connection.close()
+
+
+def test_source_local_partition_keeps_one_parent_together() -> None:
+    assert _output_shard("data/one.parquet", 128) == _output_shard(
+        "data/one.parquet", 128
+    )
+    assert 0 <= _output_shard("data/two.parquet", 128) < 128
 
 
 def _signed(payload: dict) -> dict:

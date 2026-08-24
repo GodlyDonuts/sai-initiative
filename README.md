@@ -176,6 +176,16 @@ content hash, and subtracts exact admitted Books UTF-8 bytes from the shared
 2,000,000,000,000-byte ceiling before writing final PleIAs locators. Official
 benchmark cleanliness remains a separate evaluation-claim axis.
 
+Final locator shards preserve source locality: after global content-hash dedup,
+every winning row is assigned by canonical source-path hash, so all retained
+rows from one upstream Parquet stay together. The transient stream reader uses
+that property to download each pinned parent once, verify its full size/SHA and
+every selected row's metadata/content hash, emit ordinary `text` JSONL directly
+to the tokenizer or trainer, and delete the temporary parent before moving on.
+It writes only a text-free replay receipt. This avoids both a second 2 TB copy
+and the pathological alternative where every worker would touch thousands of
+remote parent files.
+
 The practical graph is live. Initial full-replay array `820240` was stopped
 before any final locator or receipt existed after measured network throughput
 proved it inefficient; its 2.85 MB of unclosed partial files were permanently
