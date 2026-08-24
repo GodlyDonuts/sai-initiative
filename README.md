@@ -1786,7 +1786,12 @@ until the final cross-source/subdocument dedup and corpus ledger close.
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
-have to infer quality from a collection name after text transformations.
+have to infer quality from a collection name after text transformations. The
+stratum decision now also aggregates Hermès difficulty, prerequisite burden,
+curriculum phase, domain votes, and recurring concepts/prerequisites; the
+materializer binds that decision receipt and carries those source-text-free
+signals into every final row. Final receipts report exact bytes by phase,
+difficulty, domain, and quality floor.
 
 To avoid pulling a second 2 TB copy onto Stokes for subdocument deduplication,
 the remotely verified candidate shards are reopened one at a time and segmented

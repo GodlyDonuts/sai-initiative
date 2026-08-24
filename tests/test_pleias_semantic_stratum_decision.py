@@ -12,6 +12,12 @@ def _judgment(*, verdict="retain", risk=None, score=4):
         "source_language": "english",
         "scores": {key: score for key in SCORE_KEYS},
         "epistemic_functions": ["reality_anchor"],
+        "domains": ["physics_astronomy"],
+        "difficulty": 3,
+        "prerequisite_burden": 2,
+        "curriculum_phase": "integration",
+        "concepts_taught": ["orbital mechanics"],
+        "prerequisites_assumed": ["classical mechanics"],
     }
 
 
@@ -33,6 +39,12 @@ def test_advances_only_strong_cross_family_supported_strata():
     assert len(result) == 1
     assert result[0]["decision"] == "advance_to_full_candidate_decontamination"
     assert result[0]["reasons"] == []
+    assert result[0]["primary"]["difficulty_mean_milli"] == 3_000
+    assert result[0]["primary"]["prerequisite_burden_mean_milli"] == 2_000
+    assert result[0]["primary"]["dominant_curriculum_phase"] == "integration"
+    assert result[0]["primary"]["recurring_concepts"] == [
+        {"concept": "orbital mechanics", "votes": 8}
+    ]
     assert result[0]["automatic_training_admission"] is False
 
 

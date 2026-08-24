@@ -36,6 +36,7 @@ mkdir -p "${sai_parent}/shards" "${sai_scratch}"
 python -m sai.data.pleias_production_materializer shard \
   --manifest "${sai_manifest}" \
   --selection-root "${sai_selection}" \
+  --semantic-decision /lustre/fs1/home/sa305415/sai_data_sources/pleias-semantic-stratum-decision-20260826-r1.json \
   --boundary-index /lustre/fs1/home/sa305415/sai-initiative/artifacts/sai_official_benchmark_boundary_index_20260824_r2 \
   --output-root "${sai_output}" \
   --logical-shards 128 \

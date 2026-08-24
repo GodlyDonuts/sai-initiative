@@ -71,6 +71,12 @@ def _schema():
             ("semantic_stratum", pa.string()),
             ("semantic_quality_floor_milli", pa.int32()),
             ("semantic_quality_mean_milli", pa.int32()),
+            ("semantic_difficulty_mean_milli", pa.int32()),
+            ("semantic_prerequisite_burden_mean_milli", pa.int32()),
+            ("semantic_curriculum_phase", pa.string()),
+            ("semantic_domains", pa.list_(pa.string())),
+            ("semantic_recurring_concepts", pa.list_(pa.string())),
+            ("semantic_recurring_prerequisites", pa.list_(pa.string())),
             ("word_count", pa.int64()),
             ("token_count_requires_recomputation", pa.bool_()),
             ("pre_dedup_content_sha256", pa.string()),
@@ -98,6 +104,12 @@ def rewrite_candidate(
     semantic_stratum = candidate.get("semantic_stratum")
     semantic_quality_floor = candidate.get("semantic_quality_floor_milli")
     semantic_quality_mean = candidate.get("semantic_quality_mean_milli")
+    semantic_difficulty = candidate.get("semantic_difficulty_mean_milli")
+    semantic_burden = candidate.get("semantic_prerequisite_burden_mean_milli")
+    semantic_phase = candidate.get("semantic_curriculum_phase")
+    semantic_domains = candidate.get("semantic_domains")
+    semantic_concepts = candidate.get("semantic_recurring_concepts")
+    semantic_prerequisites = candidate.get("semantic_recurring_prerequisites")
     if (
         candidate.get("schema") != CANDIDATE_SCHEMA
         or candidate.get("training_ready") is not False
@@ -118,6 +130,24 @@ def rewrite_candidate(
         or isinstance(semantic_quality_mean, bool)
         or not isinstance(semantic_quality_mean, int)
         or not semantic_quality_floor <= semantic_quality_mean <= 10_000
+        or isinstance(semantic_difficulty, bool)
+        or not isinstance(semantic_difficulty, int)
+        or not 0 <= semantic_difficulty <= 4_000
+        or isinstance(semantic_burden, bool)
+        or not isinstance(semantic_burden, int)
+        or not 0 <= semantic_burden <= 4_000
+        or not isinstance(semantic_phase, str)
+        or not semantic_phase
+        or not isinstance(semantic_domains, list)
+        or not semantic_domains
+        or any(not isinstance(value, str) or not value for value in semantic_domains)
+        or not isinstance(semantic_concepts, list)
+        or any(not isinstance(value, str) or not value for value in semantic_concepts)
+        or not isinstance(semantic_prerequisites, list)
+        or any(
+            not isinstance(value, str) or not value
+            for value in semantic_prerequisites
+        )
         or delete_characters <= 0
     ):
         raise PleiasSubdocumentRewriteError("rewrite candidate differs")

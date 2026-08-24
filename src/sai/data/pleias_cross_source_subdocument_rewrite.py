@@ -225,6 +225,18 @@ def run_shard(
                     counts[
                         f"quality_floor_milli::{quality_floor}::documents"
                     ] += 1
+                    phase = result["semantic_curriculum_phase"]
+                    counts[f"curriculum_phase::{phase}::documents"] += 1
+                    counts[f"curriculum_phase::{phase}::text_utf8_bytes"] += len(
+                        result["text"].encode()
+                    )
+                    difficulty = result["semantic_difficulty_mean_milli"]
+                    counts[f"difficulty_mean_milli::{difficulty}::documents"] += 1
+                    for domain in result["semantic_domains"]:
+                        counts[f"semantic_domain::{domain}::documents"] += 1
+                        counts[
+                            f"semantic_domain::{domain}::text_utf8_bytes"
+                        ] += len(result["text"].encode())
                     for key, value in row_counts.items():
                         counts[key] += value
                     ordered_transforms.update(

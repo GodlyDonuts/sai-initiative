@@ -52,6 +52,9 @@ def decide_strata(
         raise PleiasSemanticStratumDecisionError("primary evidence is empty")
     primary_counts: dict[str, Counter[str]] = defaultdict(Counter)
     score_sums: dict[str, Counter[str]] = defaultdict(Counter)
+    pedagogy: dict[str, Counter[str]] = defaultdict(Counter)
+    concepts: dict[str, Counter[str]] = defaultdict(Counter)
+    prerequisites: dict[str, Counter[str]] = defaultdict(Counter)
     for stratum, judgment in primary_rows:
         if not isinstance(stratum, str) or not stratum:
             raise PleiasSemanticStratumDecisionError("primary stratum differs")
@@ -60,6 +63,17 @@ def decide_strata(
         primary_counts[stratum][f"route::{route}"] += 1
         for score in SCORE_KEYS:
             score_sums[stratum][score] += judgment["scores"][score]
+        pedagogy[stratum]["difficulty_sum"] += judgment["difficulty"]
+        pedagogy[stratum]["prerequisite_burden_sum"] += judgment[
+            "prerequisite_burden"
+        ]
+        pedagogy[stratum][f"phase::{judgment['curriculum_phase']}"] += 1
+        for domain in judgment["domains"]:
+            pedagogy[stratum][f"domain::{domain}"] += 1
+        for concept in judgment["concepts_taught"]:
+            concepts[stratum][concept] += 1
+        for concept in judgment["prerequisites_assumed"]:
+            prerequisites[stratum][concept] += 1
     independent_counts: dict[str, Counter[str]] = defaultdict(Counter)
     for stratum, row in comparison_rows:
         if not isinstance(stratum, str) or not stratum:
@@ -97,6 +111,15 @@ def decide_strata(
             score: score_sums[stratum][score] * 1000 // primary_rows_count
             for score in CORE_SCORES
         }
+        phase_counts = {
+            key.removeprefix("phase::"): value
+            for key, value in sorted(pedagogy[stratum].items())
+            if key.startswith("phase::")
+        }
+        dominant_phase = min(
+            phase_counts,
+            key=lambda phase: (-phase_counts[phase], phase),
+        )
         independent_decisions = independent["review_decisions"]
         independent_representation_ppm = _ppm(
             independent["route::representation_verification"],
@@ -144,6 +167,33 @@ def decide_strata(
                 },
                 "representation_verification_ppm": primary_representation_ppm,
                 "core_mean_scores_milli": means,
+                "difficulty_mean_milli": (
+                    pedagogy[stratum]["difficulty_sum"]
+                    * 1000
+                    // primary_rows_count
+                ),
+                "prerequisite_burden_mean_milli": (
+                    pedagogy[stratum]["prerequisite_burden_sum"]
+                    * 1000
+                    // primary_rows_count
+                ),
+                "curriculum_phase_counts": phase_counts,
+                "dominant_curriculum_phase": dominant_phase,
+                "domain_counts": {
+                    key.removeprefix("domain::"): value
+                    for key, value in sorted(pedagogy[stratum].items())
+                    if key.startswith("domain::")
+                },
+                "recurring_concepts": [
+                    {"concept": concept, "votes": votes}
+                    for concept, votes in sorted(concepts[stratum].items())
+                    if votes >= 2
+                ],
+                "recurring_prerequisites": [
+                    {"concept": concept, "votes": votes}
+                    for concept, votes in sorted(prerequisites[stratum].items())
+                    if votes >= 2
+                ],
             },
             "independent": {
                 "rows": independent["rows"],

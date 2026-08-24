@@ -26,6 +26,12 @@ def test_rewrite_row_preserves_internal_lineage_and_rewrites_exact_chunks():
         "semantic_stratum": "Books::Open Culture::medium",
         "semantic_quality_floor_milli": 7_500,
         "semantic_quality_mean_milli": 8_000,
+        "semantic_difficulty_mean_milli": 3_000,
+        "semantic_prerequisite_burden_mean_milli": 2_000,
+        "semantic_curriculum_phase": "integration",
+        "semantic_domains": ["physics_astronomy"],
+        "semantic_recurring_concepts": ["orbital mechanics"],
+        "semantic_recurring_prerequisites": ["classical mechanics"],
         "word_count": len(text.split()),
         "token_count_requires_recomputation": True,
         "text": text,
@@ -53,6 +59,7 @@ def test_rewrite_row_preserves_internal_lineage_and_rewrites_exact_chunks():
     assert result["pre_dedup_content_sha256"] == "b" * 64
     assert result["subdocument_transform_sha256"] == "c" * 64
     assert result["semantic_quality_floor_milli"] == 7_500
+    assert result["semantic_difficulty_mean_milli"] == 3_000
     assert result["content_sha256"] != row["content_sha256"]
     assert counts["deleted_chunks"] == 2
     assert result["training_ready"] is False

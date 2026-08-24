@@ -56,16 +56,26 @@ def test_replays_exact_selected_identity_and_rejects_mutation():
         7_500,
         8_000,
     )
-    result = replay_selected_row(row, parent, 3, selected)
+    semantic = {
+        "difficulty_mean_milli": 3_000,
+        "prerequisite_burden_mean_milli": 2_000,
+        "dominant_curriculum_phase": "integration",
+        "domains": ["physics_astronomy"],
+        "recurring_concepts": ["orbital mechanics"],
+        "recurring_prerequisites": ["classical mechanics"],
+    }
+    result = replay_selected_row(row, parent, 3, selected, semantic)
     assert result["source_row_identity_sha256"] == identity
     assert result["text"] == text
     assert result["semantic_quality_floor_milli"] == 7_500
     assert result["semantic_quality_mean_milli"] == 8_000
+    assert result["semantic_difficulty_mean_milli"] == 3_000
+    assert result["semantic_curriculum_phase"] == "integration"
     assert result["training_ready"] is False
     changed = list(selected)
     changed[2] = "f" * 64
     with pytest.raises(PleiasProductionMaterializerError, match="identity"):
-        replay_selected_row(row, parent, 3, tuple(changed))
+        replay_selected_row(row, parent, 3, tuple(changed), semantic)
 
 
 def test_upload_replays_remote_lfs_identity(tmp_path, monkeypatch):

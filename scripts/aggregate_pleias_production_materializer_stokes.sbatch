@@ -25,6 +25,7 @@ sai_parent=/lustre/fs1/home/sa305415/sai_data_sources/pleias-production-material
 python -m sai.data.pleias_production_materializer aggregate \
   --manifest "${sai_manifest}" \
   --selection-root "${sai_selection}" \
+  --semantic-decision /lustre/fs1/home/sa305415/sai_data_sources/pleias-semantic-stratum-decision-20260826-r1.json \
   --shards-root "${sai_parent}/shards" \
   --logical-shards 128 \
   --output "${sai_parent}/aggregate.json" \

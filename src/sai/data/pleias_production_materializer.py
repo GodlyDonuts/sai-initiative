@@ -26,6 +26,9 @@ from sai.data.pleias_full_candidate_decontamination import screen_text
 from sai.data.pleias_metadata_census import load_manifest, select_shard
 from sai.data.pleias_production_byte_selection import SCHEMA as SELECTION_SCHEMA
 from sai.data.pleias_semantic_sample import _token_band
+from sai.data.pleias_semantic_stratum_decision import (
+    SCHEMA as SEMANTIC_DECISION_SCHEMA,
+)
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 SHARD_SCHEMA = "sai-pleias-production-materialized-shard-v1"
@@ -52,6 +55,12 @@ def _materialized_schema():
         pa.field("semantic_stratum", pa.string()),
         pa.field("semantic_quality_floor_milli", pa.int32()),
         pa.field("semantic_quality_mean_milli", pa.int32()),
+        pa.field("semantic_difficulty_mean_milli", pa.int32()),
+        pa.field("semantic_prerequisite_burden_mean_milli", pa.int32()),
+        pa.field("semantic_curriculum_phase", pa.string()),
+        pa.field("semantic_domains", pa.list_(pa.string())),
+        pa.field("semantic_recurring_concepts", pa.list_(pa.string())),
+        pa.field("semantic_recurring_prerequisites", pa.list_(pa.string())),
     ]
     return pa.schema(fields + [pa.field("training_ready", pa.bool_())])
 
@@ -94,11 +103,86 @@ def _selection_database(root: Path) -> tuple[dict[str, Any], Path]:
     return receipt, path
 
 
+def _semantic_metadata(path: Path) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    receipt = _load_signed(path, SEMANTIC_DECISION_SCHEMA)
+    rows = receipt.get("decisions")
+    metadata = {}
+    if (
+        receipt.get("status")
+        != "complete_nontraining_pleias_semantic_stratum_decision"
+        or not isinstance(rows, list)
+    ):
+        raise PleiasProductionMaterializerError("semantic decision differs")
+    for row in rows:
+        if not isinstance(row, dict):
+            raise PleiasProductionMaterializerError("semantic stratum differs")
+        stratum = row.get("stratum")
+        primary = row.get("primary")
+        if (
+            row.get("row_sha256")
+            != canonical_sha256(
+                {key: value for key, value in row.items() if key != "row_sha256"}
+            )
+            or not isinstance(stratum, str)
+            or stratum in metadata
+            or not isinstance(primary, dict)
+        ):
+            raise PleiasProductionMaterializerError("semantic stratum differs")
+        if row.get("decision") != "advance_to_full_candidate_decontamination":
+            continue
+        difficulty = primary.get("difficulty_mean_milli")
+        burden = primary.get("prerequisite_burden_mean_milli")
+        phase = primary.get("dominant_curriculum_phase")
+        domains = primary.get("domain_counts")
+        concepts = primary.get("recurring_concepts")
+        prerequisites = primary.get("recurring_prerequisites")
+        if (
+            isinstance(difficulty, bool)
+            or not isinstance(difficulty, int)
+            or not 0 <= difficulty <= 4_000
+            or isinstance(burden, bool)
+            or not isinstance(burden, int)
+            or not 0 <= burden <= 4_000
+            or not isinstance(phase, str)
+            or not phase
+            or not isinstance(domains, dict)
+            or not domains
+            or not isinstance(concepts, list)
+            or not isinstance(prerequisites, list)
+            or any(
+                not isinstance(value, dict)
+                or not isinstance(value.get("concept"), str)
+                or not value["concept"]
+                or isinstance(value.get("votes"), bool)
+                or not isinstance(value.get("votes"), int)
+                or value["votes"] < 2
+                for value in [*concepts, *prerequisites]
+            )
+        ):
+            raise PleiasProductionMaterializerError(
+                "semantic curriculum metadata differs"
+            )
+        metadata[stratum] = {
+            "difficulty_mean_milli": difficulty,
+            "prerequisite_burden_mean_milli": burden,
+            "dominant_curriculum_phase": phase,
+            "domains": sorted(domains),
+            "recurring_concepts": [value["concept"] for value in concepts],
+            "recurring_prerequisites": [
+                value["concept"] for value in prerequisites
+            ],
+        }
+    if set(metadata) != set(receipt.get("advanced_strata", [])):
+        raise PleiasProductionMaterializerError("advanced semantic strata differ")
+    return metadata, receipt
+
+
 def replay_selected_row(
     row: dict[str, Any],
     parent: dict[str, Any],
     row_index: int,
     selected: tuple[Any, ...],
+    semantic: dict[str, Any],
 ) -> dict[str, Any]:
     """Reconstruct and verify one exact selected candidate from its pinned parent."""
 
@@ -142,6 +226,16 @@ def replay_selected_row(
         or isinstance(expected_quality_mean, bool)
         or not isinstance(expected_quality_mean, int)
         or not expected_quality_floor <= expected_quality_mean <= 10_000
+        or not isinstance(semantic, dict)
+        or set(semantic)
+        != {
+            "difficulty_mean_milli",
+            "prerequisite_burden_mean_milli",
+            "dominant_curriculum_phase",
+            "domains",
+            "recurring_concepts",
+            "recurring_prerequisites",
+        }
     ):
         raise PleiasProductionMaterializerError("selected row identity differs")
     return {
@@ -163,6 +257,14 @@ def replay_selected_row(
         "semantic_stratum": stratum,
         "semantic_quality_floor_milli": expected_quality_floor,
         "semantic_quality_mean_milli": expected_quality_mean,
+        "semantic_difficulty_mean_milli": semantic["difficulty_mean_milli"],
+        "semantic_prerequisite_burden_mean_milli": semantic[
+            "prerequisite_burden_mean_milli"
+        ],
+        "semantic_curriculum_phase": semantic["dominant_curriculum_phase"],
+        "semantic_domains": semantic["domains"],
+        "semantic_recurring_concepts": semantic["recurring_concepts"],
+        "semantic_recurring_prerequisites": semantic["recurring_prerequisites"],
         "content_sha256": content_sha256,
         "text": text,
         "training_ready": False,
@@ -240,6 +342,7 @@ def upload_verified(
 def run_shard(
     manifest_path: Path,
     selection_root: Path,
+    semantic_decision_path: Path,
     boundary_roots: list[Path],
     output_root: Path,
     logical_shards: int,
@@ -265,6 +368,9 @@ def run_shard(
     manifest = load_manifest(manifest_path)
     parents = select_shard(manifest, logical_shards, shard_index)
     selection, selection_path = _selection_database(selection_root)
+    semantic_by_stratum, semantic_receipt = _semantic_metadata(
+        semantic_decision_path
+    )
     connection = sqlite3.connect(f"file:{selection_path.resolve()}?mode=ro", uri=True)
     words, code, boundary_receipts = binary_boundary_index(boundary_roots)
     word_boundary = words[0] if len(words) == 1 else _Union(words)
@@ -318,7 +424,11 @@ def run_shard(
                         if expected is None:
                             continue
                         candidate = replay_selected_row(
-                            row, parent, row_index, expected
+                            row,
+                            parent,
+                            row_index,
+                            expected,
+                            semantic_by_stratum.get(expected[3], {}),
                         )
                         seen.add(row_index)
                         counts["selected_rows_replayed"] += 1
@@ -396,6 +506,9 @@ def run_shard(
         "source": {
             "manifest_sha256": sha256_file(manifest_path),
             "selection_receipt_sha256": selection["receipt_sha256"],
+            "semantic_decision_receipt_sha256": semantic_receipt[
+                "receipt_sha256"
+            ],
             "selected_parent_count": len(selected_parent_receipts),
             "ordered_selected_parent_receipts_sha256": canonical_sha256(
                 selected_parent_receipts
@@ -429,6 +542,7 @@ class _Union:
 def aggregate(
     manifest_path: Path,
     selection_root: Path,
+    semantic_decision_path: Path,
     shards_root: Path,
     logical_shards: int,
     output: Path,
@@ -446,6 +560,9 @@ def aggregate(
         ) from error
     manifest = load_manifest(manifest_path)
     selection, selection_path = _selection_database(selection_root)
+    _semantic_by_stratum, semantic_receipt = _semantic_metadata(
+        semantic_decision_path
+    )
     connection = sqlite3.connect(f"file:{selection_path.resolve()}?mode=ro", uri=True)
     totals: Counter[str] = Counter()
     receipts = []
@@ -471,6 +588,8 @@ def aggregate(
             != sha256_file(manifest_path)
             or receipt.get("source", {}).get("selection_receipt_sha256")
             != selection["receipt_sha256"]
+            or receipt.get("source", {}).get("semantic_decision_receipt_sha256")
+            != semantic_receipt["receipt_sha256"]
             or receipt.get("counts", {}).get("selected_rows_replayed") != expected_rows
             or receipt.get("counts", {}).get("retained_rows", 0)
             + receipt.get("counts", {}).get("benchmark_contaminated_rows", 0)
@@ -537,6 +656,9 @@ def aggregate(
         "source": {
             "manifest_sha256": sha256_file(manifest_path),
             "selection_receipt_sha256": selection["receipt_sha256"],
+            "semantic_decision_receipt_sha256": semantic_receipt[
+                "receipt_sha256"
+            ],
             "ordered_shard_receipts_sha256": canonical_sha256(receipts),
         },
         "shards": {
@@ -565,6 +687,7 @@ def main() -> int:
     shard = commands.add_parser("shard")
     shard.add_argument("--manifest", type=Path, required=True)
     shard.add_argument("--selection-root", type=Path, required=True)
+    shard.add_argument("--semantic-decision", type=Path, required=True)
     shard.add_argument("--boundary-index", type=Path, action="append", required=True)
     shard.add_argument("--output-root", type=Path, required=True)
     shard.add_argument("--logical-shards", type=int, required=True)
@@ -574,6 +697,7 @@ def main() -> int:
     combine = commands.add_parser("aggregate")
     combine.add_argument("--manifest", type=Path, required=True)
     combine.add_argument("--selection-root", type=Path, required=True)
+    combine.add_argument("--semantic-decision", type=Path, required=True)
     combine.add_argument("--shards-root", type=Path, required=True)
     combine.add_argument("--logical-shards", type=int, required=True)
     combine.add_argument("--output", type=Path, required=True)
@@ -583,6 +707,7 @@ def main() -> int:
         result = run_shard(
             args.manifest,
             args.selection_root,
+            args.semantic_decision,
             args.boundary_index,
             args.output_root,
             args.logical_shards,
@@ -594,6 +719,7 @@ def main() -> int:
         result = aggregate(
             args.manifest,
             args.selection_root,
+            args.semantic_decision,
             args.shards_root,
             args.logical_shards,
             args.output,

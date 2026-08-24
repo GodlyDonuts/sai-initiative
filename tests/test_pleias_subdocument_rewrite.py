@@ -24,6 +24,12 @@ def _candidate(text):
         "semantic_stratum": "Books::Open Culture::medium",
         "semantic_quality_floor_milli": 7_500,
         "semantic_quality_mean_milli": 8_000,
+        "semantic_difficulty_mean_milli": 3_000,
+        "semantic_prerequisite_burden_mean_milli": 2_000,
+        "semantic_curriculum_phase": "integration",
+        "semantic_domains": ["physics_astronomy"],
+        "semantic_recurring_concepts": ["orbital mechanics"],
+        "semantic_recurring_prerequisites": ["classical mechanics"],
         "text": text,
         "training_ready": False,
     }
