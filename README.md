@@ -1670,6 +1670,9 @@ quotes, compiler receipts, candidate Parquets, and source text. Every copied
 file is byte-counted and SHA-256 replayed before a durable mirror receipt is
 sealed.
 
+The durable evidence mirror is staged as job `818554` after exact-dedup
+aggregate `818552`; `scontrol` verified the dependency and requeue is disabled.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
