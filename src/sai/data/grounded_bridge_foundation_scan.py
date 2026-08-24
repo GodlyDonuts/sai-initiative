@@ -412,6 +412,7 @@ def iter_pleias_documents(
     internal_decision_root: Path,
     cross_decision_root: Path,
     final_root: Path,
+    balance_root: Path,
     logical_shards: int,
     shard_index: int,
     token: str,
@@ -422,8 +423,9 @@ def iter_pleias_documents(
     temporary = tempfile.TemporaryDirectory(
         prefix="sai-bridge-pleias-scan-", dir=scratch_root
     )
-    database, aggregate, shard, expected = _locator_database(
+    database, aggregate, shard, balance_shard, expected = _locator_database(
         final_root,
+        balance_root,
         logical_shards,
         shard_index,
         Path(temporary.name) / "locators.sqlite3",
@@ -439,15 +441,17 @@ def iter_pleias_documents(
                 internal_decision_root=internal_decision_root,
                 cross_decision_root=cross_decision_root,
                 final_root=final_root,
+                balance_root=balance_root,
                 logical_shards=logical_shards,
                 shard_index=shard_index,
                 token=token,
                 scratch_root=scratch_root,
             )
-            for observed, envelope in enumerate(envelopes, start=1):
+            for envelope in envelopes:
+                observed += 1
                 value = database.execute(
-                    "SELECT locator_json FROM locators WHERE virtual_row_index=?",
-                    (observed - 1,),
+                    "SELECT locator_json FROM locators WHERE locator_sha256=?",
+                    (envelope.get("final_locator_sha256"),),
                 ).fetchone()
                 if value is None:
                     raise GroundedBridgeFoundationScanError(
@@ -501,6 +505,7 @@ def iter_pleias_documents(
     custody = {
         "final_aggregate_receipt_sha256": aggregate["receipt_sha256"],
         "final_shard_receipt_sha256": shard["receipt_sha256"],
+        "byte_balance_shard_receipt_sha256": balance_shard["receipt_sha256"],
     }
     return iterator(), custody
 
@@ -649,6 +654,7 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--manifest", type=Path)
     parser.add_argument("--semantic-decision", type=Path)
+    parser.add_argument("--balance-root", type=Path)
     parser.add_argument("--internal-decision-root", type=Path)
     parser.add_argument("--cross-decision-root", type=Path)
     parser.add_argument("--token-env", default="HF_TOKEN")
@@ -669,6 +675,7 @@ def main() -> int:
                 args.semantic_decision,
                 args.internal_decision_root,
                 args.cross_decision_root,
+                args.balance_root,
             )
         ):
             raise GroundedBridgeFoundationScanError("PleIAs scan inputs differ")
@@ -679,6 +686,7 @@ def main() -> int:
             internal_decision_root=args.internal_decision_root,
             cross_decision_root=args.cross_decision_root,
             final_root=args.final_root,
+            balance_root=args.balance_root,
             logical_shards=args.logical_shards,
             shard_index=args.shard_index,
             token=os.environ.get(args.token_env, ""),

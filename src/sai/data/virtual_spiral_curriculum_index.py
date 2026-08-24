@@ -32,6 +32,13 @@ from sai.data.institutional_books_transient_tokenizer_stream import (
     _selection,
 )
 from sai.data.pleias_production_materializer import _load_signed
+from sai.data.pleias_virtual_byte_balance import (
+    AGGREGATE_SCHEMA as PLEIAS_BALANCE_AGGREGATE_SCHEMA,
+)
+from sai.data.pleias_virtual_byte_balance import (
+    SHARD_SCHEMA as PLEIAS_BALANCE_SHARD_SCHEMA,
+)
+from sai.data.pleias_virtual_byte_balance import excluded_database, is_excluded
 from sai.data.pleias_virtual_cross_source_reconstruction import (
     AGGREGATE_SCHEMA as PLEIAS_AGGREGATE_SCHEMA,
 )
@@ -385,6 +392,7 @@ def _write_shard(
     logical_shards: int,
     shard_index: int,
     source_receipt_sha256: str,
+    source_balance_receipt_sha256: str | None = None,
 ) -> dict[str, Any]:
     if (
         output_root.exists()
@@ -398,6 +406,10 @@ def _write_shard(
         or not isinstance(shard_index, int)
         or not 0 <= shard_index < logical_shards
         or not _is_sha256(source_receipt_sha256)
+        or (
+            source_balance_receipt_sha256 is not None
+            and not _is_sha256(source_balance_receipt_sha256)
+        )
     ):
         raise VirtualSpiralCurriculumIndexError("index shard output differs")
     try:
@@ -424,6 +436,7 @@ def _write_shard(
             "logical_shards": logical_shards,
             "shard_index": shard_index,
             "source_receipt_sha256": source_receipt_sha256,
+            "source_balance_receipt_sha256": source_balance_receipt_sha256,
             "curriculum_policy": POLICY,
             "curriculum_policy_sha256": POLICY_SHA256,
             "counts": dict(sorted(counts.items())),
@@ -451,6 +464,7 @@ def _write_shard(
 
 def index_pleias_shard(
     final_root: Path,
+    balance_root: Path,
     output_root: Path,
     *,
     logical_shards: int,
@@ -484,41 +498,55 @@ def index_pleias_shard(
     ):
         raise VirtualSpiralCurriculumIndexError("final PleIAs locators differ")
     rows = []
-    for batch in pq.ParquetFile(path).iter_batches(batch_size=1024, use_threads=False):
-        for locator in batch.to_pylist():
-            unsigned = {
-                key: value for key, value in locator.items() if key != "locator_sha256"
-            }
-            if (
-                locator.get("schema") != PLEIAS_LOCATOR_SCHEMA
-                or locator.get("locator_sha256") != canonical_sha256(unsigned)
-                or locator.get("training_ready") is not False
-            ):
-                raise VirtualSpiralCurriculumIndexError("final PleIAs locator differs")
-            rows.append(
-                _index_row(
-                    component="pleias_common_corpus",
-                    component_shard=shard_index,
-                    component_row_index=locator["virtual_row_index"],
-                    document_identity_sha256=locator["source_row_identity_sha256"],
-                    content_sha256=locator["content_sha256"],
-                    output_text_utf8_bytes=locator["output_text_utf8_bytes"],
-                    corpus_split=locator["corpus_split"],
-                    source_group_sha256=locator["source_group_sha256"],
-                    rights_label=locator["license"],
-                    quality_floor_milli=locator["semantic_quality_floor_milli"],
-                    difficulty_milli=locator["semantic_difficulty_mean_milli"],
-                    prerequisite_burden_milli=locator[
-                        "semantic_prerequisite_burden_mean_milli"
-                    ],
-                    semantic_phase_hint=locator["semantic_curriculum_phase"],
-                    semantic_domains=locator["semantic_domains"],
-                    concepts=locator["semantic_recurring_concepts"],
-                    prerequisites=locator["semantic_recurring_prerequisites"],
-                    source_custody_sha256=locator["locator_sha256"],
+    excluded, balance_receipt = excluded_database(balance_root, shard_index)
+    try:
+        for batch in pq.ParquetFile(path).iter_batches(
+            batch_size=1024, use_threads=False
+        ):
+            for locator in batch.to_pylist():
+                unsigned = {
+                    key: value
+                    for key, value in locator.items()
+                    if key != "locator_sha256"
+                }
+                if (
+                    locator.get("schema") != PLEIAS_LOCATOR_SCHEMA
+                    or locator.get("locator_sha256") != canonical_sha256(unsigned)
+                    or locator.get("training_ready") is not False
+                ):
+                    raise VirtualSpiralCurriculumIndexError(
+                        "final PleIAs locator differs"
+                    )
+                if is_excluded(excluded, locator["source_row_identity_sha256"]):
+                    continue
+                rows.append(
+                    _index_row(
+                        component="pleias_common_corpus",
+                        component_shard=shard_index,
+                        component_row_index=len(rows),
+                        document_identity_sha256=locator["source_row_identity_sha256"],
+                        content_sha256=locator["content_sha256"],
+                        output_text_utf8_bytes=locator["output_text_utf8_bytes"],
+                        corpus_split=locator["corpus_split"],
+                        source_group_sha256=locator["source_group_sha256"],
+                        rights_label=locator["license"],
+                        quality_floor_milli=locator["semantic_quality_floor_milli"],
+                        difficulty_milli=locator["semantic_difficulty_mean_milli"],
+                        prerequisite_burden_milli=locator[
+                            "semantic_prerequisite_burden_mean_milli"
+                        ],
+                        semantic_phase_hint=locator["semantic_curriculum_phase"],
+                        semantic_domains=locator["semantic_domains"],
+                        concepts=locator["semantic_recurring_concepts"],
+                        prerequisites=locator["semantic_recurring_prerequisites"],
+                        source_custody_sha256=locator["locator_sha256"],
+                    )
                 )
-            )
-    if len(rows) != descriptor.get("rows"):
+    finally:
+        excluded.close()
+    if len(rows) != balance_receipt.get("selected_counts", {}).get("documents") or sum(
+        row["output_text_utf8_bytes"] for row in rows
+    ) != balance_receipt.get("selected_counts", {}).get("output_text_utf8_bytes"):
         raise VirtualSpiralCurriculumIndexError("PleIAs index coverage differs")
     return _write_shard(
         output_root,
@@ -527,6 +555,7 @@ def index_pleias_shard(
         logical_shards=logical_shards,
         shard_index=shard_index,
         source_receipt_sha256=receipt["receipt_sha256"],
+        source_balance_receipt_sha256=balance_receipt["receipt_sha256"],
     )
 
 
@@ -681,6 +710,7 @@ def aggregate_indexes(
     pleias_index_root: Path,
     book_index_root: Path,
     pleias_final_root: Path,
+    pleias_balance_root: Path,
     book_final_root: Path,
     output: Path,
     *,
@@ -705,13 +735,31 @@ def aggregate_indexes(
     pleias_final = _load_signed(
         pleias_final_root / "aggregate.json", PLEIAS_AGGREGATE_SCHEMA
     )
+    pleias_balance = _load_signed(
+        pleias_balance_root / "aggregate.json", PLEIAS_BALANCE_AGGREGATE_SCHEMA
+    )
     book_final = _load_signed(book_final_root / "aggregate.json", BOOK_AGGREGATE_SCHEMA)
     if (
         pleias_final.get("status") != PLEIAS_AGGREGATE_STATUS
+        or pleias_balance.get("status")
+        != "complete_nontraining_pleias_virtual_byte_balance"
+        or pleias_balance.get("source", {}).get("pleias_aggregate_receipt_sha256")
+        != pleias_final.get("receipt_sha256")
         or book_final.get("status")
         != "complete_nontraining_institutional_books_cross_source_rewritten"
     ):
         raise VirtualSpiralCurriculumIndexError("final aggregate status differs")
+    balance_receipts = [
+        _load_signed(
+            pleias_balance_root / "shards" / f"shard_{index:05d}" / "receipt.json",
+            PLEIAS_BALANCE_SHARD_SCHEMA,
+        )["receipt_sha256"]
+        for index in range(128)
+    ]
+    if pleias_balance.get("shards", {}).get(
+        "ordered_receipts_sha256"
+    ) != canonical_sha256(balance_receipts):
+        raise VirtualSpiralCurriculumIndexError("byte balance shard custody differs")
     totals: Counter[str] = Counter()
     receipts = []
     ordered_priorities = hashlib.sha256()
@@ -750,6 +798,15 @@ def aggregate_indexes(
                         / "receipt.json",
                         final_schema,
                     )
+                    balance_receipt = None
+                    if component == "pleias_common_corpus":
+                        balance_receipt = _load_signed(
+                            pleias_balance_root
+                            / "shards"
+                            / f"shard_{shard_index:05d}"
+                            / "receipt.json",
+                            PLEIAS_BALANCE_SHARD_SCHEMA,
+                        )
                     descriptor = receipt.get("index")
                     path = (
                         shard / descriptor.get("path", "")
@@ -763,6 +820,15 @@ def aggregate_indexes(
                         or receipt.get("shard_index") != shard_index
                         or receipt.get("source_receipt_sha256")
                         != final_receipt["receipt_sha256"]
+                        or (
+                            component == "pleias_common_corpus"
+                            and receipt.get("source_balance_receipt_sha256")
+                            != balance_receipt["receipt_sha256"]
+                        )
+                        or (
+                            component == "institutional_books"
+                            and receipt.get("source_balance_receipt_sha256") is not None
+                        )
                         or receipt.get("curriculum_policy_sha256") != POLICY_SHA256
                         or receipt.get("source_text_persisted") is not False
                         or not isinstance(descriptor, dict)
@@ -848,9 +914,9 @@ def aggregate_indexes(
             database.close()
     if (
         totals["component::pleias_common_corpus::documents"]
-        != pleias_final.get("totals", {}).get("documents")
+        != pleias_balance.get("selected_counts", {}).get("documents")
         or totals["component::pleias_common_corpus::output_text_utf8_bytes"]
-        != pleias_final.get("totals", {}).get("output_text_utf8_bytes")
+        != pleias_balance.get("selected_counts", {}).get("output_text_utf8_bytes")
         or totals["component::institutional_books::documents"]
         != book_final.get("totals", {}).get("documents")
         or totals["component::institutional_books::output_text_utf8_bytes"]
@@ -867,6 +933,7 @@ def aggregate_indexes(
         "status": AGGREGATE_STATUS,
         "source": {
             "pleias_final_aggregate_receipt_sha256": pleias_final["receipt_sha256"],
+            "pleias_byte_balance_receipt_sha256": pleias_balance["receipt_sha256"],
             "book_final_aggregate_receipt_sha256": book_final["receipt_sha256"],
         },
         "curriculum_policy": POLICY,
@@ -905,6 +972,7 @@ def main() -> int:
     commands = parser.add_subparsers(dest="command", required=True)
     pleias = commands.add_parser("pleias-shard")
     pleias.add_argument("--final-root", type=Path, required=True)
+    pleias.add_argument("--balance-root", type=Path, required=True)
     pleias.add_argument("--output-root", type=Path, required=True)
     pleias.add_argument("--logical-shards", type=int, required=True)
     pleias.add_argument("--shard-index", type=int, required=True)
@@ -918,6 +986,7 @@ def main() -> int:
     combine.add_argument("--pleias-index-root", type=Path, required=True)
     combine.add_argument("--book-index-root", type=Path, required=True)
     combine.add_argument("--pleias-final-root", type=Path, required=True)
+    combine.add_argument("--pleias-balance-root", type=Path, required=True)
     combine.add_argument("--book-final-root", type=Path, required=True)
     combine.add_argument("--output", type=Path, required=True)
     combine.add_argument("--durable-output", type=Path)
@@ -926,6 +995,7 @@ def main() -> int:
     if args.command == "pleias-shard":
         result = index_pleias_shard(
             args.final_root,
+            args.balance_root,
             args.output_root,
             logical_shards=args.logical_shards,
             shard_index=args.shard_index,
@@ -943,6 +1013,7 @@ def main() -> int:
             args.pleias_index_root,
             args.book_index_root,
             args.pleias_final_root,
+            args.pleias_balance_root,
             args.book_final_root,
             args.output,
             durable_output=args.durable_output,

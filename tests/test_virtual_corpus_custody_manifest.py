@@ -8,6 +8,9 @@ from sai.data.cross_source_subdocument_decision_aggregate import (
 from sai.data.institutional_books_cross_source_subdocument_rewrite_aggregate import (
     SCHEMA as BOOK_SCHEMA,
 )
+from sai.data.pleias_virtual_byte_balance import (
+    AGGREGATE_SCHEMA as PLEIAS_BALANCE_SCHEMA,
+)
 from sai.data.pleias_virtual_cross_source_reconstruction import (
     AGGREGATE_SCHEMA as PLEIAS_SCHEMA,
 )
@@ -69,6 +72,20 @@ def _workspace(tmp_path):
             "training_ready": False,
         },
     )
+    balance = _signed(
+        tmp_path / "balance.json",
+        {
+            "schema": PLEIAS_BALANCE_SCHEMA,
+            "status": "complete_nontraining_pleias_virtual_byte_balance",
+            "source": {
+                "book_aggregate_receipt_sha256": books["receipt_sha256"],
+                "pleias_aggregate_receipt_sha256": pleias["receipt_sha256"],
+            },
+            "byte_ceiling_respected": True,
+            "source_text_persisted": False,
+            "training_ready": False,
+        },
+    )
     _signed(
         tmp_path / "ledger.json",
         {
@@ -81,6 +98,7 @@ def _workspace(tmp_path):
                 {
                     "component": "pleias_common_corpus",
                     "aggregate_receipt_sha256": pleias["receipt_sha256"],
+                    "byte_balance_receipt_sha256": balance["receipt_sha256"],
                 },
             ],
             "totals": {"post_rewrite_text_utf8_bytes": 900},
@@ -94,19 +112,21 @@ def _workspace(tmp_path):
         source,
         tmp_path / "books.json",
         tmp_path / "pleias.json",
+        tmp_path / "balance.json",
         tmp_path / "cross.json",
         tmp_path / "ledger.json",
     )
 
 
 def test_custody_manifest_binds_sources_components_and_two_copies(tmp_path):
-    source, books, pleias, cross, ledger = _workspace(tmp_path)
+    source, books, pleias, balance, cross, ledger = _workspace(tmp_path)
     output = tmp_path / "custody" / "receipt.json"
     durable = tmp_path / "evidence" / "receipt.json"
     result = build_manifest(
         source,
         books,
         pleias,
+        balance,
         cross,
         ledger,
         output,
@@ -124,7 +144,7 @@ def test_custody_manifest_binds_sources_components_and_two_copies(tmp_path):
 
 
 def test_custody_manifest_rejects_component_receipt_substitution(tmp_path):
-    source, books, pleias, cross, ledger = _workspace(tmp_path)
+    source, books, pleias, balance, cross, ledger = _workspace(tmp_path)
     payload = json.loads(ledger.read_text())
     payload.pop("receipt_sha256")
     payload["components"][1]["aggregate_receipt_sha256"] = "0" * 64
@@ -134,6 +154,7 @@ def test_custody_manifest_rejects_component_receipt_substitution(tmp_path):
             source,
             books,
             pleias,
+            balance,
             cross,
             ledger,
             tmp_path / "receipt.json",

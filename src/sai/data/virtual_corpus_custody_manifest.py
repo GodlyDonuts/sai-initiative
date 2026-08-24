@@ -15,6 +15,9 @@ from sai.data.institutional_books_cross_source_subdocument_rewrite_aggregate imp
     SCHEMA as BOOK_SCHEMA,
 )
 from sai.data.pleias_production_materializer import _load_signed
+from sai.data.pleias_virtual_byte_balance import (
+    AGGREGATE_SCHEMA as PLEIAS_BALANCE_SCHEMA,
+)
 from sai.data.pleias_virtual_cross_source_reconstruction import (
     AGGREGATE_SCHEMA as PLEIAS_SCHEMA,
 )
@@ -105,6 +108,7 @@ def build_manifest(
     source_manifest_path: Path,
     book_aggregate_path: Path,
     pleias_aggregate_path: Path,
+    pleias_balance_path: Path,
     cross_decision_path: Path,
     ledger_path: Path,
     output: Path,
@@ -128,6 +132,7 @@ def build_manifest(
     source_manifest = _source_manifest(source_manifest_path)
     books = _load_signed(book_aggregate_path, BOOK_SCHEMA)
     pleias = _load_signed(pleias_aggregate_path, PLEIAS_SCHEMA)
+    balance = _load_signed(pleias_balance_path, PLEIAS_BALANCE_SCHEMA)
     cross = _load_signed(cross_decision_path, CROSS_DECISION_SCHEMA)
     ledger = _load_signed(ledger_path, LEDGER_SCHEMA)
     components = {
@@ -141,6 +146,15 @@ def build_manifest(
         != books.get("receipt_sha256")
         or components["pleias_common_corpus"].get("aggregate_receipt_sha256")
         != pleias.get("receipt_sha256")
+        or components["pleias_common_corpus"].get("byte_balance_receipt_sha256")
+        != balance.get("receipt_sha256")
+        or balance.get("source", {}).get("book_aggregate_receipt_sha256")
+        != books.get("receipt_sha256")
+        or balance.get("source", {}).get("pleias_aggregate_receipt_sha256")
+        != pleias.get("receipt_sha256")
+        or balance.get("status") != "complete_nontraining_pleias_virtual_byte_balance"
+        or balance.get("byte_ceiling_respected") is not True
+        or balance.get("source_text_persisted") is not False
         or pleias.get("source", {}).get("cross_decision_aggregate_receipt_sha256")
         != cross.get("receipt_sha256")
         or ledger.get("byte_ceiling_respected") is not True
@@ -170,6 +184,11 @@ def build_manifest(
             "receipt_sha256": pleias["receipt_sha256"],
         },
         {
+            "artifact": "virtual_pleias_byte_balance",
+            **_regular(pleias_balance_path, "PleIAs byte balance"),
+            "receipt_sha256": balance["receipt_sha256"],
+        },
+        {
             "artifact": "cross_source_decision_aggregate",
             **_regular(cross_decision_path, "cross decision aggregate"),
             "receipt_sha256": cross["receipt_sha256"],
@@ -194,6 +213,7 @@ def build_manifest(
             "internal_subdocument_decisions_applied": True,
             "cross_source_subdocument_decisions_applied": True,
             "source_disjoint_split_applied": True,
+            "final_byte_balance_applied": True,
             "final_content_sha256_bound_per_row": True,
             "source_text_persisted_in_manifest": False,
         },
@@ -218,6 +238,7 @@ def main() -> int:
     parser.add_argument("--source-manifest", type=Path, required=True)
     parser.add_argument("--book-aggregate", type=Path, required=True)
     parser.add_argument("--pleias-aggregate", type=Path, required=True)
+    parser.add_argument("--pleias-balance", type=Path, required=True)
     parser.add_argument("--cross-decision", type=Path, required=True)
     parser.add_argument("--ledger", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
@@ -228,6 +249,7 @@ def main() -> int:
         args.source_manifest,
         args.book_aggregate,
         args.pleias_aggregate,
+        args.pleias_balance,
         args.cross_decision,
         args.ledger,
         args.output,

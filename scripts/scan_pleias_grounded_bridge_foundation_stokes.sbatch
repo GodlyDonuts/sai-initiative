@@ -34,6 +34,7 @@ sai_semantic=/lustre/fs1/home/sa305415/sai_data_sources/pleias-semantic-stratum-
 sai_internal=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-subdocument-decision-20260826-r1
 sai_cross=/lustre/fs1/home/sa305415/sai_data_sources/virtual-cross-source-subdocument-decision-20260826-r1
 sai_final=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-final-reconstruction-20260826-r1
+sai_balance=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-byte-balance-20260826-r1
 sai_query=/lustre/fs1/home/sa305415/sai_data_sources/grounded-bridge-foundation-query-20260826-r1
 sai_parent=/lustre/fs1/home/sa305415/sai_data_sources/grounded-bridge-foundation-scan-20260826-r1/pleias
 sai_output=${sai_parent}/shards/shard_$(printf '%05d' "${SLURM_ARRAY_TASK_ID}")
@@ -51,6 +52,7 @@ python -m sai.data.grounded_bridge_foundation_scan \
   --internal-decision-root "${sai_internal}" \
   --cross-decision-root "${sai_cross}" \
   --final-root "${sai_final}" \
+  --balance-root "${sai_balance}" \
   --logical-shards 128 \
   --shard-index "${SLURM_ARRAY_TASK_ID}" \
   --output-root "${sai_output}" \

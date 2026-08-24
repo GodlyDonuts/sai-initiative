@@ -17,6 +17,7 @@ export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
 
 sai_books=/lustre/fs1/home/sa305415/sai_data_sources/institutional-books-virtual-cross-source-rewritten-20260826-r1/aggregate.json
 sai_pleias=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-final-reconstruction-20260826-r1/aggregate.json
+sai_balance=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-byte-balance-20260826-r1/aggregate.json
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources/virtual-foundation-corpus-ledger-20260826-r1
 
 mkdir -p "${sai_root}"
@@ -24,5 +25,6 @@ mkdir -p "${sai_root}"
 python -m sai.data.virtual_foundation_corpus_ledger \
   --book-aggregate "${sai_books}" \
   --pleias-aggregate "${sai_pleias}" \
+  --pleias-balance "${sai_balance}" \
   --output "${sai_root}/receipt.json" \
   --byte-ceiling 2000000000000

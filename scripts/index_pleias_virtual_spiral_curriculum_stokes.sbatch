@@ -25,6 +25,7 @@ source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 
 sai_final=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-final-reconstruction-20260826-r1
+sai_balance=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-byte-balance-20260826-r1
 sai_parent=/lustre/fs1/home/sa305415/sai_data_sources/virtual-spiral-curriculum-index-20260826-r1/pleias
 sai_output=${sai_parent}/shards/shard_$(printf '%05d' "${SLURM_ARRAY_TASK_ID}")
 
@@ -33,6 +34,7 @@ mkdir -p "${sai_parent}/shards"
 
 python -m sai.data.virtual_spiral_curriculum_index pleias-shard \
   --final-root "${sai_final}" \
+  --balance-root "${sai_balance}" \
   --output-root "${sai_output}" \
   --logical-shards 128 \
   --shard-index "${SLURM_ARRAY_TASK_ID}"

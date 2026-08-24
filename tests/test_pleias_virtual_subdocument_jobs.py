@@ -47,9 +47,7 @@ def test_virtual_internal_rewrite_jobs_preserve_source_safe_custody() -> None:
     assert "pleias-virtual-subdocument-decision-20260826-r1" in shard
     assert '--scratch-root "${sai_scratch}"' in shard
     assert "upload" not in shard.casefold()
-    assert (
-        "sai.data.pleias_virtual_internal_rewrite_signature aggregate" in aggregate
-    )
+    assert "sai.data.pleias_virtual_internal_rewrite_signature aggregate" in aggregate
     assert "pleias-virtual-internal-signatures-20260826-r1" in aggregate
 
 
@@ -120,7 +118,27 @@ def test_virtual_foundation_ledger_waits_for_both_final_components() -> None:
     assert "sai.data.virtual_foundation_corpus_ledger" in job
     assert "institutional-books-virtual-cross-source-rewritten-20260826-r1" in job
     assert "pleias-virtual-final-reconstruction-20260826-r1" in job
+    assert "pleias-virtual-byte-balance-20260826-r1" in job
     assert "--byte-ceiling 2000000000000" in job
+
+
+def test_virtual_byte_balance_is_exact_parallel_and_source_text_free() -> None:
+    allocation = Path(
+        "scripts/allocate_pleias_virtual_byte_balance_stokes.sbatch"
+    ).read_text()
+    selection = Path(
+        "scripts/select_pleias_virtual_byte_balance_stokes.sbatch"
+    ).read_text()
+    aggregate = Path(
+        "scripts/aggregate_pleias_virtual_byte_balance_stokes.sbatch"
+    ).read_text()
+    assert "--byte-ceiling 2000000000000" in allocation
+    assert "--reserved-bytes 1000000000" in allocation
+    assert "#SBATCH --array=0-127%32" in selection
+    assert "#SBATCH --gres" not in selection
+    assert '--scratch-root "${TMPDIR:-/tmp}"' in selection
+    assert "sai.data.pleias_virtual_byte_balance aggregate" in aggregate
+    assert "upload" not in (allocation + selection + aggregate).casefold()
 
 
 def test_virtual_corpus_custody_job_hashes_and_dual_writes_evidence() -> None:
@@ -132,5 +150,5 @@ def test_virtual_corpus_custody_job_hashes_and_dual_writes_evidence() -> None:
     assert "git diff --quiet" in job
     assert "git diff --cached --quiet" in job
     assert "sai.data.virtual_corpus_custody_manifest" in job
-    assert "--durable-output \"${sai_evidence}/receipt.json\"" in job
-    assert "--runtime-commit \"${sai_commit}\"" in job
+    assert '--durable-output "${sai_evidence}/receipt.json"' in job
+    assert '--runtime-commit "${sai_commit}"' in job

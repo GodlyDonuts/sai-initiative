@@ -18,6 +18,9 @@ from sai.data.institutional_books_cross_source_subdocument_rewrite_aggregate imp
     SCHEMA as BOOK_SCHEMA,
 )
 from sai.data.pleias_production_materializer import _load_signed
+from sai.data.pleias_virtual_byte_balance import (
+    AGGREGATE_SCHEMA as PLEIAS_BALANCE_SCHEMA,
+)
 from sai.data.pleias_virtual_cross_source_reconstruction import (
     AGGREGATE_SCHEMA as PLEIAS_SCHEMA,
 )
@@ -56,6 +59,7 @@ def _metadata(component: dict[str, Any], label: str) -> dict[str, int]:
 def build_ledger(
     book_aggregate_path: Path,
     pleias_aggregate_path: Path,
+    pleias_balance_path: Path,
     output: Path,
     byte_ceiling: int = DEFAULT_BYTE_CEILING,
 ) -> dict[str, Any]:
@@ -71,8 +75,9 @@ def build_ledger(
         raise VirtualFoundationCorpusLedgerError("ledger arguments differ")
     books = _load_signed(book_aggregate_path, BOOK_SCHEMA)
     pleias = _load_signed(pleias_aggregate_path, PLEIAS_SCHEMA)
+    balance = _load_signed(pleias_balance_path, PLEIAS_BALANCE_SCHEMA)
     book_totals = books.get("totals", {})
-    pleias_totals = pleias.get("totals", {})
+    pleias_totals = balance.get("selected_counts", {})
     book_bytes = _positive(book_totals.get("output_text_utf8_bytes"), "book bytes")
     pleias_bytes = _positive(
         pleias_totals.get("output_text_utf8_bytes"), "PleIAs bytes"
@@ -102,6 +107,15 @@ def build_ledger(
         or pleias.get("physical_train_development_partition_complete") is not True
         or pleias.get("semantic_quality_metadata_complete") is not True
         or pleias.get("curriculum_metadata_complete") is not True
+        or balance.get("status") != "complete_nontraining_pleias_virtual_byte_balance"
+        or balance.get("source", {}).get("book_aggregate_receipt_sha256")
+        != books.get("receipt_sha256")
+        or balance.get("source", {}).get("pleias_aggregate_receipt_sha256")
+        != pleias.get("receipt_sha256")
+        or balance.get("byte_ceiling_respected") is not True
+        or balance.get("padding_performed") is not False
+        or balance.get("source_text_persisted") is not False
+        or balance.get("training_ready") is not False
     ):
         raise VirtualFoundationCorpusLedgerError("component completion differs")
     total_bytes = book_bytes + pleias_bytes
@@ -132,7 +146,7 @@ def build_ledger(
             "source-disjoint split accounting differs"
         )
     book_metadata = _metadata(books, "book")
-    pleias_metadata = _metadata(pleias, "PleIAs")
+    pleias_metadata = _metadata({"totals": pleias_totals}, "PleIAs")
     combined_metadata: Counter[str] = Counter(book_metadata)
     combined_metadata.update(pleias_metadata)
     components = [
@@ -152,6 +166,7 @@ def build_ledger(
             "redistribution_authorized": True,
             "aggregate_path_name": pleias_aggregate_path.name,
             "aggregate_receipt_sha256": pleias["receipt_sha256"],
+            "byte_balance_receipt_sha256": balance["receipt_sha256"],
             "documents": pleias_documents,
             "post_rewrite_text_utf8_bytes": pleias_bytes,
             "metadata_counts": pleias_metadata,
@@ -185,6 +200,7 @@ def build_ledger(
         "semantic_quality_metadata_complete_for_listed_components": True,
         "curriculum_metadata_complete_for_listed_components": True,
         "pleias_virtual_reconstruction_complete": True,
+        "pleias_virtual_byte_balance_complete": True,
         "pleias_payload_materialization_complete": False,
         "synthetic_bridge_component_admitted": False,
         "final_tokenization_complete": False,
@@ -207,12 +223,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--book-aggregate", type=Path, required=True)
     parser.add_argument("--pleias-aggregate", type=Path, required=True)
+    parser.add_argument("--pleias-balance", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--byte-ceiling", type=int, default=DEFAULT_BYTE_CEILING)
     args = parser.parse_args()
     result = build_ledger(
         args.book_aggregate,
         args.pleias_aggregate,
+        args.pleias_balance,
         args.output,
         args.byte_ceiling,
     )

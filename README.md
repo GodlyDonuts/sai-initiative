@@ -1873,8 +1873,8 @@ Parquet payloads only inside the Slurm job's node-local `${TMPDIR}`. A payload i
 removed by the temporary-workspace boundary after its exact Hugging Face LFS
 size and SHA-256 are replayed; only the small signed receipt is then created on
 Lustre. Upload failure leaves no durable partial output, so the shard remains
-resumable. This means the 1.5 TB remote component ceiling does not require a
-second 1.5 TB copy beneath the 1 TB Stokes user quota.
+resumable. This means even a 2 TB candidate envelope does not require a second
+bulk copy beneath the 1 TB Stokes user quota.
 
 The destination account's public LFS allowance is nevertheless already closed:
 the 8.802 TB source lake is present, the authenticated account is not on a paid
@@ -1895,7 +1895,7 @@ rights, language, quality, difficulty, curriculum, and content hashes but never
 source text. The aggregate requires exact selection-row and selected-byte
 coverage. Existing external-memory deduplication accepts this virtual coverage
 without pretending the documents were materialized. This removes the first
-roughly 1.5 TB duplicate upload while preserving deterministic reconstruction;
+terabyte-scale duplicate upload while preserving deterministic reconstruction;
 final cross-source decisions, reconstruction hashes, tokenization, curriculum
 packing, and durable training custody still must close before admission.
 The quota-safe graph is dependency-staged as virtual-signature array
@@ -1929,8 +1929,29 @@ partitioned final book payload and aggregate `818644`. Ledger `818645` has an
 AND dependency on both component aggregates, binds exact surviving UTF-8 bytes
 under the 2 TB ceiling, and records PleIAs custody honestly as pinned raw
 objects plus verified reconstruction locators rather than pretending a second
-payload copy exists. All seven stages are CPU-only, requeue-disabled, and
-nontraining; final tokenization and curriculum packing remain open.
+payload copy exists.
+
+The earlier static 1.5 TB PleIAs reservation has now been removed because the
+measured private-book component was not on track to consume its full 500 GB
+reserve. Upstream PleIAs selection may retain as much as the full 2 TB candidate
+ceiling so useful rows are not irreversibly discarded before exact final sizes
+exist. After both final rewrite aggregates close, a source-text-free byte
+balancer computes `2,000,000,000,000 - exact_final_book_bytes - 1,000,000,000`
+as the admissible PleIAs ceiling. The final 1 GB remains explicit headroom for
+verified connection data and indivisible-document packing rather than hidden
+padding. It proportionally assigns that ceiling across all 128 PleIAs locator
+shards, selects within each shard by conservative quality floor, quality mean,
+and stable identity, and uses a second pass to refill otherwise unused space.
+Only held-over locator identities are persisted; no source text is copied.
+The exact balance receipt is consumed by the foundation ledger, transient
+tokenizer replay, spiral-curriculum index, custody manifest, and global bridge
+overlap scan, so no downstream path can silently reintroduce held-over rows.
+Allocation, 128 independent selections, and aggregate validation are separate
+CPU-only, requeue-disabled dependency stages. This closes both failure modes:
+an underfilled corpus caused by a guessed component reservation and an
+over-ceiling ledger caused by selecting PleIAs before final book bytes were
+known. All stages remain nontraining; final tokenization and curriculum packing
+remain open.
 
 Custody job `818649`, strictly after ledger `818645`, then hash-manifests the
 13,974-object pinned source lake, final private-book aggregate, virtual PleIAs
@@ -1952,7 +1973,7 @@ binding the ordered JSONL and envelope digests, exact byte/document accounting,
 and shard identity. A failed pipe, incomplete replay, duplicate virtual row,
 source mutation, decision mutation, or aggregate/shard custody mismatch creates
 no successful receipt. This is the bridge needed to feed tokenizer sampling and
-final packing without materializing another roughly 1.5 TB PleIAs payload; it
+final packing without materializing another terabyte-scale PleIAs payload; it
 does not itself make the corpus training-ready or authorize 4B training.
 
 A bounded tokenizer-measurement consumer now sits directly on that pipe.
@@ -2098,14 +2119,12 @@ private versus redistributable custody separately. The ledger deliberately
 keeps final tokenization, curriculum scheduling, synthetic-bridge admission,
 final-corpus completion, and training authorization false.
 
-PleIAs production selection now has a 1,500,000,000,000-byte component ceiling,
-reserving 500GB beneath the combined 2TB boundary for the independently screened
-Institutional Books lane. The earlier 100GB reserve was withdrawn after the
-first 23 complete book materialization shards alone reported 24.424B enriched
-source tokens: allowing bulk PleIAs to consume 95% of the byte envelope before
-the high-value book lane closed was not quality-first. The 500GB is headroom,
-not a book-volume target, and any unused portion remains unused. When the PleIAs
-quality core exceeds its allowance,
+PleIAs production selection now uses the full 2,000,000,000,000-byte candidate
+ceiling, followed by the exact post-rewrite byte balancer described above. This
+does not permit PleIAs to crowd out Institutional Books: the final balancer
+subtracts exact surviving book bytes before admitting PleIAs. It simply avoids
+discarding high-quality candidates based on a guessed reservation. When the
+PleIAs quality core exceeds its final allowance,
 the first pass gives every surviving semantic stratum an equal-byte opportunity
 (also bounded by the 20% single-stratum cap); only then does a deterministic
 quality-ranked pass refill unused capacity. The ceiling is still not a target.
@@ -2812,19 +2831,21 @@ its pinned upstream object and must reproduce the sealed final content hash.
 This makes the corpus replayable without calling raw reservoir size accepted
 training data.
 
-The live Institutional Books materializer has completed 47 of 64 private
-shards. Those receipts cover 280,567 materialized rows and 50,248,497,119
-source-reported enriched tokens; the corresponding private lineage/text files
-currently occupy 80,619,836,313 bytes. The remaining 17 identity shards are
-running independently. The PleIAs metadata census has 17 of 128 canonical
-shards complete while the remaining long-running shards execute under a staged
-segment-recovery path. These are materialization/census measurements, not final
-admission counts.
+The live Institutional Books materializer has completed **59 of 64** private
+shards. Those receipts cover **351,114** materialized rows and
+**63,972,108,657** source-reported enriched tokens; the private output tree
+currently occupies 85,159,944,595 physical bytes. Five remaining identity
+shards are running independently. The PleIAs metadata census has **29 of 128**
+canonical shards complete, representing 1,017,835,332,023 pinned source bytes,
+159,872,513 rows, and 511,232,871,066 estimated tokens. The remaining census
+shards continue in parallel. These are materialization/census measurements,
+not final admission counts.
 
 The dependency graph already stages the complete PleIAs virtual pipeline:
 subdocument signatures, global signature aggregation, exact deletion decisions,
 internal rewrite replay, cross-source decisions, final locator reconstruction,
-global byte/document accounting, a two-component corpus ledger, and durable
+exact final byte balancing, global byte/document accounting, a two-component
+corpus ledger, and durable
 custody evidence. Independent bounded tokenizer samples then feed three
 separately built 32K, 48K, and 64K candidates. Every stage is CPU-only,
 non-requeueing, create-only, and pinned to an immutable runtime; no 4B training

@@ -6,6 +6,9 @@ from sai.data.foundation_source_split import POLICY_SHA256 as SPLIT_POLICY_SHA25
 from sai.data.institutional_books_cross_source_subdocument_rewrite_aggregate import (
     SCHEMA as BOOK_SCHEMA,
 )
+from sai.data.pleias_virtual_byte_balance import (
+    AGGREGATE_SCHEMA as PLEIAS_BALANCE_SCHEMA,
+)
 from sai.data.pleias_virtual_cross_source_reconstruction import (
     AGGREGATE_SCHEMA as PLEIAS_SCHEMA,
 )
@@ -24,6 +27,7 @@ def _write(path, payload):
 def _components(tmp_path):
     books = tmp_path / "books.json"
     pleias = tmp_path / "pleias.json"
+    balance = tmp_path / "balance.json"
     _write(
         books,
         {
@@ -84,12 +88,30 @@ def _components(tmp_path):
             "training_ready": False,
         },
     )
-    return books, pleias
+    book_payload = json.loads(books.read_text())
+    pleias_payload = json.loads(pleias.read_text())
+    _write(
+        balance,
+        {
+            "schema": PLEIAS_BALANCE_SCHEMA,
+            "status": "complete_nontraining_pleias_virtual_byte_balance",
+            "source": {
+                "book_aggregate_receipt_sha256": book_payload["receipt_sha256"],
+                "pleias_aggregate_receipt_sha256": pleias_payload["receipt_sha256"],
+            },
+            "selected_counts": pleias_payload["totals"],
+            "byte_ceiling_respected": True,
+            "padding_performed": False,
+            "source_text_persisted": False,
+            "training_ready": False,
+        },
+    )
+    return books, pleias, balance
 
 
 def test_virtual_ledger_binds_exact_bytes_without_claiming_payload(tmp_path):
-    books, pleias = _components(tmp_path)
-    result = build_ledger(books, pleias, tmp_path / "ledger.json", 2_000)
+    books, pleias, balance = _components(tmp_path)
+    result = build_ledger(books, pleias, balance, tmp_path / "ledger.json", 2_000)
     assert result["totals"]["post_rewrite_text_utf8_bytes"] == 1_800
     assert result["totals"]["remaining_byte_headroom"] == 200
     assert result["components"][1]["custody"] == (
@@ -102,7 +124,7 @@ def test_virtual_ledger_binds_exact_bytes_without_claiming_payload(tmp_path):
 
 
 def test_virtual_ledger_rejects_unbound_source_text(tmp_path):
-    books, pleias = _components(tmp_path)
+    books, pleias, balance = _components(tmp_path)
     payload = json.loads(pleias.read_text())
     payload.pop("receipt_sha256")
     payload["source_text_persisted"] = True
@@ -110,10 +132,10 @@ def test_virtual_ledger_rejects_unbound_source_text(tmp_path):
     with pytest.raises(
         VirtualFoundationCorpusLedgerError, match="component completion"
     ):
-        build_ledger(books, pleias, tmp_path / "ledger.json", 2_000)
+        build_ledger(books, pleias, balance, tmp_path / "ledger.json", 2_000)
 
 
 def test_virtual_ledger_rejects_bytes_above_ceiling(tmp_path):
-    books, pleias = _components(tmp_path)
+    books, pleias, balance = _components(tmp_path)
     with pytest.raises(VirtualFoundationCorpusLedgerError, match="exceed"):
-        build_ledger(books, pleias, tmp_path / "ledger.json", 1_799)
+        build_ledger(books, pleias, balance, tmp_path / "ledger.json", 1_799)

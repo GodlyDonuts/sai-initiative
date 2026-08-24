@@ -23,6 +23,10 @@ from sai.data.pleias_final_subdocument_signature import (
 )
 from sai.data.pleias_semantic_sample import _token_band
 from sai.data.pleias_subdocument_rewrite import rewrite_candidate
+from sai.data.pleias_virtual_byte_balance import (
+    AGGREGATE_SCHEMA as BALANCE_AGGREGATE_SCHEMA,
+)
+from sai.data.pleias_virtual_byte_balance import SHARD_SCHEMA as BALANCE_SHARD_SCHEMA
 from sai.data.pleias_virtual_cross_source_reconstruction import (
     AGGREGATE_STATUS,
     LOCATOR_SCHEMA,
@@ -133,7 +137,7 @@ def test_transient_envelope_replays_final_locator_without_persisting_text() -> N
     )
     rebuilt = _internal_locator(locator, candidate, internal)
     assert final_locator_row(rebuilt, final) == locator
-    envelope = training_envelope(locator, final["text"], "d" * 64)
+    envelope = training_envelope(locator, final["text"], "d" * 64, "e" * 64)
     assert envelope["schema"] == ENVELOPE_SCHEMA
     assert envelope["document"]["text"] == final["text"]
     assert envelope["document"]["verification"]["benchmark_disjoint"] is True
@@ -142,7 +146,7 @@ def test_transient_envelope_replays_final_locator_without_persisting_text() -> N
     with pytest.raises(
         PleiasVirtualTransientStreamError, match="training envelope source differs"
     ):
-        training_envelope(locator, final["text"] + "tamper", "d" * 64)
+        training_envelope(locator, final["text"] + "tamper", "d" * 64, "e" * 64)
 
 
 def test_transient_stream_seals_only_source_text_free_accounting(
@@ -150,7 +154,7 @@ def test_transient_stream_seals_only_source_text_free_accounting(
 ) -> None:
     text = "A verified explanation of orbital measurement. " * 20
     locator = _final_locator()
-    envelope = training_envelope(locator, text, "d" * 64)
+    envelope = training_envelope(locator, text, "d" * 64, "e" * 64)
     output = io.StringIO()
     receipt = tmp_path / "receipt.json"
     with patch(
@@ -219,8 +223,51 @@ def test_transient_locator_database_requires_aggregate_bound_shard(
             "training_ready": False,
         },
     )
-    connection, _aggregate, loaded_shard, rows = _locator_database(
-        final_root, 1, 0, tmp_path / "locators.sqlite3"
+    balance_root = tmp_path / "balance"
+    balance_shard_root = balance_root / "shards" / "shard_00000"
+    balance_shard_root.mkdir(parents=True)
+    exclusions = balance_shard_root / "excluded.sqlite3"
+    database = sqlite3.connect(exclusions)
+    database.execute(
+        "CREATE TABLE excluded (source_row_identity_sha256 TEXT PRIMARY KEY) "
+        "WITHOUT ROWID"
+    )
+    database.commit()
+    database.close()
+    balance_shard = {
+        "schema": BALANCE_SHARD_SCHEMA,
+        "status": "complete_nontraining_pleias_virtual_byte_balance_shard",
+        "logical_shards": 1,
+        "shard_index": 0,
+        "selected_counts": {"documents": 1},
+        "excluded_rows": 0,
+        "exclusion_database": {
+            "path": exclusions.name,
+            "rows": 0,
+            "bytes": exclusions.stat().st_size,
+            "sha256": sha256_file(exclusions),
+        },
+        "source_text_persisted": False,
+        "training_ready": False,
+    }
+    _signed(balance_shard_root / "receipt.json", balance_shard)
+    _signed(
+        balance_root / "aggregate.json",
+        {
+            "schema": BALANCE_AGGREGATE_SCHEMA,
+            "status": "complete_nontraining_pleias_virtual_byte_balance",
+            "shards": {
+                "logical_shards": 1,
+                "ordered_receipts_sha256": canonical_sha256(
+                    [balance_shard["receipt_sha256"]]
+                ),
+            },
+            "source_text_persisted": False,
+            "training_ready": False,
+        },
+    )
+    connection, _aggregate, loaded_shard, _balance_shard, rows = _locator_database(
+        final_root, balance_root, 1, 0, tmp_path / "locators.sqlite3"
     )
     connection.close()
     assert rows == 1
@@ -232,7 +279,7 @@ def test_transient_locator_database_requires_aggregate_bound_shard(
     with pytest.raises(
         PleiasVirtualTransientStreamError, match="aggregate shard custody differs"
     ):
-        _locator_database(final_root, 1, 0, tmp_path / "tampered.sqlite3")
+        _locator_database(final_root, balance_root, 1, 0, tmp_path / "tampered.sqlite3")
 
 
 def _empty_decision_database() -> sqlite3.Connection:

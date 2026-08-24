@@ -17,10 +17,18 @@ sai_remote_candidates=${sai_remote_root}/grounded-bridge-curriculum-candidates-2
 sai_remote_query=${sai_remote_root}/grounded-bridge-foundation-query-20260826-r1
 sai_remote_evidence=${sai_remote_root}/sai_evidence/grounded-bridge-foundation-scan/20260826-r1
 sai_runtime=/lustre/fs1/home/sa305415/sai-initiative-${sai_short}
+sai_balance_launch=${sai_remote_root}/pleias-virtual-byte-balance-20260826-r1/launch-receipt.json
 
 while [[ ! -f "${sai_query}/receipt.json" ]]; do
   sleep 30
 done
+
+while ! ssh -o BatchMode=yes stokes "test -f '${sai_balance_launch}'"; do
+  sleep 30
+done
+sai_balance_job=$(ssh -o BatchMode=yes stokes \
+  "python3 -c \"import json; print(json.load(open('${sai_balance_launch}'))['jobs']['aggregate'])\"")
+[[ "${sai_balance_job}" =~ ^[0-9]+$ ]]
 
 python3 -c \
   'from pathlib import Path; from sai.data.grounded_bridge_foundation_scan import QueryBoundary; QueryBoundary(Path("artifacts/sai_grounded_bridge_foundation_query_20260826_r1"))'
@@ -49,7 +57,8 @@ ssh -o BatchMode=yes stokes bash -s -- \
   "${sai_remote_query}" \
   "${sai_remote_evidence}" \
   "${sai_candidate_receipt}" \
-  "${sai_query_receipt}" <<'REMOTE'
+  "${sai_query_receipt}" \
+  "${sai_balance_job}" <<'REMOTE'
 set -euo pipefail
 
 sai_commit=$1
@@ -61,6 +70,7 @@ sai_remote_query=$6
 sai_remote_evidence=$7
 sai_candidate_receipt=$8
 sai_query_receipt=$9
+sai_balance_job=${10}
 sai_repo=/lustre/fs1/home/sa305415/sai-initiative
 
 [[ ! -e "${sai_remote_candidates}" && ! -e "${sai_remote_query}" ]]
@@ -82,7 +92,7 @@ fi
 [[ -z "$(squeue -u sa305415 -h -o '%j' | grep -E '^sai-(pleias|book)-bridge-scan$|^sai-bridge-(scan-aggregate|foundation-reconcile)$' || true)" ]]
 
 sai_pleias_job=$(sbatch --parsable \
-  --dependency=afterok:818642 \
+  --dependency="afterok:${sai_balance_job}" \
   --export="ALL,SAI_RUNTIME_ROOT=${sai_runtime}" \
   "${sai_runtime}/scripts/scan_pleias_grounded_bridge_foundation_stokes.sbatch")
 sai_book_job=$(sbatch --parsable \
@@ -103,6 +113,7 @@ SAI_COMMIT="${sai_commit}" \
 SAI_RUNTIME="${sai_runtime}" \
 SAI_CANDIDATE_RECEIPT="${sai_candidate_receipt}" \
 SAI_QUERY_RECEIPT="${sai_query_receipt}" \
+SAI_BALANCE_JOB="${sai_balance_job}" \
 SAI_PLEIAS_JOB="${sai_pleias_job}" \
 SAI_BOOK_JOB="${sai_book_job}" \
 SAI_AGGREGATE_JOB="${sai_aggregate_job}" \
@@ -122,6 +133,7 @@ payload = {
     "query_receipt_sha256": os.environ["SAI_QUERY_RECEIPT"],
     "foundation_dependencies": {
         "pleias_final_aggregate_job": "818642",
+        "pleias_byte_balance_aggregate_job": os.environ["SAI_BALANCE_JOB"],
         "institutional_books_final_aggregate_job": "818644",
     },
     "jobs": {

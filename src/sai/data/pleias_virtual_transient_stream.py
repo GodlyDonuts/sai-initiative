@@ -36,6 +36,7 @@ from sai.data.pleias_production_materializer import (
     replay_selected_row,
 )
 from sai.data.pleias_subdocument_rewrite import _decision_database, rewrite_candidate
+from sai.data.pleias_virtual_byte_balance import excluded_database, is_excluded
 from sai.data.pleias_virtual_cross_source_reconstruction import (
     AGGREGATE_SCHEMA,
     AGGREGATE_STATUS,
@@ -67,10 +68,11 @@ class PleiasVirtualTransientStreamError(RuntimeError):
 
 def _locator_database(
     final_root: Path,
+    balance_root: Path,
     logical_shards: int,
     shard_index: int,
     database_path: Path,
-) -> tuple[sqlite3.Connection, dict[str, Any], dict[str, Any], int]:
+) -> tuple[sqlite3.Connection, dict[str, Any], dict[str, Any], dict[str, Any], int]:
     """Validate aggregate/shard custody and index source-text-free locators."""
 
     try:
@@ -128,11 +130,14 @@ def _locator_database(
     connection.execute(
         "CREATE TABLE locators ("
         "virtual_row_index INTEGER PRIMARY KEY, source_path TEXT NOT NULL, "
-        "source_row_index INTEGER NOT NULL, locator_json TEXT NOT NULL, "
+        "source_row_index INTEGER NOT NULL, locator_sha256 TEXT NOT NULL UNIQUE, "
+        "locator_json TEXT NOT NULL, "
         "UNIQUE(source_path, source_row_index))"
     )
     rows = 0
+    selected_rows = 0
     ordered = hashlib.sha256()
+    excluded, balance_receipt = excluded_database(balance_root, shard_index)
     try:
         for batch in pq.ParquetFile(path).iter_batches(
             batch_size=1024, use_threads=False
@@ -150,28 +155,36 @@ def _locator_database(
                     or locator.get("locator_sha256") != canonical_sha256(unsigned)
                 ):
                     raise PleiasVirtualTransientStreamError("final locator differs")
+                ordered.update(bytes.fromhex(locator["locator_sha256"]))
+                rows += 1
+                if is_excluded(excluded, locator["source_row_identity_sha256"]):
+                    continue
                 connection.execute(
-                    "INSERT INTO locators VALUES (?, ?, ?, ?)",
+                    "INSERT INTO locators VALUES (?, ?, ?, ?, ?)",
                     (
-                        rows,
+                        locator["virtual_row_index"],
                         locator["source_path"],
                         locator["source_row_index"],
+                        locator["locator_sha256"],
                         json.dumps(locator, sort_keys=True, separators=(",", ":")),
                     ),
                 )
-                ordered.update(bytes.fromhex(locator["locator_sha256"]))
-                rows += 1
+                selected_rows += 1
         connection.commit()
         if (
             rows != descriptor.get("rows")
             or rows != receipt.get("counts", {}).get("documents")
             or ordered.hexdigest() != descriptor.get("ordered_locator_digests_sha256")
+            or selected_rows
+            != balance_receipt.get("selected_counts", {}).get("documents")
         ):
             raise PleiasVirtualTransientStreamError("final locator coverage differs")
     except BaseException:
         connection.close()
         raise
-    return connection, aggregate, receipt, rows
+    finally:
+        excluded.close()
+    return connection, aggregate, receipt, balance_receipt, selected_rows
 
 
 def _internal_locator(
@@ -228,7 +241,10 @@ def _internal_locator(
 
 
 def training_envelope(
-    locator: dict[str, Any], text: str, shard_receipt_sha256: str
+    locator: dict[str, Any],
+    text: str,
+    shard_receipt_sha256: str,
+    balance_shard_receipt_sha256: str,
 ) -> dict[str, Any]:
     """Construct a standard pretraining row plus exact curriculum metadata."""
 
@@ -240,11 +256,14 @@ def training_envelope(
         or locator.get("corpus_split") not in {"train", "development"}
         or not isinstance(shard_receipt_sha256, str)
         or len(shard_receipt_sha256) != 64
+        or not isinstance(balance_shard_receipt_sha256, str)
+        or len(balance_shard_receipt_sha256) != 64
     ):
         raise PleiasVirtualTransientStreamError("training envelope source differs")
     evidence = canonical_sha256(
         {
             "final_reconstruction_shard_receipt_sha256": shard_receipt_sha256,
+            "final_byte_balance_shard_receipt_sha256": balance_shard_receipt_sha256,
             "final_locator_sha256": locator["locator_sha256"],
         }
     )
@@ -336,6 +355,7 @@ def iter_reconstructed_shard(
     internal_decision_root: Path,
     cross_decision_root: Path,
     final_root: Path,
+    balance_root: Path,
     logical_shards: int,
     shard_index: int,
     token: str,
@@ -362,8 +382,15 @@ def iter_reconstructed_shard(
             prefix="sai-pleias-transient-state-", dir=scratch_root
         ) as state_directory:
             state = Path(state_directory)
-            locators, _aggregate, shard_receipt, expected = _locator_database(
+            (
+                locators,
+                _aggregate,
+                shard_receipt,
+                balance_receipt,
+                expected,
+            ) = _locator_database(
                 final_root,
+                balance_root,
                 logical_shards,
                 shard_index,
                 state / "final-locators.sqlite3",
@@ -444,14 +471,21 @@ def iter_reconstructed_shard(
                             seen_virtual.add(virtual_row_index)
                             emitted += 1
                             yield training_envelope(
-                                locator, final["text"], shard_receipt["receipt_sha256"]
+                                locator,
+                                final["text"],
+                                shard_receipt["receipt_sha256"],
+                                balance_receipt["receipt_sha256"],
                             )
                         row_offset += batch.num_rows
                 if seen_source_rows != set(by_index):
                     raise PleiasVirtualTransientStreamError(
                         "selected source coverage differs"
                     )
-            if emitted != expected or seen_virtual != set(range(expected)):
+            selected_virtual = {
+                row[0]
+                for row in locators.execute("SELECT virtual_row_index FROM locators")
+            }
+            if emitted != expected or seen_virtual != selected_virtual:
                 raise PleiasVirtualTransientStreamError(
                     "transient final document coverage differs"
                 )
@@ -506,6 +540,7 @@ def stream_shard(
         "benchmark_decontamination_replayed": True,
         "internal_subdocument_deduplication_replayed": True,
         "cross_source_subdocument_deduplication_replayed": True,
+        "final_byte_balance_replayed": True,
         "source_text_persisted_by_compiler": False,
         "tokenization_ready": True,
         "training_ready": False,
@@ -524,6 +559,7 @@ def main() -> int:
     parser.add_argument("--internal-decision-root", type=Path, required=True)
     parser.add_argument("--cross-decision-root", type=Path, required=True)
     parser.add_argument("--final-root", type=Path, required=True)
+    parser.add_argument("--balance-root", type=Path, required=True)
     parser.add_argument("--receipt", type=Path, required=True)
     parser.add_argument("--logical-shards", type=int, required=True)
     parser.add_argument("--shard-index", type=int, required=True)
@@ -539,6 +575,7 @@ def main() -> int:
         internal_decision_root=args.internal_decision_root,
         cross_decision_root=args.cross_decision_root,
         final_root=args.final_root,
+        balance_root=args.balance_root,
         logical_shards=args.logical_shards,
         shard_index=args.shard_index,
         token=os.environ.get(args.token_env, ""),

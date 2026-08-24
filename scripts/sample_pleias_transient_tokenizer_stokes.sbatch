@@ -34,6 +34,7 @@ sai_semantic=/lustre/fs1/home/sa305415/sai_data_sources/pleias-semantic-stratum-
 sai_internal_decisions=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-subdocument-decision-20260826-r1
 sai_cross_decisions=/lustre/fs1/home/sa305415/sai_data_sources/virtual-cross-source-subdocument-decision-20260826-r1
 sai_final=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-final-reconstruction-20260826-r1
+sai_balance=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-byte-balance-20260826-r1
 sai_parent=/lustre/fs1/home/sa305415/sai_data_sources/pleias-tokenizer-samples-20260826-r1
 sai_identity=$(printf '%05d' "${SLURM_ARRAY_TASK_ID}")
 sai_source_receipt=${sai_parent}/source-receipts/shard_${sai_identity}.json
@@ -50,6 +51,7 @@ python -m sai.data.pleias_virtual_transient_stream \
   --internal-decision-root "${sai_internal_decisions}" \
   --cross-decision-root "${sai_cross_decisions}" \
   --final-root "${sai_final}" \
+  --balance-root "${sai_balance}" \
   --receipt "${sai_source_receipt}" \
   --logical-shards 128 \
   --shard-index "${SLURM_ARRAY_TASK_ID}" \

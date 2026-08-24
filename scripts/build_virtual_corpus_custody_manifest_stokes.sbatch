@@ -29,6 +29,7 @@ python -m sai.data.virtual_corpus_custody_manifest \
   --source-manifest ${sai_repo}/artifacts/sai_hf_materialized_source_lake_20260825_r1/manifest.jsonl \
   --book-aggregate /lustre/fs1/home/sa305415/sai_data_sources/institutional-books-virtual-cross-source-rewritten-20260826-r1/aggregate.json \
   --pleias-aggregate /lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-final-reconstruction-20260826-r1/aggregate.json \
+  --pleias-balance /lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-byte-balance-20260826-r1/aggregate.json \
   --cross-decision /lustre/fs1/home/sa305415/sai_data_sources/virtual-cross-source-subdocument-decision-20260826-r1/aggregate.json \
   --ledger /lustre/fs1/home/sa305415/sai_data_sources/virtual-foundation-corpus-ledger-20260826-r1/receipt.json \
   --output "${sai_root}/receipt.json" \
