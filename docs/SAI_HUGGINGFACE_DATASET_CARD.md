@@ -197,6 +197,10 @@ capacity, not accepted corpus volume.
   1,343 after prior-audit, length, official-boundary, answer-key, and normalized
   exact-dedup gates. Its final candidate and attribution are also hash-verified
   on Stokes; 22,406,095 bytes of redundant local intermediates were reclaimed.
+- Cross-source normalized exact deduplication covers all 54,509 surviving
+  Pressbooks and Public Domain Review candidates and finds zero exact duplicate
+  groups. Its redundant 546,324,994-byte combined output was reclaimed after
+  receipt custody; near/semantic deduplication remains open.
 - A complete Common Pile PEP census yields 567 benchmark-disjoint,
   near-deduplicated candidates awaiting Hermès compilation.
 - A 1,024-row CC0 arXiv temporal screen leaves 1,023 benchmark-disjoint rows and

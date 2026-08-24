@@ -800,3 +800,27 @@ The README, run receipt, and reclamation receipt have file SHA-256 values
 `99fcca7aa44609e06b38d557adac1b11f2667e214cfa131049edad787ae9d49e`.
 All three replay byte-for-byte from dataset commit
 [`2360c039136873ef3b4a653bf642425a78fe440a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2360c039136873ef3b4a653bf642425a78fe440a).
+
+## Common Pile full-source cross-source exact deduplication
+
+Release `20260826-r1` under
+`evidence/common-pile-full-source-global-exact/20260826-r1/` covers all 54,509
+surviving Pressbooks and Public Domain Review candidates. Exact NFKC-casefolded
+whitespace-normalized comparison with full-text collision replay finds zero
+duplicate groups and zero drops.
+
+The original run and source-safe publication canonical receipts are
+`1be527cf0a814b7586a350757c9f63c90ee43844cae67ddb124929c650a397b4` and
+`7e69e12d131e4cc78d6956d0f7793a418c1940c202ea49feb028943d40576de2`.
+The combined output had SHA-256
+`becd4e5123477b1ba5e8d2e05da4287f693369257be4c6ea39fce7c6f96743bb`.
+Because it was a deterministic reordered copy of two already hash-verified
+durable inputs, its 546,324,994 bytes were reclaimed after evidence custody.
+
+The README, publication receipt, and reclamation receipt have file SHA-256
+values
+`d4e67007813796f63c70c53595b1b4a6ccab03e3a6e9caff544a5ca3783d8d4f`,
+`de1fe859c72bbb81873533121d1d9b0d45ef4b3dd0532463af9c36e15e864466`, and
+`42b39d9cb8d1b4c5255f0325be1bc44ce0c07f9fc988054f2f31cad867423aed`.
+All three replay byte-for-byte from dataset commit
+[`526e801fae1fb01a4f9ced8f260c6a2ef51c7823`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/526e801fae1fb01a4f9ced8f260c6a2ef51c7823).

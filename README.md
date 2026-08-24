@@ -1539,10 +1539,21 @@ candidate and attribution SHA-256 values are
 the canonical run receipt is
 `1214c429cdd9251998c0c947660344e63d0384d513ff2c8c1c07d896b8e03cac`.
 After durable candidate custody, 22,406,095 bytes of redundant local
-intermediates were reclaimed. Across all evidence-backed cleanup to date,
-4,954,935,264 recoverable local bytes have now been removed. The source-safe
+intermediates were reclaimed. The source-safe
 PDR receipts replay byte-for-byte from dataset commit
 [`2360c039136873ef3b4a653bf642425a78fe440a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2360c039136873ef3b4a653bf642425a78fe440a).
+
+Cross-source normalized exact deduplication then covered all 54,509 surviving
+Pressbooks and PDR candidates. It found zero duplicate groups and zero drops.
+The canonical run and source-safe publication receipts are
+`1be527cf0a814b7586a350757c9f63c90ee43844cae67ddb124929c650a397b4` and
+`7e69e12d131e4cc78d6956d0f7793a418c1940c202ea49feb028943d40576de2`.
+Because its 546,324,994-byte combined output was only a deterministic reordered
+copy of two already durable inputs, it was reclaimed after evidence custody.
+Across all evidence-backed cleanup to date, 5,501,260,258 recoverable local
+bytes have now been removed. The source-safe exact-dedup receipts replay from
+dataset commit
+[`526e801fae1fb01a4f9ced8f260c6a2ef51c7823`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/526e801fae1fb01a4f9ced8f260c6a2ef51c7823).
 
 The next operational work is to expand sustainable, stratified compiler lanes;
 build cross-source exact and semantic duplicate families; populate the concept
