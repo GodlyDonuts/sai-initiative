@@ -1952,6 +1952,21 @@ no successful receipt. This is the bridge needed to feed tokenizer sampling and
 final packing without materializing another roughly 1.5 TB PleIAs payload; it
 does not itself make the corpus training-ready or authorize 4B training.
 
+A bounded tokenizer-measurement consumer now sits directly on that pipe.
+`sai.data.transient_tokenizer_sample` hashes the complete incoming stream,
+requires the producer's atomically sealed receipt to match it after EOF, excludes
+the source-disjoint development partition, and dynamically rebalances a
+quality-first bottom-hash reservoir across curriculum-phase × semantic-domain ×
+code/prose strata. Each source shard is capped at 64,000,000 JSONL bytes, so the
+complete 128-shard PleIAs tokenizer sample cannot exceed 8.192 GB. The sampler
+retains text only in this bounded tokenizer-measurement artifact and preserves
+source-text-free input/output custody receipts. Slurm array script
+`sample_pleias_transient_tokenizer_stokes.sbatch` requests two CPUs and no GPU,
+uses pipe-fail semantics, requeue disabled, sixteen-way concurrency, and an
+immutable detached runtime. It is intended to run only after final virtual
+aggregate `818642`; it is preparation for a representative tokenizer tournament,
+not corpus admission or model training.
+
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
