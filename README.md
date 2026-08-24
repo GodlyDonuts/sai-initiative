@@ -1114,6 +1114,18 @@ results, not source-wide yield estimates. The aggregate and fail-closed work
 ledger were remotely byte-replayed in Hugging Face commit
 [`2a085eacf1479293e3c369d7eaa8e476d7f84054`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2a085eacf1479293e3c369d7eaa8e476d7f84054).
 
+Because PleIAs is the lake's largest unresolved component, a new 1,024-parent
+screen is now executing across all ten `common_corpus_*` partitions. It selects
+102–103 parents per partition by deterministic SHA-256 rank, excludes all 40
+parents from the earlier screen, and binds 460,098,704,855 parent bytes without
+claiming statistical representativeness. Stokes cannot safely materialize its
+large Parquet row groups under the 500 MB process cap, so acquisition instead
+opens exactly one parent at a time, verifies the full pinned byte count and
+SHA-256 on disk, iterates the selected row group in 16-record batches, persists
+one deterministic usable row, and removes the parent before continuing. A
+434,737,237-byte end-to-end probe passed this exact path. Benchmark screening,
+Hermès judgment, source-wide yield, and training admission remain false.
+
 The larger 512-row frontier-source compiler has now closed with exact identity
 and receipt coverage. Hermès returned 348 `retain`, 125 `review`, and 39
 `reject` verdicts, but conservative routing sent only **25/512 (4.88%)** to
