@@ -525,6 +525,15 @@ the official benchmark-boundary index. Contaminated rows are excluded, clean
 rows advance only the decontamination state, and global deduplication plus a
 transfer ablation remain mandatory.
 
+The resumable execution entry point is
+`run_nemotron_grounded_bridge_verification_local.sh`. It assigns each of the 64
+identity shards to exactly one of nine lanes, permits one request per lane,
+skips only an already sealed shard summary, and refuses to aggregate unless all
+512 receipts and all 64 summaries exist. The same run then applies the pinned
+official-public benchmark boundary to independently retained rows. Neither
+stage can set `training_ready=true`; global deduplication and the prospective
+transfer ablation remain open afterward.
+
 #### Prerequisite-edge compiler
 
 Sai is also converting Hermès's document-level `prerequisites_assumed` and
