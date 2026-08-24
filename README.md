@@ -389,6 +389,18 @@ family, so its aggregate truthfully records
 anchor text, and still requires decontamination, global deduplication, and
 transfer ablation before any bridge can become training-ready.
 
+An independent-family lane now replays the same 512 immutable source-paired
+candidates through `nvidia/nemotron-3-ultra-550b-a55b`. Its receipts bind the
+NVIDIA endpoint, independent rubric, exact source quotes, every generated
+claim, and one verdict per identity; nine bounded direct requests operate over
+disjoint locked shards. Even an independent retain is not admission. A
+dependency-staged post-generation screen canonicalizes every retained bridge
+thesis, shared structure, claim, representation, prerequisite map, analogy
+limit, and verification question, then compares all word/code shingles against
+the official benchmark-boundary index. Contaminated rows are excluded, clean
+rows advance only the decontamination state, and global deduplication plus a
+transfer ablation remain mandatory.
+
 #### Prerequisite-edge compiler
 
 Sai is also converting Hermès's document-level `prerequisites_assumed` and
