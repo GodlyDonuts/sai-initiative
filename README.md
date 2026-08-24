@@ -433,6 +433,20 @@ The README, aggregate, decision, manifest, and receipt were force-downloaded
 and byte-replayed from Hugging Face dataset commit
 [`e38aea8688b6e1e5ec6b9cad4f23444d220a19a0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e38aea8688b6e1e5ec6b9cad4f23444d220a19a0).
 
+The three current exact-replay quarantine manifests are now merged into one
+fail-closed materialization registry: 12 UltraData-Math identities, 244
+frontier-source identities, and 511 weighted-reservoir identities produce
+**767/767 unique candidate and content hashes** with no collisions. Every
+registry row denies materialization and carries no source text. The registry
+SHA-256 is
+`93d4eb890c61a7eb742b00fbf922c5ce5814a134b6fb0a6e164c70ba0fd4b180`
+and its canonical receipt is
+`b2e6bf169dbccadddc49d11b2fa329f0c713b236e94870d491c05895c55a99a7`.
+Both files are byte-matched under
+`quarantine-exclusion-registry/20260826-r1` in the Stokes evidence root. Future
+materializers must join against this deny registry before emitting a training
+candidate; new sealed audit manifests extend it deterministically.
+
 The second resumed population contains 1,007 benchmark-clean PubMed full
 texts. Its workers reuse the shared provider cap and automatically seal a
 complete aggregate and source-work decision. These rows broaden future teacher
