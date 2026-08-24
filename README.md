@@ -2872,6 +2872,22 @@ source-grounded bridges plus exact token allocation from the selected tokenizer.
 Its receipt is mirrored to durable evidence and remains non-training even when
 the structural coverage gate passes.
 
+The independently generated connection-data path now has a separate curriculum
+candidate compiler. After both the same-family verifier and Nemotron Ultra
+retain a bridge and the complete generated text clears the official benchmark
+boundary, the compiler creates four exact lesson forms: a bridge overview,
+each verified representation, explicit analogy limits, and answer-bearing
+verification questions. Every representation from one anchor pair remains in
+one deterministic train/development group. Exact and whitespace-normalized
+duplicates within the bridge component are rejected.
+
+These bridge lessons remain candidates, not admitted data. Their receipts keep
+global deduplication against the final foundation corpus, transfer ablation,
+final bridge verification, Hugging Face publication, and training readiness
+false. This prevents attractive synthetic prose from entering Sai merely
+because two model families liked it; the connection data must still demonstrate
+positive transfer and survive the complete corpus-wide duplicate boundary.
+
 #### Evidence and status vocabulary
 
 To keep progress legible, Sai uses these states consistently:
