@@ -23,6 +23,6 @@ export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
 
 python -m sai.data.institutional_books_mechanical_sample_audit \
   --materialized-root /lustre/fs1/home/sa305415/sai_data_sources/institutional-books-strict-english-materialized-20260826-r1 \
-  --output /lustre/fs1/home/sa305415/sai_data_sources/sai_evidence/institutional-books-real-mechanical-audit-20260826-r1.json \
+  --output /lustre/fs1/home/sa305415/sai_data_sources/sai_evidence/institutional-books-real-mechanical-audit-20260826-r2.json \
   --logical-shards 64 \
   --rows-per-complete-shard 2
