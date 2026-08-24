@@ -200,21 +200,17 @@ def run_shard(
         or decision.get("cross_source_subdocument_decision_complete") is not True
     ):
         raise PleiasCrossSourceSubdocumentRewriteError("rewrite source differs")
-    output_root.mkdir(parents=True)
-    local_paths = {
-        split: output_root / f"{split}.parquet"
-        for split in ("train", "development")
-    }
-    temporary = {
-        split: output_root / f".{split}.rewrite.partial.{uuid.uuid4().hex}.parquet"
-        for split in local_paths
-    }
+    splits = ("train", "development")
     counts: Counter[str] = Counter()
     ordered_transforms = hashlib.sha256()
     with tempfile.TemporaryDirectory(
         prefix="sai-pleias-cross-source-rewrite-", dir=scratch_root
     ) as directory:
         scratch = Path(directory)
+        temporary = {
+            split: scratch / f"{split}.rewrite.partial.{uuid.uuid4().hex}.parquet"
+            for split in splits
+        }
         connection, bucket_receipts, decision_rows = decision_database(
             decision_root,
             COMPONENT,
@@ -229,7 +225,7 @@ def run_shard(
         try:
             row_offset = 0
             for batch in parquet.iter_batches(batch_size=16, use_threads=False):
-                output_rows = {split: [] for split in local_paths}
+                output_rows = {split: [] for split in splits}
                 for relative, row in enumerate(batch.to_pylist()):
                     source_row_index = row_offset + relative
                     decisions = connection.execute(
@@ -309,26 +305,27 @@ def run_shard(
         for writer in writers.values():
             writer.close()
         connection.close()
-    remote_outputs = {}
-    for split, local_path in local_paths.items():
-        if temporary[split].exists():
-            os.replace(temporary[split], local_path)
-            remote_path = (
-                f"{DESTINATION_PREFIX}/{split}/"
-                f"shard-{shard_index:05d}-of-{logical_shards:05d}.parquet"
-            )
-            remote_outputs[split] = upload_verified(
-                local_path, remote_path, token, repository=DESTINATION_REPOSITORY
-            )
-            local_path.unlink()
-        else:
-            remote_outputs[split] = None
-        if bool(remote_outputs[split]) is not bool(
-            counts[f"split::{split}::documents"]
-        ):
-            raise PleiasCrossSourceSubdocumentRewriteError(
-                "physical split output accounting differs"
-            )
+        remote_outputs = {}
+        for split in splits:
+            if temporary[split].exists():
+                remote_path = (
+                    f"{DESTINATION_PREFIX}/{split}/"
+                    f"shard-{shard_index:05d}-of-{logical_shards:05d}.parquet"
+                )
+                remote_outputs[split] = upload_verified(
+                    temporary[split],
+                    remote_path,
+                    token,
+                    repository=DESTINATION_REPOSITORY,
+                )
+            else:
+                remote_outputs[split] = None
+            if bool(remote_outputs[split]) is not bool(
+                counts[f"split::{split}::documents"]
+            ):
+                raise PleiasCrossSourceSubdocumentRewriteError(
+                    "physical split output accounting differs"
+                )
     if counts["documents"] != source.get("counts", {}).get("documents"):
         raise PleiasCrossSourceSubdocumentRewriteError(
             "rewrite source count differs"
@@ -363,6 +360,7 @@ def run_shard(
         "four_b_training_authorized": False,
     }
     payload["receipt_sha256"] = canonical_sha256(payload)
+    output_root.mkdir(parents=True)
     _atomic_create(output_root / "receipt.json", payload)
     return payload
 

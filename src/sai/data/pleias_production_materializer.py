@@ -9,7 +9,6 @@ import os
 import sqlite3
 import tempfile
 import time
-import uuid
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -375,9 +374,10 @@ def run_shard(
     words, code, boundary_receipts = binary_boundary_index(boundary_roots)
     word_boundary = words[0] if len(words) == 1 else _Union(words)
     code_boundary = code[0] if len(code) == 1 else _Union(code)
-    output_root.mkdir(parents=True)
-    local_path = output_root / "benchmark_disjoint_candidates.parquet"
-    temporary = output_root / f".candidates.partial.{uuid.uuid4().hex}.parquet"
+    payload_directory = tempfile.TemporaryDirectory(
+        prefix="sai-pleias-production-payload-", dir=scratch_root
+    )
+    temporary = Path(payload_directory.name) / "benchmark_disjoint_candidates.parquet"
     output_schema = _materialized_schema()
     writer = pq.ParquetWriter(temporary, output_schema, compression="zstd")
     counts: Counter[str] = Counter()
@@ -486,18 +486,20 @@ def run_shard(
         writer.close()
         connection.close()
         temporary.unlink(missing_ok=True)
+        payload_directory.cleanup()
         raise
     finally:
         for boundary in [*words, *code]:
             boundary.close()
     writer.close()
     connection.close()
-    os.replace(temporary, local_path)
     remote_path = (
         f"{DESTINATION_PREFIX}/shard-{shard_index:05d}-of-{logical_shards:05d}.parquet"
     )
-    remote = upload_verified(local_path, remote_path, token)
-    local_path.unlink()
+    try:
+        remote = upload_verified(temporary, remote_path, token)
+    finally:
+        payload_directory.cleanup()
     payload = {
         "schema": SHARD_SCHEMA,
         "status": "complete_nontraining_pleias_production_materialized_shard",
@@ -527,6 +529,7 @@ def run_shard(
         "four_b_training_authorized": False,
     }
     payload["receipt_sha256"] = canonical_sha256(payload)
+    output_root.mkdir(parents=True)
     _atomic_create(output_root / "receipt.json", payload)
     return payload
 

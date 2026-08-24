@@ -369,15 +369,13 @@ def run_shard(
         is not True
     ):
         raise PleiasSubdocumentRewriteError("materialized source differs")
-    output_root.mkdir(parents=True)
-    local_path = output_root / "subdocument_deduplicated.parquet"
-    temporary = output_root / f".rewrite.partial.{uuid.uuid4().hex}.parquet"
     counts: Counter[str] = Counter()
     ordered_transforms = hashlib.sha256()
     with tempfile.TemporaryDirectory(
         prefix="sai-pleias-subdocument-rewrite-", dir=scratch_root
     ) as directory:
         scratch = Path(directory)
+        temporary = scratch / f"rewrite-partial-{uuid.uuid4().hex}.parquet"
         connection, decision_receipts, decision_rows = _decision_database(
             decision_root,
             shard_index,
@@ -430,17 +428,16 @@ def run_shard(
             raise
         writer.close()
         connection.close()
-    os.replace(temporary, local_path)
-    remote_path = (
-        f"{DESTINATION_PREFIX}/shard-{shard_index:05d}-of-{logical_shards:05d}.parquet"
-    )
-    remote = upload_verified(
-        local_path,
-        remote_path,
-        token,
-        repository=DESTINATION_REPOSITORY,
-    )
-    local_path.unlink()
+        remote_path = (
+            f"{DESTINATION_PREFIX}/"
+            f"shard-{shard_index:05d}-of-{logical_shards:05d}.parquet"
+        )
+        remote = upload_verified(
+            temporary,
+            remote_path,
+            token,
+            repository=DESTINATION_REPOSITORY,
+        )
     if counts["documents"] != materialized.get("counts", {}).get("retained_rows", 0):
         raise PleiasSubdocumentRewriteError("rewrite source count differs")
     payload = {
@@ -468,6 +465,7 @@ def run_shard(
         "four_b_training_authorized": False,
     }
     payload["receipt_sha256"] = canonical_sha256(payload)
+    output_root.mkdir(parents=True)
     _atomic_create(output_root / "receipt.json", payload)
     return payload
 

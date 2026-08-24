@@ -1854,6 +1854,15 @@ Stokes payloads and downloads instead of risking the storage quota. Array
 requires every shard and re-verifies all 128 LFS identities from one repository
 snapshot. Both jobs are CPU-only, have requeue disabled, and remain nontraining
 until the final cross-source/subdocument dedup and corpus ledger close.
+
+All three large PleIAs writers—the initial materializer, the internal
+subdocument rewrite, and the final cross-source rewrite—now construct their
+Parquet payloads only inside the Slurm job's node-local `${TMPDIR}`. A payload is
+removed by the temporary-workspace boundary after its exact Hugging Face LFS
+size and SHA-256 are replayed; only the small signed receipt is then created on
+Lustre. Upload failure leaves no durable partial output, so the shard remains
+resumable. This means the 1.5 TB remote component ceiling does not require a
+second 1.5 TB copy beneath the 1 TB Stokes user quota.
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
