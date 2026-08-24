@@ -535,6 +535,45 @@ and prerequisite annotation, grounded transformation, and final replay. A
 source can be excellent and still require a different representation or a
 later curriculum position.
 
+#### Quality-core shift: approximately 2TB, not an 8TB trophy
+
+The current optimization target is a verified approximately **2TB quality
+core**, not preservation of the largest possible raw mirror. Two terabytes is
+not a padding floor: if a byte does not contribute reliable knowledge, human
+expression, executable procedure, grounded reasoning, or useful curriculum
+coverage, volume alone cannot admit it. The earlier 8TB reservoir remains a
+historical source-candidate checkpoint and recovery index, not the desired
+training corpus.
+
+The first bulk action under this policy removed the current FinePDFs mirror
+from `Godlydonuts/Sai`: exactly **1,250 files and 3,082,436,502,565 bytes**.
+The weighted audit had routed 324/596 sampled FinePDFs rows to quarantine and
+only a small minority to representation verification, so keeping the entire
+mirror as a volume anchor was contrary to the measured goal. Every deleted
+path, LFS SHA-256, Xet hash, and Git blob identity was sealed before removal;
+the exact upstream revision remains `HuggingFaceFW/finepdfs@220bac3acbf07789502c621d2d33952f51ac7f86`,
+and repository history also remains recoverable.
+
+The removal plan has canonical receipt
+`3c4d686a86c0c11e8eba1e8b32bfc3b39cfb7d496f387a2a9bb68b424b2380cd`.
+It was published and byte-replayed at dataset commit
+[`d396d5f522518665c506e84411e4ef2d5e7e5682`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/d396d5f522518665c506e84411e4ef2d5e7e5682).
+Deletion commit
+[`b99ba469952341100fd9a1780944729431b7fbf8`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/b99ba469952341100fd9a1780944729431b7fbf8)
+contains zero files under the planned prefix. The verified removal receipt is
+`507b38a20b00d4fa4f303bbe33afb204c021171c2bf13bdadad07fd04ca3d552`
+and was byte-replayed at dataset commit
+[`6eeb4b868151f5b0ea4b9d815efe12083c2a7a9a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6eeb4b868151f5b0ea4b9d815efe12083c2a7a9a).
+The same plan and receipt are hash-matched in the authorized Stokes evidence
+root.
+
+After removal, the current Hugging Face `sources/` tree contains 12,834 files
+and 5,719,814,783,273 bytes; its 12,724 payload files contain
+5,719,811,111,395 bytes. The next large decision is PleIAs. It will be reduced
+by measured collection, language, rights, damage, and conservative-route
+strata after its 1,024-row audit closes. No bulk PleIAs collection is promoted
+merely to reach 2TB.
+
 #### Exact source-reservoir checkpoint
 
 Reservoir v2 was sealed on 2026-08-23 from exact Hugging Face revisions. It
