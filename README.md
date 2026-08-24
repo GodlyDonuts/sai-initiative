@@ -156,6 +156,18 @@ decontamination, exact and semantic deduplication, full-population Hermes,
 representation, prerequisite, and spiral-curriculum gates. Physical custody can
 therefore never be mistaken for silent admission.
 
+Source-lake retention is evidence-based, not permanent. A file is deleted when
+the whole exact object is proven unusable, or after every retained row has been
+published in a byte-hash-verified filtered replacement. Mixed shards are not
+deleted merely because an audit finds bad rows: those row identities are
+excluded immediately, then the raw shard is reclaimed only after its good rows
+have replacement custody. Each material deletion must record the remote path,
+object SHA-256, bytes removed, decision evidence, replacement path and hash when
+applicable, deletion commit, and whether recovery remains possible upstream.
+Provenance manifests, benchmark-boundary versions, and other replay evidence
+are retained even when they are small; deleting an extra pointer to the same LFS
+object is forbidden when it saves no object bytes but breaks historical replay.
+
 #### Full FineMath-4plus census
 
 Sai has now scanned the entire materialized FineMath-4plus snapshot rather than
@@ -1071,6 +1083,24 @@ Nemotron Legal and Specialized samples were clean. These are coverage-screen
 results, not source-wide yield estimates. The aggregate and fail-closed work
 ledger were remotely byte-replayed in Hugging Face commit
 [`2a085eacf1479293e3c369d7eaa8e476d7f84054`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2a085eacf1479293e3c369d7eaa8e476d7f84054).
+
+The larger 512-row frontier-source compiler has now closed with exact identity
+and receipt coverage. Hermès returned 348 `retain`, 125 `review`, and 39
+`reject` verdicts, but conservative routing sent only **25/512 (4.88%)** to
+representation verification and **244/512 (47.66%)** to quarantine. FineWeb2-HQ
+and both Ultra-FineWeb snapshots are therefore bulk-paused; Nemotron
+specialized reasoning and UltraData-Math L1 remain targeted-recovery and
+verification sources. The aggregate replayed 512 valid outcomes, 210 transient
+HTTP errors, and 177 repaired or retried invalid model outputs. Aggregate
+receipt `9c2d0e49d062c1886f9809b8852c4c48c38f41b40bea210631d1cc0f7236c6de`
+and decision receipt
+`7656214825b6f66984c007f00a6f089c5d2c43791af6b775c466db56d952a48d`
+were remotely byte-replayed in Hugging Face commit
+[`ced4fa4db0a90b8804aa0b42ba98e01597920433`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/ced4fa4db0a90b8804aa0b42ba98e01597920433).
+The same three source-safe files are byte-matched under the authorized Stokes
+evidence root at `frontier-source-audit/20260825-r1`.
+These measured routes are neither whole-source yield estimates nor admission;
+they prevent dataset branding from silently substituting for content quality.
 
 The r1 286/1,879 overall and 77/96 Nemotron conclusions are retracted because
 they were materially inflated by nonsubstantive code windows. Those screens
