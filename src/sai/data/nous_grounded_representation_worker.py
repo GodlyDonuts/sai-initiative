@@ -15,6 +15,7 @@ from sai.data.grounded_representation_labeling import (
     normalize_candidate,
     normalize_model_judgment,
     repair_evidence_quotes,
+    validation_hint,
 )
 from sai.data.nous_compiler_worker import execute_contract, run_shard_locked
 from sai.data.nous_label_worker import (
@@ -84,6 +85,7 @@ def execute_one(
         reasoning_effort=REASONING_EFFORT,
         evidence_container_name="document",
         evidence_repair_function=repair_evidence_quotes,
+        validation_hint_function=validation_hint,
         request_function=request_function,
         sleep_function=sleep_function,
         stream_transport=stream_transport,

@@ -74,6 +74,40 @@ class GroundedRepresentationError(RuntimeError):
     """A representation candidate, claim, or exact source citation differs."""
 
 
+def validation_hint(error: str) -> str:
+    """Give a schema-preserving correction for common generation failures."""
+
+    if "prerequisite edge differs" in error:
+        return (
+            " Every prerequisite_edges entry must use two different nonempty "
+            "lowercase labels and relation must be exactly one of: "
+            + ", ".join(RELATIONS)
+            + ". Do not repeat the same prerequisite, concept, and relation tuple."
+        )
+    if "prerequisite edges differs" in error:
+        return " prerequisite_edges must be a JSON list containing at most 12 entries."
+    if (
+        "representation coverage differs" in error
+        or "representation order differs" in error
+    ):
+        return (
+            " representations must contain exactly one entry for every "
+            "requested_representation_type, in the supplied order, with no extra type."
+        )
+    if "bridge candidate differs" in error:
+        return (
+            " Every cross_domain_bridge_candidates bridge_label must be copied "
+            "exactly from compiler_plan.cross_domain_bridges, used at most once, "
+            "and external_anchor_required must be true."
+        )
+    if "evidence" in error:
+        return (
+            " Every evidence quote must be one nonempty, contiguous, byte-for-byte "
+            "substring of document; use one to four unique quotes per entry."
+        )
+    return ""
+
+
 def _sha256(value: Any, label: str) -> str:
     if (
         not isinstance(value, str)

@@ -10,6 +10,7 @@ from sai.data.grounded_representation_labeling import (
     normalize_candidate,
     normalize_model_judgment,
     repair_evidence_quotes,
+    validation_hint,
 )
 from sai.data.token_stream import canonical_sha256
 
@@ -151,6 +152,17 @@ def test_nested_quote_repair_returns_literal_source_span() -> None:
         "artistic practice."
     ]
     assert repairs[0]["path"] == "representations[0].evidence_quotes[0]"
+
+
+def test_validation_hint_names_exact_prerequisite_relations() -> None:
+    hint = validation_hint("prerequisite edge differs")
+    assert "required_before" in hint
+    assert "helpful_before" in hint
+    assert "revisited_with" in hint
+
+
+def test_validation_hint_preserves_requested_representation_order() -> None:
+    assert "supplied order" in validation_hint("representation order differs")
 
 
 def test_rejects_representation_order_drift() -> None:
