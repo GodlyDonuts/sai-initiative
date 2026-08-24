@@ -191,7 +191,19 @@ balance admission `820649` is staged after both `820530` and `820358`. At
 launch, 60/64 book gate shards had accepted
 358,031 of 358,120 examined works (99.975%) and accounted for 64,830,934,694
 materialized enriched tokens, with zero nonempty gate error logs. The complete
-repository regression suite passes: **1,317 tests, 2 dependency warnings**.
+repository regression suite passes: **1,319 tests, 2 dependency warnings**.
+
+Publication is dependency-staged rather than manual. After combined admission,
+128 independently retryable workers validate that each final PleIAs Parquet is
+a text-free locator table, upload it beneath
+`training/practical/pleias/20260826-r3/` in `Godlydonuts/Sai`, and verify exact
+remote LFS size and SHA-256. A remote aggregate replays all shard receipts and
+the current repository head. The final metadata job then publishes the Books
+allowlist, both practical admission receipts, and the locator publication
+receipt beneath `training/practical/metadata/20260826-r3/`. No private book text
+is uploaded; the public dataset holds the exact indexes needed to reconstruct
+PleIAs from its pinned upstream revision while the Books text remains in its
+authorized private Stokes root.
 
 The next book stage is now code-frozen as a bounded **8,192-work semantic
 population**, not a bulk promotion of every mechanical pass. After `818508`, it
