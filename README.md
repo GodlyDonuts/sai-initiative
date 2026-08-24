@@ -2384,6 +2384,17 @@ Its hard-reject decision remains active. That mixed 503,424,134-byte upstream
 shard is not present in `Godlydonuts/Sai`, so there is no bad published file to
 delete; deleting the whole mixed shard would also discard unrelated good rows.
 
+The same row-level gate now catches three additional high-confidence web-noise
+families before semantic admission: repeated `lorem ipsum` placeholder text is
+hard-rejected; short navigation/cookie/account shell pages with at least four
+distinct shell markers are held for context review; and short access-denied,
+anti-bot, JavaScript-required, or error placeholders with multiple independent
+markers are also held. The rules bind exact measurements and a canonical policy
+hash. Deliberately adversarial preservation tests keep real web-security prose,
+design-history discussion that mentions `lorem ipsum`, code, mathematics,
+tables, worked questions, and contextual technical writing eligible. This is a
+precision filter, not a license to delete every page containing one UI phrase.
+
 A separate reservoir-wide coverage audit now freezes 128 generic compiler
 candidates across six content-bearing source families: 40 FinePDFs rows (16
 English and 24 named non-English language strata), 16 FineMath rows across all

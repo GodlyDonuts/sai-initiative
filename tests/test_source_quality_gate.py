@@ -108,6 +108,22 @@ def test_does_not_mistake_citations_or_array_indexes_for_score_markers() -> None
             "duplicated_boilerplate",
             "cleanup_review",
         ),
+        (
+            ("Lorem ipsum dolor sit amet, consectetur adipiscing elit. " * 3),
+            "placeholder_lorem_ipsum",
+            "hard_reject",
+        ),
+        (
+            "Home\nMenu\nSearch\nSign in\nSign up\nAbout us\nContact us\n"
+            "Privacy policy\nTerms of service\nSubscribe",
+            "web_navigation_shell",
+            "context_review",
+        ),
+        (
+            "Access denied\nRequest blocked\nPlease verify you are human.",
+            "access_or_error_placeholder",
+            "context_review",
+        ),
     ],
 )
 def test_routes_high_confidence_junk(text: str, reason: str, decision: str) -> None:
@@ -131,7 +147,18 @@ def test_preserves_prose_code_math_and_structured_context() -> None:
             for index in range(20)
         ]
     )
-    for text in (prose, code, table):
+    web_security = (
+        "A web-security guide explains why an access denied response may be "
+        "triggered, how a request blocked rule is audited, and why engineers "
+        "must not ask users to disable safeguards. It compares 403 and 404 "
+        "responses with full examples and diagnostic context. "
+    ) * 4
+    design_history = (
+        "Designers sometimes use the phrase lorem ipsum while documenting the "
+        "history of typesetting, but this essay develops a real argument about "
+        "layout, legibility, and publishing practice. "
+    ) * 3
+    for text in (prose, code, table, web_security, design_history):
         assert mechanical_quality_evidence(text)["decision"] == "pass_mechanical_gate"
 
 

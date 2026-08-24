@@ -42,6 +42,10 @@ POLICY = {
         "repeated_alphanumeric_gibberish": {
             "minimum_run": 64,
         },
+        "placeholder_lorem_ipsum": {
+            "minimum_full_phrase_occurrences": 2,
+            "minimum_short_phrase_occurrences": 4,
+        },
     },
     "context_review": {
         "url_only_link_index": {
@@ -66,6 +70,17 @@ POLICY = {
             "maximum_median_line_characters": 80,
             "maximum_line_alpha_words": 16,
         },
+        "web_navigation_shell": {
+            "minimum_nonempty_lines": 8,
+            "minimum_distinct_shell_markers": 4,
+            "minimum_short_line_ppm": 600_000,
+            "maximum_alpha_words": 160,
+        },
+        "access_or_error_placeholder": {
+            "maximum_utf8_bytes": 4_096,
+            "minimum_distinct_markers": 2,
+            "maximum_alpha_words": 120,
+        },
     },
     "cleanup_review": {
         "duplicated_boilerplate": {
@@ -88,6 +103,8 @@ _URL = re.compile(r"(?i)\b(?:https?://|www\.)\S+")
 _HTML_TAG = re.compile(r"<\s*/?\s*[A-Za-z][^>]{0,240}>")
 _ALPHA_WORD = re.compile(r"[A-Za-z]+(?:['’-][A-Za-z]+)*")
 _REPEATED_ALPHANUMERIC = re.compile(r"([A-Za-z0-9])\1{63,}")
+_LOREM_FULL = re.compile(r"\blorem\s+ipsum\s+dolor\s+sit\s+amet\b", re.IGNORECASE)
+_LOREM_SHORT = re.compile(r"\blorem\s+ipsum\b", re.IGNORECASE)
 _SCORE_MARKER = re.compile(r"(?m)^\s*\[\s*(?:\d{1,2}|[MAB]\d)\s*\]\s*$", re.IGNORECASE)
 _NUMBERED_OR_LETTERED_PART = re.compile(
     r"(?m)^\s*(?:\d{1,3}\s*[a-h]?|[a-h])(?:[.)\]:-]|\s|$)", re.IGNORECASE
@@ -98,6 +115,33 @@ _METADATA_FIELD_LINE = re.compile(
     r"language|isbn|edition|source(?:s)?|list\s+of|are\s+there|is\s+there|"
     r"text\s+is\s+presented|rights(?:\s+status)?|license|genre|subject|"
     r"keywords?)\b[^\n]{0,160}$"
+)
+_WEB_SHELL_MARKERS = (
+    "about us",
+    "accept cookies",
+    "contact us",
+    "cookie settings",
+    "log in",
+    "menu",
+    "privacy policy",
+    "search",
+    "sign in",
+    "sign up",
+    "skip to content",
+    "subscribe",
+    "terms of service",
+)
+_ERROR_PLACEHOLDER_MARKERS = (
+    "403 forbidden",
+    "404 not found",
+    "access denied",
+    "checking your browser",
+    "enable cookies",
+    "enable javascript",
+    "page not found",
+    "request blocked",
+    "service unavailable",
+    "verify you are human",
 )
 
 
@@ -178,6 +222,19 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
     maximum_line_alpha_words = max(
         (len(_ALPHA_WORD.findall(line)) for line in nonempty_lines), default=0
     )
+    alpha_word_count = len(_ALPHA_WORD.findall(text))
+    short_line_ppm = _ppm(
+        sum(len(line) <= 40 for line in nonempty_lines), len(nonempty_lines)
+    )
+    casefolded = re.sub(r"\s+", " ", text).casefold()
+    shell_markers = sorted(
+        marker for marker in _WEB_SHELL_MARKERS if marker in casefolded
+    )
+    error_markers = sorted(
+        marker for marker in _ERROR_PLACEHOLDER_MARKERS if marker in casefolded
+    )
+    lorem_full_count = len(_LOREM_FULL.findall(text))
+    lorem_short_count = len(_LOREM_SHORT.findall(text))
 
     flags = {
         "contextless_mcq_answer_key": answer_key["contextless_answer_key"],
@@ -208,6 +265,16 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
             >= POLICY["hard_reject"]["unicode_replacement_corruption"]["minimum_ppm"]
         ),
         "repeated_alphanumeric_gibberish": bool(_REPEATED_ALPHANUMERIC.search(text)),
+        "placeholder_lorem_ipsum": bool(
+            lorem_full_count
+            >= POLICY["hard_reject"]["placeholder_lorem_ipsum"][
+                "minimum_full_phrase_occurrences"
+            ]
+            or lorem_short_count
+            >= POLICY["hard_reject"]["placeholder_lorem_ipsum"][
+                "minimum_short_phrase_occurrences"
+            ]
+        ),
         "url_only_link_index": bool(
             len(url_matches)
             >= POLICY["context_review"]["url_only_link_index"]["minimum_urls"]
@@ -265,6 +332,38 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
                 "maximum_line_alpha_words"
             ]
         ),
+        "web_navigation_shell": bool(
+            len(nonempty_lines)
+            >= POLICY["context_review"]["web_navigation_shell"][
+                "minimum_nonempty_lines"
+            ]
+            and len(shell_markers)
+            >= POLICY["context_review"]["web_navigation_shell"][
+                "minimum_distinct_shell_markers"
+            ]
+            and short_line_ppm
+            >= POLICY["context_review"]["web_navigation_shell"][
+                "minimum_short_line_ppm"
+            ]
+            and alpha_word_count
+            <= POLICY["context_review"]["web_navigation_shell"][
+                "maximum_alpha_words"
+            ]
+        ),
+        "access_or_error_placeholder": bool(
+            utf8_bytes
+            <= POLICY["context_review"]["access_or_error_placeholder"][
+                "maximum_utf8_bytes"
+            ]
+            and len(error_markers)
+            >= POLICY["context_review"]["access_or_error_placeholder"][
+                "minimum_distinct_markers"
+            ]
+            and alpha_word_count
+            <= POLICY["context_review"]["access_or_error_placeholder"][
+                "maximum_alpha_words"
+            ]
+        ),
         "duplicated_boilerplate": bool(
             len(nonempty_lines)
             >= POLICY["cleanup_review"]["duplicated_boilerplate"][
@@ -288,6 +387,7 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
             "control_character_corruption",
             "unicode_replacement_corruption",
             "repeated_alphanumeric_gibberish",
+            "placeholder_lorem_ipsum",
         )
         if flags[key]
     ]
@@ -298,6 +398,8 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
             "markup_only_fragment",
             "contextless_structured_fragment",
             "contextless_metadata_form",
+            "web_navigation_shell",
+            "access_or_error_placeholder",
         )
         if flags[key]
     ]
@@ -337,6 +439,12 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
             "maximum_line_alpha_words": maximum_line_alpha_words,
             "maximum_repeated_line_count": maximum_repeated_line_count,
             "duplicate_line_character_ppm": duplicate_character_ppm,
+            "alpha_word_count": alpha_word_count,
+            "short_line_ppm": short_line_ppm,
+            "web_shell_markers": shell_markers,
+            "error_placeholder_markers": error_markers,
+            "lorem_full_phrase_count": lorem_full_count,
+            "lorem_short_phrase_count": lorem_short_count,
         },
         "answer_key_evidence": answer_key,
         "flags": flags,
