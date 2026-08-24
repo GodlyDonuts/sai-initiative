@@ -574,6 +574,21 @@ by measured collection, language, rights, damage, and conservative-route
 strata after its 1,024-row audit closes. No bulk PleIAs collection is promoted
 merely to reach 2TB.
 
+The exact candidate envelope is now frozen at **2,000,000,000,000 maximum
+bytes**. Outside PleIAs, the post-removal lake contains 36 source components,
+2,724 payload files, and 1,230,324,458,837 raw candidate bytes. Therefore, if
+every one of those nonbulk bytes survived all gates, PleIAs could contribute at
+most 769,675,541,163 bytes; this is a provisional ceiling, not an admission.
+The envelope's canonical receipt is
+`1151bdcdb37e31f5793d9401cfed70f22ba8d23e544342e1b3b693c9ae749cf2`
+and its file SHA-256 is
+`f7b4f32b7d87953f0848726429e7882f83c17940f560792d27eee850a733df7d`.
+It was byte-replayed at dataset commit
+[`2c7390534cee3a545d63e1298dd4811dcfbacf0c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2c7390534cee3a545d63e1298dd4811dcfbacf0c)
+and copied byte-identically to the authorized Stokes evidence root. The
+envelope explicitly permits a final core smaller than 2TB and grants no
+training admission.
+
 #### Exact source-reservoir checkpoint
 
 Reservoir v2 was sealed on 2026-08-23 from exact Hugging Face revisions. It
