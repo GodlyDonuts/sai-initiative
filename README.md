@@ -1658,6 +1658,11 @@ removes duplicates across source parents and shards without placing source text
 in the decision database. Near-duplicate and cross-source deduplication remain
 separate later gates, so even this output is still nontraining.
 
+The exact-dedup chain is staged as SQLite decision `818550`, rewrite array
+`818551_[0-127%64]`, and aggregate `818552`, strictly after full-content
+decontamination aggregate `818548`. `scontrol` verified the dependencies;
+requeue is disabled and the graph is CPU-only.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
