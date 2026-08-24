@@ -7,6 +7,7 @@
 #SBATCH --mem=4G
 #SBATCH --time=08:00:00
 #SBATCH --array=0-7%8
+#SBATCH --exclude=ec65
 #SBATCH --no-requeue
 #SBATCH --output=/lustre/fs1/home/sa305415/sai_data_sources/logs/pleias-meta-recover-%A_%a.out
 #SBATCH --error=/lustre/fs1/home/sa305415/sai_data_sources/logs/pleias-meta-recover-%A_%a.err
