@@ -1608,6 +1608,15 @@ The exact staged jobs are semantic population `818537`, Hermès compiler array
 bounded row aggregate `818531`; `scontrol` verified every dependency. All are
 independent CPU requests with requeue disabled and none authorizes training.
 
+To measure same-family optimism instead of trusting it, the primary aggregate
+feeds a bounded independent-review population: up to 256 rows from each of the
+nonretain, severe-risk retain, cleanup-risk retain, and clean-retain strata
+(at most 1,024 rows). An independent Nemotron Ultra family then repeats the
+identical frozen rubric, and the source-safe comparison records exact verdict,
+route, and active-risk agreement. Disagreement goes to adjudication; it never
+defaults to retention. This second family is focused where it changes the
+decision, rather than spending calls re-reviewing all 8,192 rows.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
