@@ -86,24 +86,36 @@ def _schema():
     )
 
 
-def signature_rows(
-    candidate: dict[str, Any], source_shard: int, source_row_index: int
+def signature_rows_for_text(
+    *,
+    component: str,
+    text: str,
+    identity: str,
+    content_sha256: str,
+    source_shard: int,
+    source_row_index: int,
+    code_document: bool,
 ) -> list[dict[str, Any]]:
-    """Losslessly segment one candidate and emit no source text."""
+    """Losslessly segment one verified text and emit no source text."""
 
-    text = candidate.get("text")
-    identity = candidate.get("source_row_identity_sha256")
-    content_sha256 = candidate.get("content_sha256")
     if (
-        candidate.get("schema") != CANDIDATE_SCHEMA
-        or candidate.get("training_ready") is not False
+        not isinstance(component, str)
+        or not component
         or not isinstance(text, str)
+        or not text
         or not isinstance(identity, str)
+        or len(identity) != 64
+        or not isinstance(content_sha256, str)
         or hashlib.sha256(text.encode()).hexdigest() != content_sha256
+        or isinstance(source_shard, bool)
+        or not isinstance(source_shard, int)
+        or source_shard < 0
+        or isinstance(source_row_index, bool)
+        or not isinstance(source_row_index, int)
+        or source_row_index < 0
+        or not isinstance(code_document, bool)
     ):
-        raise PleiasSubdocumentSignatureError("candidate row differs")
-    collection = candidate.get("collection")
-    code_document = isinstance(collection, str) and "github" in collection.casefold()
+        raise PleiasSubdocumentSignatureError("signature source row differs")
     chunks = segment_subdocuments(
         text,
         minimum_characters=DEFAULT_SEGMENT_CHARACTERS,
@@ -116,7 +128,7 @@ def signature_rows(
             continue
         row = {
             "schema": SIGNATURE_SCHEMA,
-            "component": "pleias_common_corpus",
+            "component": component,
             "source_shard": source_shard,
             "source_row_index": source_row_index,
             "document_identity_sha256": identity,
@@ -132,6 +144,30 @@ def signature_rows(
         row["signature_sha256"] = canonical_sha256(row)
         rows.append(row)
     return rows
+
+
+def signature_rows(
+    candidate: dict[str, Any], source_shard: int, source_row_index: int
+) -> list[dict[str, Any]]:
+    """Losslessly segment one PleIAs candidate and emit no source text."""
+
+    if (
+        candidate.get("schema") != CANDIDATE_SCHEMA
+        or candidate.get("training_ready") is not False
+    ):
+        raise PleiasSubdocumentSignatureError("candidate row differs")
+    collection = candidate.get("collection")
+    return signature_rows_for_text(
+        component="pleias_common_corpus",
+        text=candidate.get("text"),
+        identity=candidate.get("source_row_identity_sha256"),
+        content_sha256=candidate.get("content_sha256"),
+        source_shard=source_shard,
+        source_row_index=source_row_index,
+        code_document=(
+            isinstance(collection, str) and "github" in collection.casefold()
+        ),
+    )
 
 
 def run_shard(
