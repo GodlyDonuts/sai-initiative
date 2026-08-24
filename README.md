@@ -680,7 +680,12 @@ to exactly **2,000,000,000,000 bytes**, and records that exhausting this
 capacity is not required. It still reports zero training-ready bytes because
 the active source-wide gates are unfinished; this prevents candidate volume
 from being mislabeled as usable data. Its canonical receipt is
-`73ceef1e075697c16acfdad40963f04ee1e744b19ef45fa91472fdbf86202b87`.
+`73ceef1e075697c16acfdad40963f04ee1e744b19ef45fa91472fdbf86202b87`
+and its file SHA-256 is
+`5ef04d2ef2f3bf1d09e75fb965a6978af181baf249e54f72bb2460ee03bfeb49`.
+It was force-downloaded and byte-replayed from dataset commit
+[`9540fb7eb6ea281fdb19609bf926895fd6916d44`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/9540fb7eb6ea281fdb19609bf926895fd6916d44)
+and copied hash-identically to the authorized Stokes evidence root.
 
 #### Exact source-reservoir checkpoint
 
