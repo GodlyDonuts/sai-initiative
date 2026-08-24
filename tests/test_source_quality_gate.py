@@ -158,7 +158,19 @@ def test_preserves_prose_code_math_and_structured_context() -> None:
         "history of typesetting, but this essay develops a real argument about "
         "layout, legibility, and publishing practice. "
     ) * 3
-    for text in (prose, code, table, web_security, design_history):
+    long_navigation_discussion = (
+        "This long design essay analyzes menu, search, sign in, sign up, about us, "
+        "contact us, privacy policy, terms of service, and subscribe interfaces as "
+        "historical artifacts with evidence and sustained contextual reasoning. "
+    ) * 100
+    for text in (
+        prose,
+        code,
+        table,
+        web_security,
+        design_history,
+        long_navigation_discussion,
+    ):
         assert mechanical_quality_evidence(text)["decision"] == "pass_mechanical_gate"
 
 

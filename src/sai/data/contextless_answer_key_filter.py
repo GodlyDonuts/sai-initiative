@@ -61,11 +61,11 @@ def answer_key_evidence(text: str) -> dict[str, Any]:
     matches = list(_ENTRY.finditer(text))
     numbers = {int(match.group(1)) for match in matches}
     marker = _ANSWER_KEY.search(text) is not None
-    context_words = [
-        word.casefold()
-        for word in _WORD.findall(_ENTRY.sub(" ", _ANSWER_KEY.sub(" ", text)))
-        if word.casefold() not in _STRUCTURAL_WORDS
-    ]
+    context_words = sum(
+        1
+        for match in _WORD.finditer(_ENTRY.sub(" ", _ANSWER_KEY.sub(" ", text)))
+        if match.group().casefold() not in _STRUCTURAL_WORDS
+    )
     minimum_entries = (
         POLICY["minimum_entries_with_answer_key_marker"]
         if marker
@@ -74,7 +74,7 @@ def answer_key_evidence(text: str) -> dict[str, Any]:
     rejected = bool(
         len(matches) >= minimum_entries
         and len(numbers) >= POLICY["minimum_unique_question_numbers"]
-        and len(context_words)
+        and context_words
         <= len(matches) * POLICY["maximum_context_words_per_entry"]
         and (not POLICY["question_mark_veto"] or "?" not in text)
     )
@@ -82,7 +82,7 @@ def answer_key_evidence(text: str) -> dict[str, Any]:
         "answer_entry_count": len(matches),
         "unique_question_number_count": len(numbers),
         "answer_key_marker": marker,
-        "context_word_count": len(context_words),
+        "context_word_count": context_words,
         "question_mark_present": "?" in text,
         "contextless_answer_key": rejected,
     }

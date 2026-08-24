@@ -75,6 +75,7 @@ POLICY = {
             "minimum_distinct_shell_markers": 4,
             "minimum_short_line_ppm": 600_000,
             "maximum_alpha_words": 160,
+            "maximum_utf8_bytes": 16_384,
         },
         "access_or_error_placeholder": {
             "maximum_utf8_bytes": 4_096,
@@ -184,9 +185,9 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
     url_matches = list(_URL.finditer(text))
     url_lines = sum(bool(_URL.search(line)) for line in nonempty_lines)
     without_urls = _URL.sub(" ", text)
-    non_url_words = len(_ALPHA_WORD.findall(without_urls))
-    tag_count = len(_HTML_TAG.findall(text))
-    visible_words = len(_ALPHA_WORD.findall(_HTML_TAG.sub(" ", text)))
+    non_url_words = sum(1 for _ in _ALPHA_WORD.finditer(without_urls))
+    tag_count = sum(1 for _ in _HTML_TAG.finditer(text))
+    visible_words = sum(1 for _ in _ALPHA_WORD.finditer(_HTML_TAG.sub(" ", text)))
     alphanumeric_count = sum(character.isalnum() for character in text)
     whitespace_count = sum(character.isspace() for character in text)
     digit_symbol_count = max(0, codepoints - whitespace_count - alphanumeric_count)
@@ -222,16 +223,16 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
     maximum_line_alpha_words = max(
         (len(_ALPHA_WORD.findall(line)) for line in nonempty_lines), default=0
     )
-    alpha_word_count = len(_ALPHA_WORD.findall(text))
+    alpha_word_count = sum(1 for _ in _ALPHA_WORD.finditer(text))
     short_line_ppm = _ppm(
         sum(len(line) <= 40 for line in nonempty_lines), len(nonempty_lines)
     )
-    casefolded = re.sub(r"\s+", " ", text).casefold()
+    marker_source = text.casefold() if utf8_bytes <= 16_384 else ""
     shell_markers = sorted(
-        marker for marker in _WEB_SHELL_MARKERS if marker in casefolded
+        marker for marker in _WEB_SHELL_MARKERS if marker in marker_source
     )
     error_markers = sorted(
-        marker for marker in _ERROR_PLACEHOLDER_MARKERS if marker in casefolded
+        marker for marker in _ERROR_PLACEHOLDER_MARKERS if marker in marker_source
     )
     lorem_full_count = len(_LOREM_FULL.findall(text))
     lorem_short_count = len(_LOREM_SHORT.findall(text))
@@ -333,7 +334,11 @@ def mechanical_quality_evidence(text: str) -> dict[str, Any]:
             ]
         ),
         "web_navigation_shell": bool(
-            len(nonempty_lines)
+            utf8_bytes
+            <= POLICY["context_review"]["web_navigation_shell"][
+                "maximum_utf8_bytes"
+            ]
+            and len(nonempty_lines)
             >= POLICY["context_review"]["web_navigation_shell"][
                 "minimum_nonempty_lines"
             ]

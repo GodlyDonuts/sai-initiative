@@ -1950,6 +1950,25 @@ acceptance-rate estimate and cannot change admission. The bounded CPU job uses
 one thread and no GPU; any unexpected real-text flag becomes inspectable
 evidence for a precision correction before the full book gate runs.
 
+The first real-text run closed on **52/52 passing rows across 26 complete book
+shards**, with no hard-reject, context-review, or cleanup flags. Its canonical
+receipt is `bae35a5e393fdde9d1b54dcd9756b954ec850469c1d54017bdfe810219461213`;
+the receipt file SHA-256 is
+`0b5a9a3d6385b7f01341f72d6f2673c175ac65d773aabd6dae53c4f15bc11385`.
+The source-safe artifact was force-downloaded and byte-replayed from Hugging Face
+dataset commit
+[`4ce999fc54b11593d7cb8a47c1511f62827a9450`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4ce999fc54b11593d7cb8a47c1511f62827a9450)
+and remains byte-identical in the authorized Stokes evidence root. This bounded
+result supports precision on real long-form inputs; it is not evidence that all
+books pass or that any book is training-ready.
+
+The gate's implementation was also tightened for full-corpus scale without
+changing the frozen tests' decisions: alpha-word and answer-key context counts
+stream through iterators instead of allocating complete word lists, and
+navigation/error marker scans are bounded to short pages (at most 16,384 UTF-8
+bytes). Long technical or historical books therefore avoid thirteen irrelevant
+full-text substring scans per row while preserving the stricter noise policy.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
