@@ -121,3 +121,16 @@ def test_virtual_foundation_ledger_waits_for_both_final_components() -> None:
     assert "institutional-books-virtual-cross-source-rewritten-20260826-r1" in job
     assert "pleias-virtual-final-reconstruction-20260826-r1" in job
     assert "--byte-ceiling 2000000000000" in job
+
+
+def test_virtual_corpus_custody_job_hashes_and_dual_writes_evidence() -> None:
+    job = Path(
+        "scripts/build_virtual_corpus_custody_manifest_stokes.sbatch"
+    ).read_text()
+    assert "#SBATCH --gres" not in job
+    assert "#SBATCH --no-requeue" in job
+    assert "git diff --quiet" in job
+    assert "git diff --cached --quiet" in job
+    assert "sai.data.virtual_corpus_custody_manifest" in job
+    assert "--durable-output \"${sai_evidence}/receipt.json\"" in job
+    assert "--runtime-commit \"${sai_commit}\"" in job
