@@ -1,4 +1,5 @@
 import hashlib
+import json
 
 from sai.data.frequency_length_subdocument_deduplication import (
     _normalized_chunk,
@@ -38,6 +39,15 @@ def test_private_book_rewrite_preserves_source_lineage_and_hashes_output():
         "benchmark_decontamination_complete": True,
         "training_ready": False,
     }
+    curriculum = {
+        "shared_prerequisites": ["geometry"],
+        "shared_concepts": ["perspective"],
+        "source_text_persisted": False,
+    }
+    from sai.data.token_stream import canonical_sha256
+
+    curriculum["metadata_sha256"] = canonical_sha256(curriculum)
+    clean["consensus_curriculum"] = curriculum
     chunks = segment_subdocuments(text)
     decisions = []
     for index in (len(chunks) - 2, len(chunks) - 1):
@@ -62,6 +72,9 @@ def test_private_book_rewrite_preserves_source_lineage_and_hashes_output():
     assert result["source_path"] == "parent.parquet"
     assert result["semantic_genre"] == "technical_nonfiction"
     assert result["semantic_domains"] == ["physics", "art_history"]
+    assert json.loads(result["curriculum_metadata_json"])["shared_concepts"] == [
+        "perspective"
+    ]
     assert result["token_count_requires_recomputation"] is True
     assert counts["deleted_chunks"] == 2
     assert result["training_ready"] is False

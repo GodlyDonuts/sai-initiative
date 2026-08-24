@@ -296,6 +296,7 @@ def build_screen(
             "token_count_o200k_base_gen": agreement["token_count_o200k_base_gen"],
             "agreed_genre": agreement["agreed_genre"],
             "shared_domains": agreement["shared_domains"],
+            "consensus_curriculum": agreement["consensus_curriculum"],
             "benchmark_decontamination_complete": True,
             "global_semantic_deduplication_complete": False,
             "source_text_persisted": False,

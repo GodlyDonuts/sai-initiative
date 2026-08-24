@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -32,6 +33,106 @@ INDEPENDENT_MODEL = "nvidia/nemotron-3-ultra-550b-a55b"
 
 class InstitutionalBooksIndependentAgreementError(RuntimeError):
     """Book population, receipt, or independent agreement differs."""
+
+
+def consensus_curriculum_metadata(
+    original: dict[str, Any], independent: dict[str, Any]
+) -> dict[str, Any]:
+    """Keep only conservative, source-text-free curriculum agreement evidence."""
+
+    quality_keys = sorted(set(original["quality"]).intersection(independent["quality"]))
+    complexity_keys = sorted(
+        set(original["complexity"]).intersection(independent["complexity"])
+    )
+    original_edges = {
+        (row["prerequisite"], row["dependent"], row["relation"]): row
+        for row in original["concept_edges"]
+    }
+    independent_edges = {
+        (row["prerequisite"], row["dependent"], row["relation"]): row
+        for row in independent["concept_edges"]
+    }
+    shared_edges = []
+    for key in sorted(set(original_edges).intersection(independent_edges)):
+        first = original_edges[key]
+        second = independent_edges[key]
+        shared_edges.append(
+            {
+                "prerequisite": key[0],
+                "dependent": key[1],
+                "relation": key[2],
+                "confidence_floor_ppm": min(
+                    first["confidence_ppm"], second["confidence_ppm"]
+                ),
+                "evidence_quote_sha256s": sorted(
+                    {
+                        hashlib.sha256(first["evidence_quote"].encode()).hexdigest(),
+                        hashlib.sha256(second["evidence_quote"].encode()).hexdigest(),
+                    }
+                ),
+            }
+        )
+    metadata = {
+        "work_id_candidates": sorted(
+            {original["work_id_candidate"], independent["work_id_candidate"]}
+        ),
+        "edition_id_candidates": sorted(
+            {original["edition_id_candidate"], independent["edition_id_candidate"]}
+        ),
+        "shared_subdomains": sorted(
+            set(original["subdomains"]).intersection(independent["subdomains"])
+        ),
+        "styles": sorted({original["style"], independent["style"]}),
+        "quality_floor": {
+            key: min(original["quality"][key], independent["quality"][key])
+            for key in quality_keys
+        },
+        "complexity_range": {
+            key: {
+                "minimum": min(
+                    original["complexity"][key], independent["complexity"][key]
+                ),
+                "maximum": max(
+                    original["complexity"][key], independent["complexity"][key]
+                ),
+            }
+            for key in complexity_keys
+        },
+        "curriculum_band_votes": sorted(
+            {original["curriculum_band"], independent["curriculum_band"]}
+        ),
+        "shared_prerequisites": sorted(
+            set(original["prerequisites"]).intersection(
+                independent["prerequisites"]
+            )
+        ),
+        "shared_concepts": sorted(
+            set(original["concepts"]).intersection(independent["concepts"])
+        ),
+        "shared_concept_edges": shared_edges,
+        "shared_period": sorted(
+            set(original["period"]).intersection(independent["period"])
+        ),
+        "shared_culture_geography": sorted(
+            set(original["culture_geography"]).intersection(
+                independent["culture_geography"]
+            )
+        ),
+        "shared_recommended_representations": sorted(
+            set(original["recommended_representations"]).intersection(
+                independent["recommended_representations"]
+            )
+        ),
+        "translation_type_votes": sorted(
+            {original["translation_type"], independent["translation_type"]}
+        ),
+        "confidence_floor_ppm": min(
+            original["confidence_ppm"], independent["confidence_ppm"]
+        ),
+        "source_text_persisted": False,
+    }
+    metadata["metadata_sha256"] = canonical_sha256(metadata)
+    return metadata
 
 
 def agreement_disposition(
@@ -195,6 +296,13 @@ def build_agreement(
                 set(original_receipt["judgment"]["domains"]).intersection(
                     independent_receipt["judgment"]["domains"]
                 )
+            ),
+            "consensus_curriculum": (
+                consensus_curriculum_metadata(
+                    original_receipt["judgment"], independent_receipt["judgment"]
+                )
+                if disposition == "consensus_candidate"
+                else None
             ),
             "token_count_o200k_base_gen": token_count,
             "benchmark_decontamination_complete": False,

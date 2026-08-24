@@ -216,6 +216,15 @@ def run_shard(
                     counts["output_text_utf8_bytes"] += len(
                         result["text"].encode()
                     )
+                    stratum = result["semantic_stratum"]
+                    quality_floor = result["semantic_quality_floor_milli"]
+                    counts[f"semantic_stratum::{stratum}::documents"] += 1
+                    counts[f"semantic_stratum::{stratum}::text_utf8_bytes"] += len(
+                        result["text"].encode()
+                    )
+                    counts[
+                        f"quality_floor_milli::{quality_floor}::documents"
+                    ] += 1
                     for key, value in row_counts.items():
                         counts[key] += value
                     ordered_transforms.update(

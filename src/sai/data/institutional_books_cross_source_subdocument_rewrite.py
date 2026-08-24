@@ -67,6 +67,8 @@ def _schema(source_schema):
             pa.field("benchmark_decontamination_record_sha256", pa.string()),
             pa.field("semantic_genre", pa.string()),
             pa.field("semantic_domains", pa.list_(pa.string())),
+            pa.field("curriculum_metadata_json", pa.string()),
+            pa.field("curriculum_metadata_sha256", pa.string()),
             pa.field("pre_cross_source_content_sha256", pa.string()),
             pa.field("content_sha256", pa.string()),
             pa.field("word_count", pa.int64()),
@@ -107,6 +109,16 @@ def rewrite_row(
             not isinstance(domain, str) or not domain
             for domain in clean["shared_domains"]
         )
+        or not isinstance(clean.get("consensus_curriculum"), dict)
+        or clean["consensus_curriculum"].get("source_text_persisted") is not False
+        or clean["consensus_curriculum"].get("metadata_sha256")
+        != canonical_sha256(
+            {
+                key: value
+                for key, value in clean["consensus_curriculum"].items()
+                if key != "metadata_sha256"
+            }
+        )
         or not isinstance(text, str)
         or not isinstance(content_sha256, str)
         or not isinstance(identity, str)
@@ -143,6 +155,15 @@ def rewrite_row(
             ],
             "semantic_genre": clean["agreed_genre"],
             "semantic_domains": clean["shared_domains"],
+            "curriculum_metadata_json": json.dumps(
+                clean["consensus_curriculum"],
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
+            "curriculum_metadata_sha256": clean["consensus_curriculum"][
+                "metadata_sha256"
+            ],
             "pre_cross_source_content_sha256": content_sha256,
             "content_sha256": hashlib.sha256(rewritten.encode()).hexdigest(),
             "word_count": len(_WORD.findall(rewritten)),
@@ -240,6 +261,20 @@ def run_shard(
                         counts["output_text_utf8_bytes"] += len(
                             result["text"].encode()
                         )
+                        output_bytes = len(result["text"].encode())
+                        counts[
+                            f"semantic_genre::{result['semantic_genre']}::documents"
+                        ] += 1
+                        for domain in result["semantic_domains"]:
+                            counts[f"semantic_domain::{domain}::documents"] += 1
+                            counts[
+                                f"semantic_domain::{domain}::text_utf8_bytes"
+                            ] += output_bytes
+                        for band in clean["consensus_curriculum"][
+                            "curriculum_band_votes"
+                        ]:
+                            counts[f"curriculum_band_vote::{band}::documents"] += 1
+                        counts["documents_with_consensus_curriculum_metadata"] += 1
                         for key, value in row_counts.items():
                             counts[key] += value
                         ordered_identities.update(

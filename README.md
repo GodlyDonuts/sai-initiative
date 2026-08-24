@@ -232,7 +232,13 @@ cross-source decision.
 The clean book manifest and final private rows preserve the independently agreed
 genre and shared semantic domains, as well as the exact agreement and benchmark
 screen record hashes. Deduplication therefore cannot erase the quality and
-pedagogical metadata needed by the later spiral scheduler.
+pedagogical metadata needed by the later spiral scheduler. The two-family
+agreement also retains source-text-free work/edition candidates, quality floors,
+complexity ranges, curriculum-band votes, shared concepts and prerequisites,
+and only concept edges recovered by both judges; edge evidence is stored as
+quote hashes rather than excerpt text. Final shard receipts count exact bytes by
+PleIAs stratum and book genre/domain, making broad-coverage shortfalls measurable
+before sampling.
 
 The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
 If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
