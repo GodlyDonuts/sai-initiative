@@ -1119,10 +1119,11 @@ screen is now executing across all ten `common_corpus_*` partitions. It selects
 102–103 parents per partition by deterministic SHA-256 rank, excludes all 40
 parents from the earlier screen, and binds 460,098,704,855 parent bytes without
 claiming statistical representativeness. Stokes cannot safely materialize its
-large Parquet row groups under the 500 MB process cap, so acquisition instead
-opens exactly one parent at a time, verifies the full pinned byte count and
-SHA-256 on disk, iterates the selected row group in 16-record batches, persists
-one deterministic usable row, and removes the parent before continuing. A
+large Parquet row groups under the 500 MB process cap, so eight identity-
+disjoint 128-parent shards each open exactly one parent at a time, verify the
+full pinned byte count and SHA-256 on disk, iterate the selected row group in
+16-record batches, persist one deterministic usable row, and remove the parent
+before continuing. At most eight parents are open globally. A
 434,737,237-byte end-to-end probe passed this exact path. Benchmark screening,
 Hermès judgment, source-wide yield, and training admission remain false.
 
