@@ -1134,6 +1134,9 @@ rows and 991 clean rows, with 846 exact word-shingle and 28 eligible code-
 shingle overlaps. Contamination spans every partition and is highest in the
 sampled partition 8 lane at 7/102 rows. The source-safe screen receipt is
 `bc9f207c328c3d8ea8387d0c4692f2fdae216706eb00761e906fc8e3b0f17988`.
+The source-safe lineage, acquisition receipt, and screen receipt were
+force-downloaded and byte-replayed from Hugging Face dataset commit
+[`4741fcd1da4462733d463475c276bd87d4ab7d5d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4741fcd1da4462733d463475c276bd87d4ab7d5d).
 Hermès source-quality judgment is now staged against the immutable audit
 population, but source-wide yield, clean full-source materialization, and
 training admission remain false.
