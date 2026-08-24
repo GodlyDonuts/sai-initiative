@@ -631,6 +631,13 @@ Both source-safe files were byte-replayed into the authorized Stokes evidence
 root. The 12 quarantined and 8 rights-held rows are barred from dataset-facing
 materialization; because this was a coverage screen rather than a source-wide
 acceptance estimate, it does not justify deleting whole upstream parents.
+The 12 exact quarantine identities are now sealed in a reusable text-free
+exclusion manifest with SHA-256
+`327c0a9437c521075e59fa24bbe26e8aa627b563652535b6c310965140a42c5f`
+and canonical receipt
+`4ddfb6632c4a9c6a91797a7d491d468e54e54b8656a5e3af3d8fc55bebadee17`.
+Future materializers can therefore delete those rows by identity without
+retaining their source text or silently discarding neighboring good rows.
 
 #### Complete Python Enhancement Proposal census
 
