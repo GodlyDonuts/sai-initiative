@@ -239,6 +239,60 @@ def test_compiler_recovers_pdf_default_ignorables_as_literal_source_bytes() -> N
     )
 
 
+def test_compiler_recovers_html_character_reference_as_literal_source_bytes() -> None:
+    candidate = _candidate()
+    candidate["text"] = candidate["text"].replace(
+        "A historian compares irrigation records",
+        "A historian compares irrigation &amp; rainfall records",
+    )
+    candidate["source_content_sha256"] = hashlib.sha256(
+        candidate["text"].encode()
+    ).hexdigest()
+    candidate["candidate_identity_sha256"] = canonical_sha256(
+        {
+            key: value
+            for key, value in candidate.items()
+            if key != "candidate_identity_sha256"
+        }
+    )
+    raw = _judgment(candidate)
+    raw["evidence_quotes"] = ["A historian compares irrigation & rainfall records,"]
+    repaired, repairs = repair_evidence_quotes(raw, candidate)
+    assert repaired["evidence_quotes"] == [
+        "A historian compares irrigation &amp; rainfall records,"
+    ]
+    assert len(repairs) == 1
+    assert "html-character-references" in repairs[0]["algorithm"]
+    assert (
+        normalize_model_judgment(raw, candidate)["evidence_quotes"]
+        == repaired["evidence_quotes"]
+    )
+
+
+def test_compiler_rejects_ambiguous_html_character_reference_recovery() -> None:
+    candidate = _candidate()
+    candidate["text"] = (
+        "Alpha &amp; beta. "
+        + "This independently grounded archival explanation supplies enough context "
+        * 4
+        + "Alpha & beta."
+    )
+    candidate["source_content_sha256"] = hashlib.sha256(
+        candidate["text"].encode()
+    ).hexdigest()
+    candidate["candidate_identity_sha256"] = canonical_sha256(
+        {
+            key: value
+            for key, value in candidate.items()
+            if key != "candidate_identity_sha256"
+        }
+    )
+    raw = _judgment(candidate)
+    raw["evidence_quotes"] = ["alpha & beta."]
+    with pytest.raises(DataCompilerLabelingError, match="evidence"):
+        normalize_model_judgment(raw, candidate)
+
+
 def test_compiler_rejects_ambiguous_normalized_quote_recovery() -> None:
     candidate = _candidate()
     candidate["text"] = (

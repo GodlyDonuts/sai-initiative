@@ -345,6 +345,22 @@ quotes. Even positive same-family decisions remain graph candidates until
 independent verification and acyclic graph construction close; every route is
 `training_ready=false`.
 
+The complete same-family verification closed on 2026-08-26 with 192/192 edge
+receipts and 64/64 shard summaries. It classified only **28** proposed
+directions as strict prerequisites and **4** as helpful foundations, while
+**120** were merely co-taught nonedges and **40** were unsupported. This is an
+important negative filter: repeated document-level co-occurrence overpredicted
+directional prerequisites for 160/192 proposals, so those edges are excluded
+instead of being allowed to distort the spiral curriculum. All output records
+retain only source-evidence hashes. The aggregate canonical receipt and file
+SHA-256 are
+`81546db8ddf82bb85c45ed4dd083f266116fd55b7084c75f4cdc12ad82846e82`
+and `dcca78e7b017536781880532280ee5746601f212f5c9f04d08cf9d423feb4c28`.
+The exact source-text-free aggregate is byte-replayed under the authorized
+Stokes evidence root. The 32 positive candidates still require independent
+model-family verification and acyclic graph construction, so none is yet
+training-ready.
+
 All Hermès compiler-style workers now acquire the same persistent logical-shard
 lock before replaying or creating receipts. This permits dependency-prestaged
 single-process fan-out over disjoint bridge, book, prerequisite, representation,

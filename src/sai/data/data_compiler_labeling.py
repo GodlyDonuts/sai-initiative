@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+import html
 import json
 import unicodedata
 from array import array
@@ -18,7 +19,8 @@ from sai.data.token_stream import canonical_sha256
 
 JUDGMENT_SCHEMA = "sai-data-compiler-judgment-v2"
 QUOTE_RECOVERY_ALGORITHM = (
-    "nfkd-character-map-casefold-pdf-controls-whitespace-unique-source-span-v1"
+    "nfkd-character-map-casefold-html-character-references-pdf-controls-"
+    "whitespace-unique-source-span-v2"
 )
 _IGNORABLE_PDF_CONTROLS = frozenset("\u00ad\u200b\u2060\ufeff")
 PHASES = ("grounding", "breadth", "integration", "reasoning_depth", "reject")
@@ -237,29 +239,45 @@ def _quote_normal_form_with_spans(
     characters: list[str] = []
     starts = array("I")
     ends = array("I")
-    for raw_index, raw_character in enumerate(value):
+    raw_index = 0
+    while raw_index < len(value):
+        raw_start = raw_index
+        raw_end = raw_index + 1
+        raw_unit = value[raw_index]
+        if raw_unit == "&":
+            semicolon = value.find(
+                ";", raw_index + 1, min(len(value), raw_index + 34)
+            )
+            if semicolon >= 0:
+                reference = value[raw_index : semicolon + 1]
+                decoded = html.unescape(reference)
+                if decoded != reference:
+                    raw_unit = decoded
+                    raw_end = semicolon + 1
+        raw_index = raw_end
         # These default-ignorable controls are routinely inserted by PDF/OCR
         # extraction. They do not become evidence: a recovered result still
         # returns the unique literal span, including intervening controls.
-        if raw_character in _IGNORABLE_PDF_CONTROLS:
-            continue
-        expanded = unicodedata.normalize(
-            "NFKD", unicodedata.normalize("NFKD", raw_character).casefold()
-        )
-        for character in expanded:
-            if character.isspace():
-                if not characters:
-                    continue
-                if characters[-1] == " ":
-                    ends[-1] = raw_index + 1
-                else:
-                    characters.append(" ")
-                    starts.append(raw_index)
-                    ends.append(raw_index + 1)
+        for raw_character in raw_unit:
+            if raw_character in _IGNORABLE_PDF_CONTROLS:
                 continue
-            characters.append(character)
-            starts.append(raw_index)
-            ends.append(raw_index + 1)
+            expanded = unicodedata.normalize(
+                "NFKD", unicodedata.normalize("NFKD", raw_character).casefold()
+            )
+            for character in expanded:
+                if character.isspace():
+                    if not characters:
+                        continue
+                    if characters[-1] == " ":
+                        ends[-1] = raw_end
+                    else:
+                        characters.append(" ")
+                        starts.append(raw_start)
+                        ends.append(raw_end)
+                    continue
+                characters.append(character)
+                starts.append(raw_start)
+                ends.append(raw_end)
     if characters and characters[-1] == " ":
         characters.pop()
         starts.pop()
