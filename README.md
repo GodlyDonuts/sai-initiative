@@ -1632,6 +1632,10 @@ and at least 75% exact cross-family route agreement. Passing this gate advances
 a stratum only to full-content decontamination and global deduplication—not to
 training.
 
+The source-safe semantic-stratum decision is staged as job `818544`, strictly
+after cross-family comparison `818543`; its dependency was verified with
+`scontrol` and requeue is disabled.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
