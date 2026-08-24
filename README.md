@@ -497,10 +497,33 @@ Both files are byte-matched under
 materializers must join against this deny registry before emitting a training
 candidate; new sealed audit manifests extend it deterministically.
 
-The second resumed population contains 1,007 benchmark-clean PubMed full
-texts. Its workers reuse the shared provider cap and automatically seal a
-complete aggregate and source-work decision. These rows broaden future teacher
-distillation evidence; they do not authorize bulk source admission.
+The second resumed population has now closed with exact **1,007/1,007 row and
+128/128 shard coverage** over benchmark-clean PubMed full texts. Hermès judged
+998 rows conceptually retainable, 6 for review, and 3 rejects, but conservative
+routing exposes a severe representation problem: 562 cleanup reviews, 292
+quarantines, 145 representation-verification candidates, 5 pedagogical-quality
+reviews, and 3 factual-grounding reviews. Risk signals include 794 rows with
+OCR/extraction damage, 188 incoherent/corrupted rows, and 107 rows requiring
+personal-or-secret-data review. Mean educational value is 3.714/4 and source
+reliability 3.958/4, while formatting quality is only 2.695/4. The measured
+decision is therefore targeted recovery and verification, never raw bulk
+admission: valuable biomedical knowledge is preserved through cleanup, but
+damaged representations stay out.
+
+The 292 exact quarantine identities are sealed without text under manifest
+SHA-256
+`67448fa5e0f45b3bb5eda32ad13c0244461e31aba3539fed197cb71bdf66a84e`
+and canonical receipt
+`067398606cd244dae3e19e0cb51bf72361da858c346fae4458ffce781a9d1e7e`.
+They extend the global materialization deny registry to **1,537 unique rows**;
+registry r5 has SHA-256
+`493cc806b657723ade2717f5f8f383165ef32c00751742b6232dae34356dcb14`
+and canonical receipt
+`e449fc43409e08db2adc9ccb0444184161351fe492e7f289841284e77a629236`.
+The aggregate, decision, exclusions, and registry were force-downloaded and
+byte-replayed from Hugging Face dataset commit
+[`df273e0e5b55a896a7440eb4a1f7a700badb5630`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/df273e0e5b55a896a7440eb4a1f7a700badb5630)
+and hash-match the authorized Stokes evidence mirror.
 
 A global Hermès teacher census is now dependency-staged behind all 13 exact
 source aggregates. It will refuse to run unless the aggregate candidate-file
