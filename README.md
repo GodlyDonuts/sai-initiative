@@ -409,10 +409,15 @@ post-filter 512-row semantic audit population is frozen at receipt
 That exact 512-row population is now under a three-perspective Hermès semantic
 audit rather than being inferred from the FineMath source label. The first
 four-request geometry produced repeated upstream HTTP 429 responses and only
-one sealed judgment; it was stopped without deleting that receipt. One
-resumable request stream now walks all 64 stable identity shards and requests
-three independent `stealth/ox-alpha` judgments per candidate: 1,536 total
-judgments. The worker skips only already sealed slot receipts and retries
+one sealed judgment; it was stopped without deleting that receipt. A later
+OpenRouter transport trial preserved the same model, rubric, population, and
+identity geometry, but its first complete attempt returned empty content for
+all 15 requested judgments. A 21-minute retry produced no additional receipt,
+so that transport was terminated while the existing valid receipt remained
+immutable. A watcher will resume the 64 stable identity shards on the proven
+Hermès gateway only after PDR same-family verification releases that capacity;
+each candidate still requires three independent `stealth/ox-alpha` judgments,
+or 1,536 total. The worker skips only already sealed slot receipts and retries
 transport/schema failures without changing candidate bytes. This audit can
 qualify or reject the small 434.5 MB conservative math lane, but it cannot admit
 the broader 34.1 GB FineMath text population and cannot override benchmark or
