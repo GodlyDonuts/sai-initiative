@@ -87,6 +87,11 @@ def execute_one(
         request_function=request_function,
         sleep_function=sleep_function,
         stream_transport=stream_transport,
+        response_format=(
+            {"type": "json_object"}
+            if model == OPENROUTER_FREE_MODEL and base_url == OPENROUTER_BASE_URL
+            else None
+        ),
     )
 
 

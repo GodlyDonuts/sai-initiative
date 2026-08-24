@@ -542,7 +542,11 @@ the direct NVIDIA endpoint with the canonical model name, or OpenRouter's exact
 `:free` alias only when the response reports provider `Nvidia` and the canonical
 Nemotron model. The aggregate records counts by transport and rejects every
 other endpoint/model/provider combination. Rate-safe workers operate over
-disjoint locked shards. A deterministic quote recovery step may replace a
+disjoint locked shards. The direct OpenRouter and local gateway paths share a
+process-wide admission ceiling, eliminating the measured HTTP-429 retry storm;
+the free Nemotron transport additionally requests provider-enforced JSON-object
+output without changing the bound rubric or validation schema. A deterministic
+quote recovery step may replace a
 model-rendered citation only with its unique normalization-equivalent literal
 span in the assigned anchor; every repair records the raw/recovered hashes and
 source offsets, while ambiguous or invented evidence still fails closed. Even
@@ -3047,15 +3051,18 @@ completion watcher builds the query after independent bridge verification,
 copies candidates and hash evidence to Stokes, creates a read-only immutable
 runtime, and dependency-stages 128 PleIAs scans, 64 Books scans, their aggregate,
 and reconciliation behind the already-frozen final foundation jobs. The full
-implementation currently passes **1,304 tests**, including deterministic replay,
+implementation currently passes **1,306 tests**, including deterministic replay,
 tamper rejection, exact overlap ownership, source-key aliases, conflicting
 anchor splits, and compiler-to-query integration.
 
 The live connection-data verification population contains 512 grounded bridge
 candidates. Same-family review has sealed all 512 identities and all 64 shard
 summaries: 500 retain, 12 revise, and zero reject. The source-independent
-Nemotron Ultra pass has so far sealed 444/512 identities and 44/64 summaries:
-409 retain, 30 revise, and 5 reject. These are partial verifier routes, not an
+Nemotron Ultra pass has so far sealed 445/512 identities and 45/64 summaries:
+410 retain, 30 revise, and 5 reject. The first provider-enforced JSON receipt
+(`88c491f9…667b7`) replayed with a valid self-hash, exact `Nvidia` provider and
+canonical free-alias model binding, and two recorded unique-span evidence
+repairs. These are partial verifier routes, not an
 admission result; final retention requires both complete families, conservative
 disagreement handling, official-boundary decontamination, global foundation
 overlap reconciliation, and positive transfer measurement.

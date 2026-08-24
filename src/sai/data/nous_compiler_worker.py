@@ -47,17 +47,25 @@ DEFAULT_COMPILER_CONCURRENCY = 4
 MAXIMUM_RESUME_RECEIPT_BYTES = 4 << 20
 DEFAULT_SHARED_PROVIDER_CONCURRENCY = 10
 HERMES_LOOPBACK_URL = "http://127.0.0.1:8645/v1"
+OPENROUTER_URL = "https://openrouter.ai/api/v1"
+DEFAULT_OPENROUTER_SHARED_PROVIDER_CONCURRENCY = 6
 RETRY_TIMING_POLICY = "identity_staggered_exponential_v1"
 
 
 def _shared_provider_concurrency(base_url: str) -> int | None:
     """Return the process-shared request ceiling for the local Hermes gateway."""
 
-    if base_url != HERMES_LOOPBACK_URL:
+    if base_url == HERMES_LOOPBACK_URL:
+        environment_name = "SAI_NOUS_SHARED_PROVIDER_CONCURRENCY"
+        default = DEFAULT_SHARED_PROVIDER_CONCURRENCY
+    elif base_url == OPENROUTER_URL:
+        environment_name = "SAI_OPENROUTER_SHARED_PROVIDER_CONCURRENCY"
+        default = DEFAULT_OPENROUTER_SHARED_PROVIDER_CONCURRENCY
+    else:
         return None
     raw = os.environ.get(
-        "SAI_NOUS_SHARED_PROVIDER_CONCURRENCY",
-        str(DEFAULT_SHARED_PROVIDER_CONCURRENCY),
+        environment_name,
+        str(default),
     )
     try:
         value = int(raw)
@@ -216,6 +224,7 @@ def execute_contract(
     request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
     sleep_function: Callable[[float], None] = time.sleep,
     stream_transport: bool = False,
+    response_format: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     """Execute one strict compiler contract without weakening its schema."""
 
@@ -235,6 +244,7 @@ def execute_contract(
             and not callable(validation_hint_function)
         )
         or not isinstance(stream_transport, bool)
+        or response_format not in (None, {"type": "json_object"})
     ):
         raise NousLabelWorkerError("compiler contract identity or token bound differs")
     base_url = _validate_endpoint(base_url)
@@ -247,6 +257,8 @@ def execute_contract(
     }
     if reasoning_effort is not None:
         body["reasoning"] = {"effort": reasoning_effort}
+    if response_format is not None:
+        body["response_format"] = response_format
     request_sha256 = canonical_sha256(body)
     base_messages = list(body["messages"])
     attempts = []

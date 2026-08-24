@@ -103,8 +103,10 @@ def test_validate_receipt_accepts_exact_nvidia_binding_then_fails_on_drift() -> 
 def test_validate_receipt_accepts_exact_openrouter_nvidia_free_alias() -> None:
     candidate = _candidate()
     payload = _retain(candidate)
+    seen = {}
 
-    def request_function(**_kwargs):
+    def request_function(**kwargs):
+        seen.update(kwargs)
         return (
             {
                 "id": "openrouter-nvidia-bridge-verification-1",
@@ -136,6 +138,7 @@ def test_validate_receipt_accepts_exact_openrouter_nvidia_free_alias() -> None:
         request_function=request_function,
         sleep_function=lambda _seconds: None,
     )
+    assert seen["body"]["response_format"] == {"type": "json_object"}
     assert request_transport(receipt) == "openrouter_nvidia_free"
     assert validate_receipt(receipt, candidate)["schema"] == RECEIPT_SCHEMA
 
