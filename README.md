@@ -599,6 +599,23 @@ population receipt, and 20 batch-custody receipts were uploaded and replayed
 byte-for-byte in Hugging Face dataset commit
 [`28227ed9ba5a22887c2a0bb3bee20502e0982253`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/28227ed9ba5a22887c2a0bb3bee20502e0982253).
 
+The 148-row Hermès audit completed on 2026-08-26 with exact 148/148 receipt and
+128/128 shard-summary custody. It returned 129 `retain` and 19 `review`
+verdicts, but verdicts are not admissions: conservative row routing assigned
+68 to deterministic cleanup, 31 to source-bound transformation review, 27 to
+factual-grounding review, 12 to quarantine, 8 to rights hold, and only 2
+directly to representation verification. The source decision is therefore
+`targeted_recovery_and_verification`, with bulk admission false. The aggregate
+file SHA-256 and canonical receipt are
+`9bbad154f8fc5f30c8cc3655b62655cd5d7b88eb1d296d523cd39cab6117e206`
+and `336817928a03afdf5efbba0fe4d7838b9337ae17b09dfa0c8f75160c76b605b0`;
+the decision receipt is
+`e3944ddd66e88d1c1d87327a5fae25f357d0c945eb8d026c1c2d779945825af1`.
+Both source-safe files were byte-replayed into the authorized Stokes evidence
+root. The 12 quarantined and 8 rights-held rows are barred from dataset-facing
+materialization; because this was a coverage screen rather than a source-wide
+acceptance estimate, it does not justify deleting whole upstream parents.
+
 #### Complete Python Enhancement Proposal census
 
 The 32-row source-disjoint Common Pile confirmation recovered the Python
