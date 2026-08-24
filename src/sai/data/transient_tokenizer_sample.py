@@ -14,7 +14,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, TextIO
 
-from sai.data.pleias_production_materializer import _load_signed
 from sai.data.pleias_virtual_transient_stream import (
     ENVELOPE_SCHEMA,
 )
@@ -29,6 +28,11 @@ from sai.data.token_stream import canonical_sha256, normalize_document, sha256_f
 SCHEMA = "sai-transient-tokenizer-sample-receipt-v1"
 STATUS = "complete_nontraining_tokenizer_sample"
 SAMPLE_NAME = "sample.jsonl"
+GENERIC_SOURCE_RECEIPT_SCHEMA = "sai-transient-tokenizer-envelope-stream-receipt-v1"
+GENERIC_SOURCE_STATUS = "complete_nontraining_transient_tokenizer_stream"
+INSTITUTIONAL_BOOK_ENVELOPE_SCHEMA = (
+    "sai-institutional-books-transient-tokenizer-envelope-v1"
+)
 
 
 class TransientTokenizerSampleError(RuntimeError):
@@ -40,7 +44,7 @@ def _signed_envelope(value: Any) -> dict[str, Any]:
         raise TransientTokenizerSampleError("transient envelope differs")
     unsigned = {key: item for key, item in value.items() if key != "envelope_sha256"}
     if (
-        value.get("schema") != ENVELOPE_SCHEMA
+        value.get("schema") not in {ENVELOPE_SCHEMA, INSTITUTIONAL_BOOK_ENVELOPE_SCHEMA}
         or value.get("envelope_sha256") != canonical_sha256(unsigned)
         or value.get("tokenization_ready") is not True
         or value.get("training_ready") is not False
@@ -60,6 +64,28 @@ def _signed_envelope(value: Any) -> dict[str, Any]:
         raise TransientTokenizerSampleError("transient envelope differs")
     value = dict(value)
     value["document"] = normalize_document(value.get("document"))
+    return value
+
+
+def _load_source_receipt(path: Path) -> dict[str, Any]:
+    if not path.is_file() or path.is_symlink() or path.stat().st_nlink != 1:
+        raise TransientTokenizerSampleError("transient source receipt differs")
+    try:
+        value = json.loads(path.read_bytes())
+    except (OSError, json.JSONDecodeError) as error:
+        raise TransientTokenizerSampleError(
+            "transient source receipt differs"
+        ) from error
+    unsigned = {key: item for key, item in value.items() if key != "receipt_sha256"}
+    if (
+        not isinstance(value, dict)
+        or value.get("schema")
+        not in {SOURCE_RECEIPT_SCHEMA, GENERIC_SOURCE_RECEIPT_SCHEMA}
+        or value.get("status") not in {SOURCE_STATUS, GENERIC_SOURCE_STATUS}
+        or value.get("receipt_sha256") != canonical_sha256(unsigned)
+        or value.get("training_ready") is not False
+    ):
+        raise TransientTokenizerSampleError("transient source receipt differs")
     return value
 
 
@@ -153,10 +179,9 @@ def build_sample(
         heap_bytes[key] += size
         rebalance()
 
-    source_receipt = _load_signed(source_receipt_path, SOURCE_RECEIPT_SCHEMA)
+    source_receipt = _load_source_receipt(source_receipt_path)
     if (
-        source_receipt.get("status") != SOURCE_STATUS
-        or source_receipt.get("source_text_persisted_by_compiler") is not False
+        source_receipt.get("source_text_persisted_by_compiler") is not False
         or source_receipt.get("ordered_jsonl_sha256") != input_digest.hexdigest()
         or source_receipt.get("counts", {}).get("documents")
         != input_counts["documents"]

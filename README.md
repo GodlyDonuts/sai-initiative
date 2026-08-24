@@ -1977,6 +1977,21 @@ coverage and the ordered sample/document identities. CPU-only job
 `aggregate_transient_tokenizer_samples_stokes.sbatch` is the exact closure gate
 for the later 32K/48K/64K tokenizer build and qualification.
 
+Institutional Books now has an equally exact private tokenizer lane rather than
+being omitted or assigned a generic license label. The transient book streamer
+requires the final 64-shard aggregate, its complete ordered receipt set, the
+strict English quality-selection receipt, and the physical train partition. It
+binds each surviving book to its exact HathiTrust rights code (`pd`, `pdus`, or
+`cc-zero`), quality-agreement record, benchmark-decontamination record,
+cross-source transform, curriculum metadata, and final text hash. Only the
+source-disjoint training split is emitted. The generic bounded sampler then
+retains at most 32,000,000 JSONL bytes per book shard, or **2.048 GB** over all
+64 shards, stratified by curriculum votes, semantic domain, and prose mode.
+Scripts `sample_institutional_books_tokenizer_stokes.sbatch` and
+`aggregate_institutional_books_tokenizer_samples_stokes.sbatch` are CPU-only,
+requeue-disabled, immutable-runtime stages intended after final book aggregate
+`818644`. The book text remains private and is never uploaded to Hugging Face.
+
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
