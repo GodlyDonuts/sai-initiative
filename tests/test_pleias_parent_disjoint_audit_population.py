@@ -8,6 +8,7 @@ import pytest
 
 from sai.data.frontier_source_reservoir import MANIFEST_SCHEMA
 from sai.data.pleias_parent_disjoint_audit_population import (
+    ACQUISITION_MODES,
     EXPECTED_ROWS,
     PARTITION_QUOTAS,
     PleiasParentDisjointAuditError,
@@ -41,6 +42,7 @@ def _rows() -> list[dict]:
 
 
 def test_plan_is_exact_partitioned_disjoint_and_order_independent() -> None:
+    assert ACQUISITION_MODES == {"range", "full_verified_parent"}
     rows = _rows()
     excluded_row = rows[0]
     excluded = frozenset(

@@ -7,13 +7,14 @@ import hashlib
 import json
 import os
 import shutil
+import tempfile
 import uuid
 from collections import Counter
 from pathlib import Path
 from typing import Any
 
 from sai.data.agent_labeling import AgentLabelingError
-from sai.data.frontier_source_audit_expansion import acquire_metadata_row
+from sai.data.frontier_source_audit_expansion import _as_py, acquire_metadata_row
 from sai.data.frontier_source_audit_population import load_frontier_reservoir
 from sai.data.reservoir_audit_population import (
     SCHEMA,
@@ -29,6 +30,7 @@ PARTITION_QUOTAS = {
     partition: 103 if partition <= 4 else 102 for partition in range(1, 11)
 }
 EXPECTED_ROWS = sum(PARTITION_QUOTAS.values())
+ACQUISITION_MODES = {"range", "full_verified_parent"}
 
 
 class PleiasParentDisjointAuditError(RuntimeError):
@@ -126,6 +128,125 @@ def build_plan(
     return plan
 
 
+def acquire_full_verified_metadata_row(
+    plan: dict[str, Any], token: str
+) -> dict[str, Any]:
+    """Download, hash-verify, read, and remove exactly one parent at a time."""
+
+    try:
+        import pyarrow.parquet as parquet
+        from huggingface_hub import hf_hub_download
+    except ImportError as error:
+        raise PleiasParentDisjointAuditError(
+            "pyarrow and huggingface_hub are required"
+        ) from error
+    try:
+        with tempfile.TemporaryDirectory(prefix="sai-pleias-parent-") as temporary:
+            temporary_path = Path(temporary)
+            downloaded = Path(
+                hf_hub_download(
+                    repo_id=plan["repository"],
+                    filename=plan["path"],
+                    repo_type="dataset",
+                    revision=plan["revision"],
+                    token=token,
+                    cache_dir=temporary_path / "cache",
+                    local_dir=temporary_path / "local",
+                )
+            )
+            if (
+                not downloaded.is_file()
+                or downloaded.stat().st_size != plan["parent_file_bytes"]
+                or sha256_file(downloaded) != plan["parent_file_sha256"]
+            ):
+                raise PleiasParentDisjointAuditError(
+                    "PleIAs downloaded parent identity differs"
+                )
+            source = parquet.ParquetFile(downloaded)
+            available = set(source.schema_arrow.names)
+            if "text" not in available or source.metadata.num_row_groups <= 0:
+                raise PleiasParentDisjointAuditError(
+                    "PleIAs downloaded parent schema differs"
+                )
+            metadata_columns = (
+                "identifier",
+                "collection",
+                "open_type",
+                "license",
+                "language",
+            )
+            columns = [
+                "text",
+                *(name for name in metadata_columns if name in available),
+            ]
+            group_index = (
+                int(
+                    hashlib.sha256(
+                        f"{plan['selection_key']}:row-group".encode()
+                    ).hexdigest(),
+                    16,
+                )
+                % source.metadata.num_row_groups
+            )
+            table = source.read_row_group(
+                group_index, columns=columns, use_threads=False
+            )
+            if table.num_rows <= 0:
+                raise PleiasParentDisjointAuditError(
+                    "PleIAs downloaded parent row group is empty"
+                )
+            start = (
+                int(
+                    hashlib.sha256(
+                        f"{plan['selection_key']}:row".encode()
+                    ).hexdigest(),
+                    16,
+                )
+                % table.num_rows
+            )
+            for offset in range(table.num_rows):
+                row_index = (start + offset) % table.num_rows
+                text = _as_py(table, "text", row_index)
+                if not isinstance(text, str) or len(text.strip().encode()) < 200:
+                    continue
+                license_name = _as_py(table, "license", row_index)
+                if not isinstance(license_name, str) or not license_name.strip():
+                    license_name = plan["license"]
+                native_id = _as_py(table, "identifier", row_index)
+                if native_id is not None and not isinstance(native_id, str):
+                    native_id = canonical_sha256(native_id)
+                locator = {
+                    "format": "parquet",
+                    "row_group": group_index,
+                    "row_in_group": row_index,
+                    "row_index": sum(
+                        source.metadata.row_group(index).num_rows
+                        for index in range(group_index)
+                    )
+                    + row_index,
+                    "native_id": native_id,
+                    "language": _as_py(table, "language", row_index),
+                    "collection": _as_py(table, "collection", row_index),
+                    "open_type": _as_py(table, "open_type", row_index),
+                    "metadata_sha256": canonical_sha256({}),
+                }
+                return {
+                    "text": text.strip(),
+                    "locator": locator,
+                    "declared_license": license_name.strip(),
+                    "full_file_content_verified": True,
+                }
+    except PleiasParentDisjointAuditError:
+        raise
+    except Exception as error:
+        raise PleiasParentDisjointAuditError(
+            "PleIAs full-parent acquisition failed"
+        ) from error
+    raise PleiasParentDisjointAuditError(
+        "PleIAs downloaded parent has no usable text"
+    )
+
+
 def build_population(
     manifest_path: Path,
     reservoir_receipt_path: Path,
@@ -133,10 +254,16 @@ def build_population(
     output_root: Path,
     *,
     token: str,
+    acquisition_mode: str = "range",
 ) -> dict[str, Any]:
     """Range-read one deterministic usable row from every selected parent."""
 
-    if not token or output_root.exists() or output_root.is_symlink():
+    if (
+        not token
+        or acquisition_mode not in ACQUISITION_MODES
+        or output_root.exists()
+        or output_root.is_symlink()
+    ):
         raise PleiasParentDisjointAuditError("credential or output boundary differs")
     rows = load_frontier_reservoir(manifest_path, reservoir_receipt_path)
     excluded = prior_parent_identities(prior_lineage_path)
@@ -144,7 +271,11 @@ def build_population(
     candidates = []
     lineage = []
     for index, item in enumerate(plan, start=1):
-        acquired = acquire_metadata_row(item, token)
+        acquired = (
+            acquire_metadata_row(item, token)
+            if acquisition_mode == "range"
+            else acquire_full_verified_metadata_row(item, token)
+        )
         row_plan = {**item, "license": acquired["declared_license"]}
         try:
             candidate, source_lineage = _candidate_and_lineage(row_plan, acquired)
@@ -187,6 +318,9 @@ def build_population(
             "status": "complete",
             "seed": SEED,
             "selection_method": "sha256_ranked_exact_parents_within_partition",
+            "acquisition_mode": acquisition_mode,
+            "maximum_simultaneous_parent_files": 1,
+            "temporary_parent_removed_after_each_row": True,
             "screen_only": True,
             "statistically_representative": False,
             "source_id": SOURCE_ID,
@@ -215,7 +349,9 @@ def build_population(
             },
             "by_stratum": dict(sorted(by_stratum.items())),
             "range_read_parent_files": len(plan),
-            "fully_verified_parent_files": 0,
+            "fully_verified_parent_files": (
+                len(plan) if acquisition_mode == "full_verified_parent" else 0
+            ),
             "benchmark_decontamination_complete": False,
             "hermes_judgments_complete": False,
             "source_wide_yield_established": False,
@@ -238,6 +374,9 @@ def main() -> int:
     parser.add_argument("--prior-lineage", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--token-env", default="HF_TOKEN")
+    parser.add_argument(
+        "--acquisition-mode", choices=sorted(ACQUISITION_MODES), default="range"
+    )
     args = parser.parse_args()
     result = build_population(
         args.manifest,
@@ -245,6 +384,7 @@ def main() -> int:
         args.prior_lineage,
         args.output_root,
         token=os.environ.get(args.token_env, ""),
+        acquisition_mode=args.acquisition_mode,
     )
     print(json.dumps(result, sort_keys=True))
     return 0
