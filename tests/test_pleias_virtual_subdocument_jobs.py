@@ -109,3 +109,15 @@ def test_virtual_book_rewrite_uses_the_same_cross_source_decision() -> None:
         in aggregate
     )
     assert "virtual-cross-source-subdocument-decision-20260826-r1" in aggregate
+
+
+def test_virtual_foundation_ledger_waits_for_both_final_components() -> None:
+    job = Path(
+        "scripts/build_virtual_foundation_corpus_ledger_stokes.sbatch"
+    ).read_text()
+    assert "#SBATCH --gres" not in job
+    assert "#SBATCH --no-requeue" in job
+    assert "sai.data.virtual_foundation_corpus_ledger" in job
+    assert "institutional-books-virtual-cross-source-rewritten-20260826-r1" in job
+    assert "pleias-virtual-final-reconstruction-20260826-r1" in job
+    assert "--byte-ceiling 2000000000000" in job

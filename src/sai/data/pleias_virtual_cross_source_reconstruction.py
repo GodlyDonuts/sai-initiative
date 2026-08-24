@@ -19,6 +19,7 @@ from sai.data.cross_source_subdocument_decision_aggregate import (
     SCHEMA as CROSS_DECISION_AGGREGATE_SCHEMA,
 )
 from sai.data.cross_source_subdocument_rewrite import decision_database
+from sai.data.foundation_source_split import POLICY_SHA256 as SPLIT_POLICY_SHA256
 from sai.data.pleias_bounded_mechanical_candidates import _download
 from sai.data.pleias_cross_source_subdocument_rewrite import (
     COMPONENT_PRIORITY,
@@ -142,6 +143,7 @@ def final_locator_row(
         != internal_locator.get("content_sha256")
         or result.get("subdocument_transform_sha256")
         != internal_locator.get("internal_subdocument_transform_sha256")
+        or result.get("source_split_policy_sha256") != SPLIT_POLICY_SHA256
         or hashlib.sha256(text.encode()).hexdigest() != result.get("content_sha256")
     ):
         raise PleiasVirtualCrossSourceReconstructionError(
@@ -495,11 +497,32 @@ def run_shard(
                                 f"split::{locator['corpus_split']}::text_utf8_bytes"
                             ] += len(final["text"].encode())
                             counts[
-                                f"phase::{locator['semantic_curriculum_phase']}::documents"
+                                "curriculum_phase::"
+                                f"{locator['semantic_curriculum_phase']}::documents"
                             ] += 1
                             counts[
-                                f"phase::{locator['semantic_curriculum_phase']}::text_utf8_bytes"
+                                "curriculum_phase::"
+                                f"{locator['semantic_curriculum_phase']}::text_utf8_bytes"
                             ] += len(final["text"].encode())
+                            counts[
+                                f"semantic_stratum::{locator['semantic_stratum']}::documents"
+                            ] += 1
+                            counts[
+                                f"semantic_stratum::{locator['semantic_stratum']}::text_utf8_bytes"
+                            ] += len(final["text"].encode())
+                            counts[
+                                "quality_floor_milli::"
+                                f"{locator['semantic_quality_floor_milli']}::documents"
+                            ] += 1
+                            counts[
+                                "difficulty_mean_milli::"
+                                f"{locator['semantic_difficulty_mean_milli']}::documents"
+                            ] += 1
+                            for domain in locator["semantic_domains"]:
+                                counts[f"semantic_domain::{domain}::documents"] += 1
+                                counts[
+                                    f"semantic_domain::{domain}::text_utf8_bytes"
+                                ] += len(final["text"].encode())
                             for key, value in internal_counts.items():
                                 counts[f"internal::{key}"] += value
                             for key, value in cross_counts.items():
@@ -582,6 +605,10 @@ def run_shard(
             "pleias_internal_subdocument_deduplication_complete": True,
             "cross_source_subdocument_deduplication_complete": True,
             "source_disjoint_split_complete": True,
+            "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
+            "physical_train_development_partition_complete": True,
+            "semantic_quality_metadata_complete": True,
+            "curriculum_metadata_complete": True,
             "source_text_persisted": False,
             "token_count_requires_recomputation": True,
             "training_ready": False,
@@ -650,6 +677,10 @@ def aggregate(
             or receipt.get("complete_final_pleias_document_coverage") is not True
             or receipt.get("cross_source_subdocument_deduplication_complete")
             is not True
+            or receipt.get("source_disjoint_split_policy_sha256") != SPLIT_POLICY_SHA256
+            or receipt.get("physical_train_development_partition_complete") is not True
+            or receipt.get("semantic_quality_metadata_complete") is not True
+            or receipt.get("curriculum_metadata_complete") is not True
             or receipt.get("source_text_persisted") is not False
             or not isinstance(descriptor, dict)
             or descriptor.get("rows") != receipt.get("counts", {}).get("documents")
@@ -665,6 +696,14 @@ def aggregate(
         totals.update(receipt["counts"])
         totals["locator_output_bytes"] += descriptor["bytes"]
         receipts.append(receipt["receipt_sha256"])
+
+    def dimension(prefix: str) -> int:
+        return sum(
+            value
+            for key, value in totals.items()
+            if key.startswith(prefix) and key.endswith("::documents")
+        )
+
     if (
         totals["documents"] != internal.get("totals", {}).get("documents")
         or totals["cross::candidate_deletion_chunks"] != expected_cross
@@ -673,6 +712,11 @@ def aggregate(
         or totals["split::train::text_utf8_bytes"]
         + totals["split::development::text_utf8_bytes"]
         != totals["output_text_utf8_bytes"]
+        or dimension("semantic_stratum::") != totals["documents"]
+        or dimension("quality_floor_milli::") != totals["documents"]
+        or dimension("difficulty_mean_milli::") != totals["documents"]
+        or dimension("curriculum_phase::") != totals["documents"]
+        or dimension("semantic_domain::") < totals["documents"]
     ):
         raise PleiasVirtualCrossSourceReconstructionError(
             "final reconstruction aggregate coverage differs"
@@ -694,6 +738,10 @@ def aggregate(
         "pleias_internal_subdocument_deduplication_complete": True,
         "cross_source_subdocument_deduplication_complete": True,
         "source_disjoint_split_complete": True,
+        "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
+        "physical_train_development_partition_complete": True,
+        "semantic_quality_metadata_complete": True,
+        "curriculum_metadata_complete": True,
         "source_text_persisted": False,
         "token_count_requires_recomputation": True,
         "training_ready": False,

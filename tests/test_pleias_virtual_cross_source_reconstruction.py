@@ -11,6 +11,7 @@ import pytest
 from sai.data.cross_source_subdocument_decision_aggregate import (
     SCHEMA as CROSS_DECISION_SCHEMA,
 )
+from sai.data.foundation_source_split import POLICY_SHA256 as SPLIT_POLICY_SHA256
 from sai.data.pleias_bounded_mechanical_candidates import CANDIDATE_SCHEMA
 from sai.data.pleias_cross_source_subdocument_rewrite import rewrite_row
 from sai.data.pleias_final_subdocument_signature import (
@@ -302,6 +303,7 @@ def test_final_reconstruction_streams_text_but_persists_only_locators(
     assert result["counts"]["documents"] == 1
     assert result["cross_source_subdocument_deduplication_complete"] is True
     assert result["source_text_persisted"] is False
+    assert result["source_disjoint_split_policy_sha256"] == SPLIT_POLICY_SHA256
     rows = pq.read_table(output / "final-locators.parquet").to_pylist()
     assert len(rows) == 1
     assert "text" not in rows[0]
@@ -361,6 +363,11 @@ def test_final_aggregate_closes_exact_split_and_deletion_coverage(
                 "output_text_utf8_bytes": 500,
                 "split::train::documents": 1,
                 "split::train::text_utf8_bytes": 500,
+                "semantic_stratum::reference::documents": 1,
+                "quality_floor_milli::8000::documents": 1,
+                "difficulty_mean_milli::2500::documents": 1,
+                "curriculum_phase::expansion::documents": 1,
+                "semantic_domain::science::documents": 1,
             },
             "final_locators": {
                 "path": locators.name,
@@ -370,6 +377,10 @@ def test_final_aggregate_closes_exact_split_and_deletion_coverage(
             },
             "complete_final_pleias_document_coverage": True,
             "cross_source_subdocument_deduplication_complete": True,
+            "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
+            "physical_train_development_partition_complete": True,
+            "semantic_quality_metadata_complete": True,
+            "curriculum_metadata_complete": True,
             "source_text_persisted": False,
             "training_ready": False,
         },
