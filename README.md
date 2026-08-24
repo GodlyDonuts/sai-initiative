@@ -1799,6 +1799,19 @@ partitions, and document counts. It is the exact final PleIAs input to the
 cross-source book/PleIAs comparison; both jobs are CPU-only, requeue-disabled,
 and do not claim training admission.
 
+The two independently sealed component aggregates converge at array
+`818577_[0-15%16]`, with an AND dependency on book aggregate `818572` and final
+PleIAs aggregate `818575`. Each CPU-only job external-sorts one complete
+normalized-hash bucket across 64 book shards and 128 PleIAs shards, applies the
+same frequency/length retention rule, and partitions deletion decisions back to
+all 192 exact component/shard locators through a bounded file-handle pool.
+Benchmark-disjoint Institutional Books have representative priority over copied
+PleIAs passages; identity order is only the later tie-breaker. Aggregate
+`818578` verifies all sixteen bucket receipts, every deletion file byte/SHA-256,
+all component/shard partitions, and exact deletion accounting. No receipt stores
+source text, and rewrite/training admission remain false until both component
+rewrites and the final corpus ledger replay these decisions.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
