@@ -1494,8 +1494,9 @@ candidate bytes, receipts, and text-free decisions were force-downloaded and
 replayed from Hugging Face dataset commit
 [`6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6885a18a0a98eb10c3d5d0e73ad276dd49a99a0d).
 
-The PDR compiler stage is now active. It joins the clean PDR texts to their
-exact content and rights lanes, retains only identities routed to representation
+The PDR compiler and grounded-representation stages are now active. They join
+the clean PDR texts to their exact content and rights lanes, retain only
+identities routed to representation
 verification, and freezes at most six compiler-requested derivative types per
 source. The generation contract requires one exact source
 citation for every representation, preserves CC BY-SA attribution and
@@ -1504,8 +1505,9 @@ connections as unverified candidates. Generated text is emitted separately
 from source text, with source citations represented by hashes in the candidate
 corpus. It remains nontraining until post-generation benchmark screening,
 global deduplication, source-claim verification, and independent representation
-verification complete. No representation generation or model training is
-authorized by the code-only preparation.
+verification complete. Representation generation is authorized and running;
+no generated representation is admitted to training by this stage, and no
+model training is authorized by this pipeline.
 
 A single high-throughput verification pass is also dependency-staged after the
 post-generation screen. It compares every generated representation with its
@@ -1532,8 +1534,14 @@ and candidate-file SHA-256
 `c083178562d27103085600d140fd979e6aeb0f78d7ed84345b759d92ceec6df6`.
 Two lock-protected Hermès generation lanes are active against only this corrected
 population, with four requests per lane under the shared ten-request gateway
-ceiling. All generated outputs remain nontraining and still require the full
-verification sequence above.
+ceiling. A dependency watcher now waits for all 128 generation shard summaries,
+then deterministically aggregates the complete population, screens every
+generated representation against the pinned official benchmark boundary,
+freezes exact source/generated verification pairs, runs eight disjoint
+same-family verification lanes, and seals retain/revise/reject custody. It
+cannot skip an incomplete shard, and every stage replays content and receipt
+hashes before creating downstream output. All generated outputs remain
+nontraining and still require the full verification sequence above.
 
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
