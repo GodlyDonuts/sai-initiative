@@ -193,6 +193,10 @@ capacity, not accepted corpus volume.
   normalized exact-dedup gates. Candidate text remains outside the public
   evidence release. Exact final candidate custody is mirrored on Stokes; three
   redundant local intermediates totaling 1,645,579,101 bytes were reclaimed.
+- The complete-parent Public Domain Review pass scanned 1,406 rows and retained
+  1,343 after prior-audit, length, official-boundary, answer-key, and normalized
+  exact-dedup gates. Its final candidate and attribution are also hash-verified
+  on Stokes; 22,406,095 bytes of redundant local intermediates were reclaimed.
 - A complete Common Pile PEP census yields 567 benchmark-disjoint,
   near-deduplicated candidates awaiting Hermès compilation.
 - A 1,024-row CC0 arXiv temporal screen leaves 1,023 benchmark-disjoint rows and

@@ -773,3 +773,30 @@ receipt, and reclamation receipt have file SHA-256 values
 `6b9af5a8b3efcf1ec8912d705cef7642fd5320931cbeaa80ca280a94ff4a5a1a`.
 All three were force-downloaded and replayed byte-for-byte from dataset commit
 [`207d24434b073d552003d11154ab43bfe2c1bdb0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/207d24434b073d552003d11154ab43bfe2c1bdb0).
+
+## Public Domain Review complete-parent candidate materialization
+
+Release `20260826-r1` under
+`evidence/common-pile-full-source-candidates/20260826-r1/public-domain-review/`
+records a complete pass over the 1,406-row pinned parent. It excludes 36
+prior-audit rows, 17 short rows, and ten official-boundary overlaps, leaving
+1,343 unique candidate and source-row identities with no within-source
+normalized exact duplicates.
+
+The final candidate and attribution manifest SHA-256 values are
+`1ac38f4a6dde7e05011da644fa7e8db7acd5a0db3432eb51d259874bd5fe80a2` and
+`81401c05a387dbcbeef157c892912fab055d589b7d049d1d79ee72b687b7811e`.
+The canonical run receipt is
+`1214c429cdd9251998c0c947660344e63d0384d513ff2c8c1c07d896b8e03cac`.
+Final candidate custody is hash-verified at the authorized Stokes durable root;
+candidate text is not publicly released.
+
+Three redundant recoverable local intermediates totaling 22,406,095 bytes were
+deleted after custody verification. The reclamation canonical receipt is
+`fbf24f33c5f4e9925b472acd05899ec702cff864171b6294ba1c3adaef3bdc38`.
+The README, run receipt, and reclamation receipt have file SHA-256 values
+`41aff8583d796fa97bdfe9ae7a198beb57dc48c0202e241c1bf61281315dc718`,
+`2fe28b4c8a9152fe7c21a85918fdd83c0b0f9078bf92014ff5180b0e945f4c38`, and
+`99fcca7aa44609e06b38d557adac1b11f2667e214cfa131049edad787ae9d49e`.
+All three replay byte-for-byte from dataset commit
+[`2360c039136873ef3b4a653bf642425a78fe440a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2360c039136873ef3b4a653bf642425a78fe440a).

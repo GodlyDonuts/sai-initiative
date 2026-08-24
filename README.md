@@ -1525,11 +1525,24 @@ and the canonical run receipt is
 `eb7e822323ec3cd928cd5b7775809207ed610634ce0c123ce77546b23065ab1e`.
 After final candidate custody was hash-verified on Stokes, three redundant
 recoverable intermediates were deleted locally, reclaiming 1,645,579,101
-bytes. Together with prior cache reclamations, 4,932,529,169 proven
-recoverable local bytes have now been removed. No mixed Hugging Face source
+bytes. No mixed Hugging Face source
 shard was deleted. The three source-safe receipt files were force-downloaded
 and replayed byte-for-byte from dataset commit
 [`207d24434b073d552003d11154ab43bfe2c1bdb0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/207d24434b073d552003d11154ab43bfe2c1bdb0).
+
+The companion Public Domain Review pass scanned all 1,406 parent rows,
+excluded 36 prior-audit and 17 short rows, and removed ten official-boundary
+overlaps. It leaves 1,343 unique candidate/source-row identities. Its final
+candidate and attribution SHA-256 values are
+`1ac38f4a6dde7e05011da644fa7e8db7acd5a0db3432eb51d259874bd5fe80a2` and
+`81401c05a387dbcbeef157c892912fab055d589b7d049d1d79ee72b687b7811e`;
+the canonical run receipt is
+`1214c429cdd9251998c0c947660344e63d0384d513ff2c8c1c07d896b8e03cac`.
+After durable candidate custody, 22,406,095 bytes of redundant local
+intermediates were reclaimed. Across all evidence-backed cleanup to date,
+4,954,935,264 recoverable local bytes have now been removed. The source-safe
+PDR receipts replay byte-for-byte from dataset commit
+[`2360c039136873ef3b4a653bf642425a78fe440a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2360c039136873ef3b4a653bf642425a78fe440a).
 
 The next operational work is to expand sustainable, stratified compiler lanes;
 build cross-source exact and semantic duplicate families; populate the concept
