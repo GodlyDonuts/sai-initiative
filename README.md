@@ -1298,6 +1298,41 @@ currently fail closed as indivisible. This is deliberately safer than
 pretending a language-agnostic brace parser preserves every programming
 language.
 
+The first complete-parent execution of this layer is now closed over the
+54,509 Pressbooks and Public Domain Review candidates. It indexed 4,650,337
+chunks, found 494,414 duplicate groups and 943,565 duplicate occurrences,
+removed 90,691 chunks / 11,216,449 characters, modified 9,573 documents, and
+fully removed two duplicate-only documents. The adaptive output contains
+54,507 documents under canonical receipt
+`9d3ee20c4d5d0732589c3baea55414752e0184bb4d81a06a3b71f6894bff1e8e`;
+the text-free 19,949-record transformation manifest has SHA-256
+`fed1c0767589b5b596adf8008c0d8a273c58e502421424cacd00ad9d5f75ff5f`.
+All temporary indexes were removed. This is a deterministic transformed
+candidate, not evidence that the adaptive policy improves a model.
+
+An exact post-transform deletion join then removed all 11 Pressbooks source
+rows that the sealed 3,290-row Hermès compiler pass had hard-rejected. Those
+judgments include ten weak-grounding flags, eight duplicated-boilerplate flags,
+and five personal-or-secret-data flags. The join also removed attribution for
+the two upstream fully deduplicated documents, leaving exactly 54,496 candidate
+and attribution rows with identical source-row sets. Candidate, attribution,
+and text-free exclusion-manifest SHA-256 values are
+`02bd40ea6a7b9a5710861e4284a09981101512f341e91e549c75effc0a76faa8`,
+`9cb7af6399bc527865dee98fc623691d827222155fecc011946b54cfa7f8011a`,
+and `d07030784790a8799d039c275428b1ca25947e62eafeb2f7c1de12cffa99a474`;
+the canonical exclusion receipt is
+`89756c4dbd45b772889bbd813138583fcc9a73850305a2202baefcdbef18df43`.
+All four outputs were byte-verified in durable Stokes custody before the local
+unfiltered candidate was permanently unlinked. The four small source-safe
+receipts/ledgers were force-downloaded and byte-replayed from Hugging Face
+dataset commit
+[`10c6b42c61cf9eac463014416e659109d7e639f4`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/10c6b42c61cf9eac463014416e659109d7e639f4).
+The clean 534,981,699-byte candidate and 43,758,121-byte attribution files could
+not be added to that commit because Hugging Face returned an explicit public
+storage-quota 403 before creating any large-file commit. Their exact local and
+Stokes custody remains valid; this is a publication-capacity blocker, not a
+missing-data condition.
+
 The implementation does not turn the paper's result into a Sai result. Corpus
 promotion still requires an identical-token, identical-compute,
 source-disjoint comparison of unchanged, keep-one, and adaptive retention.
@@ -1563,8 +1598,11 @@ The canonical run and source-safe publication receipts are
 `7e69e12d131e4cc78d6956d0f7793a418c1940c202ea49feb028943d40576de2`.
 Because its 546,324,994-byte combined output was only a deterministic reordered
 copy of two already durable inputs, it was reclaimed after evidence custody.
-Across all evidence-backed cleanup to date, 5,501,260,258 recoverable local
-bytes have now been removed. The source-safe exact-dedup receipts replay from
+The later unfiltered subdocument candidate was also moved to the separate
+Stokes evidence root before its 535,008,085-byte local copy was permanently
+unlinked; the clean 54,496-row replacement remains local and durable. Across
+all evidence-backed cleanup to date, 6,036,268,343 local bytes have now been
+removed. The source-safe exact-dedup receipts replay from
 dataset commit
 [`526e801fae1fb01a4f9ced8f260c6a2ef51c7823`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/526e801fae1fb01a4f9ced8f260c6a2ef51c7823).
 
