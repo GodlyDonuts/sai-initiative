@@ -2895,6 +2895,16 @@ cancel-before-recovery boundary, bringing accelerated custody to 21 identities
 and 168 nonoverlapping segment tasks while leaving faster originals intact. The
 second dispatch receipt has SHA-256
 `24c82b088aab91d359911877f87720812a7070b5f18cc028d5d9d4edc72b99e7`.
+At the final four-hour deadline pass, five more exact identities—48, 63, 101,
+103, and 124—still projected to require 2.25–3.06 hours as serial originals.
+Each original was verified terminal before its partial directory was preserved
+and its eight nonoverlapping recovery segments were admitted. Arrays `819223`,
+`819232`, `819241`, `819250`, and `819259` feed merge jobs `819224`, `819233`,
+`819242`, `819251`, and `819267`; aggregate `818244` now requires all five exact
+merges. This brings accelerated custody to 26 identities and 208 independent
+segments. The immutable five-row dispatch receipt has SHA-256
+`76d8cdaf5577bfa3983c93faa9e3dc7f565b66b1c131e727a0eb4cf1c6de8378` and is
+read-only beneath the authorized durable evidence root.
 During admission, `ec65` cancelled 29 segment identities in one or two seconds
 with zero output. The host is now excluded from every census recovery request;
 only those exact failed segment indices were resubmitted as repair arrays
