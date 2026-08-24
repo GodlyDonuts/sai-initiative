@@ -1636,6 +1636,15 @@ The source-safe semantic-stratum decision is staged as job `818544`, strictly
 after cross-family comparison `818543`; its dependency was verified with
 `scontrol` and requeue is disabled.
 
+Every advanced stratum is then replayed over the **full retained document**, not
+the semantic excerpt, against the pinned official-public benchmark boundary.
+Any exact 13-word shingle or eligible code-shingle overlap is excluded. The
+same pass removes exact duplicates within each shard and emits a source-safe
+content-hash index for the subsequent global exact/near-deduplication pass.
+Outputs retain the original provenance and license columns and remain
+`training_ready=false`; global deduplication is explicitly unfinished at this
+stage.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
