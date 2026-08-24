@@ -2870,10 +2870,13 @@ its pinned upstream object and must reproduce the sealed final content hash.
 This makes the corpus replayable without calling raw reservoir size accepted
 training data.
 
-The live Institutional Books materializer has completed at least **63 of 64**
-private shards. The only unfinished identity shard is advancing independently;
-all completed shard receipts remain immutable. The PleIAs metadata census has
-completed at least **78 of 128** canonical shards. At the four-hour acceleration
+The live Institutional Books materializer has completed **all 64 of 64** private
+shards. Final identity 48 retained 5,955 of 5,964 selected rows, excluded nine,
+and sealed 1,159,146,835 enriched tokens under shard receipt SHA-256
+`354d1fdc656bcda98548a8cd10769f6766464a6be048417344ed3c94e762d3fa`.
+Create-only aggregate job `818440` is replaying all immutable shard receipts and
+private payload hashes before any book quality gate can release. The PleIAs
+metadata census has completed at least **79 of 128** canonical shards. At the four-hour acceleration
 cutoff, eight still-running identities—1, 42, 69, 72, 74, 75, 84, and 95—had
 measured projected remaining runtimes between 1.35× and 3.68× their remaining
 walltime. Those originals were terminated before any recovery work began; their
