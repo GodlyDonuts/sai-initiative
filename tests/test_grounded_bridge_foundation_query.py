@@ -3,6 +3,8 @@ import json
 import sqlite3
 from pathlib import Path
 
+import pytest
+
 from sai.data.grounded_bridge_curriculum_candidates import (
     RECEIPT_SCHEMA as CANDIDATE_RECEIPT_SCHEMA,
 )
@@ -21,8 +23,15 @@ from sai.data.grounded_bridge_foundation_query import (
 from sai.data.grounded_bridge_foundation_scan import (
     ANCHOR_MATCH_SCHEMA,
     FoundationDocument,
+    GroundedBridgeFoundationScanError,
+    QueryBoundary,
     scan_documents,
     source_key_aliases,
+)
+from sai.data.grounded_bridge_foundation_scan_aggregate import (
+    DOCUMENT_DECISION_SCHEMA,
+    PAIR_DECISION_SCHEMA,
+    aggregate_scans,
 )
 from sai.data.token_stream import canonical_sha256, sha256_file
 
@@ -135,6 +144,23 @@ def test_query_is_source_text_free_and_binds_every_document(tmp_path: Path) -> N
         database.close()
 
 
+def test_query_is_reproducible_and_rejects_tampered_database(tmp_path: Path) -> None:
+    candidates = tmp_path / "candidates"
+    _candidate_root(candidates)
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    first_result = build_query(candidates, first)
+    second_result = build_query(candidates, second)
+    assert first_result == second_result
+    assert (first / "queries.sqlite3").read_bytes() == (
+        second / "queries.sqlite3"
+    ).read_bytes()
+    path = first / "queries.sqlite3"
+    path.write_bytes(path.read_bytes() + b"tamper")
+    with pytest.raises(GroundedBridgeFoundationScanError):
+        QueryBoundary(first)
+
+
 def test_source_aliases_reconcile_separate_and_joined_revisions() -> None:
     separate = source_key_aliases(
         {"dataset": "source/a", "revision": "r1", "row_id": "row"}
@@ -207,3 +233,162 @@ def test_scan_finds_exact_overlap_and_anchor_without_persisting_text(
     ]
     persisted = b"".join(path.read_bytes() for path in output.iterdir())
     assert b"Ratios connect musical intervals" not in persisted
+
+
+def test_aggregate_reconciles_anchor_split_and_holds_only_overlap(
+    tmp_path: Path,
+) -> None:
+    candidates = tmp_path / "candidates"
+    _candidate_root(candidates)
+    query = tmp_path / "query"
+    build_query(candidates, query)
+    pleias = tmp_path / "pleias" / "shards" / "shard_00000"
+    books = tmp_path / "books" / "shards" / "shard_00000"
+    scan_documents(
+        query,
+        [
+            FoundationDocument(
+                component="pleias_common_corpus",
+                document_identity_sha256="6" * 64,
+                text=(
+                    "A source preface. Ratios connect musical intervals and "
+                    "fractions through shared relational structure while "
+                    "frequency multiplication preserves ordered harmonic "
+                    "relationships across octave transformations."
+                ),
+                corpus_split="development",
+                source_group_sha256="7" * 64,
+                source={
+                    "dataset": "source/a@r1",
+                    "revision": "",
+                    "row_id": "a",
+                },
+                source_content_sha256s=("4" * 64,),
+                source_custody_sha256="8" * 64,
+            )
+        ],
+        pleias,
+        component="pleias_common_corpus",
+        logical_shards=1,
+        shard_index=0,
+        source_custody={"final_shard_receipt_sha256": "9" * 64},
+    )
+    scan_documents(
+        query,
+        [
+            FoundationDocument(
+                component="institutional_books",
+                document_identity_sha256="a" * 64,
+                text="A distinct book passage covering unrelated archival details.",
+                corpus_split="train",
+                source_group_sha256="b" * 64,
+                source={"dataset": "books", "revision": "r1", "row_id": "book"},
+                source_content_sha256s=("c" * 64,),
+                source_custody_sha256="d" * 64,
+            )
+        ],
+        books,
+        component="institutional_books",
+        logical_shards=1,
+        shard_index=0,
+        source_custody={"final_shard_receipt_sha256": "e" * 64},
+    )
+    output = tmp_path / "aggregate"
+    result = aggregate_scans(
+        query,
+        tmp_path / "pleias",
+        tmp_path / "books",
+        output,
+        pleias_logical_shards=1,
+        book_logical_shards=1,
+    )
+    assert result["global_foundation_scan_complete"] is True
+    assert result["global_deduplication_against_foundation_complete"] is True
+    assert result["source_disjoint_against_foundation_complete"] is True
+    assert result["positive_transfer_ablation_complete"] is False
+    document_rows = [
+        json.loads(line)
+        for line in (output / "document_decisions.jsonl").read_text().splitlines()
+    ]
+    assert all(row["schema"] == DOCUMENT_DECISION_SCHEMA for row in document_rows)
+    assert {row["decision"] for row in document_rows} == {
+        "hold_exact_foundation_overlap",
+        "retain_pending_positive_transfer_ablation",
+    }
+    assert {row["resolved_split"] for row in document_rows} == {"development"}
+    pair = json.loads((output / "pair_decisions.jsonl").read_text())
+    assert pair["schema"] == PAIR_DECISION_SCHEMA
+    assert pair["resolved_split"] == "development"
+    assert pair["representations"] == {"exact_overlap": 1, "retained": 1, "total": 2}
+    assert pair["decision"] == "retain_pending_positive_transfer_ablation"
+    persisted = b"".join(path.read_bytes() for path in output.iterdir())
+    assert b"Ratios connect musical intervals" not in persisted
+
+
+def test_aggregate_excludes_pair_on_foundation_anchor_split_conflict(
+    tmp_path: Path,
+) -> None:
+    candidates = tmp_path / "candidates"
+    _candidate_root(candidates)
+    query = tmp_path / "query"
+    build_query(candidates, query)
+    for component, split, root, identity, group, custody in (
+        (
+            "pleias_common_corpus",
+            "development",
+            tmp_path / "pleias" / "shards" / "shard_00000",
+            "6" * 64,
+            "7" * 64,
+            "8" * 64,
+        ),
+        (
+            "institutional_books",
+            "train",
+            tmp_path / "books" / "shards" / "shard_00000",
+            "9" * 64,
+            "a" * 64,
+            "b" * 64,
+        ),
+    ):
+        scan_documents(
+            query,
+            [
+                FoundationDocument(
+                    component=component,
+                    document_identity_sha256=identity,
+                    text=(
+                        "Distinct source wording that does not duplicate a bridge "
+                        "lesson."
+                    ),
+                    corpus_split=split,
+                    source_group_sha256=group,
+                    source={"dataset": "other", "revision": "r1", "row_id": identity},
+                    source_content_sha256s=("4" * 64,),
+                    source_custody_sha256=custody,
+                )
+            ],
+            root,
+            component=component,
+            logical_shards=1,
+            shard_index=0,
+            source_custody={"final_shard_receipt_sha256": custody},
+        )
+    output = tmp_path / "aggregate"
+    aggregate_scans(
+        query,
+        tmp_path / "pleias",
+        tmp_path / "books",
+        output,
+        pleias_logical_shards=1,
+        book_logical_shards=1,
+    )
+    pair = json.loads((output / "pair_decisions.jsonl").read_text())
+    assert pair["resolved_split"] is None
+    assert pair["decision"] == "exclude_anchor_foundation_split_conflict"
+    document_rows = [
+        json.loads(line)
+        for line in (output / "document_decisions.jsonl").read_text().splitlines()
+    ]
+    assert {row["decision"] for row in document_rows} == {
+        "exclude_pair_anchor_foundation_split_conflict"
+    }

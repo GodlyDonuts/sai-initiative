@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
-from sai.data.data_yield_ledger import _bound_file, _load_receipt
+from sai.data.data_yield_ledger import DataYieldLedgerError, _bound_file, _load_receipt
 from sai.data.decontamination import _CODE, _WORD, _code_shingles, _normalize, _shingles
 from sai.data.decontamination import POLICY as SHINGLE_POLICY
 from sai.data.foundation_source_split import POLICY_SHA256 as SPLIT_POLICY_SHA256
@@ -139,7 +139,12 @@ class QueryBoundary:
     """Validated in-memory view of the deliberately small bridge query boundary."""
 
     def __init__(self, root: Path) -> None:
-        receipt = _load_receipt(root / "receipt.json")
+        try:
+            receipt = _load_receipt(root / "receipt.json")
+        except (DataYieldLedgerError, OSError, json.JSONDecodeError) as error:
+            raise GroundedBridgeFoundationScanError(
+                "bridge query receipt differs"
+            ) from error
         unsigned = {
             key: value for key, value in receipt.items() if key != "receipt_sha256"
         }
@@ -158,7 +163,12 @@ class QueryBoundary:
             or descriptor.get("source_text_persisted") is not False
         ):
             raise GroundedBridgeFoundationScanError("bridge query receipt differs")
-        path = _bound_file(root, descriptor)
+        try:
+            path = _bound_file(root, descriptor)
+        except DataYieldLedgerError as error:
+            raise GroundedBridgeFoundationScanError(
+                "bridge query database differs"
+            ) from error
         database = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
         try:
             metadata = {
