@@ -54,7 +54,7 @@ def build_aggregate(
         ) from error
     decision = _load_signed(decision_root / "aggregate.json", DECISION_SCHEMA)
     expected_decisions = decision.get("totals", {}).get(
-        f"component::{COMPONENT}::deletion_occurrences"
+        f"component::{COMPONENT}::deletion_occurrences", 0
     )
     if (
         decision.get("cross_source_subdocument_decision_complete") is not True

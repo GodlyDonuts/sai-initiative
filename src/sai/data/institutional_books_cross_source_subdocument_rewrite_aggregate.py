@@ -52,7 +52,7 @@ def build_aggregate(
     filtered = _load_json(filtered_root / "aggregate.json")
     decision = _load_signed(decision_root / "aggregate.json", DECISION_SCHEMA)
     expected_decisions = decision.get("totals", {}).get(
-        f"component::{COMPONENT}::deletion_occurrences"
+        f"component::{COMPONENT}::deletion_occurrences", 0
     )
     if (
         not _valid_receipt(filtered, FILTER_AGGREGATE_SCHEMA)
