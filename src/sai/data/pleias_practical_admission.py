@@ -276,6 +276,8 @@ def build_admission(
             admitted_rows = admitted_bytes = admitted_tokens = 0
             byte_cap_excluded_rows = byte_cap_excluded_bytes = 0
             rights: Counter[str] = Counter()
+            collections: Counter[str] = Counter()
+            open_types: Counter[str] = Counter()
 
             def close_writer() -> None:
                 nonlocal writer, temporary_path, output_path
@@ -332,6 +334,8 @@ def build_admission(
                 shard_bytes += text_bytes
                 shard_tokens += tokens
                 rights[license_name] += 1
+                collections[row["collection"]] += 1
+                open_types[row["open_type"]] += 1
                 if len(pending) >= 4096:
                     writer.write_table(pa.Table.from_pylist(pending, schema=schema))
                     pending = []
@@ -374,6 +378,9 @@ def build_admission(
             "admitted_source_token_count": admitted_tokens,
             "combined_books_plus_pleias_text_utf8_bytes": books_bytes + admitted_bytes,
             "rights": dict(sorted(rights.items())),
+            "admitted_collection_count": len(collections),
+            "collections": dict(sorted(collections.items())),
+            "open_types": dict(sorted(open_types.items())),
         },
         "outputs": {
             "shards": len(descriptors),

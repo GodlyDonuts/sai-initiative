@@ -205,6 +205,15 @@ is uploaded; the public dataset holds the exact indexes needed to reconstruct
 PleIAs from its pinned upstream revision while the Books text remains in its
 authorized private Stokes root.
 
+The final readiness audit does not treat a merely successful pipeline as a
+2 TB result. It recomputes Books + PleIAs rows, source tokens, and logical UTF-8
+bytes from the two signed admissions; reconciles every PleIAs collection and
+rights count; binds the Hugging Face publication receipt; and requires the
+combined corpus to contain **1.9–2.0 trillion exact text bytes**. An underfilled
+corpus fails instead of being relabeled complete. Benchmark decontamination
+remains false and blocks evaluation claims, while 4B training remains explicitly
+unauthorized.
+
 The next book stage is now code-frozen as a bounded **8,192-work semantic
 population**, not a bulk promotion of every mechanical pass. After `818508`, it
 replays the exact private filter and pinned 983,004-row metadata file, then uses

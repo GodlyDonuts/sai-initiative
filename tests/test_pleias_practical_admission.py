@@ -155,5 +155,7 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
     assert result["counts"]["byte_cap_excluded_rows"] == 1
     assert result["counts"]["admitted_rows"] == 1
     assert result["counts"]["combined_books_plus_pleias_text_utf8_bytes"] == 3_400
+    assert result["counts"]["admitted_collection_count"] == 1
+    assert result["counts"]["collections"] == {"books": 1}
     assert result["global_exact_content_deduplication_complete"] is True
     assert result["practical_pretraining_ready"] is True
