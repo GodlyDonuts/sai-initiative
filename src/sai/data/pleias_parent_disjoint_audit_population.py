@@ -128,6 +128,28 @@ def build_plan(
     return plan
 
 
+def shard_plan(
+    plan: list[dict[str, Any]], logical_shards: int, shard_index: int
+) -> list[dict[str, Any]]:
+    """Return one exact identity-disjoint shard of the frozen global plan."""
+
+    if (
+        isinstance(logical_shards, bool)
+        or not isinstance(logical_shards, int)
+        or not 1 <= logical_shards <= 32
+        or isinstance(shard_index, bool)
+        or not isinstance(shard_index, int)
+        or not 0 <= shard_index < logical_shards
+        or len(plan) != EXPECTED_ROWS
+    ):
+        raise PleiasParentDisjointAuditError("PleIAs shard geometry differs")
+    selected = [row for row in plan if row["ordinal"] % logical_shards == shard_index]
+    expected = (len(plan) + logical_shards - 1 - shard_index) // logical_shards
+    if len(selected) != expected:
+        raise PleiasParentDisjointAuditError("PleIAs shard custody differs")
+    return selected
+
+
 def acquire_full_verified_metadata_row(
     plan: dict[str, Any], token: str
 ) -> dict[str, Any]:
@@ -274,6 +296,8 @@ def build_population(
     *,
     token: str,
     acquisition_mode: str = "range",
+    logical_shards: int = 1,
+    shard_index: int = 0,
 ) -> dict[str, Any]:
     """Range-read one deterministic usable row from every selected parent."""
 
@@ -286,7 +310,8 @@ def build_population(
         raise PleiasParentDisjointAuditError("credential or output boundary differs")
     rows = load_frontier_reservoir(manifest_path, reservoir_receipt_path)
     excluded = prior_parent_identities(prior_lineage_path)
-    plan = build_plan(rows, excluded)
+    global_plan = build_plan(rows, excluded)
+    plan = shard_plan(global_plan, logical_shards, shard_index)
     candidates = []
     lineage = []
     for index, item in enumerate(plan, start=1):
@@ -311,6 +336,8 @@ def build_population(
                 json.dumps(
                     {
                         "event": "pleias_parent_disjoint_audit_progress",
+                        "logical_shards": logical_shards,
+                        "shard_index": shard_index,
                         "acquired": index,
                         "remaining": len(plan) - index,
                     },
@@ -319,7 +346,7 @@ def build_population(
                 flush=True,
             )
     identities = [row["candidate_identity_sha256"] for row in candidates]
-    if len(identities) != EXPECTED_ROWS or len(identities) != len(set(identities)):
+    if len(identities) != len(plan) or len(identities) != len(set(identities)):
         raise PleiasParentDisjointAuditError("PleIAs candidate identities differ")
     temporary = output_root.parent / f".{output_root.name}.partial.{uuid.uuid4().hex}"
     if temporary.exists() or temporary.is_symlink():
@@ -338,6 +365,9 @@ def build_population(
             "seed": SEED,
             "selection_method": "sha256_ranked_exact_parents_within_partition",
             "acquisition_mode": acquisition_mode,
+            "global_plan_rows": len(global_plan),
+            "logical_shards": logical_shards,
+            "shard_index": shard_index,
             "maximum_simultaneous_parent_files": 1,
             "temporary_parent_removed_after_each_row": True,
             "screen_only": True,
@@ -396,6 +426,8 @@ def main() -> int:
     parser.add_argument(
         "--acquisition-mode", choices=sorted(ACQUISITION_MODES), default="range"
     )
+    parser.add_argument("--logical-shards", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     args = parser.parse_args()
     result = build_population(
         args.manifest,
@@ -404,6 +436,8 @@ def main() -> int:
         args.output_root,
         token=os.environ.get(args.token_env, ""),
         acquisition_mode=args.acquisition_mode,
+        logical_shards=args.logical_shards,
+        shard_index=args.shard_index,
     )
     print(json.dumps(result, sort_keys=True))
     return 0

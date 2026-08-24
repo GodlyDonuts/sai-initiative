@@ -14,6 +14,7 @@ from sai.data.pleias_parent_disjoint_audit_population import (
     PleiasParentDisjointAuditError,
     build_plan,
     prior_parent_identities,
+    shard_plan,
 )
 
 
@@ -72,6 +73,23 @@ def test_plan_rejects_partition_underfill() -> None:
     rows = [row for row in _rows() if not row["path"].startswith("common_corpus_10/")]
     with pytest.raises(PleiasParentDisjointAuditError, match="underfilled"):
         build_plan(rows, frozenset())
+
+
+def test_eight_shards_are_complete_and_identity_disjoint() -> None:
+    plan = build_plan(_rows(), frozenset())
+    shards = [shard_plan(plan, 8, index) for index in range(8)]
+    assert [len(shard) for shard in shards] == [128] * 8
+    identities = [
+        (row["repository"], row["revision"], row["path"])
+        for shard in shards
+        for row in shard
+    ]
+    assert len(identities) == len(set(identities)) == EXPECTED_ROWS
+    assert sorted(row["ordinal"] for shard in shards for row in shard) == list(
+        range(EXPECTED_ROWS)
+    )
+    with pytest.raises(PleiasParentDisjointAuditError, match="geometry"):
+        shard_plan(plan, 8, 8)
 
 
 def test_prior_parent_identities_are_source_specific(tmp_path: Path) -> None:
