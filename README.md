@@ -403,14 +403,36 @@ assignments, request hashes, or the content of any accepted training record.
 Every new receipt names the retry-timing policy, while completed receipts remain
 immutable and replayable.
 
-Two previously interrupted but fully acquired teacher populations are now also
-dependency-staged for exact resumption. The first contains 1,024 byte-weighted
-documents across FinePDFs, FineWeb-Edu, SmolLM, FineMath, Dolma, and OpenWebMath;
-484 existing receipts replay against the current compiler rubric, leaving 540.
-The second contains 1,007 benchmark-clean PubMed full texts; 17 receipts replay,
-leaving 990. Four low-concurrency workers begin only after both active source
-audits close, reuse the shared shard lock, and automatically seal complete
-aggregates and source-work decisions. These 2,031 rows broaden future teacher
+The resumed 1,024-row byte-weighted teacher population has now closed across
+FinePDFs, FineWeb-Edu, SmolLM, FineMath, Dolma, and OpenWebMath. Hermès returned
+818 `retain`, 163 `review`, and 43 `reject` verdicts, but conservative routing
+sent **511/1,024** identities to quarantine, 176 to cleanup review, 116 to
+translation review, 89 to factual-grounding review, 23 to rights hold, and only
+78 to representation verification. This is a coverage screen, not a source-
+wide yield estimate. It blocks bulk admission for all six sources: FinePDFs
+alone sent 324/596 sampled rows to quarantine, while OpenWebMath sent 20/35 to
+rights hold. Aggregate receipt
+`14f09f39cad9e8e7b0c4032deb3b1589d4ecbfc0f7ce4591beca43eb872fb784`
+and decision receipt
+`6c28bc37575e6b96e0857d942f91a903ca7f93f88e926dbacd875bd986313075`
+are byte-matched under `weighted-reservoir-audit/20260826-r1` in the authorized
+Stokes evidence root.
+
+All 511 quarantine routes are also sealed in a text-free dataset-exclusion
+manifest with 511 unique source-row, candidate-identity, and content hashes.
+Every record has `dataset_materialization_allowed=false`; rejected source text
+is absent. The manifest SHA-256 is
+`4811e01af6474a41322620bebffb781d8934c99a70da9f86f7a8209695a36185`
+and its canonical receipt is
+`a4f279db7d7609453307bf8f52acc28db5fb3a6fd12ba2e7a8183c3ada313bab`.
+It is durable at
+`weighted-reservoir-audit-quarantine-exclusions/20260826-r1`. Mixed raw files
+remain evidence-only until each salvageable row has clean replacement custody;
+the quarantined identities cannot re-enter a later dataset materialization.
+
+The second resumed population contains 1,007 benchmark-clean PubMed full
+texts. Its workers reuse the shared provider cap and automatically seal a
+complete aggregate and source-work decision. These rows broaden future teacher
 distillation evidence; they do not authorize bulk source admission.
 
 A global Hermès teacher census is now dependency-staged behind all 13 exact
