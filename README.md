@@ -2799,6 +2799,62 @@ representations; and measure accepted bytes and tokens by domain, culture,
 style, complexity axis, and epistemic function. Only the accepted, replayable
 output of those steps can become a curriculum shard.
 
+#### Live virtual-corpus production and spiral index
+
+The large-source path is now storage-bounded rather than copy-bounded. The raw
+Hugging Face reservoir contains 8,802,247,613,960 immutable source bytes across
+13,974 objects, but Stokes has roughly one terabyte of working quota. Sai does
+not create a second 1.5–2 TB PleIAs copy. It records exact final locators after
+quality selection, benchmark decontamination, internal subdocument deletion,
+cross-source subdocument deletion, rights custody, and source-disjoint split.
+The final tokenizer/packer can reconstruct each selected row transiently from
+its pinned upstream object and must reproduce the sealed final content hash.
+This makes the corpus replayable without calling raw reservoir size accepted
+training data.
+
+The live Institutional Books materializer has completed 47 of 64 private
+shards. Those receipts cover 280,567 materialized rows and 50,248,497,119
+source-reported enriched tokens; the corresponding private lineage/text files
+currently occupy 80,619,836,313 bytes. The remaining 17 identity shards are
+running independently. The PleIAs metadata census has 17 of 128 canonical
+shards complete while the remaining long-running shards execute under a staged
+segment-recovery path. These are materialization/census measurements, not final
+admission counts.
+
+The dependency graph already stages the complete PleIAs virtual pipeline:
+subdocument signatures, global signature aggregation, exact deletion decisions,
+internal rewrite replay, cross-source decisions, final locator reconstruction,
+global byte/document accounting, a two-component corpus ledger, and durable
+custody evidence. Independent bounded tokenizer samples then feed three
+separately built 32K, 48K, and 64K candidates. Every stage is CPU-only,
+non-requeueing, create-only, and pinned to an immutable runtime; no 4B training
+job is part of this graph.
+
+`sai.data.virtual_spiral_curriculum_index` adds the curriculum layer after the
+two final component aggregates close. It emits source-text-free Parquet rows
+that bind component/shard identity, final content hash, exact UTF-8 byte count,
+train/development split, rights, semantic quality, three difficulty signals,
+concepts, prerequisites, source custody, and a deterministic curriculum
+priority. Difficulty is the maximum of conceptual difficulty and prerequisite
+burden, divided into foundation, intermediate, advanced, and expert bands. The
+prospective moving-center schedule is:
+
+| Stage | Run fraction | Foundation | Intermediate | Advanced | Expert |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Foundation | 25% | 65% | 25% | 8% | 2% |
+| Expansion | 35% | 40% | 40% | 15% | 5% |
+| Depth | 25% | 20% | 40% | 30% | 10% |
+| Synthesis | 10% | 10% | 25% | 40% | 25% |
+| Annealing | 5% | 10% | 20% | 35% | 35% |
+
+The aggregate reopens all 192 component shards, recomputes every derived row,
+checks exact document and content uniqueness in a disk-backed database, binds
+the final source receipt for every shard, and reconciles per-component and
+per-split document and byte totals. It deliberately leaves token counts and
+exact stage allocation open until the selected tokenizer retokenizes the final
+stream. Curriculum indexing is therefore a necessary custody layer, not a
+claim that the 2 TB corpus is already training-ready.
+
 #### Evidence and status vocabulary
 
 To keep progress legible, Sai uses these states consistently:
