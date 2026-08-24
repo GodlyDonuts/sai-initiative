@@ -12,6 +12,7 @@ from sai.data.book_compiler_labeling import (
     build_messages,
     normalize_book_candidate,
     normalize_model_judgment,
+    validation_hint,
 )
 from sai.data.nous_book_compiler_worker import (
     RECEIPT_SCHEMA,
@@ -365,6 +366,7 @@ def test_book_worker_repairs_a_strictly_invalid_first_response() -> None:
     ]
     assert len(calls[1]["messages"]) == 4
     assert "style differs" in calls[1]["messages"][-1]["content"]
+    assert "style must be exactly one of" in calls[1]["messages"][-1]["content"]
     assert (
         "byte-for-byte quote from book_excerpt" in calls[1]["messages"][-1]["content"]
     )
@@ -373,3 +375,12 @@ def test_book_worker_repairs_a_strictly_invalid_first_response() -> None:
     assert (
         receipt["successful_request_sha256"] == receipt["attempt_request_sha256s"][-1]
     )
+
+
+def test_book_validation_hints_pin_high_frequency_repairs() -> None:
+    english = validation_hint("English book translation disposition differs")
+    assert "translation_type=none_english" in english
+    assert "translation_confidence_ppm=1000000" in english
+    evidence = validation_hint("concept edge evidence differs")
+    assert "exact contiguous substring" in evidence
+    assert "concept_edges=[]" in evidence

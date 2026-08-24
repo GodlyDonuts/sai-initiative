@@ -1391,6 +1391,24 @@ explicitly non-training-ready. The successful request used 12,314 prompt and
 repair. This single result proves the worker and repair path function; it does
 not estimate corpus-wide acceptance quality.
 
+The first three completed book receipts exposed a throughput issue: valid
+outputs required two to five provider calls because generic retry text did not
+spell out the book schema's most common failures. Future shard processes now
+receive deterministic book-specific correction hints for exact excerpt
+quotes, concept-edge evidence, English translation disposition, enum fields,
+risk keys, domains, and representation labels. The strict schema is unchanged;
+the correction only reduces wasted invalid retries. Existing healthy book
+workers are not interrupted and automatically pick up the new code when their
+next immutable shard process starts.
+
+The previously reported contextless physics answer sheet is also bound to an
+exact source location: FineMath-3plus row 50 of upstream
+`train-00076-of-00128.parquet`, content SHA-256
+`5f3c24824cb8c10cfeb19ff6242966541ed2a274fd0bdd6f88418b296d718482`.
+Its hard-reject decision remains active. That mixed 503,424,134-byte upstream
+shard is not present in `Godlydonuts/Sai`, so there is no bad published file to
+delete; deleting the whole mixed shard would also discard unrelated good rows.
+
 A separate reservoir-wide coverage audit now freezes 128 generic compiler
 candidates across six content-bearing source families: 40 FinePDFs rows (16
 English and 24 named non-English language strata), 16 FineMath rows across all

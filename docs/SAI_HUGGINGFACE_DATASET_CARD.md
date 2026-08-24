@@ -113,6 +113,9 @@ capacity, not accepted corpus volume.
   SHA-256
   `929c6b46f7e4de7ca17c5fc360337465d33ec62ba284fbd5ca052c7d61a73c89`.
   A mechanical pass is not semantic or training admission.
+  The single hard-reject answer sheet traces to FineMath-3plus row 50 of
+  upstream `train-00076-of-00128.parquet`; that mixed upstream shard is not
+  present in this repository, so no bad published file exists to delete.
 - A host-diverse OpenCoder code-web audit replayed one exact 286,437,437-byte
   Parquet shard and all 197,882 rows. From 162,487 length-eligible unique
   contents, the 8,192-row screen rejected two mechanical failures and 39

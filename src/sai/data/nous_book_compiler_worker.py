@@ -15,6 +15,7 @@ from sai.data.book_compiler_labeling import (
     build_messages,
     normalize_book_candidate,
     normalize_model_judgment,
+    validation_hint,
 )
 from sai.data.nous_compiler_worker import execute_contract, run_shard_locked
 from sai.data.nous_label_worker import (
@@ -77,6 +78,7 @@ def execute_one(
         maximum_completion_tokens=4000,
         reasoning_effort="low",
         evidence_container_name="book_excerpt",
+        validation_hint_function=validation_hint,
         stream_transport=stream_transport,
     )
 

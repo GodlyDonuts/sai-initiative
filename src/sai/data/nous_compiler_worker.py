@@ -210,6 +210,7 @@ def execute_contract(
     evidence_repair_function: (
         Callable[[Any, dict[str, Any]], tuple[Any, list[dict[str, Any]]]] | None
     ) = None,
+    validation_hint_function: Callable[[str], str] | None = None,
     request_function: Callable[..., tuple[dict[str, Any], int]] = _post_json,
     sleep_function: Callable[[float], None] = time.sleep,
     stream_transport: bool = False,
@@ -227,6 +228,10 @@ def execute_contract(
         or reasoning_effort not in {None, "none", "minimal", "low", "medium", "high"}
         or evidence_container_name
         not in {"document", "book_excerpt", "source_document"}
+        or (
+            validation_hint_function is not None
+            and not callable(validation_hint_function)
+        )
         or not isinstance(stream_transport, bool)
     ):
         raise NousLabelWorkerError("compiler contract identity or token bound differs")
@@ -383,6 +388,8 @@ def execute_contract(
                         "preservation_policy=reject; do not retain it merely because "
                         "it names a valuable work."
                     )
+                elif validation_hint_function is not None:
+                    validation_hint = validation_hint_function(str(error))
                 body["messages"] = [
                     *base_messages,
                     {"role": "assistant", "content": prior_content},

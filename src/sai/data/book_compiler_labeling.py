@@ -188,6 +188,69 @@ class BookCompilerError(RuntimeError):
     """A book candidate or compiler judgment differs from the contract."""
 
 
+def validation_hint(error: str) -> str:
+    """Return a concise contract-specific repair hint for one strict failure."""
+
+    if not isinstance(error, str):
+        raise BookCompilerError("validation error differs")
+    if "English book translation disposition differs" in error:
+        return (
+            " For an English excerpt set current_language=english, "
+            "translation_type=none_english, translation_confidence_ppm=1000000, "
+            "human_translation_search_required=false, and "
+            "preserve_original_language_anchor=false."
+        )
+    if (
+        "book evidence quotes differ" in error
+        or "concept edge evidence differs" in error
+    ):
+        return (
+            " Every evidence quote must be one exact contiguous substring copied "
+            "from book_excerpt. Use one short unmistakable quote; set "
+            "concept_edges=[] if no edge has an exact supporting quote."
+        )
+    if "recommended representations differ" in error:
+        return (
+            " recommended_representations must contain unique literal values only "
+            "from: "
+            + ", ".join(REPRESENTATIONS)
+            + "."
+        )
+    if "book risks differ" in error:
+        return (
+            " risks must contain exactly these boolean keys: "
+            + ", ".join(RISK_KEYS)
+            + "."
+        )
+    if "domains differ" in error:
+        return (
+            " domains must contain unique literal values only from: "
+            + ", ".join(DOMAINS)
+            + "."
+        )
+    if "genre differs" in error:
+        return " genre must be exactly one of: " + ", ".join(GENRES) + "."
+    if "style differs" in error:
+        return " style must be exactly one of: " + ", ".join(STYLES) + "."
+    if "curriculum band differs" in error:
+        return (
+            " curriculum_band must be exactly one of: "
+            + ", ".join(CURRICULUM_BANDS)
+            + "."
+        )
+    if "translation type differs" in error:
+        return (
+            " translation_type must be exactly one of: "
+            + ", ".join(TRANSLATION_TYPES)
+            + "."
+        )
+    return (
+        " Re-read output_schema and output_template. Return every required key "
+        "exactly once, preserve JSON types, use literal enum values, and remove "
+        "unsupported optional graph edges."
+    )
+
+
 def _nullable_string(value: Any, label: str, maximum: int = 512) -> str | None:
     if value is None:
         return None
