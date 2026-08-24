@@ -14,11 +14,17 @@ from sai.data.agent_labeling import _atomic_create
 from sai.data.institutional_books_materializer import (
     AGGREGATE_SCHEMA as MATERIALIZER_AGGREGATE_SCHEMA,
 )
-from sai.data.institutional_books_materializer import OUTPUT_SCHEMA, _load_json, _valid_receipt
+from sai.data.institutional_books_materializer import (
+    OUTPUT_SCHEMA,
+    _load_json,
+    _valid_receipt,
+)
 from sai.data.institutional_books_mechanical_filter import (
     AGGREGATE_SCHEMA as FILTER_AGGREGATE_SCHEMA,
 )
-from sai.data.institutional_books_mechanical_filter import SHARD_SCHEMA as FILTER_SHARD_SCHEMA
+from sai.data.institutional_books_mechanical_filter import (
+    SHARD_SCHEMA as FILTER_SHARD_SCHEMA,
+)
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 SCHEMA = "sai-institutional-books-practical-admission-receipt-v1"
@@ -86,18 +92,13 @@ def _selection(root: Path) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
                 or row["ocr_score_gen"] < 95
                 or row.get("training_ready") is not False
             ):
-                raise InstitutionalBooksPracticalAdmissionError(
-                    "selection row differs"
-                )
+                raise InstitutionalBooksPracticalAdmissionError("selection row differs")
             rows[barcode] = row
             ordered.append(row["row_sha256"])
-    if (
-        len(rows) != descriptor.get("rows")
-        or canonical_sha256(ordered) != descriptor.get("ordered_rows_sha256")
-    ):
-        raise InstitutionalBooksPracticalAdmissionError(
-            "selection coverage differs"
-        )
+    if len(rows) != descriptor.get("rows") or canonical_sha256(
+        ordered
+    ) != descriptor.get("ordered_rows_sha256"):
+        raise InstitutionalBooksPracticalAdmissionError("selection coverage differs")
     return rows, receipt
 
 
@@ -139,8 +140,7 @@ def build_admission(
         or not _valid_receipt(filtered, FILTER_AGGREGATE_SCHEMA)
         or materialized.get("selection", {}).get("receipt_sha256")
         != selection_receipt["receipt_sha256"]
-        or filtered.get("materializer_receipt_sha256")
-        != materialized["receipt_sha256"]
+        or filtered.get("materializer_receipt_sha256") != materialized["receipt_sha256"]
         or filtered.get("training_ready") is not False
     ):
         raise InstitutionalBooksPracticalAdmissionError("admission inputs differ")
@@ -163,9 +163,7 @@ def build_admission(
             or receipt.get("shard_index") != shard_index
             or receipt.get("logical_shards") != logical_shards
         ):
-            raise InstitutionalBooksPracticalAdmissionError(
-                "filter shard differs"
-            )
+            raise InstitutionalBooksPracticalAdmissionError("filter shard differs")
         descriptor = receipt.get("output")
         if descriptor is None:
             continue
@@ -177,9 +175,7 @@ def build_admission(
             or path.stat().st_size != descriptor.get("bytes")
             or sha256_file(path) != descriptor.get("sha256")
         ):
-            raise InstitutionalBooksPracticalAdmissionError(
-                "filter shard bytes differ"
-            )
+            raise InstitutionalBooksPracticalAdmissionError("filter shard bytes differ")
         parquet = pq.ParquetFile(path)
         rows = 0
         for batch in parquet.iter_batches(
@@ -189,6 +185,7 @@ def build_admission(
                 "barcode_src",
                 "source_content_sha256",
                 "enriched_token_count_gen",
+                "text",
                 "training_ready",
             ],
             use_threads=False,
@@ -198,6 +195,7 @@ def build_admission(
                 selected = selection.get(barcode)
                 content_sha256 = value.get("source_content_sha256")
                 tokens = value.get("enriched_token_count_gen")
+                text = value.get("text")
                 if (
                     value.get("schema") != OUTPUT_SCHEMA
                     or not isinstance(barcode, str)
@@ -208,6 +206,8 @@ def build_admission(
                     or any(c not in "0123456789abcdef" for c in content_sha256)
                     or not isinstance(tokens, int)
                     or tokens < 1
+                    or not isinstance(text, str)
+                    or not text
                     or value.get("training_ready") is not False
                 ):
                     raise InstitutionalBooksPracticalAdmissionError(
@@ -221,6 +221,7 @@ def build_admission(
                         "shard_index": shard_index,
                         "source_content_sha256": content_sha256,
                         "enriched_token_count_gen": tokens,
+                        "source_text_utf8_bytes": len(text.encode()),
                         "selection_row_sha256": selected["row_sha256"],
                         "rights_code": selected["rights_code"],
                         "ocr_score_gen": selected["ocr_score_gen"],
@@ -241,7 +242,9 @@ def build_admission(
         if current is None or row["barcode_src"] < current["barcode_src"]:
             winners[row["source_content_sha256"]] = row
     accepted = []
-    for row in sorted(winners.values(), key=lambda item: (item["shard_index"], item["barcode_src"])):
+    for row in sorted(
+        winners.values(), key=lambda item: (item["shard_index"], item["barcode_src"])
+    ):
         record = {
             "schema": RECORD_SCHEMA,
             **row,
@@ -284,6 +287,9 @@ def build_admission(
             "admitted_rows": len(accepted),
             "admitted_enriched_tokens": sum(
                 row["enriched_token_count_gen"] for row in accepted
+            ),
+            "admitted_text_utf8_bytes": sum(
+                row["source_text_utf8_bytes"] for row in accepted
             ),
             "private_filtered_compressed_bytes": filtered["counts"]["output_bytes"],
             "rights_codes": dict(sorted(rights.items())),

@@ -167,8 +167,11 @@ aggregate hard ceiling supplies enough candidate mass for the final Books +
 PleIAs balancer. All 128 source-disjoint CPU shards can run concurrently and do
 not wait for Hermès labels or the metadata-audit policy. The locator scan is a
 candidate pass; practical readiness is declared only after exact-content
-deduplication and final byte balancing, while official benchmark cleanliness
-remains a separate evaluation-claim axis.
+deduplication and final byte balancing. The admission pass uses an on-disk exact
+hash index, keeps the lexicographically smallest source identity per identical
+content hash, and subtracts exact admitted Books UTF-8 bytes from the shared
+2,000,000,000,000-byte ceiling before writing final PleIAs locators. Official
+benchmark cleanliness remains a separate evaluation-claim axis.
 
 The next book stage is now code-frozen as a bounded **8,192-work semantic
 population**, not a bulk promotion of every mechanical pass. After `818508`, it
