@@ -11,6 +11,7 @@ from sai.data.pleias_production_near_dedup import (
     build_decision,
     high_confidence_near_duplicate,
     union_lowest,
+    union_preferred,
 )
 from sai.data.token_stream import canonical_sha256, sha256_file
 
@@ -46,6 +47,24 @@ def test_union_uses_lowest_stable_identity_and_transitive_root():
     connection.close()
 
 
+def test_union_prefers_measured_quality_before_stable_identity():
+    connection = sqlite3.connect(":memory:")
+    connection.execute(
+        "CREATE TABLE forest (identity TEXT PRIMARY KEY, parent TEXT NOT NULL)"
+    )
+    connection.execute(
+        "CREATE TABLE docs (identity TEXT PRIMARY KEY, bytes INTEGER, sketch BLOB, "
+        "quality_floor INTEGER, quality_mean INTEGER)"
+    )
+    connection.executemany(
+        "INSERT INTO docs VALUES (?, 1, x'00', ?, ?)",
+        [("a", 3_500, 4_000), ("z", 4_500, 4_500)],
+    )
+    assert union_preferred(connection, "a", "z") == ("z", True)
+    assert union_preferred(connection, "z", "a") == ("z", False)
+    connection.close()
+
+
 def _signed(value):
     value["receipt_sha256"] = canonical_sha256(value)
     return value
@@ -70,8 +89,20 @@ def test_builds_source_safe_high_precision_drop_decision(tmp_path):
     changed = list(words)
     changed[100] = "replacementconcept"
     rows = [
-        descriptor(_source_row("one", " ".join(words)), parent, 0),
-        descriptor(_source_row("two", " ".join(changed)), parent, 1),
+        descriptor(
+            _source_row("one", " ".join(words)),
+            parent,
+            0,
+            stratum_quality_floor_milli=3_500,
+            stratum_quality_mean_milli=4_000,
+        ),
+        descriptor(
+            _source_row("two", " ".join(changed)),
+            parent,
+            1,
+            stratum_quality_floor_milli=4_500,
+            stratum_quality_mean_milli=4_750,
+        ),
         descriptor(
             _source_row("three", " ".join(f"other{index}" for index in range(200))),
             parent,
@@ -138,13 +169,15 @@ def test_builds_source_safe_high_precision_drop_decision(tmp_path):
         "source_row_identity_sha256 TEXT NOT NULL UNIQUE, "
         "content_sha256 TEXT NOT NULL, source_path TEXT NOT NULL, "
         "source_parent_sha256 TEXT NOT NULL, source_row_index INTEGER NOT NULL, "
-        "stratum TEXT NOT NULL, text_utf8_bytes INTEGER NOT NULL, "
+        "stratum TEXT NOT NULL, stratum_quality_floor_milli INTEGER NOT NULL, "
+        "stratum_quality_mean_milli INTEGER NOT NULL, "
+        "text_utf8_bytes INTEGER NOT NULL, "
         "token_count INTEGER NOT NULL, descriptor_sha256 TEXT NOT NULL"
         ") WITHOUT ROWID"
     )
     for row in rows:
         connection.execute(
-            "INSERT INTO keep VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO keep VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 row["normalized_content_sha256"],
                 row["source_row_identity_sha256"],
@@ -153,6 +186,8 @@ def test_builds_source_safe_high_precision_drop_decision(tmp_path):
                 row["source_parent_sha256"],
                 row["source_row_index"],
                 row["stratum"],
+                row["stratum_quality_floor_milli"],
+                row["stratum_quality_mean_milli"],
                 row["text_utf8_bytes"],
                 row["token_count"],
                 row["descriptor_sha256"],
@@ -194,3 +229,4 @@ def test_builds_source_safe_high_precision_drop_decision(tmp_path):
     drops = connection.execute("SELECT * FROM drops").fetchall()
     connection.close()
     assert len(drops) == 1
+    assert drops[0][1] == rows[1]["source_row_identity_sha256"]

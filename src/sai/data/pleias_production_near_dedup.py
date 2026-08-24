@@ -124,6 +124,28 @@ def union_lowest(
     return keep, True
 
 
+def union_preferred(
+    connection: sqlite3.Connection, first: str, second: str
+) -> tuple[str, bool]:
+    """Union a component under its strongest measured stratum representative."""
+
+    first_root = _root(connection, first)
+    second_root = _root(connection, second)
+    if first_root == second_root:
+        return first_root, False
+    rows = connection.execute(
+        "SELECT identity, quality_floor, quality_mean FROM docs "
+        "WHERE identity IN (?, ?)",
+        (first_root, second_root),
+    ).fetchall()
+    if len(rows) != 2:
+        raise PleiasProductionNearDedupError("near-dedup quality rank differs")
+    keep = min(rows, key=lambda row: (-row[1], -row[2], row[0]))[0]
+    drop = second_root if keep == first_root else first_root
+    connection.execute("UPDATE forest SET parent=? WHERE identity=?", (keep, drop))
+    return keep, True
+
+
 def _validate_exact_database(exact_root: Path, receipt: dict[str, Any]) -> Path:
     path = exact_root / receipt.get("keep_database", {}).get("path", "")
     if (
@@ -181,7 +203,8 @@ def build_decision(
         connection.execute("ATTACH DATABASE ? AS exact", (exact_path,))
         connection.execute(
             "CREATE TABLE docs ("
-            "identity TEXT PRIMARY KEY, bytes INTEGER NOT NULL, sketch BLOB NOT NULL"
+            "identity TEXT PRIMARY KEY, bytes INTEGER NOT NULL, sketch BLOB NOT NULL, "
+            "quality_floor INTEGER NOT NULL, quality_mean INTEGER NOT NULL"
             ") WITHOUT ROWID"
         )
         connection.execute(
@@ -217,8 +240,14 @@ def build_decision(
                         continue
                     sketch = _pack_sketch(row["near_dedup_bottom_k_u64"])
                     connection.execute(
-                        "INSERT INTO docs VALUES (?, ?, ?)",
-                        (identity, row["text_utf8_bytes"], sketch),
+                        "INSERT INTO docs VALUES (?, ?, ?, ?, ?)",
+                        (
+                            identity,
+                            row["text_utf8_bytes"],
+                            sketch,
+                            row["stratum_quality_floor_milli"],
+                            row["stratum_quality_mean_milli"],
+                        ),
                     )
                     connection.executemany(
                         "INSERT INTO buckets VALUES (?, ?)",
@@ -287,7 +316,9 @@ def build_decision(
                     ):
                         continue
                     high_confidence_edges += 1
-                    _root_value, changed = union_lowest(connection, first[0], second[0])
+                    _root_value, changed = union_preferred(
+                        connection, first[0], second[0]
+                    )
                     union_edges += int(changed)
             if candidate_buckets % 10_000 == 0:
                 connection.commit()
@@ -339,7 +370,10 @@ def build_decision(
             "minimum_shared_sketch_ppm": MINIMUM_SHARED_PPM,
             "minimum_length_ratio_ppm": MINIMUM_LENGTH_RATIO_PPM,
             "maximum_bucket_members": MAXIMUM_BUCKET_MEMBERS,
-            "representative": "lowest_source_row_identity_sha256",
+            "representative": (
+                "highest_stratum_quality_floor_then_highest_stratum_quality_mean_"
+                "then_lowest_source_row_identity_sha256"
+            ),
             "high_fanout_buckets_fail_open_to_later_global_pass": True,
         },
         "counts": {

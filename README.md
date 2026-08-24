@@ -1679,9 +1679,11 @@ production-descriptor census reopens every hash-pinned PleIAs parent and replays
 the same direct-English, explicit-rights, mechanical-quality, and advanced-
 stratum predicates. It persists **no source text**. Each eligible row contributes
 only its stable locator, byte/token counts, full-content SHA-256, NFKC/casefold/
-whitespace-normalized SHA-256, and a 32-entry bottom-k sketch of unique five-word
-shingles. Those descriptors allow global exact, normalized-exact, near-duplicate,
-diversity, and byte-budget decisions to happen before bulk text is materialized.
+whitespace-normalized SHA-256, a 32-entry bottom-k sketch of unique five-word
+shingles, and the conservative floor and mean of the four measured core-quality
+scores for its exact semantic stratum. Those descriptors allow global exact,
+normalized-exact, near-duplicate, diversity, quality-priority, and byte-budget
+decisions to happen before bulk text is materialized.
 Benchmark decontamination is deliberately still false at this census boundary
 and must replay on the finally selected full documents.
 
@@ -1694,18 +1696,22 @@ it neither pads toward 2 TB nor copies bulk text before the global quality and
 deduplication decisions are known.
 
 Production descriptor closure feeds a disk-backed normalized-exact decision.
-SQLite retains the lowest stable source-row identity for each NFKC/casefold/
-whitespace-normalized full-document SHA-256 while separately counting byte-exact
-duplicates. The decision database contains locators, sizes, strata, and hashes,
-but no source text. It is indexed for the later near-duplicate and deterministic
-byte-budget decisions; both those gates and full-document benchmark screening
-remain explicitly incomplete. Job `818560` is staged strictly after aggregate
-`818559`, requests one CPU with 8 GiB for eight hours, and has requeue disabled.
+SQLite retains the representative from the stratum with the highest conservative
+core-quality floor, then the highest core-quality mean, and only then uses the
+lowest stable source-row identity as a tie-breaker for each NFKC/casefold/
+whitespace-normalized full-document SHA-256. It separately counts byte-exact
+duplicates. The decision database contains locators, sizes, strata, quality
+ranks, and hashes, but no source text. It is indexed for the later near-duplicate
+and deterministic byte-budget decisions; both those gates and full-document
+benchmark screening remain explicitly incomplete. Job `818560` is staged
+strictly after aggregate `818559`, requests one CPU with 8 GiB for eight hours,
+and has requeue disabled.
 
 A subsequent high-precision document-near-duplicate pass uses four independent
 two-fingerprint bands from each 32-value sketch, compares only bounded candidate
 buckets, and requires at least 75% sketch overlap plus an 80% document-length
-ratio. Connected duplicates collapse to the lowest stable row identity. The
+ratio. Connected duplicates collapse under the same quality-floor, quality-mean,
+stable-identity priority. The
 source-safe output retains only dropped identity → representative mappings; it
 explicitly leaves high-fanout buckets and cross-source comparison for the final
 global pass rather than claiming recall it does not have. Job `818561` is staged
@@ -1715,9 +1721,10 @@ requeue disabled.
 The post-near candidate set then receives a deterministic, disk-backed byte
 selection. If it already fits, every surviving row is kept. Otherwise a first
 pass limits any one semantic stratum to 20% of the decimal 2 TB ceiling, then a
-stable identity-ranked refill uses remaining capacity without ever crossing the
-ceiling or padding. The text-free output contains exact parent/row locators and
-content hashes for later full-document replay. Job `818563` is staged after
+quality-ranked refill uses remaining capacity without ever crossing the ceiling
+or padding; stable identity is only the final deterministic tie-breaker. The
+text-free output contains exact parent/row locators, quality ranks, and content
+hashes for later full-document replay. Job `818563` is staged after
 near pass `818561`, CPU-only with 8 GiB for eight hours and requeue disabled.
 Benchmark decontamination, cross-source deduplication, verified materialization,
 and final training admission remain false at this boundary.

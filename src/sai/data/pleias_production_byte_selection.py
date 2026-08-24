@@ -139,7 +139,8 @@ def build_selection(
             "FROM exact.keep k LEFT JOIN near.drops d ON "
             "d.source_row_identity_sha256=k.source_row_identity_sha256 "
             "WHERE d.source_row_identity_sha256 IS NULL "
-            "ORDER BY k.source_row_identity_sha256"
+            "ORDER BY k.stratum_quality_floor_milli DESC, "
+            "k.stratum_quality_mean_milli DESC, k.source_row_identity_sha256"
         )
         if candidate_bytes <= maximum_bytes:
             output.execute(
@@ -171,7 +172,8 @@ def build_selection(
                 "LEFT JOIN chosen c ON "
                 "c.identity=k.source_row_identity_sha256 "
                 "WHERE d.source_row_identity_sha256 IS NULL AND c.identity IS NULL "
-                "ORDER BY k.source_row_identity_sha256"
+                "ORDER BY k.stratum_quality_floor_milli DESC, "
+                "k.stratum_quality_mean_milli DESC, k.source_row_identity_sha256"
             )
             for identity, stratum, size in output.execute(refill_sql):
                 if selected_bytes + size > maximum_bytes:
@@ -188,13 +190,16 @@ def build_selection(
             "source_path TEXT NOT NULL, source_parent_sha256 TEXT NOT NULL, "
             "source_row_index INTEGER NOT NULL, content_sha256 TEXT NOT NULL, "
             "stratum TEXT NOT NULL, text_utf8_bytes INTEGER NOT NULL, "
-            "token_count INTEGER NOT NULL"
+            "token_count INTEGER NOT NULL, "
+            "stratum_quality_floor_milli INTEGER NOT NULL, "
+            "stratum_quality_mean_milli INTEGER NOT NULL"
             ") WITHOUT ROWID"
         )
         output.execute(
             "INSERT INTO selected SELECT k.source_row_identity_sha256, "
             "k.source_path, k.source_parent_sha256, k.source_row_index, "
-            "k.content_sha256, k.stratum, k.text_utf8_bytes, k.token_count "
+            "k.content_sha256, k.stratum, k.text_utf8_bytes, k.token_count, "
+            "k.stratum_quality_floor_milli, k.stratum_quality_mean_milli "
             "FROM exact.keep k JOIN chosen c ON "
             "c.identity=k.source_row_identity_sha256"
         )
@@ -243,7 +248,10 @@ def build_selection(
         "policy": {
             "maximum_text_utf8_bytes": maximum_bytes,
             "maximum_is_padding_floor": False,
-            "selection_rank": "source_row_identity_sha256_ascending",
+            "selection_rank": (
+                "stratum_quality_floor_desc_then_stratum_quality_mean_desc_then_"
+                "source_row_identity_sha256_ascending"
+            ),
             "first_pass_maximum_single_stratum_ppm": MAXIMUM_SINGLE_STRATUM_PPM,
             "second_pass_refills_unused_capacity_across_all_strata": True,
             "oversized_last_document_is_skipped": True,

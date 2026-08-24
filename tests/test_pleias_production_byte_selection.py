@@ -58,14 +58,16 @@ def test_build_selection_replays_dedup_databases_without_text(tmp_path):
         "source_row_identity_sha256 TEXT NOT NULL UNIQUE, "
         "content_sha256 TEXT NOT NULL, source_path TEXT NOT NULL, "
         "source_parent_sha256 TEXT NOT NULL, source_row_index INTEGER NOT NULL, "
-        "stratum TEXT NOT NULL, text_utf8_bytes INTEGER NOT NULL, "
+        "stratum TEXT NOT NULL, stratum_quality_floor_milli INTEGER NOT NULL, "
+        "stratum_quality_mean_milli INTEGER NOT NULL, "
+        "text_utf8_bytes INTEGER NOT NULL, "
         "token_count INTEGER NOT NULL, descriptor_sha256 TEXT NOT NULL"
         ") WITHOUT ROWID"
     )
     identities = [character * 64 for character in "abc"]
     for index, identity in enumerate(identities):
         connection.execute(
-            "INSERT INTO keep VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO keep VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 f"{index + 1:064x}",
                 identity,
@@ -74,6 +76,8 @@ def test_build_selection_replays_dedup_databases_without_text(tmp_path):
                 "d" * 64,
                 index,
                 ["books", "science", "code"][index],
+                [3_500, 4_000, 5_000][index],
+                [4_000, 4_500, 5_000][index],
                 10,
                 5,
                 f"{index + 8:064x}",
@@ -139,4 +143,4 @@ def test_build_selection_replays_dedup_databases_without_text(tmp_path):
         "SELECT source_row_identity_sha256 FROM selected"
     ).fetchall()
     connection.close()
-    assert selected == [(identities[0],)]
+    assert selected == [(identities[2],)]

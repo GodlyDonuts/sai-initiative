@@ -3,9 +3,11 @@ from pathlib import Path
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 
 from sai.data import pleias_production_descriptor_census as census
 from sai.data.pleias_production_descriptor_census import (
+    PleiasProductionDescriptorCensusError,
     aggregate,
     bottom_k_word_shingles,
     descriptor,
@@ -46,6 +48,14 @@ def _decision(path: Path, stratum: str):
     row = {
         "stratum": stratum,
         "decision": "advance_to_full_candidate_decontamination",
+        "primary": {
+            "core_mean_scores_milli": {
+                "information_density": 4_500,
+                "educational_value": 4_250,
+                "source_reliability": 4_000,
+                "coherence": 4_750,
+            }
+        },
         "automatic_training_admission": False,
     }
     row["row_sha256"] = canonical_sha256(row)
@@ -108,10 +118,22 @@ def test_descriptor_contains_no_text_and_hashes_identity():
     value = descriptor(row, parent, 7)
     assert "text" not in value
     assert value["text_utf8_bytes"] == len(text.encode())
+    assert value["stratum_quality_floor_milli"] == 5_000
+    assert value["stratum_quality_mean_milli"] == 5_000
     assert value["content_sha256"] != value["normalized_content_sha256"]
     unsigned = {key: item for key, item in value.items() if key != "descriptor_sha256"}
     assert value["descriptor_sha256"] == canonical_sha256(unsigned)
     assert value["training_ready"] is False
+    with pytest.raises(
+        PleiasProductionDescriptorCensusError, match="stratum quality"
+    ):
+        descriptor(
+            row,
+            parent,
+            7,
+            stratum_quality_floor_milli=4_500,
+            stratum_quality_mean_milli=4_000,
+        )
 
 
 def test_full_parent_census_and_aggregate_are_nontraining(tmp_path, monkeypatch):
@@ -147,6 +169,8 @@ def test_full_parent_census_and_aggregate_are_nontraining(tmp_path, monkeypatch)
     rows = pq.read_table(shard_root / "candidate_descriptors.parquet").to_pylist()
     assert len(rows) == 1
     assert "text" not in rows[0]
+    assert rows[0]["stratum_quality_floor_milli"] == 4_000
+    assert rows[0]["stratum_quality_mean_milli"] == 4_375
     output = tmp_path / "aggregate.json"
     combined = aggregate(
         manifest,

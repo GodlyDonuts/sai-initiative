@@ -26,6 +26,7 @@ from sai.data.pleias_bounded_mechanical_candidates import (
 )
 from sai.data.pleias_metadata_census import load_manifest, select_shard
 from sai.data.pleias_semantic_sample import _token_band
+from sai.data.pleias_semantic_stratum_decision import CORE_SCORES
 from sai.data.pleias_semantic_stratum_decision import SCHEMA as DECISION_SCHEMA
 from sai.data.token_stream import canonical_sha256, sha256_file
 
@@ -60,8 +61,8 @@ def _signed(path: Path, schema: str) -> dict[str, Any]:
     return value
 
 
-def advanced_strata(decision: dict[str, Any]) -> frozenset[str]:
-    """Replay the exact advanced-stratum list from the semantic decision."""
+def advanced_stratum_quality(decision: dict[str, Any]) -> dict[str, tuple[int, int]]:
+    """Replay advanced strata and their conservative semantic-quality ranks."""
 
     rows = decision.get("decisions")
     advanced = decision.get("advanced_strata")
@@ -75,6 +76,7 @@ def advanced_strata(decision: dict[str, Any]) -> frozenset[str]:
         raise PleiasProductionDescriptorCensusError("semantic decision differs")
     replay = []
     expected = []
+    quality: dict[str, tuple[int, int]] = {}
     for row in rows:
         if not isinstance(row, dict):
             raise PleiasProductionDescriptorCensusError("semantic row differs")
@@ -86,14 +88,40 @@ def advanced_strata(decision: dict[str, Any]) -> frozenset[str]:
             raise PleiasProductionDescriptorCensusError("semantic row differs")
         replay.append(row["row_sha256"])
         if row.get("decision") == "advance_to_full_candidate_decontamination":
-            expected.append(row.get("stratum"))
+            stratum = row.get("stratum")
+            means = row.get("primary", {}).get("core_mean_scores_milli")
+            if (
+                not isinstance(stratum, str)
+                or not stratum
+                or stratum in quality
+                or not isinstance(means, dict)
+                or set(means) != set(CORE_SCORES)
+                or any(
+                    isinstance(value, bool)
+                    or not isinstance(value, int)
+                    or not 0 <= value <= 5_000
+                    for value in means.values()
+                )
+            ):
+                raise PleiasProductionDescriptorCensusError(
+                    "advanced stratum quality differs"
+                )
+            values = [means[key] for key in CORE_SCORES]
+            quality[stratum] = (min(values), sum(values) // len(values))
+            expected.append(stratum)
     if (
         canonical_sha256(replay) != decision.get("ordered_decisions_sha256")
         or expected != advanced
         or any(not isinstance(value, str) or not value for value in advanced)
     ):
         raise PleiasProductionDescriptorCensusError("advanced strata differ")
-    return frozenset(advanced)
+    return quality
+
+
+def advanced_strata(decision: dict[str, Any]) -> frozenset[str]:
+    """Replay the exact advanced-stratum list from the semantic decision."""
+
+    return frozenset(advanced_stratum_quality(decision))
 
 
 def normalized_text(value: str) -> str:
@@ -135,10 +163,28 @@ def bottom_k_word_shingles(value: str, *, size: int = NEAR_BOTTOM_K) -> list[int
 
 
 def descriptor(
-    row: dict[str, Any], parent: dict[str, Any], row_index: int
+    row: dict[str, Any],
+    parent: dict[str, Any],
+    row_index: int,
+    *,
+    stratum_quality_floor_milli: int = 5_000,
+    stratum_quality_mean_milli: int = 5_000,
 ) -> dict[str, Any]:
     """Build a source-safe descriptor for one mechanically eligible row."""
 
+    if (
+        isinstance(stratum_quality_floor_milli, bool)
+        or not isinstance(stratum_quality_floor_milli, int)
+        or isinstance(stratum_quality_mean_milli, bool)
+        or not isinstance(stratum_quality_mean_milli, int)
+        or not 0
+        <= stratum_quality_floor_milli
+        <= stratum_quality_mean_milli
+        <= 5_000
+    ):
+        raise PleiasProductionDescriptorCensusError(
+            "descriptor stratum quality differs"
+        )
     text = row["text"]
     text_bytes = text.encode()
     content_sha256 = hashlib.sha256(text_bytes).hexdigest()
@@ -164,6 +210,8 @@ def descriptor(
         "stratum": "::".join(
             (row["collection"], row["open_type"], _token_band(row["token_count"]))
         ),
+        "stratum_quality_floor_milli": stratum_quality_floor_milli,
+        "stratum_quality_mean_milli": stratum_quality_mean_milli,
         "word_count": row["word_count"],
         "token_count": row["token_count"],
         "text_utf8_bytes": len(text_bytes),
@@ -196,6 +244,8 @@ def _schema():
             ("license", pa.string()),
             ("language", pa.string()),
             ("stratum", pa.string()),
+            ("stratum_quality_floor_milli", pa.int32()),
+            ("stratum_quality_mean_milli", pa.int32()),
             ("word_count", pa.int64()),
             ("token_count", pa.int64()),
             ("text_utf8_bytes", pa.int64()),
@@ -239,7 +289,7 @@ def run_shard(
     policy = _load_signed(policy_path, POLICY_SCHEMA)
     routes = _routes(policy)
     decision = _signed(decision_path, DECISION_SCHEMA)
-    allowed_strata = advanced_strata(decision)
+    allowed_strata = advanced_stratum_quality(decision)
     output_root.mkdir(parents=True)
     output_path = output_root / "candidate_descriptors.parquet"
     temporary = output_root / f".descriptors.partial.{uuid.uuid4().hex}.parquet"
@@ -285,7 +335,14 @@ def run_shard(
                         if stratum not in allowed_strata:
                             counts["hold_semantic_stratum"] += 1
                             continue
-                        value = descriptor(row, parent, row_index)
+                        quality_floor, quality_mean = allowed_strata[stratum]
+                        value = descriptor(
+                            row,
+                            parent,
+                            row_index,
+                            stratum_quality_floor_milli=quality_floor,
+                            stratum_quality_mean_milli=quality_mean,
+                        )
                         batch_out.append(value)
                         ordered_descriptors.update(
                             bytes.fromhex(value["descriptor_sha256"])

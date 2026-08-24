@@ -79,6 +79,14 @@ def validate_descriptor(row: dict[str, Any]) -> None:
         or row["source_row_index"] < 0
         or not isinstance(row.get("stratum"), str)
         or not row["stratum"]
+        or isinstance(row.get("stratum_quality_floor_milli"), bool)
+        or not isinstance(row.get("stratum_quality_floor_milli"), int)
+        or not 0 <= row["stratum_quality_floor_milli"] <= 5_000
+        or isinstance(row.get("stratum_quality_mean_milli"), bool)
+        or not isinstance(row.get("stratum_quality_mean_milli"), int)
+        or not row["stratum_quality_floor_milli"]
+        <= row["stratum_quality_mean_milli"]
+        <= 5_000
         or isinstance(row.get("text_utf8_bytes"), bool)
         or not isinstance(row.get("text_utf8_bytes"), int)
         or row["text_utf8_bytes"] <= 0
@@ -179,6 +187,8 @@ def build_decision(
             "source_parent_sha256 TEXT NOT NULL, "
             "source_row_index INTEGER NOT NULL, "
             "stratum TEXT NOT NULL, "
+            "stratum_quality_floor_milli INTEGER NOT NULL, "
+            "stratum_quality_mean_milli INTEGER NOT NULL, "
             "text_utf8_bytes INTEGER NOT NULL, "
             "token_count INTEGER NOT NULL, "
             "descriptor_sha256 TEXT NOT NULL"
@@ -200,7 +210,7 @@ def build_decision(
                         (row["content_sha256"],),
                     )
                     connection.execute(
-                        "INSERT INTO keep VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
+                        "INSERT INTO keep VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) "
                         "ON CONFLICT(normalized_content_sha256) DO UPDATE SET "
                         "source_row_identity_sha256="
                         "excluded.source_row_identity_sha256, "
@@ -209,11 +219,25 @@ def build_decision(
                         "source_parent_sha256=excluded.source_parent_sha256, "
                         "source_row_index=excluded.source_row_index, "
                         "stratum=excluded.stratum, "
+                        "stratum_quality_floor_milli="
+                        "excluded.stratum_quality_floor_milli, "
+                        "stratum_quality_mean_milli="
+                        "excluded.stratum_quality_mean_milli, "
                         "text_utf8_bytes=excluded.text_utf8_bytes, "
                         "token_count=excluded.token_count, "
                         "descriptor_sha256=excluded.descriptor_sha256 "
-                        "WHERE excluded.source_row_identity_sha256 < "
-                        "keep.source_row_identity_sha256",
+                        "WHERE excluded.stratum_quality_floor_milli > "
+                        "keep.stratum_quality_floor_milli OR "
+                        "(excluded.stratum_quality_floor_milli = "
+                        "keep.stratum_quality_floor_milli AND "
+                        "excluded.stratum_quality_mean_milli > "
+                        "keep.stratum_quality_mean_milli) OR "
+                        "(excluded.stratum_quality_floor_milli = "
+                        "keep.stratum_quality_floor_milli AND "
+                        "excluded.stratum_quality_mean_milli = "
+                        "keep.stratum_quality_mean_milli AND "
+                        "excluded.source_row_identity_sha256 < "
+                        "keep.source_row_identity_sha256)",
                         (
                             row["normalized_content_sha256"],
                             row["source_row_identity_sha256"],
@@ -222,6 +246,8 @@ def build_decision(
                             row["source_parent_sha256"],
                             row["source_row_index"],
                             row["stratum"],
+                            row["stratum_quality_floor_milli"],
+                            row["stratum_quality_mean_milli"],
                             row["text_utf8_bytes"],
                             row["token_count"],
                             row["descriptor_sha256"],
@@ -287,7 +313,10 @@ def build_decision(
         "method": {
             "exact_key": "full_content_sha256",
             "normalized_exact_key": "NFKC_casefold_whitespace_collapse_sha256",
-            "representative": "lowest_source_row_identity_sha256",
+            "representative": (
+                "highest_stratum_quality_floor_then_highest_stratum_quality_mean_"
+                "then_lowest_source_row_identity_sha256"
+            ),
             "sqlite_journal_mode": "DELETE",
             "sqlite_synchronous": "FULL",
         },
