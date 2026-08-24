@@ -248,6 +248,48 @@ def training_envelope(
             "final_locator_sha256": locator["locator_sha256"],
         }
     )
+    semantic_key = " ".join(locator["semantic_domains"]).casefold()
+    if locator["code_document"]:
+        tokenizer_domain = "code"
+    elif any(
+        marker in semantic_key
+        for marker in (
+            "math",
+            "algebra",
+            "geometry",
+            "statistics",
+            "probability",
+        )
+    ):
+        tokenizer_domain = "math"
+    elif any(
+        marker in semantic_key
+        for marker in (
+            "physics",
+            "chemistry",
+            "biology",
+            "astronomy",
+            "earth_science",
+            "medicine",
+            "health",
+        )
+    ):
+        tokenizer_domain = "science"
+    elif any(
+        marker in semantic_key
+        for marker in (
+            "computer",
+            "software",
+            "technical",
+            "technology",
+            "engineering",
+            "electronics",
+            "robotics",
+        )
+    ):
+        tokenizer_domain = "technical"
+    else:
+        tokenizer_domain = "english"
     document = normalize_document(
         {
             "schema": ROW_SCHEMA,
@@ -258,7 +300,7 @@ def training_envelope(
                 ),
                 "row_id": f"{locator['source_path']}#{locator['source_row_index']}",
                 "license": locator["license"],
-                "domain": "code" if locator["code_document"] else "english",
+                "domain": tokenizer_domain,
             },
             "verification": {
                 "benchmark_disjoint": True,

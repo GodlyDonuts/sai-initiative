@@ -137,6 +137,7 @@ def test_transient_envelope_replays_final_locator_without_persisting_text() -> N
     assert envelope["schema"] == ENVELOPE_SCHEMA
     assert envelope["document"]["text"] == final["text"]
     assert envelope["document"]["verification"]["benchmark_disjoint"] is True
+    assert envelope["document"]["source"]["domain"] == "science"
     assert envelope["tokenization_ready"] is True
     with pytest.raises(
         PleiasVirtualTransientStreamError, match="training envelope source differs"
