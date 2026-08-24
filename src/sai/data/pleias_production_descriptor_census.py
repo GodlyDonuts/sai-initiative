@@ -46,7 +46,9 @@ def _signed(path: Path, schema: str) -> dict[str, Any]:
     try:
         value = json.loads(path.read_bytes())
     except (OSError, json.JSONDecodeError) as error:
-        raise PleiasProductionDescriptorCensusError("signed input is invalid") from error
+        raise PleiasProductionDescriptorCensusError(
+            "signed input is invalid"
+        ) from error
     unsigned = {key: item for key, item in value.items() if key != "receipt_sha256"}
     if (
         not isinstance(value, dict)
@@ -285,7 +287,9 @@ def run_shard(
                             continue
                         value = descriptor(row, parent, row_index)
                         batch_out.append(value)
-                        ordered_descriptors.update(bytes.fromhex(value["descriptor_sha256"]))
+                        ordered_descriptors.update(
+                            bytes.fromhex(value["descriptor_sha256"])
+                        )
                         counts["production_candidate_descriptors"] += 1
                         counts["production_candidate_text_utf8_bytes"] += value[
                             "text_utf8_bytes"
@@ -295,7 +299,9 @@ def run_shard(
                         ]
                         parent_candidates += 1
                         if len(batch_out) >= 16:
-                            writer.write_table(pa.Table.from_pylist(batch_out, schema=schema))
+                            writer.write_table(
+                                pa.Table.from_pylist(batch_out, schema=schema)
+                            )
                             batch_out.clear()
                 if batch_out:
                     writer.write_table(pa.Table.from_pylist(batch_out, schema=schema))
@@ -439,7 +445,9 @@ def aggregate(
         totals["descriptor_output_bytes"] += receipt["output"]["bytes"]
         receipts.append(receipt["receipt_sha256"])
     if seen_paths != expected_paths:
-        raise PleiasProductionDescriptorCensusError("descriptor parent coverage differs")
+        raise PleiasProductionDescriptorCensusError(
+            "descriptor parent coverage differs"
+        )
     payload = {
         "schema": AGGREGATE_SCHEMA,
         "status": "complete_nontraining_pleias_production_descriptor_census",
