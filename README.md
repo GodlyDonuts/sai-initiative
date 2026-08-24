@@ -1681,6 +1681,39 @@ rows before one strict enum failure. Deterministic enum-specific repair hints
 were added without weakening the schema, and the full repository suite passes
 1,078 tests.
 
+A larger calibration screen now freezes **45 rows** across PleIAs (16), PEP
+(14), and PubMed (15), stratified into clean retain, cleanup-risk retain,
+severe-risk retain, and non-retain cells. Gemini 3.1 and 3.5 covered all 45
+identities and agreed with each other on 45/45 verdicts and 37/45 conservative
+routes. Each agreed with the primary Hermès verdict on 36/45 rows, but only
+17/45 and 14/45 primary routes. Most importantly, Hermès marked nine rows
+non-retain while both Gemini models retained all nine. Across Hermès and both
+Gemini lanes, only 12/45 routes were unanimous; 11 of those 12 came from the
+clean-retain controls.
+
+Nemotron Ultra then targeted the 12 clean controls and nine disputed
+non-retains. It returned 18/21 valid signed judgments; three remained explicit
+non-JSON endpoint failures after all retries. Nemotron retained all 11 covered
+clean controls and all seven covered non-retains, but routed ten of those 18
+rows to cleanup, grounding, translation, or rights work rather than direct
+representation verification. All four available judges agreed on eight clean
+routes and zero non-retain routes. This is actionable calibration evidence:
+single-model risk labels are useful for triage, but cannot justify irreversible
+deletion or automatic admission. Future row deletion requires deterministic
+evidence or adjudicated agreement; collection-level pruning remains eligible
+when the complete source audit demonstrates persistently poor yield.
+
+The Gemini consensus receipt is
+`99a5e35c7d8f42ef1a5961670c99df22cd2ccf3e67bcb53cbb15b4615bbb52cd`.
+The Nemotron target-coverage receipt is
+`3b3e5c38407f5d83586f5f0c6c95725987439736842d68dc80777f42403180a5`,
+and the combined Gemini/Nemotron comparison receipt is
+`8085928cdfa68daf5c439d57912ce2a11d429d1421147e33412591ce5103a5c2`.
+All source-safe evidence was byte-replayed at dataset commit
+[`bee9b4d2d619e8bc8edcfd5a97c79fcc0c4ba5f3`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bee9b4d2d619e8bc8edcfd5a97c79fcc0c4ba5f3)
+and copied byte-identically to the authorized Stokes evidence root. Sampled
+source text was not published.
+
 The previously reported contextless physics answer sheet is also bound to an
 exact source location: FineMath-3plus row 50 of upstream
 `train-00076-of-00128.parquet`, content SHA-256
