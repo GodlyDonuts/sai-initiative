@@ -17,6 +17,7 @@ fi
 
 sai_population=artifacts/sai_grounded_bridge_verification_population_20260826_r1
 sai_candidates=${sai_population}/candidates.jsonl
+sai_same_family=artifacts/sai_grounded_bridge_verification_aggregate_20260826_r1
 sai_judgments=artifacts/sai_grounded_bridge_independent_nemotron_20260826_r1/judgments
 sai_aggregate=artifacts/sai_grounded_bridge_independent_nemotron_aggregate_20260826_r1
 sai_decontamination=artifacts/sai_grounded_bridge_decontamination_20260826_r1
@@ -82,6 +83,7 @@ fi
 if [[ ! -e "${sai_aggregate}" ]]; then
   python3 -m sai.data.nemotron_grounded_bridge_verification_aggregate \
     --population-root "${sai_population}" \
+    --same-family-aggregate-root "${sai_same_family}" \
     --judgments-root "${sai_judgments}" \
     --output-root "${sai_aggregate}" \
     --logical-shards "${sai_logical_shards}"

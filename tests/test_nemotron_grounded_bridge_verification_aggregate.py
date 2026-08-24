@@ -114,7 +114,9 @@ def test_request_accounting_preserves_missing_streamed_token_usage() -> None:
 
 def test_retain_route_strips_anchor_text_and_remains_nontraining() -> None:
     candidate = _candidate()
-    route, row = route_candidate(candidate, _receipt("retain"))
+    route, row = route_candidate(
+        candidate, _receipt("retain"), same_family_route="retain"
+    )
     assert route == "retain"
     assert row["schema"] == RETAINED_SCHEMA
     assert row["same_family_retention_passed"] is True
@@ -133,7 +135,9 @@ def test_retain_route_strips_anchor_text_and_remains_nontraining() -> None:
 
 def test_revision_route_preserves_work_but_not_source_quotes() -> None:
     candidate = _candidate()
-    route, row = route_candidate(candidate, _receipt("revise"))
+    route, row = route_candidate(
+        candidate, _receipt("revise"), same_family_route="retain"
+    )
     assert route == "revise"
     assert row["schema"] == REVISION_SCHEMA
     assert row["revision_complete"] is False
@@ -147,7 +151,9 @@ def test_revision_route_preserves_work_but_not_source_quotes() -> None:
 def test_rejection_route_drops_generated_prose() -> None:
     candidate = _candidate()
     receipt = deepcopy(_receipt("reject"))
-    route, row = route_candidate(candidate, receipt)
+    route, row = route_candidate(
+        candidate, receipt, same_family_route="retain"
+    )
     assert route == "reject"
     assert row["schema"] == REJECTION_SCHEMA
     assert row["generated_text_persisted"] is False
@@ -157,3 +163,18 @@ def test_rejection_route_drops_generated_prose() -> None:
     ).hexdigest()
     assert row["rejection_reason_sha256"] == expected_reason
     assert candidate["generated_text"] not in str(row)
+
+
+def test_independent_retain_cannot_overwrite_same_family_revision() -> None:
+    candidate = _candidate()
+    route, row = route_candidate(
+        candidate, _receipt("retain"), same_family_route="revise"
+    )
+    assert route == "revise"
+    assert row["schema"] == REVISION_SCHEMA
+    assert row["same_family_route"] == "revise"
+    assert row["independent_family_route"] == "retain"
+    assert row["same_family_retention_passed"] is False
+    assert row["independent_family_retention_passed"] is True
+    assert "same_family_revision_hold" in row["defects"]
+    assert row["training_ready"] is False

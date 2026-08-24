@@ -18,4 +18,5 @@ def test_nemotron_bridge_runner_is_bounded_resumable_and_nonduplicating() -> Non
     assert "https://integrate.api.nvidia.com/v1" in script
     assert "--api-key-env NVIDIA_API_KEY" in script
     assert "nemotron_grounded_bridge_verification_aggregate" in script
+    assert "--same-family-aggregate-root \"${sai_same_family}\"" in script
     assert "sai.data.grounded_bridge_decontamination" in script

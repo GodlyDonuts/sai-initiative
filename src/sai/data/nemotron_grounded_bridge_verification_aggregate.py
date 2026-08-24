@@ -12,7 +12,19 @@ from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
 from sai.data.bounded_pilot_work_queue import _atomic_jsonl
-from sai.data.data_yield_ledger import _load_receipt
+from sai.data.data_yield_ledger import _bound_file, _load_receipt
+from sai.data.grounded_bridge_verification_aggregate import (
+    REJECTION_SCHEMA as SAME_FAMILY_REJECTION_SCHEMA,
+)
+from sai.data.grounded_bridge_verification_aggregate import (
+    RETAINED_SCHEMA as SAME_FAMILY_RETAINED_SCHEMA,
+)
+from sai.data.grounded_bridge_verification_aggregate import (
+    REVISION_SCHEMA as SAME_FAMILY_REVISION_SCHEMA,
+)
+from sai.data.grounded_bridge_verification_aggregate import (
+    SCHEMA as SAME_FAMILY_AGGREGATE_SCHEMA,
+)
 from sai.data.grounded_bridge_verification_aggregate import (
     _evidence_hashes,
     load_population,
@@ -56,6 +68,78 @@ RAW_JUDGMENT_KEYS = tuple(INDEPENDENT_RUBRIC)
 
 class NemotronBridgeVerificationAggregateError(RuntimeError):
     """The verification population, receipt, shard, or route differs."""
+
+
+def load_same_family_routes(
+    root: Path, population: dict[str, Any], expected_rows: int
+) -> tuple[dict[str, str], dict[str, Any]]:
+    """Replay exact Hermès routes so Nemotron cannot overwrite a hold."""
+
+    receipt = _load_receipt(root / "receipt.json")
+    unsigned = {key: value for key, value in receipt.items() if key != "receipt_sha256"}
+    if (
+        receipt.get("schema") != SAME_FAMILY_AGGREGATE_SCHEMA
+        or receipt.get("status") != "complete_same_family_bridge_verification_routes"
+        or receipt.get("receipt_sha256") != canonical_sha256(unsigned)
+        or receipt.get("population", {}).get("receipt_sha256")
+        != population.get("receipt_sha256")
+        or receipt.get("population", {}).get("candidate_rows") != expected_rows
+        or receipt.get("same_model_family_as_generator") is not True
+        or receipt.get("independent_model_family_verification_complete") is not False
+        or receipt.get("training_ready") is not False
+    ):
+        raise NemotronBridgeVerificationAggregateError(
+            "same-family bridge aggregate differs"
+        )
+    routes: dict[str, str] = {}
+    for route, descriptor_key, schema in (
+        ("retain", "retained", SAME_FAMILY_RETAINED_SCHEMA),
+        ("revise", "revision_queue", SAME_FAMILY_REVISION_SCHEMA),
+        ("reject", "rejections", SAME_FAMILY_REJECTION_SCHEMA),
+    ):
+        descriptor = receipt.get(descriptor_key)
+        if not isinstance(descriptor, dict):
+            raise NemotronBridgeVerificationAggregateError(
+                "same-family bridge route descriptor differs"
+            )
+        path = _bound_file(root, descriptor)
+        rows = 0
+        try:
+            with path.open() as handle:
+                for line in handle:
+                    row = json.loads(line)
+                    identity = row.get("verification_candidate_identity_sha256")
+                    unsigned_row = {
+                        key: value
+                        for key, value in row.items()
+                        if key != "record_sha256"
+                    }
+                    if (
+                        row.get("schema") != schema
+                        or not isinstance(identity, str)
+                        or identity in routes
+                        or row.get("record_sha256") != canonical_sha256(unsigned_row)
+                        or row.get("source_text_persisted") is not False
+                        or row.get("training_ready") is not False
+                    ):
+                        raise NemotronBridgeVerificationAggregateError(
+                            "same-family bridge route row differs"
+                        )
+                    routes[identity] = route
+                    rows += 1
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise NemotronBridgeVerificationAggregateError(
+                "same-family bridge route row differs"
+            ) from error
+        if rows != descriptor.get("rows"):
+            raise NemotronBridgeVerificationAggregateError(
+                "same-family bridge route coverage differs"
+            )
+    if len(routes) != expected_rows:
+        raise NemotronBridgeVerificationAggregateError(
+            "same-family bridge aggregate coverage differs"
+        )
+    return routes, receipt
 
 
 def request_accounting(receipts: list[dict[str, Any]]) -> dict[str, Any]:
@@ -200,13 +284,22 @@ def _validate_summaries(
 
 
 def route_candidate(
-    candidate: dict[str, Any], receipt: dict[str, Any]
+    candidate: dict[str, Any], receipt: dict[str, Any], *, same_family_route: str
 ) -> tuple[str, dict[str, Any]]:
     """Emit one anchor-text-free retain, revision, or rejection record."""
 
     judgment = receipt["judgment"]
     generated = candidate["generated"]
     verdict = judgment["verdict"]
+    if same_family_route not in {"retain", "revise", "reject"}:
+        raise NemotronBridgeVerificationAggregateError(
+            "same-family bridge route differs"
+        )
+    cross_family_route = (
+        "reject"
+        if "reject" in {same_family_route, verdict}
+        else "revise" if "revise" in {same_family_route, verdict} else "retain"
+    )
     common = {
         "verification_candidate_identity_sha256": candidate[
             "candidate_identity_sha256"
@@ -228,6 +321,8 @@ def route_candidate(
         "verification_receipt_sha256": receipt["receipt_sha256"],
         "verification_judgment_sha256": judgment["judgment_sha256"],
         "bridge_label": candidate["bridge_label"],
+        "same_family_route": same_family_route,
+        "independent_family_route": verdict,
         "verification_confidence_ppm": judgment["confidence_ppm"],
         "source_disjoint": True,
         "source_text_persisted": False,
@@ -240,7 +335,7 @@ def route_candidate(
         "training_ready": False,
         **_evidence_hashes(judgment),
     }
-    if verdict == "retain":
+    if cross_family_route == "retain":
         row = {
             "schema": RETAINED_SCHEMA,
             **common,
@@ -254,7 +349,8 @@ def route_candidate(
             "same_family_retention_passed": True,
             "independent_family_retention_passed": True,
         }
-    elif verdict == "revise":
+    elif cross_family_route == "revise":
+        same_family_hold = same_family_route != "retain"
         row = {
             "schema": REVISION_SCHEMA,
             **common,
@@ -266,11 +362,21 @@ def route_candidate(
             "analogy_failure_modes": generated["analogy_failure_modes"],
             "verification_questions": generated["verification_questions"],
             "unsupported_generated_claims": judgment["unsupported_generated_claims"],
-            "defects": judgment["defects"],
-            "revision_brief": judgment["revision_brief"],
+            "defects": (
+                [*judgment["defects"], "same_family_revision_hold"]
+                if same_family_hold
+                else judgment["defects"]
+            ),
+            "revision_brief": (
+                "Resolve the sealed same-family revision route before retention."
+                if same_family_hold and not judgment["revision_brief"]
+                else judgment["revision_brief"]
+            ),
+            "same_family_retention_passed": not same_family_hold,
+            "independent_family_retention_passed": verdict == "retain",
             "revision_complete": False,
         }
-    elif verdict == "reject":
+    elif cross_family_route == "reject":
         row = {
             "schema": REJECTION_SCHEMA,
             **common,
@@ -280,17 +386,20 @@ def route_candidate(
                 judgment["rationale"].encode()
             ).hexdigest(),
             "generated_text_persisted": False,
+            "same_family_retention_passed": same_family_route == "retain",
+            "independent_family_retention_passed": verdict == "retain",
         }
     else:  # pragma: no cover - normalized verifier contract
         raise NemotronBridgeVerificationAggregateError(
             "bridge verification route differs"
         )
     row["record_sha256"] = canonical_sha256(row)
-    return verdict, row
+    return cross_family_route, row
 
 
 def build_aggregate(
     population_root: Path,
+    same_family_aggregate_root: Path,
     judgments_root: Path,
     output_root: Path,
     *,
@@ -309,6 +418,9 @@ def build_aggregate(
             "bridge verification aggregate geometry differs"
         )
     candidates, population = load_population(population_root)
+    same_family_routes, same_family_aggregate = load_same_family_routes(
+        same_family_aggregate_root, population, len(candidates)
+    )
     expected_receipts = {
         judgments_root / f"{row['candidate_identity_sha256']}.{OUTPUT_SUFFIX}.json"
         for row in candidates
@@ -328,7 +440,13 @@ def build_aggregate(
         receipt = validate_receipt(_load_receipt(path), candidate)
         receipts.append(receipt)
         receipt_hashes.append(receipt["receipt_sha256"])
-        route, row = route_candidate(candidate, receipt)
+        route, row = route_candidate(
+            candidate,
+            receipt,
+            same_family_route=same_family_routes[
+                candidate["candidate_identity_sha256"]
+            ],
+        )
         rows_by_route[route].append(row)
         usage.update(
             {
@@ -366,6 +484,13 @@ def build_aggregate(
                 "receipt_file_sha256": sha256_file(population_root / "receipt.json"),
                 "receipt_sha256": population["receipt_sha256"],
                 "candidate_rows": len(candidates),
+            },
+            "same_family_aggregate": {
+                "root_name": same_family_aggregate_root.name,
+                "receipt_file_sha256": sha256_file(
+                    same_family_aggregate_root / "receipt.json"
+                ),
+                "receipt_sha256": same_family_aggregate["receipt_sha256"],
             },
             "requested_model": DEFAULT_MODEL,
             "endpoint_origin": DEFAULT_BASE_URL,
@@ -407,12 +532,14 @@ def build_aggregate(
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--population-root", type=Path, required=True)
+    parser.add_argument("--same-family-aggregate-root", type=Path, required=True)
     parser.add_argument("--judgments-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--logical-shards", type=int, default=64)
     args = parser.parse_args()
     result = build_aggregate(
         args.population_root,
+        args.same_family_aggregate_root,
         args.judgments_root,
         args.output_root,
         logical_shards=args.logical_shards,

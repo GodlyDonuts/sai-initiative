@@ -535,8 +535,8 @@ identity shards to exactly one of nine lanes, permits one request per lane,
 uses the canonical pre-existing independent-Nemotron receipt root, skips only
 an already sealed shard summary, and refuses to aggregate unless all 512
 receipts and all 64 summaries exist. Per-shard atomic locks prevent a resumed
-lane from duplicating an already active request. The same run then applies the pinned
-official-public benchmark boundary to independently retained rows. Neither
+lane from duplicating an already active request. The same run then applies the
+pinned official-public benchmark boundary to independently retained rows. Neither
 stage can set `training_ready=true`; global deduplication and the prospective
 transfer ablation remain open afterward.
 
@@ -549,6 +549,11 @@ responses failed strict model-output validation and three were transient
 transport failures. Deterministic, error-specific correction hints now spell
 out exact claim coverage, quote provenance, boolean fields, defect enums, and
 verdict consistency without changing the rubric or accepting weaker outputs.
+The independent aggregate also replays all 512 sealed same-family routes. A
+bridge can enter its retained file only when both Hermès and Nemotron return
+retain; a Hermès revision or rejection remains a hold even if Nemotron retains
+the row. Cross-family aggregation therefore cannot overwrite either family's
+more conservative disposition.
 
 #### Prerequisite-edge compiler
 
