@@ -4,6 +4,7 @@ import pytest
 
 from sai.data.institutional_books_compiler_aggregate import (
     InstitutionalBooksAggregateError,
+    build_aggregate,
     triage_route,
 )
 
@@ -50,3 +51,13 @@ def test_non_english_routes_to_translation_after_ocr_and_rights() -> None:
 def test_missing_quality_geometry_fails_closed() -> None:
     with pytest.raises(InstitutionalBooksAggregateError, match="route"):
         triage_route({"risks": {}})
+
+
+def test_aggregate_rejects_invalid_logical_shard_geometry(tmp_path) -> None:
+    with pytest.raises(InstitutionalBooksAggregateError, match="logical shards differ"):
+        build_aggregate(
+            tmp_path / "population",
+            tmp_path / "judgments",
+            tmp_path / "aggregate.json",
+            logical_shards=0,
+        )

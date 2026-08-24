@@ -23,7 +23,7 @@ from sai.data.nous_label_worker import DEFAULT_MODEL
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 SCHEMA = "sai-institutional-books-compiler-aggregate-v1"
-LOGICAL_SHARDS = 10_000
+DEFAULT_LOGICAL_SHARDS = 10_000
 
 
 class InstitutionalBooksAggregateError(RuntimeError):
@@ -162,12 +162,21 @@ def _validate_population(root: Path) -> tuple[list[dict[str, Any]], dict[str, An
 
 
 def build_aggregate(
-    population_root: Path, judgments_root: Path, output_path: Path
+    population_root: Path,
+    judgments_root: Path,
+    output_path: Path,
+    logical_shards: int = DEFAULT_LOGICAL_SHARDS,
 ) -> dict[str, Any]:
     """Replay every candidate, receipt, and nonempty shard into one summary."""
 
     if output_path.exists() or output_path.is_symlink():
         raise InstitutionalBooksAggregateError("book aggregate output differs")
+    if (
+        isinstance(logical_shards, bool)
+        or not isinstance(logical_shards, int)
+        or logical_shards <= 0
+    ):
+        raise InstitutionalBooksAggregateError("book logical shards differ")
     candidates, population = _validate_population(population_root)
     expected_receipts = {
         judgments_root / f"{candidate['candidate_identity_sha256']}.book-compiler.json"
@@ -177,7 +186,7 @@ def build_aggregate(
         raise InstitutionalBooksAggregateError("book receipt population differs")
     nonempty_shards = sorted(
         {
-            int(candidate["candidate_identity_sha256"], 16) % LOGICAL_SHARDS
+            int(candidate["candidate_identity_sha256"], 16) % logical_shards
             for candidate in candidates
         }
     )
@@ -205,7 +214,7 @@ def build_aggregate(
             judgments_root / f"shard_{index:05d}.summary.json", "book shard summary"
         )
         expected = sum(
-            int(candidate["candidate_identity_sha256"], 16) % LOGICAL_SHARDS == index
+            int(candidate["candidate_identity_sha256"], 16) % logical_shards == index
             for candidate in candidates
         )
         created = summary.get("created_judgments")
@@ -219,7 +228,7 @@ def build_aggregate(
             or summary.get("receipt_sha256") != canonical_sha256(unsigned)
             or summary.get("model") != DEFAULT_MODEL
             or summary.get("rubric_sha256") != RUBRIC_SHA256
-            or summary.get("logical_shards") != LOGICAL_SHARDS
+            or summary.get("logical_shards") != logical_shards
             or summary.get("shard_index") != index
             or summary.get("candidate_rows") != expected
             or summary.get("expected_judgments") != expected
@@ -277,7 +286,7 @@ def build_aggregate(
             "candidate_file_sha256": population["output"]["sha256"],
             "rows": len(candidates),
         },
-        "logical_shards": LOGICAL_SHARDS,
+        "logical_shards": logical_shards,
         "nonempty_shards": len(nonempty_shards),
         "ordered_shard_summaries_sha256": canonical_sha256(summary_hashes),
         "ordered_compiler_receipts_sha256": canonical_sha256(receipt_hashes),
@@ -310,8 +319,14 @@ def main() -> int:
     parser.add_argument("--population-root", type=Path, required=True)
     parser.add_argument("--judgments-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--logical-shards", type=int, default=DEFAULT_LOGICAL_SHARDS)
     args = parser.parse_args()
-    result = build_aggregate(args.population_root, args.judgments_root, args.output)
+    result = build_aggregate(
+        args.population_root,
+        args.judgments_root,
+        args.output,
+        args.logical_shards,
+    )
     print(json.dumps(result, sort_keys=True))
     return 0
 
