@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import tempfile
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -16,6 +17,8 @@ from sai.data.token_stream import canonical_sha256, sha256_file
 SHARD_SCHEMA = "sai-pleias-metadata-census-shard-v1"
 AGGREGATE_SCHEMA = "sai-pleias-metadata-census-aggregate-v1"
 FILE_SCHEMA = "sai-pleias-metadata-census-file-v1"
+SEGMENT_SCHEMA = "sai-pleias-metadata-census-segment-v1"
+RECOVERY_SCHEMA = "sai-pleias-metadata-census-segment-recovery-v1"
 SOURCE_ID = "pleias_common_corpus"
 AXES = (
     "collection",
@@ -85,9 +88,7 @@ def load_manifest(path: Path) -> list[dict[str, Any]]:
                     or len(row["sha256"]) != 64
                     or row.get("raw_source_is_training_ready") is not False
                 ):
-                    raise PleiasMetadataCensusError(
-                        "PleIAs manifest row differs"
-                    )
+                    raise PleiasMetadataCensusError("PleIAs manifest row differs")
                 selected.append(row)
     except (OSError, json.JSONDecodeError) as error:
         raise PleiasMetadataCensusError("PleIAs manifest is invalid") from error
@@ -113,9 +114,33 @@ def select_shard(
     ):
         raise PleiasMetadataCensusError("PleIAs census geometry differs")
     return [
+        row for index, row in enumerate(rows) if index % logical_shards == shard_index
+    ]
+
+
+def select_segment(
+    rows: list[dict[str, Any]],
+    logical_shards: int,
+    shard_index: int,
+    segments_per_shard: int,
+    segment_index: int,
+) -> list[dict[str, Any]]:
+    """Select one identity-disjoint recovery segment inside a logical shard."""
+
+    if (
+        isinstance(segments_per_shard, bool)
+        or not isinstance(segments_per_shard, int)
+        or not 2 <= segments_per_shard <= 64
+        or isinstance(segment_index, bool)
+        or not isinstance(segment_index, int)
+        or not 0 <= segment_index < segments_per_shard
+    ):
+        raise PleiasMetadataCensusError("PleIAs census segment geometry differs")
+    shard = select_shard(rows, logical_shards, shard_index)
+    return [
         row
-        for index, row in enumerate(rows)
-        if index % logical_shards == shard_index
+        for index, row in enumerate(shard)
+        if index % segments_per_shard == segment_index
     ]
 
 
@@ -296,6 +321,50 @@ def _merge_axes(
             destination[axis][value]["files"] += 1
 
 
+def _census_selected(
+    selected: list[dict[str, Any]],
+    token: str,
+    scratch_root: Path | None,
+    progress: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, Any], Counter[str]]:
+    """Census one exact parent subset and return source-text-free evidence."""
+
+    if not selected:
+        raise PleiasMetadataCensusError("PleIAs census selection is empty")
+    file_rows = []
+    axes: dict[str, dict[str, Counter[str]]] = {
+        axis: defaultdict(Counter) for axis in AXES
+    }
+    totals = Counter()
+    for index, row in enumerate(selected, start=1):
+        result = _download_and_census(row, token, scratch_root)
+        file_rows.append(result)
+        totals["files"] += 1
+        for field in ("physical_bytes", "rows", "word_count", "token_count"):
+            totals[field] += result[field]
+        _merge_axes(axes, result["axes"])
+        print(
+            json.dumps(
+                {
+                    "event": progress["event"],
+                    **{key: value for key, value in progress.items() if key != "event"},
+                    "complete": index,
+                    "remaining": len(selected) - index,
+                },
+                sort_keys=True,
+            ),
+            flush=True,
+        )
+    serialized_axes = {
+        axis: {
+            value: dict(sorted(counts.items()))
+            for value, counts in sorted(values.items())
+        }
+        for axis, values in axes.items()
+    }
+    return file_rows, serialized_axes, totals
+
+
 def run_shard(
     manifest_path: Path,
     output_root: Path,
@@ -313,31 +382,16 @@ def run_shard(
     if not selected:
         raise PleiasMetadataCensusError("PleIAs census shard is empty")
     output_root.mkdir(parents=True)
-    file_rows = []
-    axes: dict[str, dict[str, Counter[str]]] = {
-        axis: defaultdict(Counter) for axis in AXES
-    }
-    totals = Counter()
-    for index, row in enumerate(selected, start=1):
-        result = _download_and_census(row, token, scratch_root)
-        file_rows.append(result)
-        totals["files"] += 1
-        for field in ("physical_bytes", "rows", "word_count", "token_count"):
-            totals[field] += result[field]
-        _merge_axes(axes, result["axes"])
-        print(
-            json.dumps(
-                {
-                    "event": "pleias_metadata_census_progress",
-                    "logical_shards": logical_shards,
-                    "shard_index": shard_index,
-                    "complete": index,
-                    "remaining": len(selected) - index,
-                },
-                sort_keys=True,
-            ),
-            flush=True,
-        )
+    file_rows, axes, totals = _census_selected(
+        selected,
+        token,
+        scratch_root,
+        {
+            "event": "pleias_metadata_census_progress",
+            "logical_shards": logical_shards,
+            "shard_index": shard_index,
+        },
+    )
     file_path = output_root / "files.jsonl"
     _atomic_jsonl(file_path, file_rows)
     payload = {
@@ -362,13 +416,85 @@ def run_shard(
             ),
         },
         "totals": dict(sorted(totals.items())),
-        "axes": {
-            axis: {
-                value: dict(sorted(counts.items()))
-                for value, counts in sorted(values.items())
-            }
-            for axis, values in axes.items()
+        "axes": axes,
+        "source_text_read": False,
+        "source_text_persisted": False,
+        "training_ready": False,
+        "four_b_training_authorized": False,
+    }
+    payload["receipt_sha256"] = canonical_sha256(payload)
+    _atomic_create(output_root / "receipt.json", payload)
+    return payload
+
+
+def run_segment(
+    manifest_path: Path,
+    output_root: Path,
+    logical_shards: int,
+    shard_index: int,
+    segments_per_shard: int,
+    segment_index: int,
+    token: str,
+    scratch_root: Path | None = None,
+) -> dict[str, Any]:
+    """Census one bounded recovery segment without touching a healthy shard."""
+
+    if not token or output_root.exists() or output_root.is_symlink():
+        raise PleiasMetadataCensusError("PleIAs census segment output differs")
+    all_rows = load_manifest(manifest_path)
+    parent_shard = select_shard(all_rows, logical_shards, shard_index)
+    selected = select_segment(
+        all_rows,
+        logical_shards,
+        shard_index,
+        segments_per_shard,
+        segment_index,
+    )
+    if not selected:
+        raise PleiasMetadataCensusError("PleIAs census segment is empty")
+    output_root.mkdir(parents=True)
+    file_rows, axes, totals = _census_selected(
+        selected,
+        token,
+        scratch_root,
+        {
+            "event": "pleias_metadata_census_segment_progress",
+            "logical_shards": logical_shards,
+            "shard_index": shard_index,
+            "segments_per_shard": segments_per_shard,
+            "segment_index": segment_index,
         },
+    )
+    file_path = output_root / "files.jsonl"
+    _atomic_jsonl(file_path, file_rows)
+    payload = {
+        "schema": SEGMENT_SCHEMA,
+        "status": "complete_nontraining_pleias_metadata_census_segment",
+        "logical_shards": logical_shards,
+        "shard_index": shard_index,
+        "segments_per_shard": segments_per_shard,
+        "segment_index": segment_index,
+        "source_manifest": {
+            "path_name": manifest_path.name,
+            "file_sha256": sha256_file(manifest_path),
+            "pleias_files": len(all_rows),
+        },
+        "parent_shard_selected_paths_sha256": canonical_sha256(
+            [row["source_path"] for row in parent_shard]
+        ),
+        "selected_paths_sha256": canonical_sha256(
+            [row["source_path"] for row in selected]
+        ),
+        "file_rows": {
+            "path": file_path.name,
+            "rows": len(file_rows),
+            "sha256": sha256_file(file_path),
+            "ordered_row_sha256": canonical_sha256(
+                [row["row_sha256"] for row in file_rows]
+            ),
+        },
+        "totals": dict(sorted(totals.items())),
+        "axes": axes,
         "source_text_read": False,
         "source_text_persisted": False,
         "training_ready": False,
@@ -397,6 +523,191 @@ def _load_signed(path: Path, schema: str) -> dict[str, Any]:
     return payload
 
 
+def _validated_file_rows(
+    root: Path,
+    receipt: dict[str, Any],
+    expected_paths: set[str],
+) -> tuple[list[dict[str, Any]], Counter[str], dict[str, Any]]:
+    descriptor = receipt.get("file_rows")
+    file_path = (
+        root / descriptor.get("path", "") if isinstance(descriptor, dict) else root
+    )
+    if (
+        not isinstance(descriptor, dict)
+        or not file_path.is_file()
+        or file_path.is_symlink()
+        or file_path.stat().st_nlink != 1
+        or descriptor.get("sha256") != sha256_file(file_path)
+    ):
+        raise PleiasMetadataCensusError("PleIAs file rows differ")
+    try:
+        with file_path.open() as handle:
+            rows = [json.loads(line) for line in handle]
+    except (OSError, json.JSONDecodeError) as error:
+        raise PleiasMetadataCensusError("PleIAs file census differs") from error
+    if len(rows) != descriptor.get("rows") or canonical_sha256(
+        [row.get("row_sha256") for row in rows]
+    ) != descriptor.get("ordered_row_sha256"):
+        raise PleiasMetadataCensusError("PleIAs file rows differ")
+    totals = Counter()
+    axes: dict[str, dict[str, Counter[str]]] = {
+        axis: defaultdict(Counter) for axis in AXES
+    }
+    seen = set()
+    for row in rows:
+        unsigned = {key: value for key, value in row.items() if key != "row_sha256"}
+        path = row.get("source_path")
+        if (
+            row.get("schema") != FILE_SCHEMA
+            or row.get("row_sha256") != canonical_sha256(unsigned)
+            or path not in expected_paths
+            or path in seen
+            or row.get("source_text_read") is not False
+            or row.get("source_text_persisted") is not False
+        ):
+            raise PleiasMetadataCensusError("PleIAs file receipt differs")
+        seen.add(path)
+        totals["files"] += 1
+        for field in ("physical_bytes", "rows", "word_count", "token_count"):
+            totals[field] += row[field]
+        _merge_axes(axes, row["axes"])
+    serialized_axes = {
+        axis: {
+            value: dict(sorted(counts.items()))
+            for value, counts in sorted(values.items())
+        }
+        for axis, values in axes.items()
+    }
+    if dict(sorted(totals.items())) != receipt.get(
+        "totals"
+    ) or serialized_axes != receipt.get("axes"):
+        raise PleiasMetadataCensusError("PleIAs census unit totals differ")
+    return rows, totals, serialized_axes
+
+
+def merge_segments(
+    manifest_path: Path,
+    segments_root: Path,
+    output_root: Path,
+    logical_shards: int,
+    shard_index: int,
+    segments_per_shard: int,
+) -> dict[str, Any]:
+    """Merge complete recovery segments into the canonical whole-shard receipt."""
+
+    if output_root.exists() or output_root.is_symlink():
+        raise PleiasMetadataCensusError("PleIAs recovered shard output differs")
+    all_rows = load_manifest(manifest_path)
+    selected = select_shard(all_rows, logical_shards, shard_index)
+    if not selected:
+        raise PleiasMetadataCensusError("PleIAs recovered shard is empty")
+    expected_order = [row["source_path"] for row in selected]
+    expected_paths = set(expected_order)
+    rows_by_path = {}
+    segment_receipts = []
+    for segment_index in range(segments_per_shard):
+        root = segments_root / f"segment_{segment_index:05d}"
+        receipt = _load_signed(root / "receipt.json", SEGMENT_SCHEMA)
+        segment_selected = select_segment(
+            all_rows,
+            logical_shards,
+            shard_index,
+            segments_per_shard,
+            segment_index,
+        )
+        segment_paths = [row["source_path"] for row in segment_selected]
+        if (
+            receipt.get("status")
+            != "complete_nontraining_pleias_metadata_census_segment"
+            or receipt.get("logical_shards") != logical_shards
+            or receipt.get("shard_index") != shard_index
+            or receipt.get("segments_per_shard") != segments_per_shard
+            or receipt.get("segment_index") != segment_index
+            or receipt.get("source_manifest", {}).get("file_sha256")
+            != sha256_file(manifest_path)
+            or receipt.get("parent_shard_selected_paths_sha256")
+            != canonical_sha256(expected_order)
+            or receipt.get("selected_paths_sha256") != canonical_sha256(segment_paths)
+        ):
+            raise PleiasMetadataCensusError("PleIAs census segment differs")
+        rows, _totals, _axes = _validated_file_rows(root, receipt, set(segment_paths))
+        for row in rows:
+            path = row["source_path"]
+            if path in rows_by_path:
+                raise PleiasMetadataCensusError("PleIAs census segments overlap")
+            rows_by_path[path] = row
+        segment_receipts.append(receipt["receipt_sha256"])
+    if set(rows_by_path) != expected_paths:
+        raise PleiasMetadataCensusError("PleIAs census segment coverage differs")
+    file_rows = [rows_by_path[path] for path in expected_order]
+    axes: dict[str, dict[str, Counter[str]]] = {
+        axis: defaultdict(Counter) for axis in AXES
+    }
+    totals = Counter()
+    for row in file_rows:
+        totals["files"] += 1
+        for field in ("physical_bytes", "rows", "word_count", "token_count"):
+            totals[field] += row[field]
+        _merge_axes(axes, row["axes"])
+    serialized_axes = {
+        axis: {
+            value: dict(sorted(counts.items()))
+            for value, counts in sorted(values.items())
+        }
+        for axis, values in axes.items()
+    }
+    output_root.mkdir(parents=True)
+    try:
+        file_path = output_root / "files.jsonl"
+        _atomic_jsonl(file_path, file_rows)
+        payload = {
+            "schema": SHARD_SCHEMA,
+            "status": "complete_nontraining_pleias_metadata_census_shard",
+            "logical_shards": logical_shards,
+            "shard_index": shard_index,
+            "source_manifest": {
+                "path_name": manifest_path.name,
+                "file_sha256": sha256_file(manifest_path),
+                "pleias_files": len(all_rows),
+            },
+            "selected_paths_sha256": canonical_sha256(expected_order),
+            "file_rows": {
+                "path": file_path.name,
+                "rows": len(file_rows),
+                "sha256": sha256_file(file_path),
+                "ordered_row_sha256": canonical_sha256(
+                    [row["row_sha256"] for row in file_rows]
+                ),
+            },
+            "totals": dict(sorted(totals.items())),
+            "axes": serialized_axes,
+            "source_text_read": False,
+            "source_text_persisted": False,
+            "training_ready": False,
+            "four_b_training_authorized": False,
+        }
+        payload["receipt_sha256"] = canonical_sha256(payload)
+        _atomic_create(output_root / "receipt.json", payload)
+        recovery = {
+            "schema": RECOVERY_SCHEMA,
+            "status": "complete_nontraining_segment_recovery",
+            "logical_shards": logical_shards,
+            "shard_index": shard_index,
+            "segments_per_shard": segments_per_shard,
+            "ordered_segment_receipts_sha256": canonical_sha256(segment_receipts),
+            "canonical_shard_receipt_sha256": payload["receipt_sha256"],
+            "source_text_persisted": False,
+            "training_ready": False,
+            "four_b_training_authorized": False,
+        }
+        recovery["receipt_sha256"] = canonical_sha256(recovery)
+        _atomic_create(output_root / "recovery.json", recovery)
+        return payload
+    except BaseException:
+        shutil.rmtree(output_root, ignore_errors=True)
+        raise
+
+
 def aggregate_shards(
     manifest_path: Path,
     shards_root: Path,
@@ -421,8 +732,7 @@ def aggregate_shards(
         receipt = _load_signed(root / "receipt.json", SHARD_SCHEMA)
         file_path = root / "files.jsonl"
         if (
-            receipt.get("status")
-            != "complete_nontraining_pleias_metadata_census_shard"
+            receipt.get("status") != "complete_nontraining_pleias_metadata_census_shard"
             or receipt.get("logical_shards") != logical_shards
             or receipt.get("shard_index") != shard_index
             or receipt.get("source_manifest", {}).get("file_sha256")
@@ -517,6 +827,22 @@ def main() -> int:
     shard.add_argument("--shard-index", type=int, required=True)
     shard.add_argument("--token-env", default="HF_TOKEN")
     shard.add_argument("--scratch-root", type=Path)
+    segment = subparsers.add_parser("segment")
+    segment.add_argument("--manifest", type=Path, required=True)
+    segment.add_argument("--output-root", type=Path, required=True)
+    segment.add_argument("--logical-shards", type=int, required=True)
+    segment.add_argument("--shard-index", type=int, required=True)
+    segment.add_argument("--segments-per-shard", type=int, required=True)
+    segment.add_argument("--segment-index", type=int, required=True)
+    segment.add_argument("--token-env", default="HF_TOKEN")
+    segment.add_argument("--scratch-root", type=Path)
+    merge = subparsers.add_parser("merge-segments")
+    merge.add_argument("--manifest", type=Path, required=True)
+    merge.add_argument("--segments-root", type=Path, required=True)
+    merge.add_argument("--output-root", type=Path, required=True)
+    merge.add_argument("--logical-shards", type=int, required=True)
+    merge.add_argument("--shard-index", type=int, required=True)
+    merge.add_argument("--segments-per-shard", type=int, required=True)
     aggregate = subparsers.add_parser("aggregate")
     aggregate.add_argument("--manifest", type=Path, required=True)
     aggregate.add_argument("--shards-root", type=Path, required=True)
@@ -531,6 +857,26 @@ def main() -> int:
             args.shard_index,
             os.environ.get(args.token_env, ""),
             args.scratch_root,
+        )
+    elif args.command == "segment":
+        result = run_segment(
+            args.manifest,
+            args.output_root,
+            args.logical_shards,
+            args.shard_index,
+            args.segments_per_shard,
+            args.segment_index,
+            os.environ.get(args.token_env, ""),
+            args.scratch_root,
+        )
+    elif args.command == "merge-segments":
+        result = merge_segments(
+            args.manifest,
+            args.segments_root,
+            args.output_root,
+            args.logical_shards,
+            args.shard_index,
+            args.segments_per_shard,
         )
     else:
         result = aggregate_shards(

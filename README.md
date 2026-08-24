@@ -1600,6 +1600,16 @@ yield, clean full-source materialization, and training admission remain false;
 the live complete metadata census will attach exact token mass to the measured
 collection-language routes before any bulk retention decision.
 
+The live 128-shard census exposed a long-tail infrastructure risk: 57 shards
+linearly projected beyond their fixed 16-hour walltime while remaining healthy.
+The recovery path now partitions only a failed logical shard into eight exact,
+identity-disjoint parent segments. A merge step verifies every segment receipt,
+parent hash, file-row hash, axes, totals, nonoverlap, and complete path coverage,
+then reconstructs byte-for-byte the same canonical whole-shard `files.jsonl`
+and receipt that an uninterrupted run produces. Recovery is CPU-only,
+non-requeueing, source-text-free, and is launched only for verified failures;
+healthy shards are neither canceled nor duplicated.
+
 That census now feeds a second fail-closed boundary rather than a bulk copy.
 Stokes job `818525` is dependency-staged to join the complete metadata geometry
 to the source-disjoint Hermès calibration and produce collection-language work
