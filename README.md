@@ -2878,13 +2878,17 @@ retain a bridge and the complete generated text clears the official benchmark
 boundary, the compiler creates four exact lesson forms: a bridge overview,
 each verified representation, explicit analogy limits, and answer-bearing
 verification questions. Every representation from one anchor pair remains in
-one deterministic train/development group. Exact and whitespace-normalized
-duplicates within the bridge component are rejected.
+one deterministic provisional train/development group. The compiler now binds
+both original anchor identities, content hashes, and source metadata so a later
+foundation scan can move the entire pair onto the anchor's actual global split
+or reject a pair whose anchors cross splits. Exact and whitespace-normalized
+duplicates within the bridge component are rejected. Pair-disjoint placement
+is not misreported as global source-disjointness.
 
 These bridge lessons remain candidates, not admitted data. Their receipts keep
-global deduplication against the final foundation corpus, transfer ablation,
-final bridge verification, Hugging Face publication, and training readiness
-false. This prevents attractive synthetic prose from entering Sai merely
+global deduplication and split reconciliation against the final foundation
+corpus, transfer ablation, final bridge verification, Hugging Face publication,
+and training readiness false. This prevents attractive synthetic prose from entering Sai merely
 because two model families liked it; the connection data must still demonstrate
 positive transfer and survive the complete corpus-wide duplicate boundary.
 
