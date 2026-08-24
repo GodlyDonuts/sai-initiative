@@ -153,6 +153,17 @@ admission claim. The repository implementation and tamper-aware replay entry
 point are `institutional_books_semantic_population.py` and
 `sai-build-institutional-books-semantic-population`.
 
+This stage is dependency-staged on Stokes as CPU job `818511`. When its exact
+population receipt closes, Hermès array `818512_[0-31%16]` will cover all 256
+identity shards with at most 16 simultaneous single-CPU lanes and resumable
+per-work receipts; it cannot run before the private population exists.
+Aggregate job `818513` then requires one valid judgment per selected identity,
+the exact nonempty shard-summary set, matching model/rubric hashes, and full
+usage accounting. Invalid, malformed, or inconsistent model outputs are
+retried and never converted into admissions. The aggregate deliberately keeps
+`training_ready=false`: Hermès supplies structured semantic triage, not final
+authority.
+
 The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
 If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
 trains on that smaller verified corpus rather than padding with weak web text,
