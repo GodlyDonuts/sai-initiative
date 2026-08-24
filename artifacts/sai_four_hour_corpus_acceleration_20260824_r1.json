@@ -1,0 +1,44 @@
+{
+  "cancelled_pending_jobs": [
+    818564,
+    818565,
+    818566,
+    818567,
+    818568,
+    818569,
+    818570,
+    818574,
+    818575,
+    818577,
+    818578,
+    818583,
+    818584,
+    818585,
+    818586
+  ],
+  "cancelled_work_had_started": false,
+  "final_byte_allocation_job": 818779,
+  "final_byte_allocation_prerequisites": [
+    818642,
+    818644
+  ],
+  "physical_branch_final_consumers": 0,
+  "receipt_sha256": "348fdaa68cffe3e611716d1e0387d275293efbaf50fec512f2ebb4524bfdc527",
+  "scheduler_changes": [
+    {"job_id": 818630, "new_array_throttle": 32, "old_array_throttle": 8},
+    {"job_id": 818632, "new_array_throttle": 32, "old_array_throttle": 16},
+    {"job_id": 818635, "new_array_throttle": 32, "old_array_throttle": 8},
+    {"job_id": 818638, "new_array_throttle": 32, "old_array_throttle": 16},
+    {"job_id": 818641, "new_array_throttle": 32, "old_array_throttle": 8},
+    {"job_id": 818643, "new_array_throttle": 32, "old_array_throttle": 16},
+    {"job_id": 818720, "new_array_throttle": 32, "old_array_throttle": 16},
+    {"job_id": 818722, "new_array_throttle": 32, "old_array_throttle": 16},
+    {"job_id": 818732, "new_array_throttle": 32, "old_array_throttle": 16},
+    {"job_id": 818733, "new_array_throttle": 32, "old_array_throttle": 16}
+  ],
+  "schema": "sai-four-hour-corpus-acceleration-v1",
+  "scientific_bytes_changed": false,
+  "status": "complete_scheduler_acceleration",
+  "timestamp_utc": "2026-08-24T21:42:45Z",
+  "virtual_final_branch_preserved": true
+}
