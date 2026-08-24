@@ -108,6 +108,25 @@ def test_book_quarantine_manifest_rejects_count_tamper(
         )
 
 
+def test_book_quarantine_manifest_accepts_omitted_zero_count(
+    tmp_path: Path, monkeypatch
+) -> None:
+    population, judgments, aggregate = _inputs(tmp_path, monkeypatch)
+    monkeypatch.setattr(manifest, "triage_route", lambda _judgment: "cleanup_review")
+    value = json.loads(aggregate.read_text())
+    value["counts"]["triage_route"].pop("quarantine")
+    value["receipt_sha256"] = canonical_sha256(
+        {key: item for key, item in value.items() if key != "receipt_sha256"}
+    )
+    aggregate.write_text(json.dumps(value))
+
+    output = tmp_path / "output"
+    result = build_quarantine_manifest(population, judgments, aggregate, output)
+
+    assert result["quarantine_rows"] == 0
+    assert (output / "quarantine_exclusions.jsonl").read_text() == ""
+
+
 def test_book_quarantine_manifest_rejects_extra_judgment(
     tmp_path: Path, monkeypatch
 ) -> None:

@@ -153,7 +153,7 @@ def build_quarantine_manifest(
         records.append(record)
 
     expected_quarantine = aggregate.get("counts", {}).get("triage_route", {}).get(
-        "quarantine"
+        "quarantine", 0
     )
     if (
         isinstance(expected_quarantine, bool)
