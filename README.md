@@ -201,7 +201,7 @@ balance admission `820649` is staged after both `820530` and `820358`. At
 launch, 60/64 book gate shards had accepted
 358,031 of 358,120 examined works (99.975%) and accounted for 64,830,934,694
 materialized enriched tokens, with zero nonempty gate error logs. The complete
-repository regression suite passes: **1,319 tests, 2 dependency warnings**.
+repository regression suite passes: **1,323 tests, 2 dependency warnings**.
 
 Publication is dependency-staged rather than manual. After combined admission,
 128 independently retryable workers validate that each final PleIAs Parquet is
