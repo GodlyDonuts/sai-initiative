@@ -1967,6 +1967,16 @@ immutable detached runtime. It is intended to run only after final virtual
 aggregate `818642`; it is preparation for a representative tokenizer tournament,
 not corpus admission or model training.
 
+The corresponding aggregate replay is implemented in
+`sai.data.transient_tokenizer_sample_aggregate`. It reopens all 128 bounded
+samples, verifies every shard/source receipt and byte ceiling, parses every
+standard pretraining row, and uses a disk-backed identity index to reject both
+cross-shard document-identity duplicates and distinct identities carrying exact
+duplicate text. Its aggregate contains only counts and hashes, including domain
+coverage and the ordered sample/document identities. CPU-only job
+`aggregate_transient_tokenizer_samples_stokes.sbatch` is the exact closure gate
+for the later 32K/48K/64K tokenizer build and qualification.
+
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
