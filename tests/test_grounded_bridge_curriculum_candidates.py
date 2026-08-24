@@ -16,6 +16,7 @@ from sai.data.grounded_bridge_decontamination import (
 from sai.data.grounded_bridge_decontamination import (
     SCHEMA as DECONTAMINATION_SCHEMA,
 )
+from sai.data.grounded_bridge_foundation_query import build_query
 from sai.data.grounded_bridge_population import ROW_SCHEMA as ANCHOR_ROW_SCHEMA
 from sai.data.grounded_bridge_population import SCHEMA as ANCHOR_POPULATION_SCHEMA
 from sai.data.token_stream import canonical_sha256, sha256_file
@@ -112,6 +113,16 @@ def test_bridge_compiler_preserves_open_gates_and_pair_disjoint_split() -> None:
     assert len({row["source_group_sha256"] for row in rows}) == 1
     assert len({row["content_sha256"] for row in rows}) == len(rows)
     assert len({row["normalized_content_sha256"] for row in rows}) == len(rows)
+    assert all(
+        row["anchor_candidate_identity_sha256s"] == ["a" * 64, "c" * 64] for row in rows
+    )
+    assert all(
+        row["anchor_source_content_sha256s"] == ["b" * 64, "d" * 64] for row in rows
+    )
+    assert all(
+        row["anchor_sources"] == [value["source"] for value in _anchors()]
+        for row in rows
+    )
     assert all(row["bridge_verified"] is False for row in rows)
     assert all(
         row["source_disjoint_against_foundation_complete"] is False for row in rows
@@ -190,6 +201,10 @@ def test_candidate_builder_binds_clean_population_and_durable_receipt(
     assert result["training_ready"] is False
     assert json.loads(durable.read_text()) == result
     assert "Bridge thesis" in (output / "curriculum_candidates.jsonl").read_text()
+    query = tmp_path / "query"
+    query_result = build_query(output, query)
+    assert query_result["counts"]["documents"] == 5
+    assert query_result["counts"]["anchors"] == 2
 
 
 def test_candidate_finalizer_waits_for_complete_decontamination() -> None:

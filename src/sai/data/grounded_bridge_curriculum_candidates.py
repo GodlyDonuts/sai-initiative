@@ -368,6 +368,13 @@ def compile_bridge(
             "corpus_split": split,
             "split_policy_sha256": SPLIT_POLICY_SHA256,
             "source_custody_sha256": source_custody,
+            "anchor_candidate_identity_sha256s": [
+                anchor["candidate_identity_sha256"] for anchor in anchors
+            ],
+            "anchor_source_content_sha256s": [
+                anchor["source_content_sha256"] for anchor in anchors
+            ],
+            "anchor_sources": [anchor["source"] for anchor in anchors],
             "bridge_pair_disjoint_split_complete": True,
             "source_disjoint_against_foundation_complete": False,
             "benchmark_decontamination_complete": True,
