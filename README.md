@@ -1888,9 +1888,14 @@ private versus redistributable custody separately. The ledger deliberately
 keeps final tokenization, curriculum scheduling, synthetic-bridge admission,
 final-corpus completion, and training authorization false.
 
-PleIAs production selection now has a 1,900,000,000,000-byte component ceiling,
-reserving 100GB beneath the combined 2TB boundary for the independently screened
-Institutional Books lane. When the PleIAs quality core exceeds its allowance,
+PleIAs production selection now has a 1,500,000,000,000-byte component ceiling,
+reserving 500GB beneath the combined 2TB boundary for the independently screened
+Institutional Books lane. The earlier 100GB reserve was withdrawn after the
+first 23 complete book materialization shards alone reported 24.424B enriched
+source tokens: allowing bulk PleIAs to consume 95% of the byte envelope before
+the high-value book lane closed was not quality-first. The 500GB is headroom,
+not a book-volume target, and any unused portion remains unused. When the PleIAs
+quality core exceeds its allowance,
 the first pass gives every surviving semantic stratum an equal-byte opportunity
 (also bounded by the 20% single-stratum cap); only then does a deterministic
 quality-ranked pass refill unused capacity. The ceiling is still not a target.
