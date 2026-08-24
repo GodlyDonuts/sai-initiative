@@ -2855,6 +2855,23 @@ exact stage allocation open until the selected tokenizer retokenizes the final
 stream. Curriculum indexing is therefore a necessary custody layer, not a
 claim that the 2 TB corpus is already training-ready.
 
+`sai.data.virtual_curriculum_coverage` then streams every indexed row again and
+measures the quality-density claim directly. Its prospective contract requires
+1.9–2.0 trillion post-rewrite UTF-8 bytes, all 20 polymath domains, all four
+spiral bands, a development partition in both components, concepts on at least
+90% of documents, prerequisites on at least 25%, multi-domain metadata on at
+least 5%, and at least 80% of bytes at semantic quality floor 6/10 or higher.
+It records unique concepts, prerequisites, domain pairs, quality-floor mass,
+and every component/split/band/domain byte total. These thresholds are a corpus
+qualification hypothesis that downstream proxy evaluations may tighten; they
+do not replace real capability measurement.
+
+The analyzer explicitly marks domain-label co-occurrence as **not verified
+connection data**. A final corpus still requires independently verified,
+source-grounded bridges plus exact token allocation from the selected tokenizer.
+Its receipt is mirrored to durable evidence and remains non-training even when
+the structural coverage gate passes.
+
 #### Evidence and status vocabulary
 
 To keep progress legible, Sai uses these states consistently:
