@@ -1603,6 +1603,11 @@ writing quality, knowledge density, reliability, pedagogy, reasoning, cultural
 and human-expression value, cross-domain potential, risks, and curriculum
 placement before any candidate-family promotion decision.
 
+The exact staged jobs are semantic population `818537`, Hermès compiler array
+`818538_[0-63%16]`, and aggregate `818539`. They form a strict chain after the
+bounded row aggregate `818531`; `scontrol` verified every dependency. All are
+independent CPU requests with requeue disabled and none authorizes training.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
