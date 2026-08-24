@@ -630,3 +630,29 @@ curriculum placement, bulk ingestion, and training admission remain false.
 All three eligible files were force-downloaded and replayed byte-for-byte from
 dataset commit
 [`288fe22adf52f8b5430cfa6834c039c45004cbbc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/288fe22adf52f8b5430cfa6834c039c45004cbbc).
+
+## OpenCoder code-web promotion screen and cache reclamation
+
+Release `20260826-r1` contains three source-safe files under
+`evidence/opencoder-promotion-screen/20260826-r1/`: a compact README, the frozen
+promotion screen, and a recoverable-cache reclamation receipt. The screen
+replays exactly 276 preselected identities across 16 logical shards. It passes
+one of five gates (computer-science coverage) and records the frozen decision
+`stop_full_audit_and_reallocate_hermes_capacity`.
+
+The screen and reclamation canonical receipts are
+`29a7ceed9841f99213d4087a40e0107277a07793b490760ee800242bcad7be70` and
+`a45fa68a77018c1b58900b58aa703ad295c249183528ec8495816fe95c6ac172`.
+Their file SHA-256 values are
+`12fd9e5daeeddcc05194311068d8a700489f6542466c1c643c6ddcc4cbb9d543` and
+`d07a93c33ddc64eac7e2a50901b4dde043ab1bacaa83ea0d95fdf24e6231824e`.
+The README SHA-256 is
+`ad6e1c6e0c344a97faaa111841b27e2f10a73b88fcd9ecb573b472c1d1a78a49`.
+
+After exact replay, all remaining OpenCoder workers were stopped and the
+286,437,437-byte local acquisition cache was deleted. The object was never
+uploaded to `Godlydonuts/Sai`, remains recoverable from the exact upstream
+revision, and had no active file handle or admitted derivative. The audit
+population and evidence remain intact. All three published files were
+force-downloaded and replayed byte-for-byte from dataset commit
+[`f6151be578e7e353af45152426a55681a27eae80`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f6151be578e7e353af45152426a55681a27eae80).

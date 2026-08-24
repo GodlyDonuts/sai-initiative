@@ -167,6 +167,11 @@ applicable, deletion commit, and whether recovery remains possible upstream.
 Provenance manifests, benchmark-boundary versions, and other replay evidence
 are retained even when they are small; deleting an extra pointer to the same LFS
 object is forbidden when it saves no object bytes but breaks historical replay.
+Transient acquisition caches are a separate boundary: a pinned,
+upstream-recoverable cache may be reclaimed without asserting whole-source
+unusability when it was never authoritative Sai custody, no active or admitted
+derivative depends on it, and the source-safe audit and recovery coordinates
+are already durable.
 
 #### Full FineMath-4plus census
 
@@ -1101,6 +1106,27 @@ The same three source-safe files are byte-matched under the authorized Stokes
 evidence root at `frontier-source-audit/20260825-r1`.
 These measured routes are neither whole-source yield estimates nor admission;
 they prevent dataset branding from silently substituting for content quality.
+
+The frozen OpenCoder code-web promotion screen has also closed with exact
+276/276 identity coverage across 16 preselected logical shards. It passed only
+computer-science coverage: **130/276 (47.10%)** rows route to quarantine, only
+**20/276 (7.25%)** route to representation verification, educational value is
+**2.195/4**, and technical depth is **1.659/4**. The exact replay therefore
+records `stop_full_audit_and_reallocate_hermes_capacity`, not a full-audit
+promotion. All post-screen OpenCoder workers were stopped. Its
+286,437,437-byte local Hugging Face acquisition-cache blob and snapshot symlink
+were deleted, reclaiming the full physical blob while retaining the population,
+compiler receipts, shard summaries, and source-safe decision. The raw object
+was never uploaded to `Godlydonuts/Sai` and remains recoverable from pinned
+upstream revision `9e8e48e666c226294d6f9e6c2e13f2c84c1c06f3`; this bounded screen does
+not claim every upstream row is unusable. Screen receipt
+`29a7ceed9841f99213d4087a40e0107277a07793b490760ee800242bcad7be70`
+and cache-reclamation receipt
+`a45fa68a77018c1b58900b58aa703ad295c249183528ec8495816fe95c6ac172`
+were remotely byte-replayed in Hugging Face commit
+[`f6151be578e7e353af45152426a55681a27eae80`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f6151be578e7e353af45152426a55681a27eae80)
+and copied byte-identically to the authorized Stokes evidence root at
+`opencoder-promotion-screen/20260826-r1`.
 
 The r1 286/1,879 overall and 77/96 Nemotron conclusions are retracted because
 they were materially inflated by nonsubstantive code windows. Those screens

@@ -113,9 +113,20 @@ capacity, not accepted corpus volume.
   official-boundary overlaps. The frozen 2,048-row Hermès population spans
   1,922 web hosts with at most two rows per host. Receipt
   `53abfd09fb2bc71b17dba5b922c1eaa2c7752cb216654e1557b442701937e7c9`
-  binds the exact source, card, population, lineage, and boundary indexes. The
-  card's MIT declaration does not establish rights provenance for every
-  underlying web page; Hermès judgment and training admission remain open.
+  binds the exact source, card, population, lineage, and boundary indexes. Its
+  frozen 276-row Hermès promotion screen passed only computer-science coverage
+  and failed representation verification, quarantine, educational value, and
+  technical depth. Full audit is stopped. The 286,437,437-byte local
+  acquisition cache was reclaimed after all OpenCoder workers stopped; the raw
+  shard was never uploaded here and remains recoverable at its pinned upstream
+  revision. Screen and reclamation receipts
+  `29a7ceed9841f99213d4087a40e0107277a07793b490760ee800242bcad7be70`
+  and
+  `a45fa68a77018c1b58900b58aa703ad295c249183528ec8495816fe95c6ac172`
+  are published under
+  `evidence/opencoder-promotion-screen/20260826-r1/`. The bounded result is not
+  a whole-source quality estimate, and the card's MIT declaration does not
+  establish rights provenance for every underlying web page.
 - The exact 512-row frontier-source compiler is complete: 348 `retain`, 125
   `review`, and 39 `reject` verdicts, but only 25 rows route to representation
   verification while 244 route to quarantine. FineWeb2-HQ and both
@@ -131,6 +142,10 @@ capacity, not accepted corpus volume.
   replacement. Rejected rows are excluded immediately; mixed raw shards stay
   until replacement custody exists. Provenance and benchmark-version evidence
   is retained when deleting its pointer would save no backing-object bytes.
+  Pinned, re-downloadable acquisition caches that were never authoritative Sai
+  custody may also be reclaimed after active dependencies end and source-safe
+  audit plus recovery coordinates are durable; doing so does not assert that
+  every upstream row is unusable.
 - Completed Hermès receipts contain 6,751 proposed cross-domain assignments
   across 730 directed labels. A 512-pair, source-disjoint development proposal
   population has been frozen across 290 labels. No proposal is called
