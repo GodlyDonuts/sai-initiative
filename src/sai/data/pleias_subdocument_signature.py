@@ -26,6 +26,7 @@ from sai.data.token_stream import canonical_sha256, sha256_file
 SHARD_SCHEMA = "sai-pleias-subdocument-signature-shard-v1"
 AGGREGATE_SCHEMA = "sai-pleias-subdocument-signature-aggregate-v1"
 SIGNATURE_SCHEMA = "sai-subdocument-signature-v1"
+HASH_BUCKETS = 16
 
 
 class PleiasSubdocumentSignatureError(RuntimeError):
@@ -166,11 +167,20 @@ def run_shard(
     ):
         raise PleiasSubdocumentSignatureError("materialized receipt differs")
     output_root.mkdir(parents=True)
-    output_path = output_root / "subdocument_signatures.parquet"
-    temporary = output_root / f".signatures.partial.{uuid.uuid4().hex}.parquet"
+    output_paths = [
+        output_root / f"bucket-{index:02x}.parquet" for index in range(HASH_BUCKETS)
+    ]
+    temporary_paths = [
+        output_root / f".bucket-{index:02x}.partial.{uuid.uuid4().hex}.parquet"
+        for index in range(HASH_BUCKETS)
+    ]
     counts: Counter[str] = Counter()
     ordered = hashlib.sha256()
-    writer = pq.ParquetWriter(temporary, _schema(), compression="zstd")
+    ordered_by_bucket = [hashlib.sha256() for _ in range(HASH_BUCKETS)]
+    writers = [
+        pq.ParquetWriter(path, _schema(), compression="zstd")
+        for path in temporary_paths
+    ]
     try:
         with tempfile.TemporaryDirectory(
             prefix="sai-pleias-subdocument-signature-", dir=scratch_root
@@ -179,7 +189,7 @@ def run_shard(
             parquet = pq.ParquetFile(source_path)
             row_offset = 0
             for batch in parquet.iter_batches(batch_size=16, use_threads=False):
-                output_rows = []
+                output_rows = [[] for _ in range(HASH_BUCKETS)]
                 for relative, candidate in enumerate(batch.to_pylist()):
                     rows = signature_rows(candidate, shard_index, row_offset + relative)
                     counts["documents"] += 1
@@ -188,22 +198,33 @@ def run_shard(
                     counts["code_signatures"] += sum(row["code"] for row in rows)
                     for row in rows:
                         ordered.update(bytes.fromhex(row["signature_sha256"]))
-                    output_rows.extend(rows)
-                if output_rows:
-                    writer.write_table(
-                        pa.Table.from_pylist(output_rows, schema=_schema())
-                    )
+                    for row in rows:
+                        bucket = int(row["normalized_sha256"][0], 16)
+                        output_rows[bucket].append(row)
+                        ordered_by_bucket[bucket].update(
+                            bytes.fromhex(row["signature_sha256"])
+                        )
+                        counts[f"bucket_{bucket:02x}_signatures"] += 1
+                for bucket, bucket_rows in enumerate(output_rows):
+                    if bucket_rows:
+                        writers[bucket].write_table(
+                            pa.Table.from_pylist(bucket_rows, schema=_schema())
+                        )
                 row_offset += batch.num_rows
             if row_offset != parquet.metadata.num_rows:
                 raise PleiasSubdocumentSignatureError(
                     "signature document coverage differs"
                 )
     except BaseException:
-        writer.close()
-        temporary.unlink(missing_ok=True)
+        for writer in writers:
+            writer.close()
+        for path in temporary_paths:
+            path.unlink(missing_ok=True)
         raise
-    writer.close()
-    os.replace(temporary, output_path)
+    for writer in writers:
+        writer.close()
+    for temporary, output_path in zip(temporary_paths, output_paths, strict=True):
+        os.replace(temporary, output_path)
     if counts["documents"] != receipt.get("counts", {}).get("retained_rows", 0):
         raise PleiasSubdocumentSignatureError("signature receipt coverage differs")
     payload = {
@@ -223,11 +244,23 @@ def run_shard(
         },
         "counts": dict(sorted(counts.items())),
         "ordered_signature_digests_sha256": ordered.hexdigest(),
-        "output": {
-            "path": output_path.name,
-            "bytes": output_path.stat().st_size,
-            "sha256": sha256_file(output_path),
+        "hash_partition": {
+            "buckets": HASH_BUCKETS,
+            "key": "first_normalized_sha256_hex_nibble",
         },
+        "outputs": [
+            {
+                "bucket": index,
+                "path": path.name,
+                "rows": counts[f"bucket_{index:02x}_signatures"],
+                "ordered_signature_digests_sha256": ordered_by_bucket[
+                    index
+                ].hexdigest(),
+                "bytes": path.stat().st_size,
+                "sha256": sha256_file(path),
+            }
+            for index, path in enumerate(output_paths)
+        ],
         "global_subdocument_deduplication_complete": False,
         "training_ready": False,
         "four_b_training_authorized": False,
@@ -256,7 +289,7 @@ def aggregate(
         )
         root = shards_root / f"shard_{shard_index:05d}"
         receipt = _load_signed(root / "receipt.json", SHARD_SCHEMA)
-        path = root / receipt.get("output", {}).get("path", "")
+        outputs = receipt.get("outputs")
         if (
             receipt.get("logical_shards") != logical_shards
             or receipt.get("shard_index") != shard_index
@@ -264,16 +297,27 @@ def aggregate(
             != materialized["receipt_sha256"]
             or receipt.get("counts", {}).get("documents")
             != materialized.get("counts", {}).get("retained_rows", 0)
-            or not path.is_file()
-            or path.is_symlink()
-            or path.stat().st_nlink != 1
-            or path.stat().st_size != receipt.get("output", {}).get("bytes")
-            or sha256_file(path) != receipt.get("output", {}).get("sha256")
+            or receipt.get("hash_partition", {}).get("buckets") != HASH_BUCKETS
+            or not isinstance(outputs, list)
+            or len(outputs) != HASH_BUCKETS
         ):
             raise PleiasSubdocumentSignatureError("signature shard differs")
+        for index, descriptor in enumerate(outputs):
+            path = root / descriptor.get("path", "")
+            if (
+                descriptor.get("bucket") != index
+                or descriptor.get("rows")
+                != receipt.get("counts", {}).get(f"bucket_{index:02x}_signatures", 0)
+                or not path.is_file()
+                or path.is_symlink()
+                or path.stat().st_nlink != 1
+                or path.stat().st_size != descriptor.get("bytes")
+                or sha256_file(path) != descriptor.get("sha256")
+            ):
+                raise PleiasSubdocumentSignatureError("signature bucket differs")
+            totals["signature_output_bytes"] += descriptor["bytes"]
         for key, value in receipt["counts"].items():
             totals[key] += value
-        totals["signature_output_bytes"] += receipt["output"]["bytes"]
         receipts.append(receipt["receipt_sha256"])
     payload = {
         "schema": AGGREGATE_SCHEMA,
