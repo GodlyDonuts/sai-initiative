@@ -3,6 +3,7 @@ import json
 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 
 from sai.data.institutional_books_materializer import (
     AGGREGATE_SCHEMA as MATERIALIZER_AGGREGATE_SCHEMA,
@@ -13,6 +14,15 @@ from sai.data.institutional_books_materializer import (
 )
 from sai.data.institutional_books_materializer import (
     SHARD_SCHEMA as MATERIALIZER_SHARD_SCHEMA,
+)
+from sai.data.institutional_books_mechanical_filter import (
+    InstitutionalBooksMechanicalFilterError,
+)
+from sai.data.institutional_books_mechanical_filter import (
+    aggregate as aggregate_filter,
+)
+from sai.data.institutional_books_mechanical_filter import (
+    run_shard as run_filter_shard,
 )
 from sai.data.institutional_books_mechanical_gate import aggregate, run_shard
 from sai.data.token_stream import canonical_sha256, sha256_file
@@ -90,3 +100,102 @@ def test_scans_complete_private_book_custody(tmp_path):
     assert result["all_rows_accounted"] is True
     assert result["decision_counts"] == shard["decision_counts"]
     assert result["training_ready"] is False
+
+    filtered = tmp_path / "filtered"
+    filter_shard = run_filter_shard(materialized, output, filtered, 1, 0)
+    assert filter_shard["source_rows"] == 2
+    assert filter_shard["retained_rows"] == 1
+    assert filter_shard["excluded_rows"] == 1
+    filtered_rows = pq.read_table(
+        filtered / "shards" / "shard_00000" / "data.parquet"
+    ).to_pylist()
+    assert [row["barcode_src"] for row in filtered_rows] == ["good"]
+    filter_result = aggregate_filter(
+        materialized,
+        output,
+        filtered,
+        1,
+        filtered / "aggregate.json",
+    )
+    assert filter_result["counts"] == {
+        "excluded_rows": 1,
+        "output_bytes": filter_shard["output"]["bytes"],
+        "output_files": 1,
+        "retained_rows": 1,
+        "source_rows": 2,
+    }
+    assert filter_result["training_ready"] is False
+
+
+def test_filter_rejects_changed_output_bytes(tmp_path):
+    materialized = tmp_path / "materialized"
+    shard_root = materialized / "shards" / "shard_00000"
+    data_path = shard_root / "data" / "parent_00000.parquet"
+    data_path.parent.mkdir(parents=True)
+    text = "A coherent book paragraph with ordinary language. " * 20
+    pq.write_table(
+        pa.Table.from_pylist(
+            [
+                {
+                    "schema": OUTPUT_SCHEMA,
+                    "barcode_src": "good",
+                    "text": text,
+                    "source_content_sha256": hashlib.sha256(
+                        text.encode()
+                    ).hexdigest(),
+                    "training_ready": False,
+                }
+            ]
+        ),
+        data_path,
+        compression="zstd",
+    )
+    parent = _signed(
+        {
+            "schema": PARENT_SCHEMA,
+            "counts": {"materialized_rows": 1},
+            "source": {"path": "train/parent.parquet"},
+            "output": {
+                "path": "data/parent_00000.parquet",
+                "bytes": data_path.stat().st_size,
+                "sha256": sha256_file(data_path),
+                "rows": 1,
+            },
+            "training_ready": False,
+        }
+    )
+    _write_json(shard_root / "parents" / "parent_00000.json", parent)
+    source_shard = _signed(
+        {
+            "schema": MATERIALIZER_SHARD_SCHEMA,
+            "logical_shards": 1,
+            "shard_index": 0,
+            "counts": {"materialized_rows": 1},
+            "training_ready": False,
+        }
+    )
+    _write_json(shard_root / "receipt.json", source_shard)
+    _write_json(
+        materialized / "aggregate.json",
+        _signed(
+            {
+                "schema": MATERIALIZER_AGGREGATE_SCHEMA,
+                "counts": {"materialized_rows": 1},
+                "training_ready": False,
+            }
+        ),
+    )
+    mechanical = tmp_path / "mechanical"
+    run_shard(materialized, mechanical, 1, 0)
+    aggregate(materialized, mechanical, 1, mechanical / "aggregate.json")
+    filtered = tmp_path / "filtered"
+    run_filter_shard(materialized, mechanical, filtered, 1, 0)
+    with (filtered / "shards" / "shard_00000" / "data.parquet").open(
+        "ab"
+    ) as handle:
+        handle.write(b"tamper")
+    with pytest.raises(
+        InstitutionalBooksMechanicalFilterError,
+        match="existing filter shard differs",
+    ):
+        run_filter_shard(materialized, mechanical, filtered, 1, 0)
