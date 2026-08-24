@@ -164,11 +164,15 @@ def _validate_population(root: Path) -> tuple[list[dict[str, Any]], dict[str, An
         or sha256_file(path) != output.get("sha256")
     ):
         raise InstitutionalBooksAggregateError("book population bytes differ")
-    candidates = _load_book_jsonl(path)
     expected_rows = (
         receipt.get("statistics", {}).get("candidate_rows")
         if pilot
         else output.get("rows")
+    )
+    candidates = (
+        []
+        if independent and expected_rows == 0 and path.stat().st_size == 0
+        else _load_book_jsonl(path)
     )
     if len(candidates) != expected_rows:
         raise InstitutionalBooksAggregateError("book population coverage differs")

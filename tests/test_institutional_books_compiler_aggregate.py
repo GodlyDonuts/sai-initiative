@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from sai.data.institutional_books_compiler_aggregate import (
+    INDEPENDENT_POPULATION_SCHEMA,
     InstitutionalBooksAggregateError,
+    _validate_population,
     build_aggregate,
     triage_route,
 )
+from sai.data.token_stream import canonical_sha256, sha256_file
 
 
 def _judgment() -> dict:
@@ -61,3 +66,34 @@ def test_aggregate_rejects_invalid_logical_shard_geometry(tmp_path) -> None:
             tmp_path / "aggregate.json",
             logical_shards=0,
         )
+
+
+def test_zero_survivor_independent_population_is_valid_negative_result(
+    tmp_path,
+) -> None:
+    root = tmp_path / "population"
+    root.mkdir()
+    candidates = root / "candidates.jsonl"
+    candidates.write_bytes(b"")
+    receipt = {
+        "schema": INDEPENDENT_POPULATION_SCHEMA,
+        "status": (
+            "complete_nontraining_private_independent_book_candidate_population"
+        ),
+        "output": {
+            "path": candidates.name,
+            "rows": 0,
+            "bytes": 0,
+            "sha256": sha256_file(candidates),
+        },
+        "source_text_private": True,
+        "source_text_publishable": False,
+        "independent_verification_complete": False,
+        "training_ready": False,
+        "four_b_training_authorized": False,
+    }
+    receipt["receipt_sha256"] = canonical_sha256(receipt)
+    (root / "receipt.json").write_text(json.dumps(receipt))
+    rows, replay = _validate_population(root)
+    assert rows == []
+    assert replay["output"]["rows"] == 0
