@@ -1663,6 +1663,13 @@ The exact-dedup chain is staged as SQLite decision `818550`, rewrite array
 decontamination aggregate `818548`. `scontrol` verified the dependencies;
 requeue is disabled and the graph is CPU-only.
 
+At exact-dedup closure, a fixed-allowlist custody job copies only source-safe
+aggregate receipts, decisions, and the text-free hash database to the authorized
+durable evidence root. It explicitly excludes semantic excerpts, model evidence
+quotes, compiler receipts, candidate Parquets, and source text. Every copied
+file is byte-counted and SHA-256 replayed before a durable mirror receipt is
+sealed.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
