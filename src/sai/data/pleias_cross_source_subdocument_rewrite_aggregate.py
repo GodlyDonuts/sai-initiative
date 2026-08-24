@@ -142,16 +142,17 @@ def build_aggregate(
             totals[key] += value
         for split, remote in remote_outputs.items():
             documents = counts.get(f"split::{split}::documents", 0)
+            expected_remote_path = (
+                f"{DESTINATION_PREFIX}/{split}/"
+                f"shard-{shard_index:05d}-of-{logical_shards:05d}.parquet"
+            )
             if remote is None and documents == 0:
                 continue
             if (
                 not isinstance(remote, dict)
                 or documents <= 0
                 or remote.get("repository") != DESTINATION_REPOSITORY
-                or not isinstance(remote.get("path"), str)
-                or not remote["path"].startswith(
-                    f"{DESTINATION_PREFIX}/{split}/"
-                )
+                or remote.get("path") != expected_remote_path
                 or remote["path"] in remotes
                 or not isinstance(remote.get("bytes"), int)
                 or remote["bytes"] <= 0

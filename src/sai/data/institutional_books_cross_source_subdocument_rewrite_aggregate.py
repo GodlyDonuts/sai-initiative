@@ -115,7 +115,9 @@ def build_aggregate(
                     continue
                 path = root / descriptor.get("path", "")
                 descriptor_valid = (
-                    path.is_file()
+                    descriptor.get("path") == f"{split}.parquet"
+                    and path.parent == root
+                    and path.is_file()
                     and not path.is_symlink()
                     and path.stat().st_nlink == 1
                     and path.stat().st_size == descriptor.get("bytes")
