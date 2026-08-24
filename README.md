@@ -2882,7 +2882,7 @@ across 4,664 files. Its semantic receipt SHA-256 is
 the aggregate file SHA-256 is
 `0745b4667a94f73a6a1bc20ab184388fcc91d7b39225b75e9129e46c8b44148f`,
 mirrored read-only beneath the authorized durable evidence root. That receipt
-released all 64 independent mechanical-filter identities in array `818505`.
+released all 64 independent mechanical-gate identities in array `818505`.
 The PleIAs metadata census has completed at least **79 of 128** canonical
 shards. At the four-hour acceleration cutoff, eight still-running
 identities—1, 42, 69, 72, 74, 75, 84, and 95—had
