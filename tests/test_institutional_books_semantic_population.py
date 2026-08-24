@@ -5,10 +5,15 @@ import copy
 import pytest
 
 from sai.data.institutional_books_semantic_population import (
+    COVERAGE_SCOPE,
     InstitutionalBooksSemanticPopulationError,
     _label,
     select_diverse_barcodes,
 )
+
+
+def test_semantic_population_scope_forbids_unsampled_inference() -> None:
+    assert COVERAGE_SCOPE == "bounded_diverse_sample_of_mechanically_clean_books"
 
 
 def _row(

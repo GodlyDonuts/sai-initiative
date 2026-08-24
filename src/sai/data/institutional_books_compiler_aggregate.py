@@ -12,6 +12,9 @@ from sai.data.agent_labeling import _atomic_create
 from sai.data.book_compiler_labeling import RUBRIC_SHA256
 from sai.data.institutional_books_pilot import RECEIPT_SCHEMA as POPULATION_SCHEMA
 from sai.data.institutional_books_semantic_population import (
+    COVERAGE_SCOPE,
+)
+from sai.data.institutional_books_semantic_population import (
     SCHEMA as SEMANTIC_POPULATION_SCHEMA,
 )
 from sai.data.nous_book_compiler_worker import (
@@ -143,6 +146,13 @@ def _validate_population(root: Path) -> tuple[list[dict[str, Any]], dict[str, An
         and receipt.get("source_text_private") is True
         and receipt.get("source_text_publishable") is False
         and receipt.get("semantic_admission_complete") is False
+        and receipt.get("policy", {}).get("coverage_scope") == COVERAGE_SCOPE
+        and receipt.get("policy", {}).get(
+            "semantic_decisions_apply_only_to_selected_identities"
+        )
+        is True
+        and receipt.get("policy", {}).get("unsampled_rows_semantically_inferred")
+        is False
     )
     independent_valid = (
         independent

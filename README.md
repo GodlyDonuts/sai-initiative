@@ -155,8 +155,11 @@ queue; all full text remains on Stokes. The population is explicitly
 non-training, non-publishable, and still requires Hermès semantic judgment,
 rights review, benchmark decontamination, and global semantic deduplication.
 Unselected books are not inferred to be good or bad—they simply receive no
-admission claim. The repository implementation and tamper-aware replay entry
-point are `institutional_books_semantic_population.py` and
+admission claim. This scope is now machine-enforced in both the population
+receipt and aggregate validator: semantic decisions can apply only to selected
+identities, and any receipt that implies a judgment about unsampled books fails
+closed. The repository implementation and tamper-aware replay entry point are
+`institutional_books_semantic_population.py` and
 `sai-build-institutional-books-semantic-population`.
 
 This stage is dependency-staged on Stokes as CPU job `818511`. When its exact

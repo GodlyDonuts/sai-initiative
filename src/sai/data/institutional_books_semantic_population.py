@@ -44,6 +44,7 @@ SCHEMA = "sai-institutional-books-semantic-candidate-population-v1"
 DEFAULT_MAXIMUM_CANDIDATES = 8_192
 DEFAULT_SEED = "sai-institutional-books-diverse-semantic-population-20260826-r1"
 POLICY_SCHEMA = "sai-institutional-books-diverse-selection-policy-v1"
+COVERAGE_SCOPE = "bounded_diverse_sample_of_mechanically_clean_books"
 CANDIDATE_METADATA_COLUMNS = {
     "barcode_src",
     "title_src",
@@ -440,6 +441,7 @@ def build_population(
     )
     policy = {
         "schema": POLICY_SCHEMA,
+        "coverage_scope": COVERAGE_SCOPE,
         "seed": seed,
         "maximum_candidates": maximum_candidates,
         "method": "stable_round_robin_subject_genre_token_band",
@@ -447,6 +449,8 @@ def build_population(
         "token_bands": [20_000, 80_000, 250_000],
         "mechanical_pass_required": True,
         "semantic_judgment_not_used_for_selection": True,
+        "semantic_decisions_apply_only_to_selected_identities": True,
+        "unsampled_rows_semantically_inferred": False,
     }
     output_root.mkdir(parents=True)
     try:
