@@ -118,6 +118,16 @@ output hash. The output remains non-training-ready pending global benchmark
 decontamination, semantic deduplication, and representation checks, and its
 early-access terms prohibit Hugging Face redistribution.
 
+A complete second-pass mechanical gate is now dependency-staged behind that
+aggregate. CPU array `818505_[0-63]` will hash-verify every private Parquet and
+scan all materialized rows for contextless answer keys and score sheets,
+control/Unicode corruption, repeated OCR gibberish, link or markup fragments,
+metadata-only forms, and duplicated boilerplate. Aggregate job `818506` then
+requires exact barcode coverage and decision-stream hashes across all 64
+shards. The gate copies no source text; every non-pass row is withheld from
+direct admission, while even a pass remains non-training-ready until semantic
+quality, decontamination, and global deduplication also close.
+
 The durable data catalog is
 [`Godlydonuts/Sai`](https://huggingface.co/datasets/Godlydonuts/Sai). It separates
 upstream source references, model judgments, verified representations,
