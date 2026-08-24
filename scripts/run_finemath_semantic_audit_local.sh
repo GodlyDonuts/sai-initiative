@@ -6,6 +6,9 @@ sai_candidates=artifacts/sai_finemath_semantic_audit_population_20260826_r1/cand
 sai_output=artifacts/sai_finemath_semantic_audit_judgments_20260826_r1
 sai_log_root=artifacts/sai_finemath_semantic_audit_logs_20260826_r1
 sai_logical_shards=64
+sai_model=${SAI_FINEMATH_MODEL:-stealth/ox-alpha}
+sai_base_url=${SAI_FINEMATH_BASE_URL:-http://127.0.0.1:8645/v1}
+sai_api_key_env=${SAI_FINEMATH_API_KEY_ENV:-SAI_NOUS_LOOPBACK_KEY}
 
 if [[ ! -f "${sai_candidates}" ]]; then
   echo "FineMath semantic candidate population is missing" >&2
@@ -14,7 +17,9 @@ fi
 
 mkdir -p "${sai_output}" "${sai_log_root}"
 export PYTHONPATH=src
-export SAI_NOUS_LOOPBACK_KEY=local-proxy
+if [[ "${sai_api_key_env}" = SAI_NOUS_LOOPBACK_KEY ]]; then
+  export SAI_NOUS_LOOPBACK_KEY=local-proxy
+fi
 
 run_segment() {
   local sai_first=$1
@@ -31,9 +36,9 @@ run_segment() {
       if python3 -m sai.data.nous_label_worker \
         --candidates "${sai_candidates}" \
         --output-root "${sai_output}" \
-        --model stealth/ox-alpha \
-        --base-url http://127.0.0.1:8645/v1 \
-        --api-key-env SAI_NOUS_LOOPBACK_KEY \
+        --model "${sai_model}" \
+        --base-url "${sai_base_url}" \
+        --api-key-env "${sai_api_key_env}" \
         --logical-shards "${sai_logical_shards}" \
         --shard-index "${sai_shard}" \
         --concurrency 1 \

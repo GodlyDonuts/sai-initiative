@@ -6,6 +6,8 @@ def test_finemath_semantic_audit_uses_one_resumable_rate_safe_hermes_stream() ->
     assert "sai.data.nous_label_worker" in script
     assert "stealth/ox-alpha" in script
     assert "http://127.0.0.1:8645/v1" in script
+    assert "SAI_FINEMATH_BASE_URL" in script
+    assert "SAI_FINEMATH_API_KEY_ENV" in script
     assert "--logical-shards \"${sai_logical_shards}\"" in script
     assert "--judgments-per-candidate 3" in script
     assert "--concurrency 1" in script
