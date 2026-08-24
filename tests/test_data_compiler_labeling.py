@@ -293,6 +293,39 @@ def test_compiler_rejects_ambiguous_html_character_reference_recovery() -> None:
         normalize_model_judgment(raw, candidate)
 
 
+def test_compiler_drops_unsupported_quote_when_exact_evidence_survives() -> None:
+    candidate = _candidate()
+    raw = _judgment(candidate)
+    exact = raw["evidence_quotes"][0]
+    raw["evidence_quotes"] = [
+        "A model-cleaned quotation that is absent from the source.",
+        exact,
+    ]
+    repaired, repairs = repair_evidence_quotes(raw, candidate)
+    assert repaired["evidence_quotes"] == [exact]
+    assert repairs == [
+        {
+            "algorithm": (
+                "drop-unrecoverable-quote-when-exact-evidence-survives-v1"
+            ),
+            "action": "dropped_unrecoverable_model_quote",
+            "evidence_index": 0,
+            "model_quote_utf8_sha256": hashlib.sha256(
+                raw["evidence_quotes"][0].encode()
+            ).hexdigest(),
+        }
+    ]
+    assert normalize_model_judgment(raw, candidate)["evidence_quotes"] == [exact]
+
+
+def test_compiler_rejects_when_no_exact_evidence_quote_survives() -> None:
+    candidate = _candidate()
+    raw = _judgment(candidate)
+    raw["evidence_quotes"] = ["An unsupported model-cleaned quotation."]
+    with pytest.raises(DataCompilerLabelingError, match="evidence"):
+        repair_evidence_quotes(raw, candidate)
+
+
 def test_compiler_rejects_ambiguous_normalized_quote_recovery() -> None:
     candidate = _candidate()
     candidate["text"] = (

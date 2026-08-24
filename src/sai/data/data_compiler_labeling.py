@@ -22,6 +22,7 @@ QUOTE_RECOVERY_ALGORITHM = (
     "nfkd-character-map-casefold-html-character-references-pdf-controls-"
     "whitespace-unique-source-span-v2"
 )
+QUOTE_DROP_ALGORITHM = "drop-unrecoverable-quote-when-exact-evidence-survives-v1"
 _IGNORABLE_PDF_CONTROLS = frozenset("\u00ad\u200b\u2060\ufeff")
 PHASES = ("grounding", "breadth", "integration", "reasoning_depth", "reject")
 VERDICTS = ("retain", "review", "reject")
@@ -335,11 +336,30 @@ def repair_evidence_quotes(
     repaired = dict(payload)
     repaired_quotes = []
     repairs = []
+    unsupported_quotes = []
+    first_unsupported_error: DataCompilerLabelingError | None = None
     for index, quote in enumerate(payload["evidence_quotes"]):
         if not isinstance(quote, str) or quote in document:
             repaired_quotes.append(quote)
             continue
-        exact, start, end = _recover_unique_source_span(document, quote)
+        try:
+            exact, start, end = _recover_unique_source_span(document, quote)
+        except DataCompilerLabelingError as error:
+            if str(error) != "evidence quote normalization has no exact source span":
+                raise
+            if first_unsupported_error is None:
+                first_unsupported_error = error
+            unsupported_quotes.append(
+                {
+                    "algorithm": QUOTE_DROP_ALGORITHM,
+                    "action": "dropped_unrecoverable_model_quote",
+                    "evidence_index": index,
+                    "model_quote_utf8_sha256": hashlib.sha256(
+                        quote.encode()
+                    ).hexdigest(),
+                }
+            )
+            continue
         repaired_quotes.append(exact)
         repairs.append(
             {
@@ -355,6 +375,9 @@ def repair_evidence_quotes(
                 "source_span_byte_end": len(document[:end].encode()),
             }
         )
+    if not repaired_quotes and first_unsupported_error is not None:
+        raise first_unsupported_error
+    repairs.extend(unsupported_quotes)
     repaired["evidence_quotes"] = repaired_quotes
     return repaired, repairs
 
