@@ -542,10 +542,11 @@ the direct NVIDIA endpoint with the canonical model name, or OpenRouter's exact
 `:free` alias only when the response reports provider `Nvidia` and the canonical
 Nemotron model. The aggregate records counts by transport and rejects every
 other endpoint/model/provider combination. Rate-safe workers operate over
-disjoint locked shards. The direct OpenRouter and local gateway paths share a
-process-wide admission ceiling, eliminating the measured HTTP-429 retry storm;
-the free Nemotron transport additionally requests provider-enforced JSON-object
-output without changing the bound rubric or validation schema. A deterministic
+disjoint locked shards. The direct OpenRouter path has its own process-wide
+admission ceiling, eliminating the measured HTTP-429 request storm without
+stealing capacity from the independent Nous/Hermès gateway pool; the free
+Nemotron transport additionally requests provider-enforced JSON-object output
+without changing the bound rubric or validation schema. A deterministic
 quote recovery step may replace a
 model-rendered citation only with its unique normalization-equivalent literal
 span in the assigned anchor; every repair records the raw/recovered hashes and

@@ -137,6 +137,12 @@ def _shared_provider_request_slot(
         yield None
         return
     root = _shared_provider_slot_root()
+    if base_url == OPENROUTER_URL:
+        root = root / "openrouter"
+        root.mkdir(mode=0o700, exist_ok=True)
+        metadata = root.lstat()
+        if root.is_symlink() or not root.is_dir() or metadata.st_uid != os.getuid():
+            raise NousLabelWorkerError("shared provider endpoint root is unsafe")
     while True:
         for slot_index in range(concurrency):
             path = root / f"slot_{slot_index:03d}.lock"
