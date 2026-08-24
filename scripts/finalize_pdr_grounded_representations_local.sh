@@ -96,23 +96,6 @@ run_lane() {
   done
 }
 
-sai_pids=()
-for sai_lane in $(seq 0 $((sai_lanes - 1))); do
-  run_lane "${sai_lane}" \
-    >"${sai_log_root}/lane-$(printf '%02d' "${sai_lane}").log" 2>&1 &
-  sai_pids+=("$!")
-done
-for sai_pid in "${sai_pids[@]}"; do
-  wait "${sai_pid}"
-done
-
-if [[ ! -e "${sai_verification_aggregate}" ]]; then
-  python3 -m sai.data.grounded_representation_verification_aggregate \
-    --population-root "${sai_verification_population}" \
-    --judgments-root "${sai_verification_judgments}" \
-    --output-root "${sai_verification_aggregate}"
-fi
-
 set -a
 source .env
 set +a
@@ -150,6 +133,9 @@ run_independent_lane() {
 
 sai_pids=()
 for sai_lane in $(seq 0 $((sai_lanes - 1))); do
+  run_lane "${sai_lane}" \
+    >"${sai_log_root}/lane-$(printf '%02d' "${sai_lane}").log" 2>&1 &
+  sai_pids+=("$!")
   run_independent_lane "${sai_lane}" \
     >"${sai_log_root}/independent-lane-$(printf '%02d' "${sai_lane}").log" 2>&1 &
   sai_pids+=("$!")
@@ -157,6 +143,13 @@ done
 for sai_pid in "${sai_pids[@]}"; do
   wait "${sai_pid}"
 done
+
+if [[ ! -e "${sai_verification_aggregate}" ]]; then
+  python3 -m sai.data.grounded_representation_verification_aggregate \
+    --population-root "${sai_verification_population}" \
+    --judgments-root "${sai_verification_judgments}" \
+    --output-root "${sai_verification_aggregate}"
+fi
 
 if [[ ! -e "${sai_cross_model_aggregate}" ]]; then
   python3 -m sai.data.nemotron_grounded_representation_verification_aggregate \

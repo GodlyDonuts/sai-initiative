@@ -1538,8 +1538,8 @@ ceiling. A dependency watcher now waits for all 128 generation shard summaries,
 then deterministically aggregates the complete population, screens every
 generated representation against the pinned official benchmark boundary,
 freezes exact source/generated verification pairs, runs eight disjoint
-same-family verification lanes, runs a second eight-lane review through the
-independent Nemotron Ultra model family, and seals conservative cross-model
+same-family verification lanes in parallel with eight independent-review lanes
+through the Nemotron Ultra model family, and seals conservative cross-model
 retain/revise/reject custody. Retention requires both families to retain; any
 disagreement routes to revision and either rejection removes generated text.
 The watcher cannot skip an incomplete shard, and every stage replays content
