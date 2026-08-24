@@ -11,11 +11,12 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from sai.data.agent_labeling import normalize_candidate
 from sai.data.pleias_parent_disjoint_audit_population import (
     EXPECTED_ROWS,
     SOURCE_ID,
 )
-from sai.data.reservoir_audit_population import SCHEMA, _write_jsonl
+from sai.data.reservoir_audit_population import LINEAGE_SCHEMA, SCHEMA, _write_jsonl
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 AGGREGATE_SCHEMA = "sai-pleias-parent-disjoint-audit-aggregate-v1"
@@ -57,6 +58,83 @@ def _jsonl(path: Path) -> list[dict[str, Any]]:
                 )
             rows.append(row)
     return rows
+
+
+def load_aggregate_population(
+    output_root: Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """Replay one completed eight-shard aggregate for downstream screening."""
+
+    candidates_path = output_root / "candidates.jsonl"
+    lineage_path = output_root / "lineage.jsonl"
+    receipt_path = output_root / "receipt.json"
+    candidates = [normalize_candidate(row) for row in _jsonl(candidates_path)]
+    lineage = _jsonl(lineage_path)
+    receipt = _load_json(receipt_path)
+    unsigned = {
+        key: value for key, value in receipt.items() if key != "receipt_sha256"
+    }
+    population = receipt.get("population", {})
+    lineage_descriptor = receipt.get("lineage", {})
+    identities = [row["candidate_identity_sha256"] for row in candidates]
+    if (
+        receipt.get("schema") != AGGREGATE_SCHEMA
+        or receipt.get("status") != "complete_parent_disjoint_acquisition"
+        or receipt.get("source_id") != SOURCE_ID
+        or receipt.get("logical_shards") != 8
+        or len(receipt.get("shards", [])) != 8
+        or receipt.get("unique_parent_files") != EXPECTED_ROWS
+        or receipt.get("fully_verified_parent_files") != EXPECTED_ROWS
+        or receipt.get("benchmark_decontamination_complete") is not False
+        or receipt.get("hermes_judgments_complete") is not False
+        or receipt.get("training_ready") is not False
+        or receipt.get("receipt_sha256") != canonical_sha256(unsigned)
+        or population.get("path") != candidates_path.name
+        or population.get("rows") != EXPECTED_ROWS
+        or population.get("bytes") != candidates_path.stat().st_size
+        or population.get("sha256") != sha256_file(candidates_path)
+        or population.get("ordered_identities_sha256")
+        != canonical_sha256(identities)
+        or lineage_descriptor.get("path") != lineage_path.name
+        or lineage_descriptor.get("rows") != EXPECTED_ROWS
+        or lineage_descriptor.get("bytes") != lineage_path.stat().st_size
+        or lineage_descriptor.get("sha256") != sha256_file(lineage_path)
+        or lineage_descriptor.get("ordered_rows_sha256")
+        != canonical_sha256(lineage)
+        or len(candidates) != EXPECTED_ROWS
+        or len(lineage) != EXPECTED_ROWS
+        or len(identities) != len(set(identities))
+    ):
+        raise PleiasParentDisjointAggregateError("aggregate population differs")
+    parents = set()
+    for ordinal, (candidate, source) in enumerate(
+        zip(candidates, lineage, strict=True)
+    ):
+        unsigned_lineage = {
+            key: value for key, value in source.items() if key != "lineage_sha256"
+        }
+        parent = (source.get("repository"), source.get("revision"), source.get("path"))
+        if (
+            source.get("schema") != LINEAGE_SCHEMA
+            or source.get("ordinal") != ordinal
+            or source.get("source_id") != SOURCE_ID
+            or source.get("candidate_identity_sha256")
+            != candidate["candidate_identity_sha256"]
+            or source.get("repository") != candidate["source"]["dataset"]
+            or source.get("revision") != candidate["source"]["revision"]
+            or source.get("license") != candidate["source"]["license"]
+            or source.get("excerpt_sha256") != candidate["source_content_sha256"]
+            or source.get("excerpt_bytes") != len(candidate["text"].encode())
+            or source.get("full_file_content_verified") is not True
+            or source.get("raw_source_is_training_ready") is not False
+            or source.get("lineage_sha256") != canonical_sha256(unsigned_lineage)
+            or parent in parents
+        ):
+            raise PleiasParentDisjointAggregateError("aggregate lineage differs")
+        parents.add(parent)
+    if len(parents) != EXPECTED_ROWS:
+        raise PleiasParentDisjointAggregateError("aggregate parent custody differs")
+    return candidates, lineage, receipt
 
 
 def build_aggregate(

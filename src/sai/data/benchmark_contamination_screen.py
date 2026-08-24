@@ -20,6 +20,12 @@ from sai.data.decontamination import (
     _overlap_count,
     binary_boundary_index,
 )
+from sai.data.pleias_parent_disjoint_audit_aggregate import (
+    AGGREGATE_SCHEMA as PLEIAS_AGGREGATE_SCHEMA,
+)
+from sai.data.pleias_parent_disjoint_audit_aggregate import (
+    load_aggregate_population as load_pleias_aggregate_population,
+)
 from sai.data.reservoir_audit_aggregate import load_population
 from sai.data.token_stream import canonical_sha256, sha256_file
 
@@ -106,7 +112,18 @@ def build_screen(
         raise BenchmarkContaminationScreenError("screen output already exists")
     if not boundary_roots:
         raise BenchmarkContaminationScreenError("screen boundary is missing")
-    candidates, lineage, population_receipt = load_population(population_root)
+    try:
+        receipt_header = json.loads((population_root / "receipt.json").read_text())
+    except (OSError, json.JSONDecodeError) as error:
+        raise BenchmarkContaminationScreenError(
+            "screen population receipt differs"
+        ) from error
+    if receipt_header.get("schema") == PLEIAS_AGGREGATE_SCHEMA:
+        candidates, lineage, population_receipt = load_pleias_aggregate_population(
+            population_root
+        )
+    else:
+        candidates, lineage, population_receipt = load_population(population_root)
     words, code, boundary_receipts = binary_boundary_index(boundary_roots)
     try:
         summary = summarize(

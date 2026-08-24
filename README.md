@@ -1115,17 +1115,28 @@ ledger were remotely byte-replayed in Hugging Face commit
 [`2a085eacf1479293e3c369d7eaa8e476d7f84054`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2a085eacf1479293e3c369d7eaa8e476d7f84054).
 
 Because PleIAs is the lake's largest unresolved component, a new 1,024-parent
-screen is now executing across all ten `common_corpus_*` partitions. It selects
-102–103 parents per partition by deterministic SHA-256 rank, excludes all 40
-parents from the earlier screen, and binds 460,098,704,855 parent bytes without
-claiming statistical representativeness. Stokes cannot safely materialize its
-large Parquet row groups under the 500 MB process cap, so eight identity-
-disjoint 128-parent shards each open exactly one parent at a time, verify the
-full pinned byte count and SHA-256 on disk, iterate the selected row group in
-16-record batches, persist one deterministic usable row, and remove the parent
-before continuing. At most eight parents are open globally. A
-434,737,237-byte end-to-end probe passed this exact path. Benchmark screening,
-Hermès judgment, source-wide yield, and training admission remain false.
+screen has now completed across all ten `common_corpus_*` partitions. It
+selected 102–103 parents per partition by deterministic SHA-256 rank, excluded
+all 40 parents from the earlier screen, and fully verified 460,098,704,855
+parent bytes without claiming statistical representativeness. Eight identity-
+disjoint 128-parent shards each opened exactly one parent at a time, verified
+the full pinned byte count and SHA-256 on disk, iterated the selected row group
+in 16-record batches, persisted one deterministic usable row, and removed the
+parent before continuing. All 1,024 parent identities are unique; the aggregate
+candidate and lineage SHA-256 values are
+`4f4bbb3c87b0f5e65f7490cf469a04dda03b11e5bc863d0404c6f4fd4f90fd32`
+and `566404ea466227d61db98b0cc3664c26c99564b6e70efb4e866caa32c106fe4d`;
+the canonical acquisition receipt is
+`06cce088ccdc2c58f89d0e467961f4b2a648b5448775f8ed333445af672ed1e3`.
+
+The corrected official-public benchmark boundary then found 33 contaminated
+rows and 991 clean rows, with 846 exact word-shingle and 28 eligible code-
+shingle overlaps. Contamination spans every partition and is highest in the
+sampled partition 8 lane at 7/102 rows. The source-safe screen receipt is
+`bc9f207c328c3d8ea8387d0c4692f2fdae216706eb00761e906fc8e3b0f17988`.
+Hermès source-quality judgment is now staged against the immutable audit
+population, but source-wide yield, clean full-source materialization, and
+training admission remain false.
 
 The larger 512-row frontier-source compiler has now closed with exact identity
 and receipt coverage. Hermès returned 348 `retain`, 125 `review`, and 39

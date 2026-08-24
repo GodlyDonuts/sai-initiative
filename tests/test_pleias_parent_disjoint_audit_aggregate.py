@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
-from sai.data.pleias_parent_disjoint_audit_aggregate import build_aggregate
+from sai.data.agent_labeling import CANDIDATE_SCHEMA
+from sai.data.pleias_parent_disjoint_audit_aggregate import (
+    build_aggregate,
+    load_aggregate_population,
+)
 from sai.data.pleias_parent_disjoint_audit_population import EXPECTED_ROWS, SOURCE_ID
-from sai.data.reservoir_audit_population import SCHEMA, _write_jsonl
+from sai.data.reservoir_audit_aggregate import load_population
+from sai.data.reservoir_audit_population import LINEAGE_SCHEMA, SCHEMA, _write_jsonl
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 
@@ -17,25 +23,43 @@ def _shards(root: Path) -> Path:
         lineage = []
         candidates = []
         for ordinal in range(shard_index, EXPECTED_ROWS, 8):
-            identity = f"{ordinal + 1:064x}"
+            text = f"row {ordinal} " + "source material " * 20
+            source_content_sha256 = hashlib.sha256(text.encode()).hexdigest()
+            source = {
+                "dataset": "PleIAs/common_corpus",
+                "revision": "a" * 40,
+                "row_id": f"row-{ordinal}",
+                "license": "Public Domain",
+                "source_type": "reference",
+            }
+            unsigned_candidate = {
+                "schema": CANDIDATE_SCHEMA,
+                "text": text,
+                "source": source,
+                "source_content_sha256": source_content_sha256,
+                "provenance_sha256": "b" * 64,
+            }
+            identity = canonical_sha256(unsigned_candidate)
             candidates.append(
-                {
-                    "schema": "test-candidate",
-                    "candidate_identity_sha256": identity,
-                    "text": f"row {ordinal}",
-                }
+                unsigned_candidate | {"candidate_identity_sha256": identity}
             )
-            lineage.append(
-                {
-                    "ordinal": ordinal,
-                    "candidate_identity_sha256": identity,
-                    "repository": "PleIAs/common_corpus",
-                    "revision": "a" * 40,
-                    "path": f"common_corpus_{ordinal % 10 + 1}/p-{ordinal}.parquet",
-                    "stratum": f"open_corpus_partition:{ordinal % 10 + 1}",
-                    "full_file_content_verified": True,
-                }
-            )
+            lineage_row = {
+                "schema": LINEAGE_SCHEMA,
+                "ordinal": ordinal,
+                "candidate_identity_sha256": identity,
+                "source_id": SOURCE_ID,
+                "repository": source["dataset"],
+                "revision": source["revision"],
+                "path": f"common_corpus_{ordinal % 10 + 1}/p-{ordinal}.parquet",
+                "stratum": f"open_corpus_partition:{ordinal % 10 + 1}",
+                "license": source["license"],
+                "excerpt_sha256": source_content_sha256,
+                "excerpt_bytes": len(text.encode()),
+                "full_file_content_verified": True,
+                "raw_source_is_training_ready": False,
+            }
+            lineage_row["lineage_sha256"] = canonical_sha256(lineage_row)
+            lineage.append(lineage_row)
         candidate_path = shard / "candidates.jsonl"
         lineage_path = shard / "lineage.jsonl"
         _write_jsonl(candidate_path, candidates)
@@ -85,3 +109,11 @@ def test_combines_all_eight_shards_in_global_ordinal_order(tmp_path: Path) -> No
         for line in (output / "lineage.jsonl").read_text().splitlines()
     ]
     assert [row["ordinal"] for row in values] == list(range(EXPECTED_ROWS))
+    candidates, lineage, receipt = load_aggregate_population(output)
+    assert len(candidates) == EXPECTED_ROWS
+    assert len(lineage) == EXPECTED_ROWS
+    assert receipt["receipt_sha256"] == result["receipt_sha256"]
+    generic_candidates, generic_lineage, generic_receipt = load_population(output)
+    assert generic_candidates == candidates
+    assert generic_lineage == lineage
+    assert generic_receipt == receipt

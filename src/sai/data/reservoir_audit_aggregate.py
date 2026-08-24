@@ -60,12 +60,18 @@ def load_population(
     candidates_path = population_root / "candidates.jsonl"
     lineage_path = population_root / "lineage.jsonl"
     receipt_path = population_root / "receipt.json"
-    candidates = [normalize_candidate(row) for row in _load_jsonl(candidates_path)]
-    lineage = _load_jsonl(lineage_path)
     receipt_rows = _load_jsonl(receipt_path)
     if len(receipt_rows) != 1:
         raise ReservoirAuditAggregateError("population receipt is duplicated")
     receipt = receipt_rows[0]
+    if receipt.get("schema") == "sai-pleias-parent-disjoint-audit-aggregate-v1":
+        from sai.data.pleias_parent_disjoint_audit_aggregate import (
+            load_aggregate_population,
+        )
+
+        return load_aggregate_population(population_root)
+    candidates = [normalize_candidate(row) for row in _load_jsonl(candidates_path)]
+    lineage = _load_jsonl(lineage_path)
     unsigned_receipt = {
         key: value for key, value in receipt.items() if key != "receipt_sha256"
     }
