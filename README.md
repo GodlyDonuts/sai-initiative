@@ -1609,6 +1609,12 @@ then reconstructs byte-for-byte the same canonical whole-shard `files.jsonl`
 and receipt that an uninterrupted run produces. Recovery is CPU-only,
 non-requeueing, source-text-free, and is launched only for verified failures;
 healthy shards are neither canceled nor duplicated.
+Dispatcher job `818603` is staged `afterany` on census array `818243`; aggregate
+job `818244` now waits on that dispatcher. The dispatcher exits without child
+work when all 128 canonical receipts exist, and otherwise binds `818244` to the
+exact per-failure merge jobs it creates. Institutional Books uses its existing
+per-parent checkpoints instead: after-any retry array `818602` resumes only
+unfinished parents from `818439`, and aggregate `818440` now waits on `818602`.
 
 That census now feeds a second fail-closed boundary rather than a bulk copy.
 Stokes job `818525` is dependency-staged to join the complete metadata geometry
