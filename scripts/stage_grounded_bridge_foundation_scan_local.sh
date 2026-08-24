@@ -78,7 +78,7 @@ mv "${sai_candidate_stage}" "${sai_remote_candidates}"
 mv "${sai_query_stage}" "${sai_remote_query}"
 
 if [[ ! -e "${sai_runtime}" ]]; then
-  git clone --quiet --no-hardlinks "${sai_repo}" "${sai_runtime}"
+  cp -a "${sai_repo}" "${sai_runtime}"
   git -C "${sai_runtime}" checkout --quiet --detach "${sai_commit}"
   [[ -z "$(git -C "${sai_runtime}" status --porcelain)" ]]
   [[ "$(git -C "${sai_runtime}" rev-parse HEAD)" == "${sai_commit}" ]]

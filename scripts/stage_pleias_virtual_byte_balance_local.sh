@@ -25,7 +25,7 @@ sai_root=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-byte-balance-
 [[ -z "$(squeue -u sa305415 -h -o '%j' | grep -E '^sai-pleias-byte-(allocate|select|aggregate)$' || true)" ]]
 
 if [[ ! -e "${sai_runtime}" ]]; then
-  git clone --quiet --no-hardlinks "${sai_repo}" "${sai_runtime}"
+  cp -a "${sai_repo}" "${sai_runtime}"
   git -C "${sai_runtime}" checkout --quiet --detach "${sai_commit}"
   [[ -z "$(git -C "${sai_runtime}" status --porcelain)" ]]
   [[ -z "$(find "${sai_runtime}" -type l -print -quit)" ]]
