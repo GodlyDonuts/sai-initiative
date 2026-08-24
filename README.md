@@ -1387,6 +1387,27 @@ yield, clean full-source materialization, and training admission remain false;
 the live complete metadata census will attach exact token mass to the measured
 collection-language routes before any bulk retention decision.
 
+Two source-disjoint collection confirmations now sharpen that bulk pause with
+**80 additional rows across ten named collections**. Every collection has eight
+primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
+Lite judgments; partial Gemini 3.1, Groq GPT-OSS, and Nemotron reviews remain
+auxiliary evidence only. The conservative, text-free decision advances Github
+Open Source, StackExchange, and USPTO to targeted verification; holds
+Chinese-Court-Decisions, US-PD-Newspapers, and Wikidata as high-blocking;
+routes Wikipedia and VoxPopuli to translation/grounding adjudication; and keeps
+Creative Commons Common Crawl plus dotgov in targeted recovery. No collection
+is automatically admitted or excluded. The fail-closed r2 decision additionally
+requires exactly eight rows per collection and rejects duplicate comparison
+receipts. Its canonical receipt is
+`126e956caf96af31a5c7689126f90592b1652cb5f5b61806a2f524aec7d3b0a5`;
+all seven source-safe receipts/comparisons were force-downloaded and byte-
+replayed from Hugging Face dataset commit
+[`dd85ba5628df827e56f4cc4cd2b92469b884d64f`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/dd85ba5628df827e56f4cc4cd2b92469b884d64f)
+and the stricter decision was separately replayed from commit
+[`4fa469cd95556e39f951dc79f174592132407b96`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4fa469cd95556e39f951dc79f174592132407b96).
+All files hash-match the authorized Stokes evidence mirror at
+`pleias-collection-confirmation/20260826-r1`.
+
 The larger 512-row frontier-source compiler has now closed with exact identity
 and receipt coverage. Hermès returned 348 `retain`, 125 `review`, and 39
 `reject` verdicts, but conservative routing sent only **25/512 (4.88%)** to

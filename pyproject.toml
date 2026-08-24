@@ -128,6 +128,7 @@ sai-build-grounded-bridge-verification = "sai.data.grounded_bridge_verification_
 sai-run-nous-grounded-bridge-verifier = "sai.data.nous_grounded_bridge_verifier:main"
 sai-aggregate-grounded-bridge-verification = "sai.data.grounded_bridge_verification_aggregate:main"
 sai-publish-hermes-teacher-census = "sai.data.hermes_teacher_census:main"
+sai-decide-pleias-collection-confirmations = "sai.data.pleias_collection_confirmation_decision:main"
 sai-split-documents = "sai.data.split:main"
 sai-build-tokenizers = "sai.tokenizer.build:main"
 sai-qualify-tokenizers = "sai.tokenizer.qualification:main"
