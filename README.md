@@ -79,6 +79,23 @@ has now replayed the first exact enriched-text shard and built a separate
 185-volume compiler pilot. The gated text remains local under the pinned IDI
 terms; it is not redistributed through GitHub or Hugging Face.
 
+A complete metadata census now replaces extrapolation from that coverage
+queue. Across all 983,004 records, the duplicate graph yields 941,691 connected
+components. After choosing the best metadata representative per component,
+requiring `pd`, `pdus`, or `cc-zero` rights evidence, and enforcing 2,000--2M
+tokens per work, the nested English tiers contain **382,961 works / 78.690B
+tokens at OCR≥95**, 418,604 / 87.029B at OCR≥90, and 438,861 / 91.898B at
+OCR≥80. The high-confidence translation-discovery tier adds 91,272 non-English
+works / 23.628B tokens at OCR≥95. These counts identify what is worth selective
+materialization; they do not admit the raw 870GB archive or flatten literature
+through automatic translation. The source-text-free receipt has canonical hash
+`11c0426b07a478fecf790a6622bc5e1d4cd2bedd809db25f1996a3905b03a43e`
+and file SHA-256
+`1b86b34450038d2ae72e7ee4f35a9fc07739ed5ad347b5b0ef4a89096c1ab61a`.
+It was downloaded back and byte-replayed from Hugging Face commit
+[`b9ea6ce404438b5917cad3caee05fe9c6b0bcf55`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/b9ea6ce404438b5917cad3caee05fe9c6b0bcf55)
+and is hash-matched in the authorized Stokes evidence root.
+
 The durable data catalog is
 [`Godlydonuts/Sai`](https://huggingface.co/datasets/Godlydonuts/Sai). It separates
 upstream source references, model judgments, verified representations,
@@ -1669,6 +1686,13 @@ Library volumes totaling 242,051,626,500 upstream tokens. A metadata-first
 9,409 rows are non-English translation-discovery candidates and 591 are
 English controls. This is coverage-first sampling, not a desired final language
 ratio.
+
+The complete metadata census shows why this metadata-first policy matters:
+only 382,961 deduplicated, rights-bounded English works occupy the strict
+OCR≥95 tier, totaling 78.690B tokens. Another 91,272 non-English OCR≥95 works
+total 23.628B tokens and remain translation candidates whose treatment depends
+on genre. These exact tiers, rather than the 242B-token raw total, now define
+the selective materialization frontier.
 
 The first authenticated enriched-text pilot contains 185 candidates from 200
 source rows: 164 English and 21 non-English, with 14 OCR rejects and one token
