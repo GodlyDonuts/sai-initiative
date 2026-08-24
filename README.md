@@ -1616,6 +1616,19 @@ exact per-failure merge jobs it creates. Institutional Books uses its existing
 per-parent checkpoints instead: after-any retry array `818602` resumes only
 unfinished parents from `818439`, and aggregate `818440` now waits on `818602`.
 
+The Hermès compiler launch was also hardened against provider availability. A
+live `stealth/ox-alpha` OpenRouter preflight on 2026-08-24 returned a temporary
+upstream shared-pool HTTP 429, not an authentication or billing failure. Both
+primary compiler lanes remain pinned to the same model, endpoint, rubric,
+candidate identities, and receipt schemas—no fallback model can silently mix
+judgments. The PleIAs worker now matches the Books worker's exact-summary skip
+and bounded-attempt outer retry behavior. After-any retry arrays `818615`
+(Books, 32 lanes) and `818616` (PleIAs, 64 lanes) are staged behind the original
+arrays `818512` and `818538`; completed signed summaries return immediately, so
+the retry graph creates no duplicate judgments. Aggregates `818513` and `818539`
+now wait on the retry arrays. This converts temporary free-provider throttling
+into resumable delay rather than an orphaned data graph.
+
 That census now feeds a second fail-closed boundary rather than a bulk copy.
 Stokes job `818525` is dependency-staged to join the complete metadata geometry
 to the source-disjoint Hermès calibration and produce collection-language work
