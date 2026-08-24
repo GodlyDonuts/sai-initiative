@@ -1953,6 +1953,18 @@ over-ceiling ledger caused by selecting PleIAs before final book bytes were
 known. All stages remain nontraining; final tokenization and curriculum packing
 remain open.
 
+The live balance graph is pinned to immutable runtime commit
+`047b0bbc8737a2923b74dbce733e8f8da52e0fda`: allocation job `818779` waits on
+both final component aggregates, selection array `818780_[0-127%32]` waits on
+that allocation, and aggregate `818781` waits on every selection shard.
+Pending ledger `818645`, PleIAs tokenizer sample `818720`, and PleIAs curriculum
+index `818732` now depend on the balance aggregate. The source-safe launch
+receipt is also mirrored under the authorized durable evidence root with file
+SHA-256 `7ce7d9216f5b2fe1cf1e744aa8a1c05580101f22afa8a057db28451a7c12de1e`
+and evidence-manifest receipt
+`fefdf7ca1da36ab24b7e285a181c64d8f7070678fbc4d82471ff733cf5f59596`.
+No source text is present in either launch artifact.
+
 Custody job `818649`, strictly after ledger `818645`, then hash-manifests the
 13,974-object pinned source lake, final private-book aggregate, virtual PleIAs
 aggregate, complete cross-source decision, exact foundation ledger, and the

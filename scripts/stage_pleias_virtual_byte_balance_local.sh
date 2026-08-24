@@ -18,10 +18,12 @@ sai_commit=$1
 sai_runtime=$2
 sai_repo=/lustre/fs1/home/sa305415/sai-initiative
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-byte-balance-20260826-r1
+sai_evidence=/lustre/fs1/home/sa305415/sai_data_sources/sai_evidence/pleias-virtual-byte-balance/20260826-r1
 
 [[ "$(git -C "${sai_repo}" rev-parse HEAD)" == "${sai_commit}" ]]
 [[ -z "$(git -C "${sai_repo}" status --porcelain)" ]]
 [[ ! -e "${sai_root}" ]]
+[[ ! -e "${sai_evidence}" ]]
 [[ -z "$(squeue -u sa305415 -h -o '%j' | grep -E '^sai-pleias-byte-(allocate|select|aggregate)$' || true)" ]]
 
 if [[ ! -e "${sai_runtime}" ]]; then
@@ -57,6 +59,7 @@ SAI_ALLOCATE="${sai_allocate}" \
 SAI_SELECT="${sai_select}" \
 SAI_AGGREGATE="${sai_aggregate}" \
 SAI_OUTPUT="${sai_root}/launch-receipt.json" \
+SAI_EVIDENCE="${sai_evidence}" \
 python3 - <<'PY'
 import hashlib
 import json
@@ -84,8 +87,27 @@ payload = {
 payload["receipt_sha256"] = hashlib.sha256(
     json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
 ).hexdigest()
-Path(os.environ["SAI_OUTPUT"]).open("x").write(
-    json.dumps(payload, sort_keys=True) + "\n"
+encoded = (json.dumps(payload, sort_keys=True) + "\n").encode()
+Path(os.environ["SAI_OUTPUT"]).open("xb").write(encoded)
+evidence = Path(os.environ["SAI_EVIDENCE"])
+evidence.mkdir(parents=True, exist_ok=False)
+(evidence / "launch-receipt.json").open("xb").write(encoded)
+manifest = {
+    "schema": "sai-pleias-virtual-byte-balance-launch-evidence-v1",
+    "source_text_persisted": False,
+    "launch_receipt": {
+        "bytes": len(encoded),
+        "sha256": hashlib.sha256(encoded).hexdigest(),
+        "receipt_sha256": payload["receipt_sha256"],
+    },
+    "training_ready": False,
+    "four_b_training_authorized": False,
+}
+manifest["receipt_sha256"] = hashlib.sha256(
+    json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+).hexdigest()
+(evidence / "manifest.json").open("x").write(
+    json.dumps(manifest, sort_keys=True) + "\n"
 )
 print(json.dumps(payload["jobs"], sort_keys=True))
 PY
