@@ -164,6 +164,16 @@ retried and never converted into admissions. The aggregate deliberately keeps
 `training_ready=false`: Hermès supplies structured semantic triage, not final
 authority.
 
+Conservative decision job `818517` is staged behind that aggregate. Its frozen
+policy advances only allowed-rights, English, zero-risk `retain` judgments with
+at least 900,000 ppm confidence, quality 4/4 for both overall value and OCR, and
+4/4 in at least one of knowledge density, literary value, or historical value.
+Science, mathematics, engineering, medicine, law, reference, and textbook works
+also require factual reliability 4/4. All other rows receive an explicit
+quarantine, rights, risk, translation, or quality hold. Even the survivors are
+only candidates for independent semantic and representation verification; no
+Hermès judgment directly admits training text.
+
 The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
 If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
 trains on that smaller verified corpus rather than padding with weak web text,
