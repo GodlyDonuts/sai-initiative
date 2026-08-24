@@ -1757,6 +1757,18 @@ budgets. Scratch runs use job-specific Lustre directories and are removed at
 closure. This completes the parallel PleIAs deletion decision but deliberately
 does not claim the remote rewrite or cross-source decision has closed.
 
+Once all sixteen hash buckets close, rewrite array `818569_[0-127%8]` builds one
+disk-backed deletion index per remote source shard, replays every decided chunk's
+document identity, span, and normalized SHA-256, and removes duplicate spans only
+when at least 100 characters can be deleted without emptying the document. Short
+or destructive edits are restored for coherence. Final candidate shards are
+uploaded under `final/nontraining/pleias/20260826-r1/`, remote LFS size/SHA-256
+verified, and temporary local text removed. Because transformations invalidate
+source token counts, the output preserves those counts only as lineage, recomputes
+word counts, and requires final retokenization. Aggregate `818570` verifies all
+128 rewritten files from one repository snapshot. Cross-source deduplication and
+training admission remain false after this PleIAs-only rewrite.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
