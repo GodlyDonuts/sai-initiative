@@ -1746,6 +1746,17 @@ small external index, followed by targeted remote-shard rewrites. Signature arra
 `818567` requires all identities. Both are CPU-only, requeue-disabled, and still
 mark global subdocument and cross-source deduplication incomplete.
 
+The signature files are hash-partitioned into sixteen normalized-SHA-256
+buckets so the global decision does not become one serial bottleneck. Array
+`818568_[0-15%16]`, dependency-bound to signature aggregate `818567`, independently
+external-sorts one complete hash bucket across all 128 source shards. It applies
+the frozen frequency/length-aware retention budget, preserves all matching
+occurrences in a boundary document for coherence, and emits 128 source-shard
+deletion maps containing only identities, chunk spans, hashes, frequencies, and
+budgets. Scratch runs use job-specific Lustre directories and are removed at
+closure. This completes the parallel PleIAs deletion decision but deliberately
+does not claim the remote rewrite or cross-source decision has closed.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
