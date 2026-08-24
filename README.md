@@ -188,6 +188,14 @@ Aggregate `818520` verifies every independent receipt, model identity, rubric
 hash, shard summary, and usage total. This remains a verification measurement;
 only later agreement and decontamination logic may advance bytes.
 
+Cross-family comparison job `818521` is staged behind the independent
+aggregate. A work becomes only a `consensus_candidate` when both model families
+independently satisfy the full conservative quality policy, agree on the exact
+genre, and share at least one domain. Any quality, genre, or domain disagreement
+becomes an explicit hold. Consensus still does not bypass benchmark
+decontamination or global semantic deduplication and remains
+`training_ready=false`.
+
 The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
 If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
 trains on that smaller verified corpus rather than padding with weak web text,
