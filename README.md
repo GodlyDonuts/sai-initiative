@@ -96,6 +96,28 @@ It was downloaded back and byte-replayed from Hugging Face commit
 [`b9ea6ce404438b5917cad3caee05fe9c6b0bcf55`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/b9ea6ce404438b5917cad3caee05fe9c6b0bcf55)
 and is hash-matched in the authorized Stokes evidence root.
 
+The strict OCR≥95 English tier is now frozen as an exact **382,961-row,
+78,689,684,117-token** materialization manifest. It contains no book text; its
+208,401,103 bytes bind each barcode to its metadata hash, token count, OCR,
+subject, genre, and rights evidence. Manifest SHA-256 is
+`986e87999763fef2e6271f869a81b7a23fbe8fc2b7c3e77fbf38da1d4d6fa02c`
+and canonical receipt is
+`c32619e44bad583781e6e5280c2fe3031ab215fbc94a81e73d8cd20279e07e15`.
+The receipt, but not the gated manifest or text, was downloaded back and
+byte-replayed from Hugging Face commit
+[`717a1a4f21618177cdb76e41e7e89d804f7dccb0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/717a1a4f21618177cdb76e41e7e89d804f7dccb0).
+The complete manifest and receipt are hash-matched on private Stokes storage.
+
+Selective private materialization has passed both local and Stokes one-parent
+pilots: each found the same 107 selected works, excluded zero, and materialized
+16,527,888 enriched tokens. The Stokes pilot compressed those works to 22.6MB
+from a 127.7MB source parent. Full jobs `818439_[0-63]` now process all 4,916
+pinned parents as 64 independent CPU shards, with aggregate job `818440`
+verifying every source hash, selected barcode, lineage receipt, and private
+output hash. The output remains non-training-ready pending global benchmark
+decontamination, semantic deduplication, and representation checks, and its
+early-access terms prohibit Hugging Face redistribution.
+
 The durable data catalog is
 [`Godlydonuts/Sai`](https://huggingface.co/datasets/Godlydonuts/Sai). It separates
 upstream source references, model judgments, verified representations,
