@@ -1712,6 +1712,16 @@ global pass rather than claiming recall it does not have. Job `818561` is staged
 after normalized-exact job `818560`, CPU-only with 16 GiB, a 24-hour limit, and
 requeue disabled.
 
+The post-near candidate set then receives a deterministic, disk-backed byte
+selection. If it already fits, every surviving row is kept. Otherwise a first
+pass limits any one semantic stratum to 20% of the decimal 2 TB ceiling, then a
+stable identity-ranked refill uses remaining capacity without ever crossing the
+ceiling or padding. The text-free output contains exact parent/row locators and
+content hashes for later full-document replay. Job `818563` is staged after
+near pass `818561`, CPU-only with 8 GiB for eight hours and requeue disabled.
+Benchmark decontamination, cross-source deduplication, verified materialization,
+and final training admission remain false at this boundary.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
