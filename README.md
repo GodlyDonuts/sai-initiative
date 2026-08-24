@@ -144,6 +144,20 @@ is never copied into this candidate corpus. This is still only a mechanically
 filtered source: it deliberately remains `training_ready=false` until benchmark
 decontamination, global semantic deduplication, and semantic admission finish.
 
+For bulk pretraining, the user has now replaced that publication-grade blocking
+policy with a practical two-tier contract. The base corpus requires pinned
+English metadata, OCR score at least 95, `pd`/`pdus`/`cc-zero` rights evidence,
+the connected-work duplicate policy, and a `pass_mechanical_gate` decision.
+`institutional_books_practical_admission.py` replays those exact receipts and
+emits a private allowlist over every surviving filtered Parquet row, excluding
+any residual exact-content duplicate deterministically. It requires no per-book
+LLM judgment and marks that private allowlist practical-pretraining-ready while
+keeping redistribution and 4B training unauthorized. Official-benchmark
+decontamination continues in parallel and blocks benchmark/evaluation claims,
+not construction of the bulk English/non-slop stream. Hermès explanations,
+concept graphs, independent model review, and cross-domain synthesis are now a
+premium overlay instead of a prerequisite for every ordinary source book.
+
 The next book stage is now code-frozen as a bounded **8,192-work semantic
 population**, not a bulk promotion of every mechanical pass. After `818508`, it
 replays the exact private filter and pinned 983,004-row metadata file, then uses
@@ -544,7 +558,8 @@ Nemotron model. The aggregate records counts by transport and rejects every
 other endpoint/model/provider combination. Rate-safe workers operate over
 disjoint locked shards. The direct OpenRouter path has its own process-wide
 admission ceiling, eliminating the measured HTTP-429 request storm without
-stealing capacity from the independent Nous/Hermès gateway pool; the free
+stealing capacity from the independent sixteen-request Nous/Hermès gateway
+pool; the free
 Nemotron transport additionally requests provider-enforced JSON-object output
 without changing the bound rubric or validation schema. A deterministic
 quote recovery step may replace a
@@ -3052,7 +3067,7 @@ completion watcher builds the query after independent bridge verification,
 copies candidates and hash evidence to Stokes, creates a read-only immutable
 runtime, and dependency-stages 128 PleIAs scans, 64 Books scans, their aggregate,
 and reconciliation behind the already-frozen final foundation jobs. The full
-implementation currently passes **1,307 tests**, including deterministic replay,
+implementation currently passes **1,309 tests**, including deterministic replay,
 tamper rejection, exact overlap ownership, source-key aliases, conflicting
 anchor splits, and compiler-to-query integration.
 
