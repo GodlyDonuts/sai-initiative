@@ -1538,10 +1538,14 @@ ceiling. A dependency watcher now waits for all 128 generation shard summaries,
 then deterministically aggregates the complete population, screens every
 generated representation against the pinned official benchmark boundary,
 freezes exact source/generated verification pairs, runs eight disjoint
-same-family verification lanes, and seals retain/revise/reject custody. It
-cannot skip an incomplete shard, and every stage replays content and receipt
-hashes before creating downstream output. All generated outputs remain
-nontraining and still require the full verification sequence above.
+same-family verification lanes, runs a second eight-lane review through the
+independent Nemotron Ultra model family, and seals conservative cross-model
+retain/revise/reject custody. Retention requires both families to retain; any
+disagreement routes to revision and either rejection removes generated text.
+The watcher cannot skip an incomplete shard, and every stage replays content
+and receipt hashes before creating downstream output. Cross-model retention
+marks representation fidelity complete but leaves source-claim verification,
+global deduplication, curriculum admission, and training readiness false.
 
 Rights are independently fail-closed. The exact pinned Hugging Face cards for
 all seven confirmation candidates currently expose no top-level `license`
@@ -2866,15 +2870,15 @@ its pinned upstream object and must reproduce the sealed final content hash.
 This makes the corpus replayable without calling raw reservoir size accepted
 training data.
 
-The live Institutional Books materializer has completed **59 of 64** private
-shards. Those receipts cover **351,114** materialized rows and
-**63,972,108,657** source-reported enriched tokens; the private output tree
-currently occupies 85,159,944,595 physical bytes. Five remaining identity
-shards are running independently. The PleIAs metadata census has **29 of 128**
-canonical shards complete, representing 1,017,835,332,023 pinned source bytes,
-159,872,513 rows, and 511,232,871,066 estimated tokens. The remaining census
-shards continue in parallel. These are materialization/census measurements,
-not final admission counts.
+The live Institutional Books materializer has completed at least **63 of 64**
+private shards. The only unfinished identity shard is advancing independently;
+all completed shard receipts remain immutable. The PleIAs metadata census has
+completed at least **68 of 128** canonical shards, while every missing shard
+still maps to a running original worker. A dependency-staged dispatcher will
+split only genuinely unfinished identities into eight recovery segments after
+the original array terminates, preserving incomplete originals in the durable
+evidence root and preventing duplicate accepted custody. These are
+materialization/census measurements, not final admission counts.
 
 The dependency graph already stages the complete PleIAs virtual pipeline:
 subdocument signatures, global signature aggregation, exact deletion decisions,
