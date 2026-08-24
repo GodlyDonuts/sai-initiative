@@ -23,7 +23,7 @@ sai_aggregate=artifacts/sai_grounded_bridge_independent_nemotron_aggregate_20260
 sai_decontamination=artifacts/sai_grounded_bridge_decontamination_20260826_r1
 sai_boundary=artifacts/sai_official_benchmark_boundary_index_20260824_r2
 sai_logical_shards=64
-sai_lanes=12
+sai_lanes=13
 sai_expected=512
 
 if [[ ! -f "${sai_candidates}" ]]; then

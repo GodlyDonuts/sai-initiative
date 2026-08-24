@@ -520,7 +520,7 @@ ablation close.
 An independent-family lane now replays the same 512 immutable source-paired
 candidates through `nvidia/nemotron-3-ultra-550b-a55b`. Its receipts bind the
 NVIDIA endpoint, independent rubric, exact source quotes, every generated
-claim, and one verdict per identity; twelve bounded direct requests operate over
+claim, and one verdict per identity; thirteen bounded direct requests operate over
 disjoint locked shards. Even an independent retain is not admission. A
 dependency-staged post-generation screen canonicalizes every retained bridge
 thesis, shared structure, claim, representation, prerequisite map, analogy
@@ -531,7 +531,7 @@ transfer ablation remain mandatory.
 
 The resumable execution entry point is
 `run_nemotron_grounded_bridge_verification_local.sh`. It assigns each of the 64
-identity shards to exactly one of twelve lanes, permits one request per lane,
+identity shards to exactly one of thirteen lanes, permits one request per lane,
 uses the canonical pre-existing independent-Nemotron receipt root, skips only
 an already sealed shard summary, and refuses to aggregate unless all 512
 receipts and all 64 summaries exist. Per-shard atomic locks prevent a resumed

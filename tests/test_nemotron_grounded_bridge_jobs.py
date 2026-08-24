@@ -5,7 +5,7 @@ def test_nemotron_bridge_runner_is_bounded_resumable_and_nonduplicating() -> Non
     script = Path(
         "scripts/run_nemotron_grounded_bridge_verification_local.sh"
     ).read_text()
-    assert "sai_lanes=12" in script
+    assert "sai_lanes=13" in script
     assert "--concurrency 1" in script
     assert (
         "sai_judgments=artifacts/"
