@@ -38,6 +38,24 @@ class PleiasProductionMaterializerError(RuntimeError):
     """Selection, full-text replay, benchmark boundary, or remote custody differs."""
 
 
+def _materialized_schema():
+    try:
+        import pyarrow as pa
+    except ImportError as error:
+        raise PleiasProductionMaterializerError("pyarrow is required") from error
+    source = _schema()
+    fields = [field for field in source if field.name != "training_ready"]
+    token_index = next(
+        index for index, field in enumerate(fields) if field.name == "token_count"
+    ) + 1
+    fields[token_index:token_index] = [
+        pa.field("semantic_stratum", pa.string()),
+        pa.field("semantic_quality_floor_milli", pa.int32()),
+        pa.field("semantic_quality_mean_milli", pa.int32()),
+    ]
+    return pa.schema(fields + [pa.field("training_ready", pa.bool_())])
+
+
 def _load_signed(path: Path, schema: str) -> dict[str, Any]:
     if not path.is_file() or path.is_symlink() or path.stat().st_nlink != 1:
         raise PleiasProductionMaterializerError("signed input is unsafe")
@@ -91,6 +109,8 @@ def replay_selected_row(
         expected_stratum,
         expected_bytes,
         expected_tokens,
+        expected_quality_floor,
+        expected_quality_mean,
     ) = selected
     text = row.get("text")
     identifier = row.get("identifier")
@@ -116,6 +136,12 @@ def replay_selected_row(
         or stratum != expected_stratum
         or len(content) != expected_bytes
         or row.get("token_count") != expected_tokens
+        or isinstance(expected_quality_floor, bool)
+        or not isinstance(expected_quality_floor, int)
+        or not 0 <= expected_quality_floor <= 10_000
+        or isinstance(expected_quality_mean, bool)
+        or not isinstance(expected_quality_mean, int)
+        or not expected_quality_floor <= expected_quality_mean <= 10_000
     ):
         raise PleiasProductionMaterializerError("selected row identity differs")
     return {
@@ -134,6 +160,9 @@ def replay_selected_row(
         "language": row["language"],
         "word_count": row["word_count"],
         "token_count": row["token_count"],
+        "semantic_stratum": stratum,
+        "semantic_quality_floor_milli": expected_quality_floor,
+        "semantic_quality_mean_milli": expected_quality_mean,
         "content_sha256": content_sha256,
         "text": text,
         "training_ready": False,
@@ -243,7 +272,8 @@ def run_shard(
     output_root.mkdir(parents=True)
     local_path = output_root / "benchmark_disjoint_candidates.parquet"
     temporary = output_root / f".candidates.partial.{uuid.uuid4().hex}.parquet"
-    writer = pq.ParquetWriter(temporary, _schema(), compression="zstd")
+    output_schema = _materialized_schema()
+    writer = pq.ParquetWriter(temporary, output_schema, compression="zstd")
     counts: Counter[str] = Counter()
     retained_identities = []
     selected_parent_receipts = []
@@ -252,17 +282,15 @@ def run_shard(
             selected_rows = connection.execute(
                 "SELECT source_row_index, source_row_identity_sha256, "
                 "source_parent_sha256, content_sha256, stratum, "
-                "text_utf8_bytes, token_count FROM selected WHERE source_path=? "
+                "text_utf8_bytes, token_count, stratum_quality_floor_milli, "
+                "stratum_quality_mean_milli FROM selected WHERE source_path=? "
                 "ORDER BY source_row_index",
                 (parent["source_path"],),
             ).fetchall()
             if not selected_rows:
                 counts["parents_without_selected_rows"] += 1
                 continue
-            by_index = {
-                row[0]: (row[1], row[2], row[3], row[4], row[5], row[6])
-                for row in selected_rows
-            }
+            by_index = {row[0]: row[1:] for row in selected_rows}
             if len(by_index) != len(selected_rows):
                 raise PleiasProductionMaterializerError(
                     "selected parent indices overlap"
@@ -317,7 +345,7 @@ def run_shard(
                         counts["retained_tokens"] += candidate["token_count"]
                     if output_rows:
                         writer.write_table(
-                            pa.Table.from_pylist(output_rows, schema=_schema())
+                            pa.Table.from_pylist(output_rows, schema=output_schema)
                         )
                     row_offset += batch.num_rows
                 if seen != set(by_index):

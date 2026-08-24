@@ -53,10 +53,14 @@ def test_replays_exact_selected_identity_and_rejects_mutation():
         ),
         len(text.encode()),
         row["token_count"],
+        7_500,
+        8_000,
     )
     result = replay_selected_row(row, parent, 3, selected)
     assert result["source_row_identity_sha256"] == identity
     assert result["text"] == text
+    assert result["semantic_quality_floor_milli"] == 7_500
+    assert result["semantic_quality_mean_milli"] == 8_000
     assert result["training_ready"] is False
     changed = list(selected)
     changed[2] = "f" * 64

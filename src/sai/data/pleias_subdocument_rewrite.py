@@ -68,6 +68,9 @@ def _schema():
             ("language", pa.string()),
             ("source_word_count", pa.int64()),
             ("source_token_count", pa.int64()),
+            ("semantic_stratum", pa.string()),
+            ("semantic_quality_floor_milli", pa.int32()),
+            ("semantic_quality_mean_milli", pa.int32()),
             ("word_count", pa.int64()),
             ("token_count_requires_recomputation", pa.bool_()),
             ("pre_dedup_content_sha256", pa.string()),
@@ -92,6 +95,9 @@ def rewrite_candidate(
     content_sha256 = candidate.get("content_sha256")
     source_word_count = candidate.get("word_count")
     source_token_count = candidate.get("token_count")
+    semantic_stratum = candidate.get("semantic_stratum")
+    semantic_quality_floor = candidate.get("semantic_quality_floor_milli")
+    semantic_quality_mean = candidate.get("semantic_quality_mean_milli")
     if (
         candidate.get("schema") != CANDIDATE_SCHEMA
         or candidate.get("training_ready") is not False
@@ -104,6 +110,14 @@ def rewrite_candidate(
         or not isinstance(source_token_count, int)
         or isinstance(source_token_count, bool)
         or source_token_count <= 0
+        or not isinstance(semantic_stratum, str)
+        or not semantic_stratum
+        or isinstance(semantic_quality_floor, bool)
+        or not isinstance(semantic_quality_floor, int)
+        or not 0 <= semantic_quality_floor <= 10_000
+        or isinstance(semantic_quality_mean, bool)
+        or not isinstance(semantic_quality_mean, int)
+        or not semantic_quality_floor <= semantic_quality_mean <= 10_000
         or delete_characters <= 0
     ):
         raise PleiasSubdocumentRewriteError("rewrite candidate differs")

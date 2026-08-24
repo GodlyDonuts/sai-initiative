@@ -23,6 +23,9 @@ def test_rewrite_row_preserves_internal_lineage_and_rewrites_exact_chunks():
         "pre_dedup_content_sha256": "b" * 64,
         "subdocument_transform_sha256": "c" * 64,
         "collection": "Books",
+        "semantic_stratum": "Books::Open Culture::medium",
+        "semantic_quality_floor_milli": 7_500,
+        "semantic_quality_mean_milli": 8_000,
         "word_count": len(text.split()),
         "token_count_requires_recomputation": True,
         "text": text,
@@ -49,6 +52,7 @@ def test_rewrite_row_preserves_internal_lineage_and_rewrites_exact_chunks():
     assert result["pre_cross_source_content_sha256"] == row["content_sha256"]
     assert result["pre_dedup_content_sha256"] == "b" * 64
     assert result["subdocument_transform_sha256"] == "c" * 64
+    assert result["semantic_quality_floor_milli"] == 7_500
     assert result["content_sha256"] != row["content_sha256"]
     assert counts["deleted_chunks"] == 2
     assert result["training_ready"] is False

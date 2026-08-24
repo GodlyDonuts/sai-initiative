@@ -21,6 +21,9 @@ def _candidate(text):
         "collection": "Books",
         "word_count": len(text.split()),
         "token_count": len(text.split()) * 2,
+        "semantic_stratum": "Books::Open Culture::medium",
+        "semantic_quality_floor_milli": 7_500,
+        "semantic_quality_mean_milli": 8_000,
         "text": text,
         "training_ready": False,
     }
