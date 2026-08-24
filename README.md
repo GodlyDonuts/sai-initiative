@@ -1886,6 +1886,11 @@ without pretending the documents were materialized. This removes the first
 roughly 1.5 TB duplicate upload while preserving deterministic reconstruction;
 final cross-source decisions, reconstruction hashes, tokenization, curriculum
 packing, and durable training custody still must close before admission.
+The quota-safe graph is dependency-staged as virtual-signature array
+`818630_[0-127%8]` after byte selection `818563`, exact aggregate `818631`, and
+sixteen independent external-sort decision jobs `818632_[0-15%16]`. Every job
+uses one CPU, requests no GPU, has requeue disabled, and cannot run before its
+exact source receipt exists.
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
