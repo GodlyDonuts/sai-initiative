@@ -1702,6 +1702,16 @@ byte-budget decisions; both those gates and full-document benchmark screening
 remain explicitly incomplete. Job `818560` is staged strictly after aggregate
 `818559`, requests one CPU with 8 GiB for eight hours, and has requeue disabled.
 
+A subsequent high-precision document-near-duplicate pass uses four independent
+two-fingerprint bands from each 32-value sketch, compares only bounded candidate
+buckets, and requires at least 75% sketch overlap plus an 80% document-length
+ratio. Connected duplicates collapse to the lowest stable row identity. The
+source-safe output retains only dropped identity → representative mappings; it
+explicitly leaves high-fanout buckets and cross-source comparison for the final
+global pass rather than claiming recall it does not have. Job `818561` is staged
+after normalized-exact job `818560`, CPU-only with 16 GiB, a 24-hour limit, and
+requeue disabled.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
