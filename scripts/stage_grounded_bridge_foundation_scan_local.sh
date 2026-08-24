@@ -79,7 +79,7 @@ fi
 [[ "$(git -C "${sai_runtime}" rev-parse HEAD)" == "${sai_commit}" ]]
 [[ -z "$(find "${sai_runtime}" -type l -print -quit)" ]]
 [[ -z "$(find "${sai_runtime}" -type f -perm /222 -print -quit)" ]]
-[[ -z "$(squeue -u sa305415 -h -o '%j' | grep -E '^sai-(pleias|book)-bridge-scan$|^sai-bridge-scan-aggregate$' || true)" ]]
+[[ -z "$(squeue -u sa305415 -h -o '%j' | grep -E '^sai-(pleias|book)-bridge-scan$|^sai-bridge-(scan-aggregate|foundation-reconcile)$' || true)" ]]
 
 sai_pleias_job=$(sbatch --parsable \
   --dependency=afterok:818642 \
@@ -93,6 +93,10 @@ sai_aggregate_job=$(sbatch --parsable \
   --dependency="afterok:${sai_pleias_job}:${sai_book_job}" \
   --export="ALL,SAI_RUNTIME_ROOT=${sai_runtime}" \
   "${sai_runtime}/scripts/aggregate_grounded_bridge_foundation_scan_stokes.sbatch")
+sai_reconcile_job=$(sbatch --parsable \
+  --dependency="afterok:${sai_aggregate_job}" \
+  --export="ALL,SAI_RUNTIME_ROOT=${sai_runtime}" \
+  "${sai_runtime}/scripts/reconcile_grounded_bridge_foundation_stokes.sbatch")
 
 mkdir -p "${sai_remote_evidence}"
 SAI_COMMIT="${sai_commit}" \
@@ -102,6 +106,7 @@ SAI_QUERY_RECEIPT="${sai_query_receipt}" \
 SAI_PLEIAS_JOB="${sai_pleias_job}" \
 SAI_BOOK_JOB="${sai_book_job}" \
 SAI_AGGREGATE_JOB="${sai_aggregate_job}" \
+SAI_RECONCILE_JOB="${sai_reconcile_job}" \
 SAI_EVIDENCE="${sai_remote_evidence}/launch-receipt.json" \
 python3 - <<'PY'
 import hashlib
@@ -123,6 +128,7 @@ payload = {
         "pleias_scan": os.environ["SAI_PLEIAS_JOB"],
         "institutional_books_scan": os.environ["SAI_BOOK_JOB"],
         "aggregate": os.environ["SAI_AGGREGATE_JOB"],
+        "reconciliation": os.environ["SAI_RECONCILE_JOB"],
     },
     "source_text_persisted_in_launch_receipt": False,
     "training_ready": False,

@@ -32,8 +32,13 @@ from sai.data.grounded_bridge_curriculum_candidates import (
     ROW_SCHEMA as CANDIDATE_ROW_SCHEMA,
 )
 from sai.data.grounded_bridge_curriculum_candidates import (
+    SPLIT_POLICY_SHA256,
+    GroundedBridgeCurriculumCandidatesError,
+)
+from sai.data.grounded_bridge_curriculum_candidates import (
     STATUS as CANDIDATE_STATUS,
 )
+from sai.data.grounded_bridge_curriculum_candidates import _split as candidate_split
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 SCHEMA = "sai-grounded-bridge-foundation-query-v1"
@@ -69,6 +74,13 @@ def source_key(source: dict[str, Any]) -> str:
 def _validate_candidate(row: dict[str, Any]) -> dict[str, Any]:
     unsigned = {key: value for key, value in row.items() if key != "record_sha256"}
     text = row.get("text")
+    pair = row.get("pair_identity_sha256")
+    try:
+        expected_bucket, expected_split = candidate_split(pair)
+    except GroundedBridgeCurriculumCandidatesError as error:
+        raise GroundedBridgeFoundationQueryError(
+            "bridge candidate row differs"
+        ) from error
     if (
         row.get("schema") != CANDIDATE_ROW_SCHEMA
         or row.get("record_sha256") != canonical_sha256(unsigned)
@@ -82,6 +94,13 @@ def _validate_candidate(row: dict[str, Any]) -> dict[str, Any]:
         or row.get("global_deduplication_against_foundation_complete") is not False
         or row.get("bridge_verified") is not False
         or row.get("training_ready") is not False
+        or row.get("source_group_sha256")
+        != canonical_sha256({"bridge_pair_identity_sha256": pair})
+        or row.get("source_group_bucket") != expected_bucket
+        or row.get("corpus_split") != expected_split
+        or row.get("split_policy_sha256") != SPLIT_POLICY_SHA256
+        or not isinstance(row.get("source_custody_sha256"), str)
+        or len(row["source_custody_sha256"]) != 64
     ):
         raise GroundedBridgeFoundationQueryError("bridge candidate row differs")
     anchors = row.get("anchor_sources")

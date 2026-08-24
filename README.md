@@ -2885,6 +2885,39 @@ or reject a pair whose anchors cross splits. Exact and whitespace-normalized
 duplicates within the bridge component are rejected. Pair-disjoint placement
 is not misreported as global source-disjointness.
 
+The corpus-wide bridge boundary is now executable rather than aspirational.
+`grounded_bridge_foundation_query.py` converts every generated lesson and both
+anchor coordinates into a source-text-free SQLite query database containing
+only exact 13-word and eligible eight-token code signatures, candidate
+identities, content hashes, and normalized source keys. The source-key logic
+reconciles both `repository@revision` and separated repository/revision
+provenance. Identical inputs produce byte-identical databases, and any database
+or receipt mutation fails before a foundation row is read.
+
+`grounded_bridge_foundation_scan.py` then replays all **128 final PleIAs shards
+and both train/development partitions of all 64 final Institutional Books
+shards**. It checks bridge signatures against the final rewritten text while
+also comparing each anchor with original, intermediate, and final content
+hashes, so deduplication rewrites cannot hide shared ancestry. Each shard emits
+only sorted matching SHA-256 digests, source-group/split anchor matches, exact
+coverage hashes, and accounting; it never persists foundation or bridge text.
+`grounded_bridge_foundation_scan_aggregate.py` requires all 192 receipts,
+assigns every surviving pair to its matching foundation split, rejects an
+entire pair when anchor matches cross train/development, holds an overlapping
+representation, and rejects a pair when every representation overlaps.
+
+`grounded_bridge_foundation_reconcile.py` physically writes only the surviving
+generated representations, binds every output row to its document and pair
+decision, and replaces the provisional pair split with the reconciled global
+split. Its output remains explicitly ablation-pending and non-training. The
+completion watcher builds the query after independent bridge verification,
+copies candidates and hash evidence to Stokes, creates a read-only immutable
+runtime, and dependency-stages 128 PleIAs scans, 64 Books scans, their aggregate,
+and reconciliation behind the already-frozen final foundation jobs. The full
+implementation currently passes **1,287 tests**, including deterministic replay,
+tamper rejection, exact overlap ownership, source-key aliases, conflicting
+anchor splits, and compiler-to-query integration.
+
 These bridge lessons remain candidates, not admitted data. Their receipts keep
 global deduplication and split reconciliation against the final foundation
 corpus, transfer ablation, final bridge verification, Hugging Face publication,

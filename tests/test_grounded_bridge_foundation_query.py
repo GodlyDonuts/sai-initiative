@@ -11,15 +11,21 @@ from sai.data.grounded_bridge_curriculum_candidates import (
 from sai.data.grounded_bridge_curriculum_candidates import (
     ROW_SCHEMA as CANDIDATE_ROW_SCHEMA,
 )
+from sai.data.grounded_bridge_curriculum_candidates import SPLIT_POLICY_SHA256
 from sai.data.grounded_bridge_curriculum_candidates import (
     STATUS as CANDIDATE_STATUS,
 )
+from sai.data.grounded_bridge_curriculum_candidates import _split as candidate_split
 from sai.data.grounded_bridge_foundation_query import (
     DATABASE_SCHEMA,
     SCHEMA,
     build_query,
     source_key,
 )
+from sai.data.grounded_bridge_foundation_reconcile import (
+    ROW_SCHEMA as RECONCILED_ROW_SCHEMA,
+)
+from sai.data.grounded_bridge_foundation_reconcile import reconcile_candidates
 from sai.data.grounded_bridge_foundation_scan import (
     ANCHOR_MATCH_SCHEMA,
     FoundationDocument,
@@ -41,13 +47,27 @@ def _candidate(text: str, document_index: int) -> dict:
     row = {
         "schema": CANDIDATE_ROW_SCHEMA,
         "pair_identity_sha256": pair,
+        "clean_bridge_record_sha256": "e" * 64,
+        "document_type": (
+            "bridge_overview" if document_index == 0 else "analogy_limits"
+        ),
+        "document_index": document_index,
         "document_identity_sha256": f"{document_index + 10:064x}",
         "content_sha256": hashlib.sha256(text.encode()).hexdigest(),
         "normalized_content_sha256": hashlib.sha256(
             " ".join(text.casefold().split()).encode()
         ).hexdigest(),
         "text": text,
+        "text_utf8_bytes": len(text.encode()),
+        "semantic_domains": ["mathematics", "music"],
+        "prerequisites": ["ratios"],
+        "difficulty_milli": 1_000,
+        "verification_confidence_ppm": 900_000,
         "corpus_split": "train",
+        "source_group_sha256": canonical_sha256({"bridge_pair_identity_sha256": pair}),
+        "source_group_bucket": candidate_split(pair)[0],
+        "split_policy_sha256": SPLIT_POLICY_SHA256,
+        "source_custody_sha256": "f" * 64,
         "anchor_candidate_identity_sha256s": ["2" * 64, "3" * 64],
         "anchor_source_content_sha256s": ["4" * 64, "5" * 64],
         "anchor_sources": [
@@ -328,6 +348,23 @@ def test_aggregate_reconciles_anchor_split_and_holds_only_overlap(
     assert pair["decision"] == "retain_pending_positive_transfer_ablation"
     persisted = b"".join(path.read_bytes() for path in output.iterdir())
     assert b"Ratios connect musical intervals" not in persisted
+    reconciled = tmp_path / "reconciled"
+    evidence = tmp_path / "evidence" / "reconciled-receipt.json"
+    reconciliation = reconcile_candidates(
+        candidates, query, output, reconciled, evidence
+    )
+    assert json.loads(evidence.read_text()) == reconciliation
+    assert reconciliation["counts"]["input_documents"] == 2
+    assert reconciliation["counts"]["retained_documents"] == 1
+    assert reconciliation["source_disjoint_against_foundation_complete"] is True
+    assert reconciliation["global_deduplication_against_foundation_complete"] is True
+    assert reconciliation["positive_transfer_ablation_complete"] is False
+    row = json.loads((reconciled / "reconciled_candidates.jsonl").read_text())
+    assert row["schema"] == RECONCILED_ROW_SCHEMA
+    assert row["corpus_split"] == "development"
+    assert row["source_disjoint_against_foundation_complete"] is True
+    assert row["global_deduplication_against_foundation_complete"] is True
+    assert row["training_ready"] is False
 
 
 def test_aggregate_excludes_pair_on_foundation_anchor_split_conflict(
