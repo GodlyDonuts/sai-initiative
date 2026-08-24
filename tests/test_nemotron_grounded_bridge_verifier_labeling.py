@@ -17,9 +17,21 @@ from sai.data.nemotron_grounded_bridge_verifier_labeling import (
     NemotronBridgeVerifierError,
     build_messages,
     normalize_model_judgment,
+    validation_hint,
 )
 from sai.data.token_stream import canonical_sha256
 from tests.test_grounded_bridge_verifier_labeling import _candidate, _retain
+
+
+def test_validation_hints_preserve_the_strict_verifier_contract() -> None:
+    assert "exactly one object" in validation_hint(
+        "bridge claim-check coverage differs"
+    )
+    assert "byte-for-byte" in validation_hint(
+        "bridge claim evidence is not exact"
+    )
+    assert "verdict=retain" in validation_hint("retained bridge is inconsistent")
+    assert validation_hint("unrecognized validation error") == ""
 
 
 def test_messages_bind_prior_contract_and_all_hashes() -> None:

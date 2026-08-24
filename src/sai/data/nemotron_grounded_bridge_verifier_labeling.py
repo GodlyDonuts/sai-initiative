@@ -54,6 +54,66 @@ class NemotronBridgeVerifierError(RuntimeError):
     """An independent verification candidate or evidence quote differs."""
 
 
+def validation_hint(error: str) -> str:
+    """Return a schema-preserving correction for common verifier failures."""
+
+    if "claim-check coverage" in error:
+        return (
+            " claim_checks must contain exactly one object for every generated "
+            "claim, in input order, with zero-based claim_index values and the "
+            "unchanged anchor_side from that claim. Do not omit or add checks."
+        )
+    if "claim check differs" in error:
+        return (
+            " Every claim_checks object must have exactly claim_index, "
+            "anchor_side, supported, evidence_quote, and rationale. supported "
+            "must be a JSON boolean."
+        )
+    if "claim evidence is not exact" in error:
+        return (
+            " For a supported claim, evidence_quote must be one contiguous, "
+            "byte-for-byte substring copied from its assigned anchor. Do not "
+            "normalize whitespace or punctuation. If no exact support exists, "
+            "set supported=false and evidence_quote to the empty string."
+        )
+    if "verifier boolean differs" in error:
+        return (
+            " shared_structure_supported, domain_connection_substantive, "
+            "worked_transfer_problem_correct, counterexample_valid, and "
+            "analogy_limits_adequate must each be a JSON boolean."
+        )
+    if "defects differs" in error:
+        return (
+            " defects must be a unique JSON list using only these exact labels: "
+            + ", ".join(DEFECTS)
+            + "."
+        )
+    if "anchor quote is not exact" in error:
+        return (
+            " Each anchor_a_evidence_quotes entry must be copied byte-for-byte "
+            "from anchor A, and each anchor_b_evidence_quotes entry from anchor "
+            "B. Return one to three unique nonempty quotes per anchor."
+        )
+    if "generated bridge quote is not exact" in error:
+        return (
+            " generated_evidence_quotes must contain one to three unique, "
+            "nonempty, byte-for-byte substrings from generated_bridge."
+        )
+    if "retained bridge is inconsistent" in error:
+        return (
+            " verdict=retain requires every claim supported, all five structural "
+            "booleans true, unsupported_generated_claims=[], defects=[], and "
+            'revision_brief="". Otherwise use revise or reject with at least one '
+            "allowed defect and a nonempty revision_brief."
+        )
+    if "revision route differs" in error:
+        return (
+            " verdict=revise or reject requires at least one allowed defect and "
+            "a nonempty revision_brief of at most 640 characters."
+        )
+    return ""
+
+
 def _string(value: Any, minimum: int, maximum: int, label: str) -> str:
     if (
         not isinstance(value, str)

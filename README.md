@@ -544,6 +544,11 @@ NVIDIA's streamed endpoint does not currently supply token-usage fields for
 these receipts. The independent aggregate therefore records exact provider
 attempt counts and outcome counts, plus the number of receipts missing provider
 token telemetry; missing telemetry is explicitly not represented as zero usage.
+The first 161 valid independent receipts required 426 provider attempts: 262
+responses failed strict model-output validation and three were transient
+transport failures. Deterministic, error-specific correction hints now spell
+out exact claim coverage, quote provenance, boolean fields, defect enums, and
+verdict consistency without changing the rubric or accepting weaker outputs.
 
 #### Prerequisite-edge compiler
 

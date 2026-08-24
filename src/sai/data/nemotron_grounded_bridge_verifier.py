@@ -14,6 +14,7 @@ from sai.data.nemotron_grounded_bridge_verifier_labeling import (
     build_messages,
     normalize_candidate,
     normalize_model_judgment,
+    validation_hint,
 )
 from sai.data.nous_compiler_worker import execute_contract, run_shard_locked
 from sai.data.nous_label_worker import (
@@ -78,6 +79,7 @@ def execute_one(
         maximum_completion_tokens=5_200,
         reasoning_effort=REASONING_EFFORT,
         evidence_container_name="source_document",
+        validation_hint_function=validation_hint,
         request_function=request_function,
         sleep_function=sleep_function,
         stream_transport=stream_transport,
