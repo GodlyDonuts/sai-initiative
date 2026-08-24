@@ -429,6 +429,9 @@ It is durable at
 `weighted-reservoir-audit-quarantine-exclusions/20260826-r1`. Mixed raw files
 remain evidence-only until each salvageable row has clean replacement custody;
 the quarantined identities cannot re-enter a later dataset materialization.
+The README, aggregate, decision, manifest, and receipt were force-downloaded
+and byte-replayed from Hugging Face dataset commit
+[`e38aea8688b6e1e5ec6b9cad4f23444d220a19a0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e38aea8688b6e1e5ec6b9cad4f23444d220a19a0).
 
 The second resumed population contains 1,007 benchmark-clean PubMed full
 texts. Its workers reuse the shared provider cap and automatically seal a
