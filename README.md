@@ -211,6 +211,19 @@ hash manifest. Candidate excerpts, compiler evidence quotes, and full book text
 are explicitly excluded. A separate local collector is already waiting for the
 same source-safe files so no temporary shard is the sole evidence copy.
 
+The benchmark-disjoint survivors now also feed source-safe subdocument signing
+instead of bypassing corpus-wide boilerplate control. CPU array
+`818571_[0-63%32]`, dependency-staged after full-source screen `818523`, reopens
+each private filtered shard, selects only identities present in the clean
+decontamination manifest, replays the full-text SHA-256, and losslessly segments
+the book at natural boundaries. It writes sixteen normalized-hash partitions
+containing only component/shard/book/chunk locators, character spans, lengths,
+code flags, and signed digests—never source text. Aggregate `818572` requires all
+64 shard identities, verifies every partition byte/SHA-256, and proves the
+signature document count equals the exact benchmark-disjoint book count. Both
+jobs are CPU-only, requeue-disabled, and remain nontraining inputs to the final
+cross-source decision.
+
 The overall corpus target is now a **decimal 2TB maximum, not a quota to fill**.
 If high-confidence gates yield 700GB, 1.2TB, or any other smaller amount, Sai
 trains on that smaller verified corpus rather than padding with weak web text,
