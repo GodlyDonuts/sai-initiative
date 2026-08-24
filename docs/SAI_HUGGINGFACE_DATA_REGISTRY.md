@@ -284,6 +284,13 @@ zero-drop cross-source result. Its source-specific floors authorize only
 full-source candidate materialization; they cannot promote raw source files,
 grant rights clearance, mark data training-ready, or authorize the 4B run.
 
+The corresponding full-source compiler is storage-bounded to one verified
+parent at a time. It excludes audit rows, applies the corrected official
+benchmark boundary, rejects bare answer keys, performs normalized exact
+external-memory deduplication, and retains attribution lineage. Its output is
+still candidate data pending global near/semantic deduplication, representation
+verification, source-specific rights clearance, and curriculum admission.
+
 Dataset commit
 [`44fbdd30cedc89ac908057929468d3162651d645`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/44fbdd30cedc89ac908057929468d3162651d645)
 completes the source-safe Common Pile confirmation mirror with the aggregate,

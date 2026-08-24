@@ -892,6 +892,19 @@ raw-source admission, training, or the 4B run. This makes the expansion path
 automatic at audit closure while keeping bad rows and weak sources out of the
 compiled stream.
 
+`sai.data.common_pile_full_source_candidates` consumes only that completed
+per-source promotion. It downloads one hash-pinned parent, excludes all prior
+audit identities, proves every mechanically eligible row is covered, applies
+the corrected official benchmark boundary, rejects high-confidence
+contextless answer keys, runs external-memory normalized exact deduplication,
+and writes exact attribution custody. The compressed parent is removed after
+the scan. Every dropped row is absent from the final candidate file, while the
+raw and intermediate files remain available for replay until replacement
+custody and later cleanup close. Global near/semantic deduplication,
+representation verification, rights clearance, training readiness, and the 4B
+run remain false. A no-duplicate watcher is staged to run this path for
+Pressbooks immediately if the final source-specific gate passes.
+
 Only the source-safe receipt and text-free lineage were published and remotely
 replayed in Hugging Face dataset commit
 [`bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/bb34c47c1cf77f3bb9b3603ccdfa8c61ac6d2caf).
