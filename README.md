@@ -3009,9 +3009,18 @@ completion watcher builds the query after independent bridge verification,
 copies candidates and hash evidence to Stokes, creates a read-only immutable
 runtime, and dependency-stages 128 PleIAs scans, 64 Books scans, their aggregate,
 and reconciliation behind the already-frozen final foundation jobs. The full
-implementation currently passes **1,287 tests**, including deterministic replay,
+implementation currently passes **1,299 tests**, including deterministic replay,
 tamper rejection, exact overlap ownership, source-key aliases, conflicting
 anchor splits, and compiler-to-query integration.
+
+The live connection-data verification population contains 512 grounded bridge
+candidates. Same-family review has sealed all 512 identities and all 64 shard
+summaries: 500 retain, 12 revise, and zero reject. The source-independent
+Nemotron Ultra pass has so far sealed 414/512 identities and 40/64 summaries:
+382 retain, 27 revise, and 5 reject. These are partial verifier routes, not an
+admission result; final retention requires both complete families, conservative
+disagreement handling, official-boundary decontamination, global foundation
+overlap reconciliation, and positive transfer measurement.
 
 These bridge lessons remain candidates, not admitted data. Their receipts keep
 global deduplication and split reconciliation against the final foundation
