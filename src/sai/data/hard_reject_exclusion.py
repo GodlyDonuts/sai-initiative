@@ -208,8 +208,20 @@ def build_hard_reject_exclusion(
         raise HardRejectExclusionError("hard-reject output already exists")
     rejections, evidence = _load_rejections(pilot_root, judgments_root)
     counts: Counter[str] = Counter()
+    for key in (
+        "input_candidate_rows",
+        "excluded_candidate_rows",
+        "output_candidate_rows",
+        "input_attribution_rows",
+        "excluded_attribution_rows",
+        "upstream_absent_attribution_rows",
+        "output_attribution_rows",
+    ):
+        counts[key] = 0
     matched_candidates: Counter[str] = Counter()
     matched_attribution: Counter[str] = Counter()
+    survivor_row_ids: set[str] = set()
+    survivor_attribution: Counter[str] = Counter()
     try:
         with stages[output_candidates].open("x") as output:
             for path in candidate_paths:
@@ -228,6 +240,11 @@ def build_hard_reject_exclusion(
                             matched_candidates[row_id] += 1
                             counts["excluded_candidate_rows"] += 1
                             continue
+                        if row_id in survivor_row_ids:
+                            raise HardRejectExclusionError(
+                                "candidate source row identity is duplicated"
+                            )
+                        survivor_row_ids.add(row_id)
                         output.write(line if line.endswith("\n") else line + "\n")
                         counts["output_candidate_rows"] += 1
 
@@ -255,19 +272,30 @@ def build_hard_reject_exclusion(
                             matched_attribution[row_id] += 1
                             counts["excluded_attribution_rows"] += 1
                             continue
+                        if row_id not in survivor_row_ids:
+                            counts["upstream_absent_attribution_rows"] += 1
+                            continue
+                        survivor_attribution[row_id] += 1
                         output.write(line if line.endswith("\n") else line + "\n")
                         counts["output_attribution_rows"] += 1
 
         if (
-            set(matched_candidates) != set(rejections)
+            not set(matched_candidates).issubset(rejections)
             or set(matched_attribution) != set(rejections)
             or any(value != 1 for value in matched_candidates.values())
             or any(value != 1 for value in matched_attribution.values())
+            or set(survivor_attribution) != survivor_row_ids
+            or any(value != 1 for value in survivor_attribution.values())
         ):
             raise HardRejectExclusionError("hard-reject row coverage differs")
         with stages[exclusion_manifest].open("x") as output:
             for row_id in sorted(rejections):
-                output.write(json.dumps(rejections[row_id], sort_keys=True) + "\n")
+                record = dict(rejections[row_id])
+                record.pop("record_sha256")
+                record["candidate_input_occurrences"] = matched_candidates[row_id]
+                record["attribution_input_occurrences"] = matched_attribution[row_id]
+                record["record_sha256"] = canonical_sha256(record)
+                output.write(json.dumps(record, sort_keys=True) + "\n")
         if any(
             path.stat().st_size != descriptor["bytes"]
             or sha256_file(path) != descriptor["sha256"]
@@ -309,6 +337,7 @@ def build_hard_reject_exclusion(
             | {"contains_source_text": False},
         },
         "exact_rejected_source_rows_removed": True,
+        "candidate_attribution_survivor_sets_identical": True,
         "source_text_persisted_in_exclusion_manifest": False,
         "training_ready": False,
         "four_b_training_authorized": False,

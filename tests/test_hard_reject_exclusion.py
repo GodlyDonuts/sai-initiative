@@ -215,3 +215,41 @@ def test_hard_reject_detects_input_change_during_replay(
             tmp_path / "output" / "receipt.json",
         )
     assert not (tmp_path / "output" / "candidates.jsonl").exists()
+
+
+def test_upstream_absent_rows_are_removed_from_attribution(tmp_path: Path) -> None:
+    pilot, judgments, _ = _evidence(tmp_path)
+    retained = _document("keep-row", "A useful explanation.")
+    candidates = tmp_path / "materialized.jsonl"
+    attribution = tmp_path / "attribution.jsonl"
+    _write(candidates, [retained])
+    _write(
+        attribution,
+        [
+            _attribution("reject-row", "a" * 64),
+            _attribution("keep-row", retained["identity_sha256"]),
+            _attribution("fully-deduplicated-row", "f" * 64),
+        ],
+    )
+    output = tmp_path / "output" / "candidates.jsonl"
+    output_attribution = tmp_path / "output" / "attribution.jsonl"
+    manifest = tmp_path / "output" / "exclusions.jsonl"
+    result = build_hard_reject_exclusion(
+        [candidates],
+        [attribution],
+        pilot,
+        judgments,
+        output,
+        output_attribution,
+        manifest,
+        tmp_path / "output" / "receipt.json",
+    )
+    assert len(output.read_text().splitlines()) == 1
+    assert len(output_attribution.read_text().splitlines()) == 1
+    assert result["counts"]["excluded_candidate_rows"] == 0
+    assert result["counts"]["excluded_attribution_rows"] == 1
+    assert result["counts"]["upstream_absent_attribution_rows"] == 1
+    assert result["candidate_attribution_survivor_sets_identical"] is True
+    exclusion_record = json.loads(manifest.read_text())
+    assert exclusion_record["candidate_input_occurrences"] == 0
+    assert exclusion_record["attribution_input_occurrences"] == 1
