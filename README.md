@@ -1514,6 +1514,23 @@ All three source-safe release files were force-downloaded and replayed
 byte-for-byte from Hugging Face dataset commit
 [`7a447380b42cf631581a1604b249accecbb153bc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7a447380b42cf631581a1604b249accecbb153bc).
 
+The resulting complete-parent Pressbooks pass scanned all 54,455 rows. It
+excluded 36 prior-audit rows, 35 short rows, 130 oversized rows, and 1,088
+official-boundary overlaps, leaving 53,166 unique candidate and source-row
+identities. The final candidate SHA-256 is
+`85256ecea000b6aa0a2b1e638a61af87362e6d7effc87e0722a0ac6e994da2d7`;
+its exact attribution manifest SHA-256 is
+`59fb344c48fa68eabf740faba647387afe305399c64d0d9ce7e3e0aea67d6119`;
+and the canonical run receipt is
+`eb7e822323ec3cd928cd5b7775809207ed610634ce0c123ce77546b23065ab1e`.
+After final candidate custody was hash-verified on Stokes, three redundant
+recoverable intermediates were deleted locally, reclaiming 1,645,579,101
+bytes. Together with prior cache reclamations, 4,932,529,169 proven
+recoverable local bytes have now been removed. No mixed Hugging Face source
+shard was deleted. The three source-safe receipt files were force-downloaded
+and replayed byte-for-byte from dataset commit
+[`207d24434b073d552003d11154ab43bfe2c1bdb0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/207d24434b073d552003d11154ab43bfe2c1bdb0).
+
 The next operational work is to expand sustainable, stratified compiler lanes;
 build cross-source exact and semantic duplicate families; populate the concept
 prerequisite graph; create verified English translations and grounded

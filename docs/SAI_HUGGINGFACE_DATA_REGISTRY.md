@@ -743,3 +743,33 @@ The README, aggregate, and promotion file SHA-256 values are respectively
 All three files were force-downloaded and replayed byte-for-byte from dataset
 commit
 [`7a447380b42cf631581a1604b249accecbb153bc`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7a447380b42cf631581a1604b249accecbb153bc).
+
+## Pressbooks complete-parent candidate materialization
+
+Release `20260826-r1` under
+`evidence/common-pile-full-source-candidates/20260826-r1/pressbooks/` records a
+complete pass over the 54,455-row pinned Pressbooks parent. The pass excluded
+36 prior-audit rows, 35 short rows, 130 oversized rows, and 1,088 rows matching
+the official benchmark boundary. It produced 53,166 unique candidate and
+source-row identities with no within-source normalized exact duplicates.
+
+The final candidate and attribution manifest SHA-256 values are
+`85256ecea000b6aa0a2b1e638a61af87362e6d7effc87e0722a0ac6e994da2d7` and
+`59fb344c48fa68eabf740faba647387afe305399c64d0d9ce7e3e0aea67d6119`.
+The canonical run receipt is
+`eb7e822323ec3cd928cd5b7775809207ed610634ce0c123ce77546b23065ab1e`.
+The final candidate, attribution, and supporting receipts are hash-verified at
+the authorized Stokes durable root; candidate text is not in this public
+release.
+
+After durable custody closed, three redundant recoverable local intermediates
+were deleted, reclaiming 1,645,579,101 bytes. Their reclamation canonical
+receipt is
+`2d95a0e20487b5a405cc6afa0250e4c47f314ae829dcb51132113ffeabe2d218`.
+No mixed Hugging Face source shard was deleted. The source-safe README, run
+receipt, and reclamation receipt have file SHA-256 values
+`0b3e711951877cbdcf0b4b316b53a0b21cf34abeeac984622d1e29ca868bbac6`,
+`bdfc9c50e5ff8d189785e869c512d10a5142dd85ad18aceedac48705c4f64936`, and
+`6b9af5a8b3efcf1ec8912d705cef7642fd5320931cbeaa80ca280a94ff4a5a1a`.
+All three were force-downloaded and replayed byte-for-byte from dataset commit
+[`207d24434b073d552003d11154ab43bfe2c1bdb0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/207d24434b073d552003d11154ab43bfe2c1bdb0).
