@@ -1891,6 +1891,21 @@ The quota-safe graph is dependency-staged as virtual-signature array
 sixteen independent external-sort decision jobs `818632_[0-15%16]`. Every job
 uses one CPU, requests no GPU, has requeue disabled, and cannot run before its
 exact source receipt exists.
+
+The next quota-safe stage is now implemented, regression-tested, and
+dependency-staged. Array `818635_[0-127%8]` waits for all sixteen decisions in
+`818632`, reopens each pinned source partition, replays the benchmark-clean
+locator/content identity, applies the exact internal deletion records with the
+same coherence-restoration rule as the materialized path, and re-signs the
+transformed text. It persists only post-transform hashes, character/byte counts,
+metadata-bearing reconstruction locators, and normalized signatures; source
+text remains transient in node-local scratch. Aggregate job `818636` validates
+all 128 receipts and exact retained-document coverage before making those
+signatures eligible for the existing cross-source comparison. Both jobs are
+CPU-only, requeue-disabled, and remain explicitly nontraining. This eliminates
+the second large upload/download cycle without weakening identity, deletion, or
+coverage checks.
+
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
