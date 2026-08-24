@@ -38,6 +38,12 @@ def _components(tmp_path):
                 "semantic_genre::technical_nonfiction::documents": 3,
                 "semantic_domain::science::documents": 3,
                 "curriculum_band_vote::intermediate::documents": 3,
+                "culture_geography::india::documents": 2,
+                "book_style::instructional::documents": 3,
+                "book_quality_floor::overall_quality::4::documents": 3,
+                "book_complexity_minimum::conceptual_complexity::2::documents": 3,
+                "book_complexity_maximum::conceptual_complexity::3::documents": 3,
+                "translation_type_vote::none_english::documents": 3,
             },
             "complete_benchmark_disjoint_book_coverage": True,
             "private_storage_only": True,
@@ -102,6 +108,12 @@ def test_ledger_uses_exact_post_rewrite_bytes_without_padding(tmp_path):
     assert result["policy"]["padding_for_volume_prohibited"] is True
     assert result["components"][0]["metadata_counts"] == {
         "curriculum_band_vote::intermediate::documents": 3,
+        "culture_geography::india::documents": 2,
+        "book_style::instructional::documents": 3,
+        "book_quality_floor::overall_quality::4::documents": 3,
+        "book_complexity_minimum::conceptual_complexity::2::documents": 3,
+        "book_complexity_maximum::conceptual_complexity::3::documents": 3,
+        "translation_type_vote::none_english::documents": 3,
         "semantic_domain::science::documents": 3,
         "semantic_genre::technical_nonfiction::documents": 3,
     }

@@ -29,6 +29,15 @@ METADATA_PREFIXES = (
     "difficulty_mean_milli::",
     "curriculum_phase::",
     "curriculum_band_vote::",
+    "culture_geography::",
+    "historical_period::",
+    "book_subdomain::",
+    "book_style::",
+    "recommended_representation::",
+    "translation_type_vote::",
+    "book_quality_floor::",
+    "book_complexity_minimum::",
+    "book_complexity_maximum::",
 )
 
 

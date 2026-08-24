@@ -42,8 +42,22 @@ def test_private_book_rewrite_preserves_source_lineage_and_hashes_output():
     }
     curriculum = {
         "work_id_candidates": ["work-a"],
+        "edition_id_candidates": ["edition-a"],
+        "shared_subdomains": ["geometric_optics"],
+        "styles": ["instructional"],
+        "quality_floor": {"overall_quality": 4},
+        "complexity_range": {
+            "conceptual_complexity": {"minimum": 2, "maximum": 3}
+        },
+        "curriculum_band_votes": ["intermediate"],
         "shared_prerequisites": ["geometry"],
         "shared_concepts": ["perspective"],
+        "shared_concept_edges": [],
+        "shared_period": ["nineteenth century"],
+        "shared_culture_geography": ["india"],
+        "shared_recommended_representations": ["clean_ocr_english"],
+        "translation_type_votes": ["none_english"],
+        "confidence_floor_ppm": 900_000,
         "source_text_persisted": False,
     }
     from sai.data.token_stream import canonical_sha256

@@ -56,9 +56,17 @@ def _metadata_coverage_complete(totals: Counter[str]) -> bool:
     return (
         documents > 0
         and totals["documents_with_consensus_curriculum_metadata"] == documents
+        and totals["documents_with_quality_floor_metadata"] == documents
+        and totals["documents_with_complexity_range_metadata"] == documents
+        and totals["documents_with_translation_type_metadata"] == documents
         and dimension("semantic_genre::") == documents
         and dimension("semantic_domain::") >= documents
         and dimension("curriculum_band_vote::") >= documents
+        and dimension("book_style::") >= documents
+        and dimension("translation_type_vote::") >= documents
+        and dimension("book_quality_floor::") >= documents
+        and dimension("book_complexity_minimum::") >= documents
+        and dimension("book_complexity_maximum::") >= documents
     )
 
 

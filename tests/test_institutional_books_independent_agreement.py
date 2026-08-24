@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
+from sai.data.institutional_books_cross_source_subdocument_rewrite import (
+    _valid_consensus_curriculum,
+)
 from sai.data.institutional_books_independent_agreement import (
     agreement_disposition,
     assign_work_families,
@@ -84,6 +89,7 @@ def test_consensus_curriculum_keeps_ranges_and_shared_graph_without_quotes() -> 
         "subdomains": ["analysis", "physics"],
     }
     result = consensus_curriculum_metadata(original, independent)
+    assert _valid_consensus_curriculum(result) is True
     assert result["quality_floor"]["knowledge_density"] == 3
     assert result["complexity_range"]["reasoning_complexity"] == {
         "minimum": 2,
@@ -93,6 +99,16 @@ def test_consensus_curriculum_keeps_ranges_and_shared_graph_without_quotes() -> 
     assert result["shared_concept_edges"][0]["confidence_floor_ppm"] == 900_000
     assert "exact source quote" not in str(result)
     assert len(result["metadata_sha256"]) == 64
+
+    malformed = deepcopy(result)
+    malformed["shared_culture_geography"] = "india"
+    assert _valid_consensus_curriculum(malformed) is False
+    malformed = deepcopy(result)
+    malformed["quality_floor"]["overall_quality"] = 0
+    assert _valid_consensus_curriculum(malformed) is False
+    malformed = deepcopy(result)
+    del malformed["translation_type_votes"]
+    assert _valid_consensus_curriculum(malformed) is False
 
 
 def test_overlapping_work_candidates_form_one_transitive_family() -> None:

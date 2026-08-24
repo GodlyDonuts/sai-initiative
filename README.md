@@ -1928,6 +1928,18 @@ semantic-stratum, quality-floor, difficulty, curriculum-phase, and
 curriculum-band counters. This makes breadth and difficulty imbalance visible
 before tokenization or scheduling instead of hiding them behind one byte total.
 
+For Institutional Books, that accounting now extends beyond broad domain labels.
+Every final row must replay a structurally complete two-model consensus record:
+quality floors, linguistic/conceptual/reasoning complexity ranges, curriculum
+votes, styles, translation disposition, work/edition identities, and all
+source-text-free shared lists must be well formed and hash-consistent. The final
+component and foundation receipts expose agreed culture/geography, historical
+period, subdomain, style, recommended representation, translation type, quality
+floor, and complexity-range counters. Culture and period may legitimately be
+empty for a culture-neutral work such as a general mathematics reference, but
+available non-Western evidence is no longer discarded from the corpus ledger.
+This makes “English-only is not Western-only” an auditable coverage property.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash

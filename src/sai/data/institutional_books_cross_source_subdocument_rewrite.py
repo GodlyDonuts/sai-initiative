@@ -49,6 +49,79 @@ class InstitutionalBooksCrossSourceSubdocumentRewriteError(RuntimeError):
     """Private source, global decision, or exact rewrite differs."""
 
 
+def _ordered_strings(value: Any, *, allow_empty: bool) -> bool:
+    return bool(
+        isinstance(value, list)
+        and (allow_empty or value)
+        and all(isinstance(item, str) and item for item in value)
+        and value == sorted(set(value))
+    )
+
+
+def _valid_consensus_curriculum(value: Any) -> bool:
+    """Require every independently agreed curriculum dimension used downstream."""
+
+    if not isinstance(value, dict):
+        return False
+    quality = value.get("quality_floor")
+    complexity = value.get("complexity_range")
+    if (
+        not isinstance(quality, dict)
+        or not quality
+        or any(
+            not isinstance(key, str)
+            or not key
+            or isinstance(score, bool)
+            or not isinstance(score, int)
+            or not 1 <= score <= 5
+            for key, score in quality.items()
+        )
+        or not isinstance(complexity, dict)
+        or not complexity
+    ):
+        return False
+    for key, bounds in complexity.items():
+        if (
+            not isinstance(key, str)
+            or not key
+            or not isinstance(bounds, dict)
+            or set(bounds) != {"minimum", "maximum"}
+        ):
+            return False
+        minimum, maximum = bounds["minimum"], bounds["maximum"]
+        if (
+            isinstance(minimum, bool)
+            or not isinstance(minimum, int)
+            or isinstance(maximum, bool)
+            or not isinstance(maximum, int)
+            or not 1 <= minimum <= maximum <= 5
+        ):
+            return False
+    confidence = value.get("confidence_floor_ppm")
+    return bool(
+        _ordered_strings(value.get("work_id_candidates"), allow_empty=False)
+        and _ordered_strings(value.get("edition_id_candidates"), allow_empty=False)
+        and _ordered_strings(value.get("shared_subdomains"), allow_empty=True)
+        and _ordered_strings(value.get("styles"), allow_empty=False)
+        and _ordered_strings(value.get("curriculum_band_votes"), allow_empty=False)
+        and _ordered_strings(value.get("shared_prerequisites"), allow_empty=True)
+        and _ordered_strings(value.get("shared_concepts"), allow_empty=True)
+        and _ordered_strings(value.get("shared_period"), allow_empty=True)
+        and _ordered_strings(
+            value.get("shared_culture_geography"), allow_empty=True
+        )
+        and _ordered_strings(
+            value.get("shared_recommended_representations"), allow_empty=True
+        )
+        and _ordered_strings(value.get("translation_type_votes"), allow_empty=False)
+        and isinstance(value.get("shared_concept_edges"), list)
+        and isinstance(confidence, int)
+        and not isinstance(confidence, bool)
+        and 0 <= confidence <= 1_000_000
+        and value.get("source_text_persisted") is False
+    )
+
+
 def _schema(source_schema):
     try:
         import pyarrow as pa
@@ -122,10 +195,9 @@ def rewrite_row(
             not isinstance(domain, str) or not domain
             for domain in clean["shared_domains"]
         )
-        or not isinstance(clean.get("consensus_curriculum"), dict)
+        or not _valid_consensus_curriculum(clean.get("consensus_curriculum"))
         or not isinstance(clean.get("work_family_sha256"), str)
         or len(clean["work_family_sha256"]) != 64
-        or clean["consensus_curriculum"].get("source_text_persisted") is not False
         or clean["consensus_curriculum"].get("metadata_sha256")
         != canonical_sha256(
             {
@@ -301,7 +373,49 @@ def run_shard(
                             "curriculum_band_votes"
                         ]:
                             counts[f"curriculum_band_vote::{band}::documents"] += 1
+                        for value in clean["consensus_curriculum"][
+                            "shared_culture_geography"
+                        ]:
+                            counts[f"culture_geography::{value}::documents"] += 1
+                        for value in clean["consensus_curriculum"]["shared_period"]:
+                            counts[f"historical_period::{value}::documents"] += 1
+                        for value in clean["consensus_curriculum"][
+                            "shared_subdomains"
+                        ]:
+                            counts[f"book_subdomain::{value}::documents"] += 1
+                        for value in clean["consensus_curriculum"]["styles"]:
+                            counts[f"book_style::{value}::documents"] += 1
+                        for value in clean["consensus_curriculum"][
+                            "shared_recommended_representations"
+                        ]:
+                            counts[
+                                f"recommended_representation::{value}::documents"
+                            ] += 1
+                        for value in clean["consensus_curriculum"][
+                            "translation_type_votes"
+                        ]:
+                            counts[f"translation_type_vote::{value}::documents"] += 1
+                        for key, value in clean["consensus_curriculum"][
+                            "quality_floor"
+                        ].items():
+                            counts[
+                                f"book_quality_floor::{key}::{value}::documents"
+                            ] += 1
+                        for key, value in clean["consensus_curriculum"][
+                            "complexity_range"
+                        ].items():
+                            counts[
+                                f"book_complexity_minimum::{key}::"
+                                f"{value['minimum']}::documents"
+                            ] += 1
+                            counts[
+                                f"book_complexity_maximum::{key}::"
+                                f"{value['maximum']}::documents"
+                            ] += 1
                         counts["documents_with_consensus_curriculum_metadata"] += 1
+                        counts["documents_with_quality_floor_metadata"] += 1
+                        counts["documents_with_complexity_range_metadata"] += 1
+                        counts["documents_with_translation_type_metadata"] += 1
                         for key, value in row_counts.items():
                             counts[key] += value
                         ordered_identities.update(
