@@ -188,10 +188,8 @@ def acquire_full_verified_metadata_row(
                 )
                 % source.metadata.num_row_groups
             )
-            table = source.read_row_group(
-                group_index, columns=columns, use_threads=False
-            )
-            if table.num_rows <= 0:
+            row_group_rows = source.metadata.row_group(group_index).num_rows
+            if row_group_rows <= 0:
                 raise PleiasParentDisjointAuditError(
                     "PleIAs downloaded parent row group is empty"
                 )
@@ -202,40 +200,61 @@ def acquire_full_verified_metadata_row(
                     ).hexdigest(),
                     16,
                 )
-                % table.num_rows
+                % row_group_rows
             )
-            for offset in range(table.num_rows):
-                row_index = (start + offset) % table.num_rows
-                text = _as_py(table, "text", row_index)
-                if not isinstance(text, str) or len(text.strip().encode()) < 200:
-                    continue
-                license_name = _as_py(table, "license", row_index)
-                if not isinstance(license_name, str) or not license_name.strip():
-                    license_name = plan["license"]
-                native_id = _as_py(table, "identifier", row_index)
-                if native_id is not None and not isinstance(native_id, str):
-                    native_id = canonical_sha256(native_id)
-                locator = {
-                    "format": "parquet",
-                    "row_group": group_index,
-                    "row_in_group": row_index,
-                    "row_index": sum(
-                        source.metadata.row_group(index).num_rows
-                        for index in range(group_index)
-                    )
-                    + row_index,
-                    "native_id": native_id,
-                    "language": _as_py(table, "language", row_index),
-                    "collection": _as_py(table, "collection", row_index),
-                    "open_type": _as_py(table, "open_type", row_index),
-                    "metadata_sha256": canonical_sha256({}),
-                }
-                return {
-                    "text": text.strip(),
-                    "locator": locator,
-                    "declared_license": license_name.strip(),
-                    "full_file_content_verified": True,
-                }
+            selected = None
+            selected_distance = row_group_rows + 1
+            cursor = 0
+            for batch in source.iter_batches(
+                batch_size=16,
+                row_groups=[group_index],
+                columns=columns,
+                use_threads=False,
+            ):
+                for row_in_batch in range(batch.num_rows):
+                    row_index = cursor + row_in_batch
+                    text = _as_py(batch, "text", row_in_batch)
+                    if not isinstance(text, str) or len(text.strip().encode()) < 200:
+                        continue
+                    distance = (row_index - start) % row_group_rows
+                    if distance >= selected_distance:
+                        continue
+                    license_name = _as_py(batch, "license", row_in_batch)
+                    if not isinstance(license_name, str) or not license_name.strip():
+                        license_name = plan["license"]
+                    native_id = _as_py(batch, "identifier", row_in_batch)
+                    if native_id is not None and not isinstance(native_id, str):
+                        native_id = canonical_sha256(native_id)
+                    selected = {
+                        "text": text.strip(),
+                        "locator": {
+                            "format": "parquet",
+                            "row_group": group_index,
+                            "row_in_group": row_index,
+                            "row_index": sum(
+                                source.metadata.row_group(index).num_rows
+                                for index in range(group_index)
+                            )
+                            + row_index,
+                            "native_id": native_id,
+                            "language": _as_py(batch, "language", row_in_batch),
+                            "collection": _as_py(
+                                batch, "collection", row_in_batch
+                            ),
+                            "open_type": _as_py(batch, "open_type", row_in_batch),
+                            "metadata_sha256": canonical_sha256({}),
+                        },
+                        "declared_license": license_name.strip(),
+                        "full_file_content_verified": True,
+                    }
+                    selected_distance = distance
+                cursor += batch.num_rows
+            if cursor != row_group_rows:
+                raise PleiasParentDisjointAuditError(
+                    "PleIAs row-group batch custody differs"
+                )
+            if selected is not None:
+                return selected
     except PleiasParentDisjointAuditError:
         raise
     except Exception as error:
