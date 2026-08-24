@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from sai.data.token_stream import ROW_SCHEMA, sha256_tree
-from sai.tokenizer.build import TokenizerBuildError, build_candidates
+from sai.tokenizer.build import TokenizerBuildError, build_candidates, parse_sizes
 
 
 def test_tokenizer_tournament_job_is_cpu_only_and_replays_decontamination() -> None:
@@ -25,7 +25,8 @@ def _row(index: int) -> dict:
     text = (
         f"Document {index}: def f_{index}(x): return x * {index + 1}. "
         f"The measured energy is {index}.125e-3 joules. "
-        + "technical English mathematics science code " * 12
+        + "technical English mathematics science code "
+        * 12
     )
     return {
         "schema": ROW_SCHEMA,
@@ -94,3 +95,12 @@ def test_rejects_unsafe_inputs_and_existing_output(tmp_path: Path) -> None:
     corpus.write_text("{}\n")
     with pytest.raises(TokenizerBuildError, match="corpus row"):
         build_candidates([corpus], tmp_path / "malformed", sizes={"small": 300})
+
+
+def test_explicit_production_sizes_enable_independent_candidate_builds() -> None:
+    assert parse_sizes(None) == {"32k": 32_000, "48k": 48_000, "64k": 64_000}
+    assert parse_sizes(["48k=48000"]) == {"48k": 48_000}
+    with pytest.raises(TokenizerBuildError, match="invalid tokenizer size"):
+        parse_sizes(["48k=64000"])
+    with pytest.raises(TokenizerBuildError, match="invalid tokenizer size"):
+        parse_sizes(["custom=48000"])

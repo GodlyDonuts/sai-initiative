@@ -159,12 +159,40 @@ def build_candidates(
         raise
 
 
+def parse_sizes(values: list[str] | None) -> dict[str, int]:
+    """Parse explicit name=size candidates or return the production tournament."""
+
+    if values is None:
+        return dict(PRODUCTION_SIZES)
+    sizes = {}
+    for value in values:
+        name, separator, encoded_size = value.partition("=")
+        try:
+            size = int(encoded_size)
+        except ValueError as error:
+            raise TokenizerBuildError(f"invalid tokenizer size: {value}") from error
+        if (
+            not separator
+            or name not in PRODUCTION_SIZES
+            or name in sizes
+            or size != PRODUCTION_SIZES[name]
+        ):
+            raise TokenizerBuildError(f"invalid tokenizer size: {value}")
+        sizes[name] = size
+    if not sizes:
+        raise TokenizerBuildError("at least one tokenizer size is required")
+    return sizes
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--corpus", type=Path, action="append", required=True)
+    parser.add_argument("--size", action="append")
     parser.add_argument("--output-root", type=Path, required=True)
     args = parser.parse_args()
-    manifest = build_candidates(args.corpus, args.output_root, sizes=PRODUCTION_SIZES)
+    manifest = build_candidates(
+        args.corpus, args.output_root, sizes=parse_sizes(args.size)
+    )
     print(
         json.dumps(
             {

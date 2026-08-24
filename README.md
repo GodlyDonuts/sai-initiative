@@ -1992,6 +1992,20 @@ Scripts `sample_institutional_books_tokenizer_stokes.sbatch` and
 requeue-disabled, immutable-runtime stages intended after final book aggregate
 `818644`. The book text remains private and is never uploaded to Hugging Face.
 
+The combined tokenizer tournament is prepared as three independent CPU jobs,
+one each for exact lossless 32K, 48K, and 64K byte-level BPE candidates. Every
+candidate consumes the identical ordered population: 64 rights-bound private
+book samples followed by 128 benchmark-clean PleIAs samples. Independent builds
+allow the scheduler to admit available CPU capacity without serializing three
+multi-hour vocabulary constructions. A single downstream qualification reopens
+all 192 sample files, evaluates every candidate on identical bytes and the full
+protected English/code/math/science/technical string suite, and requires zero
+round-trip, unknown-token, or empty-encoding failures. Final custody then binds
+both sample aggregates, all source file hashes, all three build manifests and
+tokenizer trees, the matched qualification report, and the mechanical 48K
+selection receipt. Mechanical selection is explicitly not represented as a
+capability winner: production selection and capability comparison remain open.
+
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
