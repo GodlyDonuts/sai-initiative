@@ -24,14 +24,16 @@ source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources/virtual-spiral-curriculum-index-20260826-r1
+sai_evidence=/lustre/fs1/home/sa305415/sai_data_sources/sai_evidence/virtual-spiral-curriculum-index/20260826-r1
 sai_pleias_final=/lustre/fs1/home/sa305415/sai_data_sources/pleias-virtual-final-reconstruction-20260826-r1
 sai_book_final=/lustre/fs1/home/sa305415/sai_data_sources/institutional-books-virtual-cross-source-rewritten-20260826-r1
 
-mkdir -p "${sai_root}"
+mkdir -p "${sai_root}" "${sai_evidence}"
 python -m sai.data.virtual_spiral_curriculum_index aggregate \
   --pleias-index-root "${sai_root}/pleias" \
   --book-index-root "${sai_root}/books" \
   --pleias-final-root "${sai_pleias_final}" \
   --book-final-root "${sai_book_final}" \
   --output "${sai_root}/aggregate.json" \
+  --durable-output "${sai_evidence}/aggregate.json" \
   --scratch-root "${TMPDIR:-/tmp}"

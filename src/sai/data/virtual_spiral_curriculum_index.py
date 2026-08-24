@@ -684,11 +684,23 @@ def aggregate_indexes(
     book_final_root: Path,
     output: Path,
     *,
+    durable_output: Path | None = None,
     scratch_root: Path | None = None,
 ) -> dict[str, Any]:
     """Verify all 192 source-text-free indexes and reject global duplicates."""
 
-    if output.exists() or output.is_symlink():
+    if (
+        output.exists()
+        or output.is_symlink()
+        or (
+            durable_output is not None
+            and (
+                durable_output == output
+                or durable_output.exists()
+                or durable_output.is_symlink()
+            )
+        )
+    ):
         raise VirtualSpiralCurriculumIndexError("index aggregate output exists")
     pleias_final = _load_signed(
         pleias_final_root / "aggregate.json", PLEIAS_AGGREGATE_SCHEMA
@@ -879,6 +891,12 @@ def aggregate_indexes(
     }
     payload["receipt_sha256"] = canonical_sha256(payload)
     _atomic_create(output, payload)
+    if durable_output is not None:
+        try:
+            _atomic_create(durable_output, payload)
+        except BaseException:
+            output.unlink()
+            raise
     return payload
 
 
@@ -902,6 +920,7 @@ def main() -> int:
     combine.add_argument("--pleias-final-root", type=Path, required=True)
     combine.add_argument("--book-final-root", type=Path, required=True)
     combine.add_argument("--output", type=Path, required=True)
+    combine.add_argument("--durable-output", type=Path)
     combine.add_argument("--scratch-root", type=Path)
     args = parser.parse_args()
     if args.command == "pleias-shard":
@@ -926,6 +945,7 @@ def main() -> int:
             args.pleias_final_root,
             args.book_final_root,
             args.output,
+            durable_output=args.durable_output,
             scratch_root=args.scratch_root,
         )
     print(
