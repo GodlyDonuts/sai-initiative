@@ -1128,6 +1128,22 @@ were remotely byte-replayed in Hugging Face commit
 and copied byte-identically to the authorized Stokes evidence root at
 `opencoder-promotion-screen/20260826-r1`.
 
+The same cache policy removed a second, unrelated object without waiting for a
+semantic source audit: a partial `willdepueoai/parameter-golf` snapshot holding
+ten FineWeb training binaries and one validation binary already encoded by an
+unrelated 1,024-token benchmark tokenizer. The **2,124,321,260-byte** cache was
+not original text, appeared nowhere in Sai code or live processes, contained
+only 11 of the upstream manifest's 196 binaries, and had zero paths in
+`Godlydonuts/Sai`. Every local file hash was verified before the exact cache
+root was quarantined and deleted. It is not locally recoverable, but is exactly
+re-downloadable from upstream revision
+`a85b0e6035c3c94bc23685a07c81a8f3bf89db80`. Reclamation receipt
+`612423e30092478571c9a43eae23d0271d8278eaa816e92f90a3d605ae1a91fe`
+was remotely byte-replayed in Hugging Face commit
+[`40d688182f3e6a65b3b09a96eeb33ee9e48a441e`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/40d688182f3e6a65b3b09a96eeb33ee9e48a441e)
+and mirrored byte-identically to Stokes under
+`parameter-golf-cache-reclamation/20260826-r1`.
+
 The r1 286/1,879 overall and 77/96 Nemotron conclusions are retracted because
 they were materially inflated by nonsubstantive code windows. Those screens
 remain immutable evidence of the discovered policy failure in

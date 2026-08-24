@@ -656,3 +656,26 @@ revision, and had no active file handle or admitted derivative. The audit
 population and evidence remain intact. All three published files were
 force-downloaded and replayed byte-for-byte from dataset commit
 [`f6151be578e7e353af45152426a55681a27eae80`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f6151be578e7e353af45152426a55681a27eae80).
+
+## Parameter Golf cache reclamation
+
+Release `20260826-r1` records removal of an incomplete, unrelated
+`willdepueoai/parameter-golf` acquisition cache. Its ten training binaries and
+one validation binary were FineWeb token IDs encoded with the benchmark's
+1,024-token tokenizer, not original text. The cache contained 2,124,321,260
+physical bytes, had no Sai code or live-process reference, and had zero paths
+in `Godlydonuts/Sai`.
+
+The exact local inventory contained 15 regular files and 14 symlinks. Its
+ordered entry-manifest SHA-256 is
+`2111d86768e771f8f1984ebb41826da94a711e0d9ac58a6d24fb73abf0144f05`.
+The source-safe reclamation receipt has canonical SHA-256
+`612423e30092478571c9a43eae23d0271d8278eaa816e92f90a3d605ae1a91fe`
+and file SHA-256
+`e8077177dfc21afbf2b593e72e8f2620191ca3017594db14e632f87fd0f48bf8`.
+The cache is absent locally but exactly recoverable from upstream revision
+`a85b0e6035c3c94bc23685a07c81a8f3bf89db80`.
+
+The README and receipt were force-downloaded and replayed byte-for-byte from
+dataset commit
+[`40d688182f3e6a65b3b09a96eeb33ee9e48a441e`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/40d688182f3e6a65b3b09a96eeb33ee9e48a441e).

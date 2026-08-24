@@ -146,6 +146,16 @@ capacity, not accepted corpus volume.
   custody may also be reclaimed after active dependencies end and source-safe
   audit plus recovery coordinates are durable; doing so does not assert that
   every upstream row is unusable.
+- One such cache-only reclamation removed 2,124,321,260 bytes from an
+  incomplete `willdepueoai/parameter-golf` snapshot: ten FineWeb training
+  binaries and one validation binary encoded by that benchmark's 1,024-token
+  tokenizer. It was not original text, had no Sai code or live-process
+  reference, and had zero paths in this repository. The cache is no longer
+  locally recoverable but remains exactly re-downloadable from pinned upstream
+  revision `a85b0e6035c3c94bc23685a07c81a8f3bf89db80`. Receipt
+  `612423e30092478571c9a43eae23d0271d8278eaa816e92f90a3d605ae1a91fe`
+  is published under
+  `evidence/parameter-golf-cache-reclamation/20260826-r1/`.
 - Completed Hermès receipts contain 6,751 proposed cross-domain assignments
   across 730 directed labels. A 512-pair, source-disjoint development proposal
   population has been frozen across 290 labels. No proposal is called
