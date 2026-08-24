@@ -13,6 +13,7 @@ from sai.data.nemotron_grounded_bridge_verifier import (
 )
 from sai.data.nemotron_grounded_bridge_verifier_labeling import (
     NemotronBridgeVerifierError,
+    build_messages,
     normalize_model_judgment,
     repair_evidence_quotes,
 )
@@ -88,6 +89,18 @@ def test_bridge_evidence_repair_recovers_unique_literal_spans() -> None:
     )
     assert any(row["path"] == "anchor_a_evidence_quotes[0]" for row in repairs)
     assert normalize_model_judgment(repaired, candidate)["verdict"] == "retain"
+
+
+def test_bridge_messages_offer_only_literal_evidence_candidates() -> None:
+    candidate = _candidate()
+    envelope = json.loads(build_messages(candidate)[1]["content"])
+    for key, source_key in (
+        ("anchor_a_evidence_quote_candidates", "anchor_a_text"),
+        ("anchor_b_evidence_quote_candidates", "anchor_b_text"),
+        ("generated_evidence_quote_candidates", "generated_text"),
+    ):
+        assert envelope[key]
+        assert all(quote in candidate[source_key] for quote in envelope[key])
 
 
 def test_bridge_evidence_repair_rejects_invented_quote() -> None:

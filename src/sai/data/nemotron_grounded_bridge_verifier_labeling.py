@@ -14,7 +14,10 @@ import json
 from typing import Any
 
 from sai.data.agent_labeling import _bounded_int, _exact
-from sai.data.data_compiler_labeling import _recover_unique_source_span
+from sai.data.data_compiler_labeling import (
+    _recover_unique_source_span,
+    evidence_quote_candidates,
+)
 from sai.data.grounded_bridge_verifier_labeling import (
     DEFECTS,
     VERDICTS,
@@ -195,6 +198,20 @@ def build_messages(candidate: dict[str, Any]) -> list[dict[str, str]]:
         "anchor_a": candidate["anchor_a_text"],
         "anchor_b": candidate["anchor_b_text"],
         "generated_bridge": candidate["generated_text"],
+        "anchor_a_evidence_quote_candidates": _evidence_candidates(
+            candidate["anchor_a_text"]
+        ),
+        "anchor_b_evidence_quote_candidates": _evidence_candidates(
+            candidate["anchor_b_text"]
+        ),
+        "generated_evidence_quote_candidates": _evidence_candidates(
+            candidate["generated_text"]
+        ),
+        "evidence_rule": (
+            "Prefer complete strings from the matching evidence_quote_candidates "
+            "when they support the judgment. Every submitted quote must remain "
+            "a literal contiguous substring of its matching full source."
+        ),
         "generated_claims": candidate["generated"]["claims"],
     }
     return [
@@ -206,6 +223,14 @@ def build_messages(candidate: dict[str, Any]) -> list[dict[str, str]]:
             ),
         },
     ]
+
+
+def _evidence_candidates(text: str) -> list[str]:
+    """Return literal prompt anchors, including for compact test/source rows."""
+
+    if len(text) < 24:
+        return [text]
+    return evidence_quote_candidates(text)
 
 
 def _repair_quote(
