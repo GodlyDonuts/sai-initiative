@@ -1693,6 +1693,15 @@ This stage turns the decimal 2 TB ceiling into a deterministic selection problem
 it neither pads toward 2 TB nor copies bulk text before the global quality and
 deduplication decisions are known.
 
+Production descriptor closure feeds a disk-backed normalized-exact decision.
+SQLite retains the lowest stable source-row identity for each NFKC/casefold/
+whitespace-normalized full-document SHA-256 while separately counting byte-exact
+duplicates. The decision database contains locators, sizes, strata, and hashes,
+but no source text. It is indexed for the later near-duplicate and deterministic
+byte-budget decisions; both those gates and full-document benchmark screening
+remain explicitly incomplete. Job `818560` is staged strictly after aggregate
+`818559`, requests one CPU with 8 GiB for eight hours, and has requeue disabled.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
