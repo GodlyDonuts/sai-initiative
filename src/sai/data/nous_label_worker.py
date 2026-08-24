@@ -33,6 +33,11 @@ from sai.data.token_stream import canonical_sha256
 SCHEMA = "sai-nous-agent-label-receipt-v1"
 DEFAULT_BASE_URL = "https://inference-api.nousresearch.com/v1"
 DEFAULT_MODEL = "stealth/ox-alpha"
+ALLOWED_HTTPS_BASE_URLS = {
+    "inference-api.nousresearch.com": "https://inference-api.nousresearch.com/v1",
+    "openrouter.ai": "https://openrouter.ai/api/v1",
+    "integrate.api.nvidia.com": "https://integrate.api.nvidia.com/v1",
+}
 RETRYABLE_STATUS = {408, 409, 425, 429, 500, 502, 503, 504, 524}
 CONNECT_TIMEOUT_SECONDS = 5.0
 _ADDRESS_CACHE: dict[tuple[str, int], tuple[int, tuple[Any, ...]]] = {}
@@ -64,18 +69,20 @@ def _validate_endpoint(value: str) -> str:
         and not parsed.fragment
     ):
         return "http://127.0.0.1:8645/v1"
+    normalized = ALLOWED_HTTPS_BASE_URLS.get(parsed.hostname or "")
+    expected_path = urllib.parse.urlsplit(normalized).path if normalized else None
     if (
         parsed.scheme != "https"
-        or parsed.hostname != "inference-api.nousresearch.com"
+        or normalized is None
         or parsed.port not in (None, 443)
-        or parsed.path.rstrip("/") != "/v1"
+        or parsed.path.rstrip("/") != expected_path
         or parsed.username is not None
         or parsed.password is not None
         or parsed.query
         or parsed.fragment
     ):
         raise NousLabelWorkerError("Nous endpoint differs")
-    return "https://inference-api.nousresearch.com/v1"
+    return normalized
 
 
 def _json_object(content: Any) -> dict[str, Any]:

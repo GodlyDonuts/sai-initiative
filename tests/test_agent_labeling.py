@@ -250,6 +250,23 @@ def test_execute_one_records_lineage_without_key() -> None:
     assert receipt["judgment"]["perspective"] == "data_quality_editor"
     assert receipt["credential_transport"] == "direct_portal_bearer"
 
+    for endpoint in (
+        "https://openrouter.ai/api/v1",
+        "https://integrate.api.nvidia.com/v1",
+    ):
+        alternate = execute_one(
+            candidate,
+            1,
+            model="stealth/ox-alpha",
+            base_url=endpoint,
+            api_key="secret",
+            timeout_seconds=1,
+            maximum_attempts=1,
+            request_function=request_function,
+        )
+        assert alternate["endpoint_origin"] == endpoint
+        assert alternate["credential_transport"] == "direct_portal_bearer"
+
     with pytest.raises(NousLabelWorkerError, match="endpoint differs"):
         execute_one(
             candidate,
