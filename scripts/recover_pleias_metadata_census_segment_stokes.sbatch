@@ -31,6 +31,8 @@ sai_manifest=/lustre/fs1/home/sa305415/sai-initiative/artifacts/sai_hf_materiali
 sai_recovery_root=/lustre/fs1/home/sa305415/sai_data_sources/pleias-metadata-census-recovery-20260826-r1
 sai_output_root=$(printf '%s/shard_%05d/segment_%05d' "${sai_recovery_root}" "${SAI_SHARD_INDEX}" "${SLURM_ARRAY_TASK_ID}")
 
+rmdir "${sai_output_root}" 2>/dev/null || true
+
 python -m sai.data.pleias_metadata_census segment \
   --manifest "${sai_manifest}" \
   --output-root "${sai_output_root}" \
