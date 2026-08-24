@@ -36,7 +36,7 @@ run_segment() {
         --api-key-env SAI_NOUS_LOOPBACK_KEY \
         --logical-shards "${sai_logical_shards}" \
         --shard-index "${sai_shard}" \
-        --concurrency 3 \
+        --concurrency 1 \
         --timeout-seconds 600 \
         --maximum-attempts 5 \
         --judgments-per-candidate 3; then
