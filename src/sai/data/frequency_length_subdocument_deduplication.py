@@ -491,6 +491,7 @@ def _build_groups(
     with ExitStack() as stack, group_path.open("xb") as groups:
         handles = [stack.enter_context(path.open("rb")) for path in source_paths]
         group_hash = None
+        group_first_record = None
         group_normalized = None
         group_frequency = 0
         group_length = 0
@@ -516,14 +517,23 @@ def _build_groups(
             counts["duplicate_occurrences"] += max(0, group_frequency - 1)
 
         for record in _merged_records(index_runs, _INDEX):
-            normalized = _load_indexed_chunk(handles, record, minimum_characters)
             if record[0] != group_hash:
                 flush()
                 group_hash = record[0]
-                group_normalized = normalized
+                group_first_record = record
+                group_normalized = None
                 group_frequency = 1
-                group_length = len(normalized)
+                group_length = record[8]
             else:
+                if group_first_record is None or record[8] != group_length:
+                    raise FrequencyLengthSubdocumentDeduplicationError(
+                        "normalized subdocument SHA-256 collision differs"
+                    )
+                if group_normalized is None:
+                    group_normalized = _load_indexed_chunk(
+                        handles, group_first_record, minimum_characters
+                    )
+                normalized = _load_indexed_chunk(handles, record, minimum_characters)
                 if normalized != group_normalized or len(normalized) != group_length:
                     raise FrequencyLengthSubdocumentDeduplicationError(
                         "normalized subdocument SHA-256 collision differs"

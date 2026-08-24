@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import sai.data.frequency_length_subdocument_deduplication as deduplication
 from sai.data.frequency_length_subdocument_deduplication import (
     build_frequency_length_deduplication,
     retention_budget,
@@ -138,7 +139,15 @@ def test_short_isolated_candidate_is_restored_for_coherence(tmp_path: Path) -> N
     assert (tmp_path / "output.jsonl").read_text() != ""
 
 
-def test_unique_population_replays_without_transform_records(tmp_path: Path) -> None:
+def test_unique_population_replays_without_transform_records(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def reject_unnecessary_collision_replay(*args, **kwargs):
+        raise AssertionError("unique segment unexpectedly reopened source text")
+
+    monkeypatch.setattr(
+        deduplication, "_load_indexed_chunk", reject_unnecessary_collision_replay
+    )
     rows = [
         _document("A singular account of ceramic glazing.", "row-a"),
         _document("A separate proof about finite groups.", "row-b", "math"),
