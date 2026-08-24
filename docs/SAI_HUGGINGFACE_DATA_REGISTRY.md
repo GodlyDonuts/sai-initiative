@@ -679,3 +679,25 @@ The cache is absent locally but exactly recoverable from upstream revision
 The README and receipt were force-downloaded and replayed byte-for-byte from
 dataset commit
 [`40d688182f3e6a65b3b09a96eeb33ee9e48a441e`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/40d688182f3e6a65b3b09a96eeb33ee9e48a441e).
+
+## FinBERT cache reclamation
+
+Release `20260826-r1` records deletion of an unused `ProsusAI/finbert` model
+cache. It contained 876,191,371 bytes across 13 regular files and six symlinks,
+including PyTorch and safetensors copies of a narrow financial-sentiment
+classifier. No Sai code, live process, open handle, data-compiler stage,
+tokenizer stage, semantic-deduplication stage, or training path referenced it.
+
+The ordered entry-manifest SHA-256 is
+`8a8e37ea85032b9abd4cd96cc24837d5bf14a0d7e1a2779d98dd73a279894029`.
+The canonical reclamation receipt is
+`bc82ae86511c507edf8128f8e5ced567e58b2e2d300128258da2b02bab7b2117`,
+and its file SHA-256 is
+`24b94202ac44bcbc5fae6287f2a35b28f2ec248a1dac5ee423aba4954b44c865`.
+The cache is absent locally but remains recoverable from exact public main and
+safetensors revisions. The related `all-mpnet-base-v2` cache is retained for
+semantic deduplication.
+
+The README and receipt were force-downloaded and replayed byte-for-byte from
+dataset commit
+[`985b5bae55c694825d3ba4cfaffa01774d04287c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/985b5bae55c694825d3ba4cfaffa01774d04287c).

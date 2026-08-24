@@ -156,6 +156,14 @@ capacity, not accepted corpus volume.
   `612423e30092478571c9a43eae23d0271d8278eaa816e92f90a3d605ae1a91fe`
   is published under
   `evidence/parameter-golf-cache-reclamation/20260826-r1/`.
+- A separate 876,191,371-byte `ProsusAI/finbert` cache had zero Sai code,
+  process, or file-handle references and no data-compiler, tokenizer, semantic
+  deduplication, or training role. Its two weight formats and all metadata were
+  hash-manifested before local deletion; both pinned upstream revisions remain
+  recoverable. Receipt
+  `bc82ae86511c507edf8128f8e5ced567e58b2e2d300128258da2b02bab7b2117`
+  is published under `evidence/finbert-cache-reclamation/20260826-r1/`.
+  `all-mpnet-base-v2` is intentionally retained for semantic deduplication.
 - Completed Hermès receipts contain 6,751 proposed cross-domain assignments
   across 730 directed labels. A 512-pair, source-disjoint development proposal
   population has been frozen across 290 labels. No proposal is called

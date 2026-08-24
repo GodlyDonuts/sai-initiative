@@ -1144,6 +1144,21 @@ was remotely byte-replayed in Hugging Face commit
 and mirrored byte-identically to Stokes under
 `parameter-golf-cache-reclamation/20260826-r1`.
 
+An unused `ProsusAI/finbert` cache was also removed after proving zero Sai-code,
+live-process, and open-handle references. It contained two redundant formats of
+a narrow financial-sentiment classifier, not a Sai data, tokenizer, semantic
+deduplication, or training dependency. All 13 files and six symlinks were
+hash-manifested before **876,191,371 bytes** were deleted. The cache is not
+locally recoverable; main revision
+`4556d13015211d73dccd3fdd39d39232506f3e43` and safetensors revision
+`7db323f79b751944bcfa66298ec06977e4518306` remain pinned upstream. Receipt
+`bc82ae86511c507edf8128f8e5ced567e58b2e2d300128258da2b02bab7b2117`
+was remotely replayed in Hugging Face commit
+[`985b5bae55c694825d3ba4cfaffa01774d04287c`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/985b5bae55c694825d3ba4cfaffa01774d04287c)
+and mirrored to Stokes under `finbert-cache-reclamation/20260826-r1`.
+The similarly sized `all-mpnet-base-v2` cache is deliberately retained because
+it remains directly useful for semantic deduplication.
+
 The r1 286/1,879 overall and 77/96 Nemotron conclusions are retracted because
 they were materially inflated by nonsubstantive code windows. Those screens
 remain immutable evidence of the discovered policy failure in
