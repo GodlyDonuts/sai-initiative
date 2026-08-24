@@ -128,6 +128,16 @@ shards. The gate copies no source text; every non-pass row is withheld from
 direct admission, while even a pass remains non-training-ready until semantic
 quality, decontamination, and global deduplication also close.
 
+The mechanical decisions now feed a physically separate private candidate
+corpus rather than relying on a downstream flag. Dependency-staged CPU array
+`818507_[0-63]` will revalidate each materializer and gate receipt, copy only
+`pass_mechanical_gate` rows, and hash every resulting Parquet. Aggregate job
+`818508` then requires exact source, retained, and excluded row accounting,
+unique barcodes, and byte-identical outputs across all 64 shards. Non-pass text
+is never copied into this candidate corpus. This is still only a mechanically
+filtered source: it deliberately remains `training_ready=false` until benchmark
+decontamination, global semantic deduplication, and semantic admission finish.
+
 The durable data catalog is
 [`Godlydonuts/Sai`](https://huggingface.co/datasets/Godlydonuts/Sai). It separates
 upstream source references, model judgments, verified representations,
