@@ -1,0 +1,340 @@
+"""Exclude exact source rows supported by sealed hard-reject judgments."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from collections import Counter
+from pathlib import Path
+from typing import Any
+
+from sai.data.agent_labeling import _atomic_create
+from sai.data.token_stream import canonical_sha256, normalize_document, sha256_file
+
+SCHEMA = "sai-hard-reject-exclusion-receipt-v1"
+MANIFEST_SCHEMA = "sai-hard-reject-exclusion-record-v1"
+
+
+class HardRejectExclusionError(RuntimeError):
+    """The evidence, exact row mapping, or survivor custody differs."""
+
+
+def _load_json(path: Path) -> dict[str, Any]:
+    if not path.is_file() or path.is_symlink():
+        raise HardRejectExclusionError("hard-reject evidence is missing or unsafe")
+    try:
+        value = json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError) as error:
+        raise HardRejectExclusionError("hard-reject evidence is invalid") from error
+    if not isinstance(value, dict):
+        raise HardRejectExclusionError("hard-reject evidence is invalid")
+    return value
+
+
+def _verify_self_hash(value: dict[str, Any], field: str) -> str:
+    claimed = value.get(field)
+    if not isinstance(claimed, str) or len(claimed) != 64:
+        raise HardRejectExclusionError("hard-reject evidence hash is missing")
+    replay = dict(value)
+    replay.pop(field)
+    if canonical_sha256(replay) != claimed:
+        raise HardRejectExclusionError("hard-reject evidence self-hash differs")
+    return claimed
+
+
+def _descriptor(path: Path, rows: int) -> dict[str, Any]:
+    return {
+        "path": str(path.resolve()),
+        "bytes": path.stat().st_size,
+        "sha256": sha256_file(path),
+        "rows": rows,
+    }
+
+
+def _load_rejections(
+    pilot_root: Path, judgments_root: Path
+) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+    receipt_path = pilot_root / "receipt.json"
+    candidates_path = pilot_root / "candidates.jsonl"
+    lineage_path = pilot_root / "lineage.jsonl"
+    receipt = _load_json(receipt_path)
+    receipt_sha256 = _verify_self_hash(receipt, "receipt_sha256")
+    population = receipt.get("population")
+    lineage_descriptor = receipt.get("lineage")
+    if (
+        receipt.get("status") != "complete_nontraining_compiler_population"
+        or not isinstance(population, dict)
+        or not isinstance(lineage_descriptor, dict)
+        or population.get("sha256") != sha256_file(candidates_path)
+        or population.get("bytes") != candidates_path.stat().st_size
+        or lineage_descriptor.get("sha256") != sha256_file(lineage_path)
+        or lineage_descriptor.get("bytes") != lineage_path.stat().st_size
+    ):
+        raise HardRejectExclusionError("sealed pilot population differs")
+
+    candidate_rows: dict[str, dict[str, Any]] = {}
+    with candidates_path.open() as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            value = json.loads(line)
+            identity = value.get("candidate_identity_sha256")
+            source = value.get("source")
+            if (
+                not isinstance(identity, str)
+                or identity in candidate_rows
+                or not isinstance(source, dict)
+                or not isinstance(source.get("row_id"), str)
+                or not isinstance(value.get("source_content_sha256"), str)
+            ):
+                raise HardRejectExclusionError("pilot candidate identity differs")
+            candidate_rows[identity] = value
+
+    lineage_rows: dict[str, dict[str, Any]] = {}
+    with lineage_path.open() as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            value = json.loads(line)
+            identity = value.get("candidate_identity_sha256")
+            if not isinstance(identity, str) or identity in lineage_rows:
+                raise HardRejectExclusionError("pilot lineage identity differs")
+            lineage_rows[identity] = value
+    if set(candidate_rows) != set(lineage_rows):
+        raise HardRejectExclusionError("pilot candidate and lineage custody differs")
+
+    rejections: dict[str, dict[str, Any]] = {}
+    judgment_files = sorted(judgments_root.glob("*.compiler.json"))
+    if not judgment_files:
+        raise HardRejectExclusionError("hard-reject judgments are missing")
+    for path in judgment_files:
+        value = _load_json(path)
+        judgment_receipt = _verify_self_hash(value, "receipt_sha256")
+        identity = value.get("candidate_identity_sha256")
+        judgment = value.get("judgment")
+        if (
+            value.get("status") != "complete"
+            or not isinstance(identity, str)
+            or identity not in candidate_rows
+            or not isinstance(judgment, dict)
+            or judgment.get("candidate_identity_sha256") != identity
+        ):
+            raise HardRejectExclusionError("compiler judgment custody differs")
+        if judgment.get("verdict") != "reject":
+            continue
+        if (
+            judgment.get("curriculum_phase") != "reject"
+            or judgment.get("preservation_policy") != "reject"
+        ):
+            raise HardRejectExclusionError("hard-reject judgment is inconsistent")
+        candidate = candidate_rows[identity]
+        lineage = lineage_rows[identity]
+        row_id = candidate["source"]["row_id"]
+        if (
+            lineage.get("row_id") != row_id
+            or lineage.get("source_content_sha256")
+            != candidate["source_content_sha256"]
+            or row_id in rejections
+        ):
+            raise HardRejectExclusionError("hard-reject source-row mapping differs")
+        record = {
+            "schema": MANIFEST_SCHEMA,
+            "row_id": row_id,
+            "source_id": lineage.get("source_id"),
+            "source_content_sha256": candidate["source_content_sha256"],
+            "pilot_candidate_identity_sha256": identity,
+            "judgment_file_sha256": sha256_file(path),
+            "judgment_receipt_sha256": judgment_receipt,
+            "verdict": "reject",
+            "source_text_persisted": False,
+        }
+        record["record_sha256"] = canonical_sha256(record)
+        rejections[row_id] = record
+    if not rejections:
+        raise HardRejectExclusionError("sealed pilot contains no hard rejects")
+    evidence = {
+        "pilot_root_name": pilot_root.name,
+        "pilot_receipt_file_sha256": sha256_file(receipt_path),
+        "pilot_receipt_sha256": receipt_sha256,
+        "pilot_population_sha256": population["sha256"],
+        "pilot_lineage_sha256": lineage_descriptor["sha256"],
+        "judgments_root_name": judgments_root.name,
+        "judgment_files": len(judgment_files),
+        "hard_reject_rows": len(rejections),
+    }
+    return rejections, evidence
+
+
+def _staged_path(path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists() or path.is_symlink():
+        raise HardRejectExclusionError("hard-reject output already exists")
+    return path.with_name(f".{path.name}.tmp.{os.getpid()}")
+
+
+def build_hard_reject_exclusion(
+    candidate_paths: list[Path],
+    attribution_paths: list[Path],
+    pilot_root: Path,
+    judgments_root: Path,
+    output_candidates: Path,
+    output_attribution: Path,
+    exclusion_manifest: Path,
+    receipt_path: Path,
+) -> dict[str, Any]:
+    """Create byte-preserving survivors while excluding exact rejected row IDs."""
+
+    if (
+        not candidate_paths
+        or not attribution_paths
+        or len(candidate_paths) != len(set(candidate_paths))
+        or len(attribution_paths) != len(set(attribution_paths))
+    ):
+        raise HardRejectExclusionError("hard-reject input set differs")
+    for path in [*candidate_paths, *attribution_paths]:
+        if not path.is_file() or path.is_symlink():
+            raise HardRejectExclusionError("hard-reject input is missing or unsafe")
+    stages = {
+        output_candidates: _staged_path(output_candidates),
+        output_attribution: _staged_path(output_attribution),
+        exclusion_manifest: _staged_path(exclusion_manifest),
+    }
+    if receipt_path.exists() or receipt_path.is_symlink():
+        raise HardRejectExclusionError("hard-reject output already exists")
+    rejections, evidence = _load_rejections(pilot_root, judgments_root)
+    counts: Counter[str] = Counter()
+    matched_candidates: Counter[str] = Counter()
+    matched_attribution: Counter[str] = Counter()
+    try:
+        with stages[output_candidates].open("x") as output:
+            for path in candidate_paths:
+                with path.open() as source:
+                    for line in source:
+                        if not line.strip():
+                            continue
+                        document = normalize_document(json.loads(line))
+                        row_id = document["source"].get("row_id")
+                        if not isinstance(row_id, str):
+                            raise HardRejectExclusionError(
+                                "candidate source row identity differs"
+                            )
+                        counts["input_candidate_rows"] += 1
+                        if row_id in rejections:
+                            matched_candidates[row_id] += 1
+                            counts["excluded_candidate_rows"] += 1
+                            continue
+                        output.write(line if line.endswith("\n") else line + "\n")
+                        counts["output_candidate_rows"] += 1
+
+        with stages[output_attribution].open("x") as output:
+            for path in attribution_paths:
+                with path.open() as source:
+                    for line in source:
+                        if not line.strip():
+                            continue
+                        value = json.loads(line)
+                        claimed = value.get("record_sha256")
+                        replay = dict(value)
+                        replay.pop("record_sha256", None)
+                        row_id = value.get("row_id")
+                        if (
+                            not isinstance(row_id, str)
+                            or not isinstance(claimed, str)
+                            or canonical_sha256(replay) != claimed
+                        ):
+                            raise HardRejectExclusionError(
+                                "attribution record identity differs"
+                            )
+                        counts["input_attribution_rows"] += 1
+                        if row_id in rejections:
+                            matched_attribution[row_id] += 1
+                            counts["excluded_attribution_rows"] += 1
+                            continue
+                        output.write(line if line.endswith("\n") else line + "\n")
+                        counts["output_attribution_rows"] += 1
+
+        if (
+            set(matched_candidates) != set(rejections)
+            or set(matched_attribution) != set(rejections)
+            or any(value != 1 for value in matched_candidates.values())
+            or any(value != 1 for value in matched_attribution.values())
+        ):
+            raise HardRejectExclusionError("hard-reject row coverage differs")
+        with stages[exclusion_manifest].open("x") as output:
+            for row_id in sorted(rejections):
+                output.write(json.dumps(rejections[row_id], sort_keys=True) + "\n")
+        for destination, stage in stages.items():
+            os.replace(stage, destination)
+    except BaseException:
+        for stage in stages.values():
+            stage.unlink(missing_ok=True)
+        raise
+
+    payload = {
+        "schema": SCHEMA,
+        "status": "complete_exact_hard_reject_exclusion",
+        "evidence": evidence,
+        "inputs": {
+            "candidates": [
+                _descriptor(path, 0) | {"rows": None} for path in candidate_paths
+            ],
+            "attribution": [
+                _descriptor(path, 0) | {"rows": None} for path in attribution_paths
+            ],
+        },
+        "counts": dict(sorted(counts.items())),
+        "outputs": {
+            "candidates": _descriptor(
+                output_candidates, counts["output_candidate_rows"]
+            ),
+            "attribution": _descriptor(
+                output_attribution, counts["output_attribution_rows"]
+            ),
+            "exclusion_manifest": _descriptor(
+                exclusion_manifest, len(rejections)
+            )
+            | {"contains_source_text": False},
+        },
+        "exact_rejected_source_rows_removed": True,
+        "source_text_persisted_in_exclusion_manifest": False,
+        "training_ready": False,
+        "four_b_training_authorized": False,
+    }
+    payload["receipt_sha256"] = canonical_sha256(payload)
+    try:
+        _atomic_create(receipt_path, payload)
+    except BaseException:
+        for path in stages:
+            path.unlink(missing_ok=True)
+        raise
+    return payload
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--candidate", type=Path, action="append", required=True)
+    parser.add_argument("--attribution", type=Path, action="append", required=True)
+    parser.add_argument("--pilot-root", type=Path, required=True)
+    parser.add_argument("--judgments-root", type=Path, required=True)
+    parser.add_argument("--output-candidates", type=Path, required=True)
+    parser.add_argument("--output-attribution", type=Path, required=True)
+    parser.add_argument("--exclusion-manifest", type=Path, required=True)
+    parser.add_argument("--receipt", type=Path, required=True)
+    args = parser.parse_args()
+    result = build_hard_reject_exclusion(
+        args.candidate,
+        args.attribution,
+        args.pilot_root,
+        args.judgments_root,
+        args.output_candidates,
+        args.output_attribution,
+        args.exclusion_manifest,
+        args.receipt,
+    )
+    print(json.dumps(result, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
