@@ -569,10 +569,12 @@ root.
 
 After removal, the current Hugging Face `sources/` tree contains 12,834 files
 and 5,719,814,783,273 bytes; its 12,724 payload files contain
-5,719,811,111,395 bytes. The next large decision is PleIAs. It will be reduced
-by measured collection, language, rights, damage, and conservative-route
-strata after its 1,024-row audit closes. No bulk PleIAs collection is promoted
-merely to reach 2TB.
+5,719,811,111,395 bytes. The 1,024-row PleIAs audit has now closed with 417
+quarantine routes and only 139 direct representation routes. Its complete
+4.489TB metadata census is therefore measuring exact collection-language token
+mass so reduction can follow quality, language, rights, and damage strata
+rather than arbitrary file order. No bulk PleIAs collection is promoted merely
+to reach 2TB.
 
 The exact candidate envelope is now frozen at **2,000,000,000,000 maximum
 bytes**. Outside PleIAs, the post-removal lake contains 36 source components,
@@ -1311,9 +1313,40 @@ sampled partition 8 lane at 7/102 rows. The source-safe screen receipt is
 The source-safe lineage, acquisition receipt, and screen receipt were
 force-downloaded and byte-replayed from Hugging Face dataset commit
 [`4741fcd1da4462733d463475c276bd87d4ab7d5d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4741fcd1da4462733d463475c276bd87d4ab7d5d).
-Hermès source-quality judgment is now staged against the immutable audit
-population, but source-wide yield, clean full-source materialization, and
-training admission remain false.
+Hermès source-quality judgment has now closed with exact **1,024/1,024
+identity and 128/128 shard coverage**. Conservative routing sent 417 rows
+(40.72%) to quarantine, 212 to cleanup, 111 to translation review, 87 to
+factual-grounding review, 39 to pedagogical-quality review, 18 to rights hold,
+1 to transformation review, and only 139 (13.57%) directly to representation
+verification. The measured decision is targeted recovery and verification,
+not bulk admission. Especially strong negative collection signals include
+Chinese-Court-Decisions at 102/103 quarantine, US-PD-Newspapers at 42/58,
+Wikidata at 28/42, and VoxPopuli at 35/68. Github Open Source (104/303 direct
+representation routes) and StackExchange (20/47) remain candidates for
+source-disjoint confirmation rather than being discarded with the bulk.
+
+The 417 exact quarantine identities are now sealed without source text under
+manifest SHA-256
+`e3c1b1414b7bce33606601b7534d2fbf926ff0520cc6789c29013c99942429a2`
+and canonical receipt
+`7ef4a411ad623e796f98aa2292d187a828e3ae23b25b201c5917de51e43bbe2c`.
+They extend the global materialization deny list to **1,245 unique rows**;
+registry r4 has SHA-256
+`e2e5749226832ceac2d9bfcd6073cf4825e66cf8b2b439159ea5a13c74e4497f`
+and canonical receipt
+`bf098027573d3f0979fee8e8da25d212a0fed979295b6a7f815d11a00974afae`.
+The aggregate, strata, decision, exclusions, and registry were downloaded back
+and byte-replayed from Hugging Face commits
+[`899051f6053fd2c687a54432d20721c93ad69314`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/899051f6053fd2c687a54432d20721c93ad69314),
+[`86eda20b0ff1782f6e3a5f5a85433a5773065eb0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/86eda20b0ff1782f6e3a5f5a85433a5773065eb0),
+[`b93af40c7c87e2d1b01bb19afdd8f007a94e808f`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/b93af40c7c87e2d1b01bb19afdd8f007a94e808f),
+[`f7a732bc4505108e03375b24c6d953e698c7e78f`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/f7a732bc4505108e03375b24c6d953e698c7e78f),
+and
+[`3c4855b5189441231ad6031bfccfe58c876ff75d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/3c4855b5189441231ad6031bfccfe58c876ff75d).
+The same evidence is hash-matched in the authorized Stokes root. Source-wide
+yield, clean full-source materialization, and training admission remain false;
+the live complete metadata census will attach exact token mass to the measured
+collection-language routes before any bulk retention decision.
 
 The larger 512-row frontier-source compiler has now closed with exact identity
 and receipt coverage. Hermès returned 348 `retain`, 125 `review`, and 39
@@ -1919,7 +1952,10 @@ benchmark-disjoint Hermès judgments with only 2 direct representation routes
 and therefore requires targeted recovery rather than bulk admission; the
 complete PEP candidate census has 567/567 Hermès judgments, including 322
 representation-verification routes and 61 exact quarantines now enforced by
-the 828-row global deny list;
+the deny list; the complete 1,024-row PleIAs screen has only 139 direct
+representation routes and 417 exact quarantines, bringing the global deny list
+to 1,245 identities while its full metadata census determines which measured
+strata are worth retaining;
 a 1,024-row CC0 arXiv temporal screen has 1,023 benchmark-disjoint survivors,
 zero near-duplicate pairs, and complete declaration coverage awaiting Hermès;
 the complete arXiv parent census measures 2,458,156 mechanically eligible
