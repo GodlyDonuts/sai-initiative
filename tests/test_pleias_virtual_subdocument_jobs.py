@@ -51,3 +51,23 @@ def test_virtual_internal_rewrite_jobs_preserve_source_safe_custody() -> None:
         "sai.data.pleias_virtual_internal_rewrite_signature aggregate" in aggregate
     )
     assert "pleias-virtual-internal-signatures-20260826-r1" in aggregate
+
+
+def test_virtual_cross_source_jobs_join_exact_component_signatures() -> None:
+    decision = Path(
+        "scripts/decide_virtual_cross_source_subdocuments_stokes.sbatch"
+    ).read_text()
+    aggregate = Path(
+        "scripts/aggregate_virtual_cross_source_subdocument_decision_stokes.sbatch"
+    ).read_text()
+    assert "#SBATCH --array=0-15%16" in decision
+    assert "#SBATCH --gres" not in decision
+    assert "#SBATCH --no-requeue" in decision
+    assert "sai_scratch=${TMPDIR:-/tmp}" in decision
+    assert "sai.data.cross_source_subdocument_decision" in decision
+    assert "institutional-books-subdocument-signatures-20260826-r1" in decision
+    assert "pleias-virtual-internal-signatures-20260826-r1" in decision
+    assert "virtual-cross-source-subdocument-decision-20260826-r1" in decision
+    assert "upload" not in decision.casefold()
+    assert "sai.data.cross_source_subdocument_decision_aggregate" in aggregate
+    assert "virtual-cross-source-subdocument-decision-20260826-r1" in aggregate
