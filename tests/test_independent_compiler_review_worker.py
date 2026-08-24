@@ -5,6 +5,7 @@ from sai.data.independent_compiler_review_worker import (
     COHERE_OPENAI_BASE_URL,
     GOOGLE_OPENAI_BASE_URL,
     GROQ_OPENAI_BASE_URL,
+    NVIDIA_OPENAI_BASE_URL,
     RECEIPT_SCHEMA,
     execute_one,
 )
@@ -37,6 +38,30 @@ def test_independent_review_has_distinct_custody_and_omits_reasoning_parameter(
     assert seen["model"] == "gemini-3.5-flash-lite"
     assert seen["reasoning_effort"] is None
     assert seen["receipt_schema"] == RECEIPT_SCHEMA
+
+
+def test_nemotron_ultra_has_exact_provider_model_identity(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    seen = {}
+
+    def fake_execute_contract(candidate, **kwargs):
+        seen.update(kwargs)
+        return {"schema": kwargs["receipt_schema"]}
+
+    monkeypatch.setattr(worker, "execute_contract", fake_execute_contract)
+    execute_one(
+        {"candidate_identity_sha256": "1" * 64},
+        model="nvidia/nemotron-3-ultra-550b-a55b",
+        base_url=NVIDIA_OPENAI_BASE_URL,
+        api_key="secret",
+        timeout_seconds=1,
+        maximum_attempts=1,
+    )
+
+    assert seen["base_url"] == NVIDIA_OPENAI_BASE_URL
+    assert seen["model"] == "nvidia/nemotron-3-ultra-550b-a55b"
+    assert seen["reasoning_effort"] is None
 
 
 @pytest.mark.parametrize(

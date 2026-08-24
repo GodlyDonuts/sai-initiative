@@ -27,6 +27,7 @@ GOOGLE_OPENAI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/opena
 GROQ_OPENAI_BASE_URL = "https://api.groq.com/openai/v1"
 COHERE_OPENAI_BASE_URL = "https://api.cohere.com/compatibility/v1"
 CEREBRAS_OPENAI_BASE_URL = "https://api.cerebras.ai/v1"
+NVIDIA_OPENAI_BASE_URL = "https://integrate.api.nvidia.com/v1"
 ALLOWED_PROVIDER_MODELS = {
     GOOGLE_OPENAI_BASE_URL: frozenset(
         {
@@ -41,6 +42,9 @@ ALLOWED_PROVIDER_MODELS = {
         {"command-a-plus-05-2026", "command-a-reasoning-08-2025"}
     ),
     CEREBRAS_OPENAI_BASE_URL: frozenset({"gemma-4-31b", "gpt-oss-120b"}),
+    NVIDIA_OPENAI_BASE_URL: frozenset(
+        {"nvidia/nemotron-3-ultra-550b-a55b"}
+    ),
 }
 ALLOWED_MODELS = frozenset().union(*ALLOWED_PROVIDER_MODELS.values())
 RECEIPT_SCHEMA = "sai-independent-data-compiler-review-receipt-v1"
