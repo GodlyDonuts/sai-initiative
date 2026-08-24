@@ -1673,6 +1673,26 @@ sealed.
 The durable evidence mirror is staged as job `818554` after exact-dedup
 aggregate `818552`; `scontrol` verified the dependency and requeue is disabled.
 
+The bounded 2% row pass is a quality-calibration surface, not a volume claim.
+Once the conservative semantic decision exists, a separate full-source
+production-descriptor census reopens every hash-pinned PleIAs parent and replays
+the same direct-English, explicit-rights, mechanical-quality, and advanced-
+stratum predicates. It persists **no source text**. Each eligible row contributes
+only its stable locator, byte/token counts, full-content SHA-256, NFKC/casefold/
+whitespace-normalized SHA-256, and a 32-entry bottom-k sketch of unique five-word
+shingles. Those descriptors allow global exact, normalized-exact, near-duplicate,
+diversity, and byte-budget decisions to happen before bulk text is materialized.
+Benchmark decontamination is deliberately still false at this census boundary
+and must replay on the finally selected full documents.
+
+The full descriptor census is dependency-staged as independent CPU array
+`818558_[0-127%64]` after semantic decision `818544`; aggregate `818559` requires
+successful completion of every array identity. `scontrol` verifies one CPU and
+8 GiB per shard, requeue disabled, the exact dependency, and a 24-hour limit.
+This stage turns the decimal 2 TB ceiling into a deterministic selection problem:
+it neither pads toward 2 TB nor copies bulk text before the global quality and
+deduplication decisions are known.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
