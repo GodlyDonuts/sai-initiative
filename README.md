@@ -1722,6 +1722,19 @@ near pass `818561`, CPU-only with 8 GiB for eight hours and requeue disabled.
 Benchmark decontamination, cross-source deduplication, verified materialization,
 and final training admission remain false at this boundary.
 
+Selected identities now feed a storage-bounded full-text materializer. Each
+parent-disjoint shard re-downloads only pinned parents containing selected rows,
+reconstructs every row/content identity, and screens the complete document
+against the pinned official benchmark boundary. Retained rows are uploaded to
+`Godlydonuts/Sai` under `candidates/nontraining/pleias/20260826-r1/`; the worker
+replays the remote LFS byte count and SHA-256 at its returned commit before
+deleting the temporary local Parquet. An eight-worker throttle limits concurrent
+Stokes payloads and downloads instead of risking the storage quota. Array
+`818564_[0-127%8]` is staged after byte decision `818563`; aggregate `818565`
+requires every shard and re-verifies all 128 LFS identities from one repository
+snapshot. Both jobs are CPU-only, have requeue disabled, and remain nontraining
+until the final cross-source/subdocument dedup and corpus ledger close.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
