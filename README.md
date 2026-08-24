@@ -1617,6 +1617,11 @@ route, and active-risk agreement. Disagreement goes to adjudication; it never
 defaults to retention. This second family is focused where it changes the
 decision, rather than spending calls re-reviewing all 8,192 rows.
 
+That chain is dependency-staged as independent population job `818541`,
+Nemotron array `818542_[0-31%8]`, and comparison job `818543`, all after the
+primary Hermès aggregate `818539`. `scontrol` verified the exact dependencies;
+requeue is disabled and no GPU is requested.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
