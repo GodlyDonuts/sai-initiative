@@ -1210,6 +1210,14 @@ were remotely byte-replayed in Hugging Face commit
 [`ced4fa4db0a90b8804aa0b42ba98e01597920433`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/ced4fa4db0a90b8804aa0b42ba98e01597920433).
 The same three source-safe files are byte-matched under the authorized Stokes
 evidence root at `frontier-source-audit/20260825-r1`.
+All **244** quarantined identities are now additionally sealed as a text-free
+dataset-exclusion manifest. Its SHA-256 is
+`9ccb9c64c125d907d8bdfa46d01dcc2dbf5c6e1cffc6adeee3fa6995400615ab`
+and its canonical receipt is
+`50803c3adb2b2dc758344542106735b9a0b2e9c403ef629e3d9ed872191ff256`.
+Those rows can no longer re-enter Sai through a later bulk materializer; the
+manifest deletes identities from admission without treating a mixed source
+parent as uniformly bad.
 These measured routes are neither whole-source yield estimates nor admission;
 they prevent dataset branding from silently substituting for content quality.
 
