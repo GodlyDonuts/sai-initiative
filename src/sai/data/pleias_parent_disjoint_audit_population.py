@@ -1,0 +1,254 @@
+"""Acquire a larger parent-disjoint, partition-stratified PleIAs audit screen."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import shutil
+import uuid
+from collections import Counter
+from pathlib import Path
+from typing import Any
+
+from sai.data.agent_labeling import AgentLabelingError
+from sai.data.frontier_source_audit_expansion import acquire_metadata_row
+from sai.data.frontier_source_audit_population import load_frontier_reservoir
+from sai.data.reservoir_audit_population import (
+    SCHEMA,
+    ReservoirAuditError,
+    _candidate_and_lineage,
+    _write_jsonl,
+)
+from sai.data.token_stream import canonical_sha256, sha256_file
+
+SEED = 20260826
+SOURCE_ID = "pleias_common_corpus"
+PARTITION_QUOTAS = {
+    partition: 103 if partition <= 4 else 102 for partition in range(1, 11)
+}
+EXPECTED_ROWS = sum(PARTITION_QUOTAS.values())
+
+
+class PleiasParentDisjointAuditError(RuntimeError):
+    """The PleIAs population identity, disjointness, or acquisition differs."""
+
+
+def prior_parent_identities(path: Path) -> frozenset[tuple[str, str, str]]:
+    """Load exact parents used by an earlier source-safe audit population."""
+
+    if not path.is_file() or path.is_symlink():
+        raise PleiasParentDisjointAuditError("prior lineage boundary differs")
+    identities: set[tuple[str, str, str]] = set()
+    with path.open() as handle:
+        for line_number, line in enumerate(handle, start=1):
+            if not line.strip():
+                continue
+            try:
+                row = json.loads(line)
+                if row.get("source_id") != SOURCE_ID:
+                    continue
+                identity = (row["repository"], row["revision"], row["path"])
+            except Exception as error:
+                raise PleiasParentDisjointAuditError(
+                    f"prior lineage row {line_number} differs"
+                ) from error
+            identities.add(identity)
+    if not identities:
+        raise PleiasParentDisjointAuditError("prior PleIAs lineage is empty")
+    return frozenset(identities)
+
+
+def _partition(path: str) -> int | None:
+    for partition in PARTITION_QUOTAS:
+        if path.startswith(f"common_corpus_{partition}/"):
+            return partition
+    return None
+
+
+def _rank(row: dict[str, Any], partition: int) -> str:
+    return hashlib.sha256(
+        (
+            f"{SEED}:{SOURCE_ID}:{partition}:{row['repository']}:"
+            f"{row['revision']}:{row['path']}:{row['sha256']}"
+        ).encode()
+    ).hexdigest()
+
+
+def build_plan(
+    rows: list[dict[str, Any]],
+    excluded_parents: frozenset[tuple[str, str, str]],
+) -> list[dict[str, Any]]:
+    """Hash-rank exact parents within every corpus partition."""
+
+    plan: list[dict[str, Any]] = []
+    for partition, quota in PARTITION_QUOTAS.items():
+        candidates = []
+        for row in rows:
+            identity = (row["repository"], row["revision"], row["path"])
+            if (
+                row["source_id"] == SOURCE_ID
+                and _partition(row["path"]) == partition
+                and identity not in excluded_parents
+            ):
+                candidates.append((_rank(row, partition), row))
+        ranked = sorted(candidates, key=lambda item: (item[0], item[1]["path"]))
+        if len(ranked) < quota:
+            raise PleiasParentDisjointAuditError(
+                f"PleIAs partition {partition} is underfilled"
+            )
+        for selection_key, row in ranked[:quota]:
+            plan.append(
+                {
+                    "ordinal": len(plan),
+                    "source_id": SOURCE_ID,
+                    "stratum": f"open_corpus_partition:{partition}",
+                    "source_type": "reference",
+                    "repository": row["repository"],
+                    "revision": row["revision"],
+                    "license": row["license"],
+                    "access": row["access"],
+                    "path": row["path"],
+                    "parent_file_bytes": row["physical_bytes"],
+                    "parent_file_sha256": row["sha256"],
+                    "text_column": row["text_column"],
+                    "selection_key": selection_key,
+                }
+            )
+    identities = [(row["repository"], row["revision"], row["path"]) for row in plan]
+    if (
+        len(plan) != EXPECTED_ROWS
+        or len(identities) != len(set(identities))
+        or any(identity in excluded_parents for identity in identities)
+    ):
+        raise PleiasParentDisjointAuditError("PleIAs plan custody differs")
+    return plan
+
+
+def build_population(
+    manifest_path: Path,
+    reservoir_receipt_path: Path,
+    prior_lineage_path: Path,
+    output_root: Path,
+    *,
+    token: str,
+) -> dict[str, Any]:
+    """Range-read one deterministic usable row from every selected parent."""
+
+    if not token or output_root.exists() or output_root.is_symlink():
+        raise PleiasParentDisjointAuditError("credential or output boundary differs")
+    rows = load_frontier_reservoir(manifest_path, reservoir_receipt_path)
+    excluded = prior_parent_identities(prior_lineage_path)
+    plan = build_plan(rows, excluded)
+    candidates = []
+    lineage = []
+    for index, item in enumerate(plan, start=1):
+        acquired = acquire_metadata_row(item, token)
+        row_plan = {**item, "license": acquired["declared_license"]}
+        try:
+            candidate, source_lineage = _candidate_and_lineage(row_plan, acquired)
+        except (ReservoirAuditError, AgentLabelingError) as error:
+            raise PleiasParentDisjointAuditError("PleIAs candidate differs") from error
+        source_lineage["manifest_license"] = item["license"]
+        source_lineage["declared_license"] = acquired["declared_license"]
+        source_lineage.pop("lineage_sha256")
+        source_lineage["lineage_sha256"] = canonical_sha256(source_lineage)
+        candidates.append(candidate)
+        lineage.append(source_lineage)
+        if index % 16 == 0 or index == len(plan):
+            print(
+                json.dumps(
+                    {
+                        "event": "pleias_parent_disjoint_audit_progress",
+                        "acquired": index,
+                        "remaining": len(plan) - index,
+                    },
+                    sort_keys=True,
+                ),
+                flush=True,
+            )
+    identities = [row["candidate_identity_sha256"] for row in candidates]
+    if len(identities) != EXPECTED_ROWS or len(identities) != len(set(identities)):
+        raise PleiasParentDisjointAuditError("PleIAs candidate identities differ")
+    temporary = output_root.parent / f".{output_root.name}.partial.{uuid.uuid4().hex}"
+    if temporary.exists() or temporary.is_symlink():
+        raise PleiasParentDisjointAuditError("temporary output boundary differs")
+    temporary.mkdir(parents=True)
+    try:
+        candidate_path = temporary / "candidates.jsonl"
+        lineage_path = temporary / "lineage.jsonl"
+        receipt_path = temporary / "receipt.json"
+        _write_jsonl(candidate_path, candidates)
+        _write_jsonl(lineage_path, lineage)
+        by_stratum = Counter(row["stratum"] for row in lineage)
+        receipt = {
+            "schema": SCHEMA,
+            "status": "complete",
+            "seed": SEED,
+            "selection_method": "sha256_ranked_exact_parents_within_partition",
+            "screen_only": True,
+            "statistically_representative": False,
+            "source_id": SOURCE_ID,
+            "prior_population": {
+                "lineage_sha256": sha256_file(prior_lineage_path),
+                "excluded_parent_files": len(excluded),
+                "source_parent_disjoint": True,
+            },
+            "reservoir": {
+                "manifest_sha256": sha256_file(manifest_path),
+                "receipt_file_sha256": sha256_file(reservoir_receipt_path),
+            },
+            "population": {
+                "path": candidate_path.name,
+                "rows": len(candidates),
+                "bytes": candidate_path.stat().st_size,
+                "sha256": sha256_file(candidate_path),
+                "ordered_identities_sha256": canonical_sha256(identities),
+            },
+            "lineage": {
+                "path": lineage_path.name,
+                "rows": len(lineage),
+                "bytes": lineage_path.stat().st_size,
+                "sha256": sha256_file(lineage_path),
+                "ordered_rows_sha256": canonical_sha256(lineage),
+            },
+            "by_stratum": dict(sorted(by_stratum.items())),
+            "range_read_parent_files": len(plan),
+            "fully_verified_parent_files": 0,
+            "benchmark_decontamination_complete": False,
+            "hermes_judgments_complete": False,
+            "source_wide_yield_established": False,
+            "training_ready": False,
+            "four_b_training_authorized": False,
+        }
+        receipt["receipt_sha256"] = canonical_sha256(receipt)
+        _write_jsonl(receipt_path, [receipt])
+        os.replace(temporary, output_root)
+    finally:
+        if temporary.exists():
+            shutil.rmtree(temporary)
+    return receipt
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--reservoir-receipt", type=Path, required=True)
+    parser.add_argument("--prior-lineage", type=Path, required=True)
+    parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument("--token-env", default="HF_TOKEN")
+    args = parser.parse_args()
+    result = build_population(
+        args.manifest,
+        args.reservoir_receipt,
+        args.prior_lineage,
+        args.output_root,
+        token=os.environ.get(args.token_env, ""),
+    )
+    print(json.dumps(result, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
