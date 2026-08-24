@@ -921,11 +921,34 @@ not claiming source-provenance or legal clearance. The source-safe publication
 receipt is
 `0014f665fbbd09c691d03c8964fd7841bd8932e8ff4947c25e9b0b98eaeecdca`.
 Source text and individual contamination decisions remain local. The 1,023
-survivors are staged for Hermès after the existing PEP compiler closes; neither
-the screen nor the 2.5-million-row parent is training-ready or authorized for
-bulk ingestion. All five source-safe evidence files were downloaded back and
-replayed byte-for-byte from Hugging Face dataset commit
+survivors were staged for Hermès after the existing PEP compiler closed;
+neither the screen nor the 2.5-million-row parent is training-ready or
+authorized for bulk ingestion. All five source-safe evidence files were
+downloaded back and replayed byte-for-byte from Hugging Face dataset commit
 [`5047dee73c4acbdc0f2f1abf044ff5049d4d59e9`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/5047dee73c4acbdc0f2f1abf044ff5049d4d59e9).
+
+The complete Hermès screen has now closed **1,023/1,023 rows and 128/128
+shards**: 1,014 `retain` and nine `review`. Conservative routing sends 851
+rows to representation verification, 62 to quality review, 58 to cleanup, 40
+to factual-grounding review, 11 to quarantine, and one to source-bound
+transformation. Mean source reliability is 3.954/4, technical depth 3.751/4,
+information density 3.608/4, and educational value 2.997/4. The screen found
+953 rows with proposed cross-domain bridges; 762 rows belong to the
+reasoning-depth curriculum phase. This is a strong targeted-verification
+result, not source-wide admission: the sample is a temporal coverage screen,
+and every routed row remains non-training-ready.
+
+The aggregate and routing receipts are
+`a6f63b61144ba7c1b763420887aebfd7d3be3853ffc91e4d79a56e357bcab564`
+and `4d6e307535e69eba32f8839f9ea19374c44c83cc3bc7ea10f1f194a68bf81283`.
+The exact 11-row text-free exclusion manifest has SHA-256
+`3a23123e69dc868bfc3a4d26134316b4e8db84a86796da0abd59bec69b8fc027`.
+It extends the global deny registry to **1,548 unique identities** under
+canonical receipt
+`eca4d137f91e2cdfb3d1ceec808190f61578f2a3467d7787d185176950a04279`.
+All six artifacts were force-downloaded and replayed at dataset head
+[`102f6a17f2a4217319f55c62c7a16966673ef811`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/102f6a17f2a4217319f55c62c7a16966673ef811)
+and copied hash-identically to the authorized Stokes evidence root.
 
 The complete text-free parent census then streamed both exact gzip parents,
 verified all 2,504,679 rows and 1,128,382,223 compressed bytes, and removed each
