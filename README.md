@@ -158,6 +158,18 @@ not construction of the bulk English/non-slop stream. Hermès explanations,
 concept graphs, independent model review, and cross-domain synthesis are now a
 premium overlay instead of a prerequisite for every ordinary source book.
 
+The same fast path now covers PleIAs Common Corpus. The practical locator scan
+reopens every hash-pinned parent directly, accepts only rows labeled English
+with an explicit reusable license, rejects short/empty/malformed rows and every
+deterministic junk signature, and writes source-safe locators instead of a
+second multi-terabyte text copy. A stable 20% identity sample with a 2.0 TB
+aggregate hard ceiling supplies enough candidate mass for the final Books +
+PleIAs balancer. All 128 source-disjoint CPU shards can run concurrently and do
+not wait for Hermès labels or the metadata-audit policy. The locator scan is a
+candidate pass; practical readiness is declared only after exact-content
+deduplication and final byte balancing, while official benchmark cleanliness
+remains a separate evaluation-claim axis.
+
 The next book stage is now code-frozen as a bounded **8,192-work semantic
 population**, not a bulk promotion of every mechanical pass. After `818508`, it
 replays the exact private filter and pinned 983,004-row metadata file, then uses
