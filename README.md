@@ -1895,14 +1895,20 @@ the first pass gives every surviving semantic stratum an equal-byte opportunity
 (also bounded by the 20% single-stratum cap); only then does a deterministic
 quality-ranked pass refill unused capacity. The ceiling is still not a target.
 
-The component rewrites now construct the source-disjoint split in-row rather
-than in a later lossy sidecar. A fixed SHA-256 policy assigns 5% of group buckets
-to development: every row from one pinned PleIAs source parent stays together,
-and every Institutional Books row in the same globally connected work-ID
-candidate family stays together, including transitive overlaps such as `A-B`
-plus `B-C`. The component aggregates require exact train+development
-document/byte accounting; the foundation ledger requires both lanes to be
-nonempty and records their exact post-rewrite byte totals. This split is for
+The component rewrites construct the source-disjoint split directly instead of
+leaving it in a lossy sidecar or mixed final file. A fixed SHA-256 policy assigns
+5% of group buckets to development: every row from one pinned PleIAs source
+parent stays together, and every Institutional Books row in the same globally
+connected work-ID candidate family stays together, including transitive overlaps
+such as `A-B` plus `B-C`. Writer schema v2 routes rows at creation time into
+physically distinct `train` and `development` Parquets. PleIAs uses separate
+remote prefixes; private Books uses separate files in each shard directory.
+No second corpus copy is created, and an empty shard-side split is represented
+explicitly rather than by an empty or ambiguous file. Both aggregate receipts
+require the physical partition flag and exact train+development document/byte
+accounting. The foundation ledger independently requires both components to
+carry the same canonical split-policy SHA-256, requires both global lanes to be
+nonempty, and records their exact post-rewrite byte totals. This split is for
 held-out data/model selection and remains separate from all official public
 benchmark boundaries.
 

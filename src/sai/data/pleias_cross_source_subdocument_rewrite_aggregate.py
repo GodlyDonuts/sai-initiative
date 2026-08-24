@@ -26,7 +26,7 @@ from sai.data.pleias_production_materializer import (
 from sai.data.pleias_subdocument_rewrite import SHARD_SCHEMA as SOURCE_SCHEMA
 from sai.data.token_stream import canonical_sha256
 
-SCHEMA = "sai-pleias-cross-source-subdocument-rewritten-aggregate-v1"
+SCHEMA = "sai-pleias-cross-source-subdocument-rewritten-aggregate-v2"
 
 
 class PleiasCrossSourceSubdocumentRewriteAggregateError(RuntimeError):
@@ -107,7 +107,7 @@ def build_aggregate(
             SHARD_SCHEMA,
         )
         counts = rewritten.get("counts")
-        remote = rewritten.get("remote_output")
+        remote_outputs = rewritten.get("remote_outputs")
         if (
             rewritten.get("logical_shards") != logical_shards
             or rewritten.get("shard_index") != shard_index
@@ -130,23 +130,40 @@ def build_aggregate(
             != source.get("counts", {}).get("output_text_utf8_bytes")
             or counts.get("output_text_utf8_bytes", 0)
             > counts.get("input_text_utf8_bytes", 0)
-            or not isinstance(remote, dict)
-            or remote.get("repository") != DESTINATION_REPOSITORY
-            or not isinstance(remote.get("path"), str)
-            or not remote["path"].startswith(f"{DESTINATION_PREFIX}/")
-            or remote["path"] in remotes
-            or not isinstance(remote.get("bytes"), int)
-            or remote["bytes"] <= 0
-            or not isinstance(remote.get("sha256"), str)
-            or len(remote["sha256"]) != 64
+            or rewritten.get("physical_train_development_partition_complete")
+            is not True
+            or not isinstance(remote_outputs, dict)
+            or set(remote_outputs) != {"train", "development"}
         ):
             raise PleiasCrossSourceSubdocumentRewriteAggregateError(
                 "rewritten shard differs"
             )
         for key, value in counts.items():
             totals[key] += value
-        totals["remote_output_bytes"] += remote["bytes"]
-        remotes[remote["path"]] = remote
+        for split, remote in remote_outputs.items():
+            documents = counts.get(f"split::{split}::documents", 0)
+            if remote is None and documents == 0:
+                continue
+            if (
+                not isinstance(remote, dict)
+                or documents <= 0
+                or remote.get("repository") != DESTINATION_REPOSITORY
+                or not isinstance(remote.get("path"), str)
+                or not remote["path"].startswith(
+                    f"{DESTINATION_PREFIX}/{split}/"
+                )
+                or remote["path"] in remotes
+                or not isinstance(remote.get("bytes"), int)
+                or remote["bytes"] <= 0
+                or not isinstance(remote.get("sha256"), str)
+                or len(remote["sha256"]) != 64
+            ):
+                raise PleiasCrossSourceSubdocumentRewriteAggregateError(
+                    "physical split remote differs"
+                )
+            totals[f"remote_output::{split}::bytes"] += remote["bytes"]
+            totals["remote_output_bytes"] += remote["bytes"]
+            remotes[remote["path"]] = remote
         receipts.append(rewritten["receipt_sha256"])
     if totals["candidate_deletion_chunks"] != expected_decisions:
         raise PleiasCrossSourceSubdocumentRewriteAggregateError(
@@ -203,6 +220,7 @@ def build_aggregate(
         "cross_source_subdocument_deduplication_complete": True,
         "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
         "source_disjoint_split_complete": True,
+        "physical_train_development_partition_complete": True,
         "semantic_quality_metadata_complete": True,
         "curriculum_metadata_complete": True,
         "token_count_requires_recomputation": True,

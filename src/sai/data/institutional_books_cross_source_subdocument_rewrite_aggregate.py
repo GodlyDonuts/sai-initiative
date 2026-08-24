@@ -28,7 +28,7 @@ from sai.data.institutional_books_subdocument_signature import (
 from sai.data.pleias_production_materializer import _load_signed
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-SCHEMA = "sai-institutional-books-cross-source-rewritten-aggregate-v1"
+SCHEMA = "sai-institutional-books-cross-source-rewritten-aggregate-v2"
 
 
 class InstitutionalBooksCrossSourceSubdocumentRewriteAggregateError(RuntimeError):
@@ -100,22 +100,35 @@ def build_aggregate(
         _path, source = _filtered_shard(filtered_root, logical_shards, shard_index)
         root = rewrite_root / "shards" / f"shard_{shard_index:05d}"
         receipt = _load_json(root / "receipt.json")
-        descriptor = receipt.get("output")
-        output_valid = (
-            descriptor is None and receipt.get("counts", {}).get("documents", 0) == 0
-        )
-        if isinstance(descriptor, dict):
-            path = root / descriptor.get("path", "")
-            output_valid = (
-                path.is_file()
-                and not path.is_symlink()
-                and path.stat().st_nlink == 1
-                and path.stat().st_size == descriptor.get("bytes")
-                and sha256_file(path) == descriptor.get("sha256")
-                and descriptor.get("rows") == receipt.get("counts", {}).get("documents")
-            )
-            if output_valid:
-                totals["private_output_file_bytes"] += descriptor["bytes"]
+        outputs = receipt.get("outputs")
+        output_valid = isinstance(outputs, dict) and set(outputs) == {
+            "train",
+            "development",
+        }
+        if output_valid:
+            for split, descriptor in outputs.items():
+                expected_rows = receipt.get("counts", {}).get(
+                    f"split::{split}::documents", 0
+                )
+                if descriptor is None:
+                    output_valid = output_valid and expected_rows == 0
+                    continue
+                path = root / descriptor.get("path", "")
+                descriptor_valid = (
+                    path.is_file()
+                    and not path.is_symlink()
+                    and path.stat().st_nlink == 1
+                    and path.stat().st_size == descriptor.get("bytes")
+                    and sha256_file(path) == descriptor.get("sha256")
+                    and descriptor.get("rows") == expected_rows
+                    and expected_rows > 0
+                )
+                output_valid = output_valid and descriptor_valid
+                if descriptor_valid:
+                    totals[f"private_output::{split}::file_bytes"] += descriptor[
+                        "bytes"
+                    ]
+                    totals["private_output_file_bytes"] += descriptor["bytes"]
         counts = receipt.get("counts")
         if (
             not _valid_receipt(receipt, SHARD_SCHEMA)
@@ -134,6 +147,8 @@ def build_aggregate(
             or receipt.get("cross_source_subdocument_deduplication_complete")
             is not True
             or receipt.get("source_disjoint_split_complete") is not True
+            or receipt.get("physical_train_development_partition_complete")
+            is not True
             or receipt.get("source_disjoint_split_policy_sha256") != SPLIT_POLICY_SHA256
             or not isinstance(counts, dict)
             or counts.get("filtered_source_rows") != source.get("retained_rows", 0)
@@ -189,6 +204,7 @@ def build_aggregate(
         "cross_source_subdocument_deduplication_complete": True,
         "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
         "source_disjoint_split_complete": True,
+        "physical_train_development_partition_complete": True,
         "semantic_quality_metadata_complete": True,
         "curriculum_metadata_complete": True,
         "token_count_requires_recomputation": True,

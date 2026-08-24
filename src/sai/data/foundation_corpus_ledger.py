@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
+from sai.data.foundation_source_split import POLICY_SHA256 as SPLIT_POLICY_SHA256
 from sai.data.institutional_books_cross_source_subdocument_rewrite_aggregate import (
     SCHEMA as BOOK_SCHEMA,
 )
@@ -108,6 +109,8 @@ def build_ledger(
         or books.get("cross_source_subdocument_deduplication_complete") is not True
         or books.get("token_count_requires_recomputation") is not True
         or books.get("source_disjoint_split_complete") is not True
+        or books.get("source_disjoint_split_policy_sha256") != SPLIT_POLICY_SHA256
+        or books.get("physical_train_development_partition_complete") is not True
         or books.get("semantic_quality_metadata_complete") is not True
         or books.get("curriculum_metadata_complete") is not True
         or pleias.get("complete_final_pleias_document_coverage") is not True
@@ -116,6 +119,8 @@ def build_ledger(
         or pleias.get("cross_source_subdocument_deduplication_complete") is not True
         or pleias.get("token_count_requires_recomputation") is not True
         or pleias.get("source_disjoint_split_complete") is not True
+        or pleias.get("source_disjoint_split_policy_sha256") != SPLIT_POLICY_SHA256
+        or pleias.get("physical_train_development_partition_complete") is not True
         or pleias.get("semantic_quality_metadata_complete") is not True
         or pleias.get("curriculum_metadata_complete") is not True
     ):
@@ -187,6 +192,8 @@ def build_ledger(
         "synthetic_bridge_component_admitted": False,
         "final_tokenization_complete": False,
         "source_disjoint_split_complete": True,
+        "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
+        "physical_train_development_partition_complete": True,
         "curriculum_schedule_complete": False,
         "final_corpus_complete": False,
         "token_count_requires_recomputation": True,

@@ -42,7 +42,7 @@ from sai.data.pleias_subdocument_rewrite import _schema as _source_schema
 from sai.data.pleias_subdocument_signature import _download
 from sai.data.token_stream import canonical_sha256
 
-SHARD_SCHEMA = "sai-pleias-cross-source-subdocument-rewritten-shard-v1"
+SHARD_SCHEMA = "sai-pleias-cross-source-subdocument-rewritten-shard-v2"
 OUTPUT_SCHEMA = "sai-pleias-cross-source-subdocument-deduplicated-candidate-v1"
 DESTINATION_PREFIX = "final/nontraining/pleias-cross-source/20260826-r1"
 COMPONENT_PRIORITY = 1
@@ -201,8 +201,14 @@ def run_shard(
     ):
         raise PleiasCrossSourceSubdocumentRewriteError("rewrite source differs")
     output_root.mkdir(parents=True)
-    local_path = output_root / "cross_source_deduplicated.parquet"
-    temporary = output_root / f".rewrite.partial.{uuid.uuid4().hex}.parquet"
+    local_paths = {
+        split: output_root / f"{split}.parquet"
+        for split in ("train", "development")
+    }
+    temporary = {
+        split: output_root / f".{split}.rewrite.partial.{uuid.uuid4().hex}.parquet"
+        for split in local_paths
+    }
     counts: Counter[str] = Counter()
     ordered_transforms = hashlib.sha256()
     with tempfile.TemporaryDirectory(
@@ -219,11 +225,11 @@ def run_shard(
         )
         source_path = _download(source, token, scratch)
         parquet = pq.ParquetFile(source_path)
-        writer = pq.ParquetWriter(temporary, _schema(), compression="zstd")
+        writers = {}
         try:
             row_offset = 0
             for batch in parquet.iter_batches(batch_size=16, use_threads=False):
-                output_rows = []
+                output_rows = {split: [] for split in local_paths}
                 for relative, row in enumerate(batch.to_pylist()):
                     source_row_index = row_offset + relative
                     decisions = connection.execute(
@@ -236,7 +242,7 @@ def run_shard(
                     result, row_counts = rewrite_row(
                         row, source_row_index, decisions
                     )
-                    output_rows.append(result)
+                    output_rows[result["corpus_split"]].append(result)
                     counts["documents"] += 1
                     counts["input_text_utf8_bytes"] += len(row["text"].encode())
                     counts["output_text_utf8_bytes"] += len(
@@ -274,9 +280,15 @@ def run_shard(
                             result["cross_source_subdocument_transform_sha256"]
                         )
                     )
-                if output_rows:
-                    writer.write_table(
-                        pa.Table.from_pylist(output_rows, schema=_schema())
+                for split, rows in output_rows.items():
+                    if not rows:
+                        continue
+                    if split not in writers:
+                        writers[split] = pq.ParquetWriter(
+                            temporary[split], _schema(), compression="zstd"
+                        )
+                    writers[split].write_table(
+                        pa.Table.from_pylist(rows, schema=_schema())
                     )
                 row_offset += batch.num_rows
             if row_offset != parquet.metadata.num_rows:
@@ -288,20 +300,35 @@ def run_shard(
                     "rewrite decision accounting differs"
                 )
         except BaseException:
-            writer.close()
+            for writer in writers.values():
+                writer.close()
             connection.close()
-            temporary.unlink(missing_ok=True)
+            for path in temporary.values():
+                path.unlink(missing_ok=True)
             raise
-        writer.close()
+        for writer in writers.values():
+            writer.close()
         connection.close()
-    os.replace(temporary, local_path)
-    remote_path = (
-        f"{DESTINATION_PREFIX}/shard-{shard_index:05d}-of-{logical_shards:05d}.parquet"
-    )
-    remote = upload_verified(
-        local_path, remote_path, token, repository=DESTINATION_REPOSITORY
-    )
-    local_path.unlink()
+    remote_outputs = {}
+    for split, local_path in local_paths.items():
+        if temporary[split].exists():
+            os.replace(temporary[split], local_path)
+            remote_path = (
+                f"{DESTINATION_PREFIX}/{split}/"
+                f"shard-{shard_index:05d}-of-{logical_shards:05d}.parquet"
+            )
+            remote_outputs[split] = upload_verified(
+                local_path, remote_path, token, repository=DESTINATION_REPOSITORY
+            )
+            local_path.unlink()
+        else:
+            remote_outputs[split] = None
+        if bool(remote_outputs[split]) is not bool(
+            counts[f"split::{split}::documents"]
+        ):
+            raise PleiasCrossSourceSubdocumentRewriteError(
+                "physical split output accounting differs"
+            )
     if counts["documents"] != source.get("counts", {}).get("documents"):
         raise PleiasCrossSourceSubdocumentRewriteError(
             "rewrite source count differs"
@@ -324,7 +351,8 @@ def run_shard(
         "source_disjoint_split_policy": SPLIT_POLICY,
         "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
         "ordered_transform_digests_sha256": ordered_transforms.hexdigest(),
-        "remote_output": remote,
+        "remote_outputs": remote_outputs,
+        "physical_train_development_partition_complete": True,
         "local_payload_removed_after_remote_verification": True,
         "benchmark_decontamination_complete": True,
         "pleias_internal_subdocument_deduplication_complete": True,

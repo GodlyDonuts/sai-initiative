@@ -6,6 +6,7 @@ from sai.data.foundation_corpus_ledger import (
     FoundationCorpusLedgerError,
     build_ledger,
 )
+from sai.data.foundation_source_split import POLICY_SHA256 as SPLIT_POLICY_SHA256
 from sai.data.institutional_books_cross_source_subdocument_rewrite_aggregate import (
     SCHEMA as BOOK_SCHEMA,
 )
@@ -45,6 +46,8 @@ def _components(tmp_path):
             "cross_source_subdocument_deduplication_complete": True,
             "token_count_requires_recomputation": True,
             "source_disjoint_split_complete": True,
+            "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
+            "physical_train_development_partition_complete": True,
             "semantic_quality_metadata_complete": True,
             "curriculum_metadata_complete": True,
             "training_ready": False,
@@ -73,6 +76,8 @@ def _components(tmp_path):
             "cross_source_subdocument_deduplication_complete": True,
             "token_count_requires_recomputation": True,
             "source_disjoint_split_complete": True,
+            "source_disjoint_split_policy_sha256": SPLIT_POLICY_SHA256,
+            "physical_train_development_partition_complete": True,
             "semantic_quality_metadata_complete": True,
             "curriculum_metadata_complete": True,
             "training_ready": False,
@@ -105,6 +110,8 @@ def test_ledger_uses_exact_post_rewrite_bytes_without_padding(tmp_path):
     )
     assert result["final_corpus_complete"] is False
     assert result["source_disjoint_split_complete"] is True
+    assert result["source_disjoint_split_policy_sha256"] == SPLIT_POLICY_SHA256
+    assert result["physical_train_development_partition_complete"] is True
     assert result["semantic_quality_metadata_complete_for_listed_components"] is True
     assert result["curriculum_metadata_complete_for_listed_components"] is True
     assert result["training_ready"] is False
@@ -114,3 +121,12 @@ def test_ledger_rejects_volume_above_quality_ceiling(tmp_path):
     books, pleias = _components(tmp_path)
     with pytest.raises(FoundationCorpusLedgerError, match="exceed"):
         build_ledger(books, pleias, tmp_path / "ledger.json", 1_799)
+
+
+def test_ledger_rejects_component_with_different_split_policy(tmp_path):
+    books, pleias = _components(tmp_path)
+    value = json.loads(books.read_text())
+    value["source_disjoint_split_policy_sha256"] = "f" * 64
+    _write(books, {key: item for key, item in value.items() if key != "receipt_sha256"})
+    with pytest.raises(FoundationCorpusLedgerError, match="completion"):
+        build_ledger(books, pleias, tmp_path / "ledger.json", 2_000)
