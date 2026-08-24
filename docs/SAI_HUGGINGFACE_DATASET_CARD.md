@@ -116,6 +116,21 @@ capacity, not accepted corpus volume.
   binds the exact source, card, population, lineage, and boundary indexes. The
   card's MIT declaration does not establish rights provenance for every
   underlying web page; Hermès judgment and training admission remain open.
+- The exact 512-row frontier-source compiler is complete: 348 `retain`, 125
+  `review`, and 39 `reject` verdicts, but only 25 rows route to representation
+  verification while 244 route to quarantine. FineWeb2-HQ and both
+  Ultra-FineWeb snapshots are bulk-paused; Nemotron specialized reasoning and
+  UltraData-Math L1 remain targeted-recovery sources. Source-safe aggregate and
+  decision receipts are
+  `9c2d0e49d062c1886f9809b8852c4c48c38f41b40bea210631d1cc0f7236c6de`
+  and
+  `7656214825b6f66984c007f00a6f089c5d2c43791af6b775c466db56d952a48d`,
+  published under `evidence/frontier-source-audit/20260825-r1/`.
+- Source files are reclaimed only when the whole exact object is proven
+  unusable, or after all retained rows have a byte-hash-verified filtered
+  replacement. Rejected rows are excluded immediately; mixed raw shards stay
+  until replacement custody exists. Provenance and benchmark-version evidence
+  is retained when deleting its pointer would save no backing-object bytes.
 - Completed Hermès receipts contain 6,751 proposed cross-domain assignments
   across 730 directed labels. A 512-pair, source-disjoint development proposal
   population has been frozen across 290 labels. No proposal is called
