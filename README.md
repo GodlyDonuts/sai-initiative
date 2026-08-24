@@ -433,17 +433,18 @@ The README, aggregate, decision, manifest, and receipt were force-downloaded
 and byte-replayed from Hugging Face dataset commit
 [`e38aea8688b6e1e5ec6b9cad4f23444d220a19a0`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/e38aea8688b6e1e5ec6b9cad4f23444d220a19a0).
 
-The three current exact-replay quarantine manifests are now merged into one
+The four current exact-replay quarantine manifests are now merged into one
 fail-closed materialization registry: 12 UltraData-Math identities, 244
-frontier-source identities, and 511 weighted-reservoir identities produce
-**767/767 unique candidate and content hashes** with no collisions. Every
-registry row denies materialization and carries no source text. The registry
-SHA-256 is
+frontier-source identities, 511 weighted-reservoir identities, and an explicit
+zero-row Institutional Books exclusion manifest produce **767/767 unique
+candidate and content hashes** with no collisions. The empty book manifest is
+a sealed audited input, not an omitted source. Every registry row denies
+materialization and carries no source text. The registry SHA-256 is
 `93d4eb890c61a7eb742b00fbf922c5ce5814a134b6fb0a6e164c70ba0fd4b180`
 and its canonical receipt is
-`b2e6bf169dbccadddc49d11b2fa329f0c713b236e94870d491c05895c55a99a7`.
+`f89d1da4e9b56e4112a19c3f03c5c3ab3297fdfb79540077ad7540980666d45e`.
 Both files are byte-matched under
-`quarantine-exclusion-registry/20260826-r1` in the Stokes evidence root. Future
+`quarantine-exclusion-registry/20260826-r2` in the Stokes evidence root. Future
 materializers must join against this deny registry before emitting a training
 candidate; new sealed audit manifests extend it deterministically.
 
@@ -1576,6 +1577,55 @@ risk keys, domains, and representation labels. The strict schema is unchanged;
 the correction only reduces wasted invalid retries. Existing healthy book
 workers are not interrupted and automatically pick up the new code when their
 next immutable shard process starts.
+
+The complete bounded book pilot has now closed: **185/185** candidate receipts
+cover 182 nonempty immutable hash shards, with 182 `retain`, three `review`, and
+zero `reject` model verdicts. The compiler identified 5,121 unique concept
+labels and 1,129 unique explicit prerequisite-edge claims. The curriculum
+distribution is four basic, 61 intermediate, 108 advanced, and 12 expert rows;
+the source-language distribution is 173 English, eight Czech, three French,
+and one German. The model requested 2,123,954 prompt tokens and emitted 207,638
+completion tokens. These are compiler measurements, not admissions: OCR,
+historical-context, factual-grounding, deduplication, translation, and
+representation-verification work remains separately routed, and the aggregate
+retains `training_ready=false`.
+
+The aggregate receipt is
+`31a20de0a616b61ac1c5f5fbc22c36fdecb0575237b346f3a4b1252909315d78`
+and its file SHA-256 is
+`7fbd1ebb7ab85f6dc48abaa15a1098f1e0b4b793c399709b974dbff021596336`.
+No row reached the conservative quarantine route, so the source's exclusion
+manifest is intentionally empty and hash-sealed, with receipt
+`57aead38995182a329188aedf5318720afa806e63a1dea30ef4a763059f3eccb`.
+The aggregate, empty exclusion evidence, and four-source registry are
+byte-matched in the authorized Stokes evidence root and were force-downloaded
+and byte-replayed from Hugging Face dataset commit
+[`0e26ff13821ae4cca9c64c380aecefddaa265c98`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/0e26ff13821ae4cca9c64c380aecefddaa265c98).
+
+#### Independent frontier-model review capacity
+
+Sai now has a separate, fail-closed review worker for exact provider/model
+pairs. Its receipts bind the candidate, rubric, request, response model,
+endpoint, token accounting, and repair attempts; they cannot be silently
+merged into the primary Hermès stream. Live qualification confirmed Google
+Gemini 3.1/3.5 Flash Lite and Gemma 4 26B-A4B/31B, Groq GPT-OSS 120B and Qwen
+3.6-27B, and Cohere Command A Plus/Reasoning. NVIDIA's independent grounded
+bridge verifier is separately pinned to
+`nvidia/nemotron-3-ultra-550b-a55b` and cannot mark a bridge or training row
+ready by itself.
+
+The first matched one-row check produced schema-valid judgments from Hermès,
+Gemini 3.1 Flash Lite, and Groq GPT-OSS 120B. All three independently selected
+`retain`, `grounding`, and `biology_medicine`; Hermès and Gemini also agreed on
+the `duplicated_boilerplate` risk, while GPT-OSS did not. This verifies
+cross-family execution and exposes a real disagreement; one row is not an
+accuracy estimate. Provider qualification also failed closed where appropriate:
+Cerebras returned a billing gate, Groq Qwen repeatedly returned 429, Google
+Gemma and both Cohere models failed the strict JSON contract in their first
+pilot, and none of those lanes was scaled. Gemini 3.5 completed eight of nine
+rows before one strict enum failure. Deterministic enum-specific repair hints
+were added without weakening the schema, and the full repository suite passes
+1,078 tests.
 
 The previously reported contextless physics answer sheet is also bound to an
 exact source location: FineMath-3plus row 50 of upstream
