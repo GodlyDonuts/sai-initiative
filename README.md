@@ -492,6 +492,9 @@ That same-family verification has now closed with **512/512** exact receipts and
 revision, and **0** to reject, consuming 4,671,875 model tokens. The canonical
 aggregate receipt is
 `adfa6897750ad1f883df1ffbb829fc45df0f1d228c789aba3ac013c6dc4a2a13`.
+The aggregate's four exact files were checksum-replayed into the authorized
+Stokes evidence root at
+`grounded-bridge-verification-aggregate/20260826-r1`.
 This is meaningful positive quality evidence, but not admission: the aggregate
 explicitly keeps `bridge_verification_complete=false` until the independent
 Nemotron family, benchmark decontamination, global deduplication, and transfer
@@ -1842,6 +1845,14 @@ identities and global deletion accounting. All four jobs are independent
 single-CPU, requeue-disabled requests, strictly dependency-bound to `818578`.
 Both outputs still require exact final retokenization and corpus-ledger
 admission; neither authorizes training.
+
+Single-CPU ledger job `818588` has an AND dependency on both component
+aggregates. It sums exact post-rewrite UTF-8 text bytes, rejects totals above
+2,000,000,000,000, records unused headroom rather than filling it, and binds
+private versus redistributable custody separately. The ledger deliberately
+keeps final tokenization, source-disjoint split construction, curriculum
+scheduling, synthetic-bridge admission, final-corpus completion, and training
+authorization false.
 
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
