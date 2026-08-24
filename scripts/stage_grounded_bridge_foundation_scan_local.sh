@@ -78,8 +78,7 @@ mv "${sai_candidate_stage}" "${sai_remote_candidates}"
 mv "${sai_query_stage}" "${sai_remote_query}"
 
 if [[ ! -e "${sai_runtime}" ]]; then
-  cp -a "${sai_repo}" "${sai_runtime}"
-  git -C "${sai_runtime}" checkout --quiet --detach "${sai_commit}"
+  git -C "${sai_repo}" worktree add --quiet --detach "${sai_runtime}" "${sai_commit}"
   [[ -z "$(git -C "${sai_runtime}" status --porcelain)" ]]
   [[ "$(git -C "${sai_runtime}" rev-parse HEAD)" == "${sai_commit}" ]]
   [[ -z "$(find "${sai_runtime}" -type l -print -quit)" ]]
