@@ -1,4 +1,5 @@
 import hashlib
+import io
 import json
 import sqlite3
 from pathlib import Path
@@ -28,6 +29,7 @@ from sai.data.pleias_virtual_cross_source_reconstruction import (
     SHARD_SCHEMA,
     SHARD_STATUS,
     PleiasVirtualCrossSourceReconstructionError,
+    _locator_schema,
     aggregate,
     final_locator_row,
     run_shard,
@@ -43,6 +45,14 @@ from sai.data.pleias_virtual_internal_rewrite_signature import (
     transformed_locator_row,
 )
 from sai.data.pleias_virtual_subdocument_signature import locator_row
+from sai.data.pleias_virtual_transient_stream import (
+    ENVELOPE_SCHEMA,
+    PleiasVirtualTransientStreamError,
+    _internal_locator,
+    _locator_database,
+    stream_shard,
+    training_envelope,
+)
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 
@@ -110,6 +120,118 @@ def test_final_locator_rejects_mutated_internal_binding() -> None:
         match="final locator source differs",
     ):
         final_locator_row(internal_locator, final)
+
+
+def test_transient_envelope_replays_final_locator_without_persisting_text() -> None:
+    text = "A verified explanation of orbital measurement. " * 20
+    candidate = _candidate(text)
+    source_locator = locator_row(candidate, 0, 7)
+    internal, _counts = rewrite_candidate(candidate, 0, [])
+    final, _cross_counts = rewrite_row(internal, 0, [])
+    locator = final_locator_row(
+        transformed_locator_row(source_locator, internal), final
+    )
+    rebuilt = _internal_locator(locator, candidate, internal)
+    assert final_locator_row(rebuilt, final) == locator
+    envelope = training_envelope(locator, final["text"], "d" * 64)
+    assert envelope["schema"] == ENVELOPE_SCHEMA
+    assert envelope["document"]["text"] == final["text"]
+    assert envelope["document"]["verification"]["benchmark_disjoint"] is True
+    assert envelope["tokenization_ready"] is True
+    with pytest.raises(
+        PleiasVirtualTransientStreamError, match="training envelope source differs"
+    ):
+        training_envelope(locator, final["text"] + "tamper", "d" * 64)
+
+
+def test_transient_stream_seals_only_source_text_free_accounting(
+    tmp_path: Path,
+) -> None:
+    text = "A verified explanation of orbital measurement. " * 20
+    locator = _final_locator()
+    envelope = training_envelope(locator, text, "d" * 64)
+    output = io.StringIO()
+    receipt = tmp_path / "receipt.json"
+    with patch(
+        "sai.data.pleias_virtual_transient_stream.iter_reconstructed_shard",
+        return_value=iter([envelope]),
+    ):
+        result = stream_shard(
+            output,
+            receipt,
+            logical_shards=1,
+            shard_index=0,
+        )
+    assert json.loads(output.getvalue())["document"]["text"] == text
+    assert result["counts"]["documents"] == 1
+    assert result["source_text_persisted_by_compiler"] is False
+    assert text not in receipt.read_text()
+
+
+def test_transient_locator_database_requires_aggregate_bound_shard(
+    tmp_path: Path,
+) -> None:
+    locator = _final_locator()
+    final_root = tmp_path / "final"
+    shard_root = final_root / "shards" / "shard_00000"
+    shard_root.mkdir(parents=True)
+    locators = shard_root / "final-locators.parquet"
+    pq.write_table(pa.Table.from_pylist([locator], schema=_locator_schema()), locators)
+    shard = {
+        "schema": SHARD_SCHEMA,
+        "status": SHARD_STATUS,
+        "logical_shards": 1,
+        "shard_index": 0,
+        "counts": {"documents": 1},
+        "final_locators": {
+            "path": locators.name,
+            "rows": 1,
+            "bytes": locators.stat().st_size,
+            "sha256": sha256_file(locators),
+            "ordered_locator_digests_sha256": hashlib.sha256(
+                bytes.fromhex(locator["locator_sha256"])
+            ).hexdigest(),
+        },
+        "complete_final_pleias_document_coverage": True,
+        "benchmark_decontamination_complete": True,
+        "cross_source_subdocument_deduplication_complete": True,
+        "source_disjoint_split_complete": True,
+        "source_text_persisted": False,
+        "training_ready": False,
+    }
+    _signed(shard_root / "receipt.json", shard)
+    aggregate_receipts = canonical_sha256([shard["receipt_sha256"]])
+    _signed(
+        final_root / "aggregate.json",
+        {
+            "schema": "sai-pleias-virtual-final-reconstruction-aggregate-v1",
+            "status": AGGREGATE_STATUS,
+            "shards": {
+                "logical_shards": 1,
+                "ordered_receipts_sha256": aggregate_receipts,
+            },
+            "complete_final_pleias_document_coverage": True,
+            "benchmark_decontamination_complete": True,
+            "cross_source_subdocument_deduplication_complete": True,
+            "source_disjoint_split_complete": True,
+            "source_text_persisted": False,
+            "training_ready": False,
+        },
+    )
+    connection, _aggregate, loaded_shard, rows = _locator_database(
+        final_root, 1, 0, tmp_path / "locators.sqlite3"
+    )
+    connection.close()
+    assert rows == 1
+    assert loaded_shard["receipt_sha256"] == shard["receipt_sha256"]
+
+    shard["counts"]["documents"] = 2
+    shard.pop("receipt_sha256")
+    _signed(shard_root / "receipt.json", shard)
+    with pytest.raises(
+        PleiasVirtualTransientStreamError, match="aggregate shard custody differs"
+    ):
+        _locator_database(final_root, 1, 0, tmp_path / "tampered.sqlite3")
 
 
 def _empty_decision_database() -> sqlite3.Connection:

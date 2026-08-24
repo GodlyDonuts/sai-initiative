@@ -1937,6 +1937,21 @@ the working corpus root and authorized durable evidence root. The receipt
 explicitly keeps Hugging Face metadata publication, final tokenization,
 curriculum packing, final-corpus completion, and training readiness false.
 
+The quota-safe path now also has an executable transient tokenizer interface.
+`sai.data.pleias_virtual_transient_stream` validates the signed final aggregate
+and its complete ordered shard-receipt set, reopens each pinned parent, replays
+the selected-row identity and both deletion layers, rebuilds the intermediate
+locator, and requires the resulting final locator to match every sealed field.
+Only then does it emit a standard benchmark-disjoint pretraining document plus
+the source's semantic phase, difficulty, prerequisites, concepts, domains, and
+split as JSONL to stdout. Its only durable output is a source-text-free receipt
+binding the ordered JSONL and envelope digests, exact byte/document accounting,
+and shard identity. A failed pipe, incomplete replay, duplicate virtual row,
+source mutation, decision mutation, or aggregate/shard custody mismatch creates
+no successful receipt. This is the bridge needed to feed tokenizer sampling and
+final packing without materializing another roughly 1.5 TB PleIAs payload; it
+does not itself make the corpus training-ready or authorize 4B training.
+
 Materialization also preserves the exact semantic stratum plus its conservative
 quality floor and mean from the selection database. Both later rewrite schemas
 carry those fields unchanged, so curriculum and mixture construction do not
