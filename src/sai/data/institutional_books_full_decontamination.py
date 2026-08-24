@@ -297,6 +297,7 @@ def build_screen(
             "agreed_genre": agreement["agreed_genre"],
             "shared_domains": agreement["shared_domains"],
             "consensus_curriculum": agreement["consensus_curriculum"],
+            "work_family_sha256": agreement["work_family_sha256"],
             "benchmark_decontamination_complete": True,
             "global_semantic_deduplication_complete": False,
             "source_text_persisted": False,

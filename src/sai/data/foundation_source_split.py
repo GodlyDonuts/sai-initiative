@@ -14,7 +14,7 @@ POLICY = {
     "development_fraction_ppm": 50_000,
     "grouping": {
         "pleias_common_corpus": "pinned_source_parent",
-        "institutional_books": "two_family_work_id_candidate_set",
+        "institutional_books": "global_connected_two_family_work_candidate_graph",
     },
 }
 POLICY_SHA256 = canonical_sha256(POLICY)

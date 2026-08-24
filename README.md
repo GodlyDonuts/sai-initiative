@@ -1875,8 +1875,9 @@ final-corpus completion, and training authorization false.
 The component rewrites now construct the source-disjoint split in-row rather
 than in a later lossy sidecar. A fixed SHA-256 policy assigns 5% of group buckets
 to development: every row from one pinned PleIAs source parent stays together,
-and every Institutional Books row sharing the two-family work-ID candidate set
-stays together. The component aggregates require exact train+development
+and every Institutional Books row in the same globally connected work-ID
+candidate family stays together, including transitive overlaps such as `A-B`
+plus `B-C`. The component aggregates require exact train+development
 document/byte accounting; the foundation ledger requires both lanes to be
 nonempty and records their exact post-rewrite byte totals. This split is for
 held-out data/model selection and remains separate from all official public

@@ -36,6 +36,7 @@ def test_private_book_rewrite_preserves_source_lineage_and_hashes_output():
         "decontamination_record_sha256": "c" * 64,
         "agreed_genre": "technical_nonfiction",
         "shared_domains": ["physics", "art_history"],
+        "work_family_sha256": "d" * 64,
         "benchmark_decontamination_complete": True,
         "training_ready": False,
     }

@@ -102,9 +102,7 @@ def consensus_curriculum_metadata(
             {original["curriculum_band"], independent["curriculum_band"]}
         ),
         "shared_prerequisites": sorted(
-            set(original["prerequisites"]).intersection(
-                independent["prerequisites"]
-            )
+            set(original["prerequisites"]).intersection(independent["prerequisites"])
         ),
         "shared_concepts": sorted(
             set(original["concepts"]).intersection(independent["concepts"])
@@ -133,6 +131,66 @@ def consensus_curriculum_metadata(
     }
     metadata["metadata_sha256"] = canonical_sha256(metadata)
     return metadata
+
+
+def assign_work_families(records: list[dict[str, Any]]) -> None:
+    """Union overlapping two-family work candidates before split assignment."""
+
+    parent: dict[str, str] = {}
+
+    def find(value: str) -> str:
+        root = value
+        while parent[root] != root:
+            root = parent[root]
+        while value != root:
+            next_value = parent[value]
+            parent[value] = root
+            value = next_value
+        return root
+
+    def union(first: str, second: str) -> None:
+        left, right = find(first), find(second)
+        if left != right:
+            parent[max(left, right)] = min(left, right)
+
+    for record in records:
+        metadata = record.get("consensus_curriculum")
+        if metadata is None:
+            continue
+        candidates = metadata.get("work_id_candidates")
+        if (
+            not isinstance(candidates, list)
+            or not candidates
+            or len(candidates) != len(set(candidates))
+        ):
+            raise InstitutionalBooksIndependentAgreementError(
+                "work candidate family differs"
+            )
+        for value in candidates:
+            parent.setdefault(value, value)
+        for value in candidates[1:]:
+            union(candidates[0], value)
+    members: dict[str, list[str]] = {}
+    for value in sorted(parent):
+        members.setdefault(find(value), []).append(value)
+    family_by_work = {
+        value: canonical_sha256(
+            {
+                "schema": "sai-institutional-book-work-family-v1",
+                "connected_work_id_candidates": values,
+            }
+        )
+        for values in members.values()
+        for value in values
+    }
+    for record in records:
+        metadata = record.get("consensus_curriculum")
+        record["work_family_sha256"] = (
+            family_by_work[metadata["work_id_candidates"][0]]
+            if metadata is not None
+            else None
+        )
+        record["record_sha256"] = canonical_sha256(record)
 
 
 def agreement_disposition(
@@ -310,10 +368,10 @@ def build_agreement(
             "source_text_persisted": False,
             "training_ready": False,
         }
-        record["record_sha256"] = canonical_sha256(record)
         records.append(record)
         counts[disposition] += 1
         tokens[disposition] += token_count
+    assign_work_families(records)
     output_root.mkdir(parents=True)
     try:
         manifest_path = output_root / "agreement.jsonl"

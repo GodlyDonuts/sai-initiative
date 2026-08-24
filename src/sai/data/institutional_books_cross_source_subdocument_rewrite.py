@@ -123,6 +123,8 @@ def rewrite_row(
             for domain in clean["shared_domains"]
         )
         or not isinstance(clean.get("consensus_curriculum"), dict)
+        or not isinstance(clean.get("work_family_sha256"), str)
+        or len(clean["work_family_sha256"]) != 64
         or clean["consensus_curriculum"].get("source_text_persisted") is not False
         or clean["consensus_curriculum"].get("metadata_sha256")
         != canonical_sha256(
@@ -149,11 +151,7 @@ def rewrite_row(
     )
     source_group, corpus_split, source_group_bucket = assign_source_group(
         COMPONENT,
-        {
-            "work_id_candidates": clean["consensus_curriculum"][
-                "work_id_candidates"
-            ]
-        },
+        {"work_family_sha256": clean["work_family_sha256"]},
     )
     result = {
         key: value
@@ -229,12 +227,8 @@ def run_shard(
             "pyarrow is required"
         ) from error
     clean_books, decontamination = _clean_books(decontamination_root)
-    source_path, filtered = _filtered_shard(
-        filtered_root, logical_shards, shard_index
-    )
-    decision = _load_signed(
-        decision_root / "aggregate.json", DECISION_AGGREGATE_SCHEMA
-    )
+    source_path, filtered = _filtered_shard(filtered_root, logical_shards, shard_index)
+    decision = _load_signed(decision_root / "aggregate.json", DECISION_AGGREGATE_SCHEMA)
     if decision.get("cross_source_subdocument_decision_complete") is not True:
         raise InstitutionalBooksCrossSourceSubdocumentRewriteError(
             "global decision differs"
@@ -283,22 +277,20 @@ def run_shard(
                         output_rows.append(result)
                         counts["documents"] += 1
                         counts["input_text_utf8_bytes"] += len(row["text"].encode())
-                        counts["output_text_utf8_bytes"] += len(
-                            result["text"].encode()
-                        )
+                        counts["output_text_utf8_bytes"] += len(result["text"].encode())
                         counts[f"split::{result['corpus_split']}::documents"] += 1
-                        counts[
-                            f"split::{result['corpus_split']}::text_utf8_bytes"
-                        ] += len(result["text"].encode())
+                        counts[f"split::{result['corpus_split']}::text_utf8_bytes"] += (
+                            len(result["text"].encode())
+                        )
                         output_bytes = len(result["text"].encode())
                         counts[
                             f"semantic_genre::{result['semantic_genre']}::documents"
                         ] += 1
                         for domain in result["semantic_domains"]:
                             counts[f"semantic_domain::{domain}::documents"] += 1
-                            counts[
-                                f"semantic_domain::{domain}::text_utf8_bytes"
-                            ] += output_bytes
+                            counts[f"semantic_domain::{domain}::text_utf8_bytes"] += (
+                                output_bytes
+                            )
                         for band in clean["consensus_curriculum"][
                             "curriculum_band_votes"
                         ]:
@@ -311,9 +303,7 @@ def run_shard(
                         )
                         ordered_transforms.update(
                             bytes.fromhex(
-                                result[
-                                    "cross_source_subdocument_transform_sha256"
-                                ]
+                                result["cross_source_subdocument_transform_sha256"]
                             )
                         )
                     if output_rows:

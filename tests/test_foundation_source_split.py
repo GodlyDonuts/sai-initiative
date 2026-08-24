@@ -19,12 +19,10 @@ def test_same_source_parent_cannot_cross_train_and_development():
     assert len(POLICY_SHA256) == 64
 
 
-def test_book_editions_group_by_two_family_work_candidates():
-    first = assign_source_group(
-        "institutional_books", {"work_id_candidates": ["work-a", "work-b"]}
-    )
+def test_book_editions_group_by_connected_work_family():
+    first = assign_source_group("institutional_books", {"work_family_sha256": "a" * 64})
     second = assign_source_group(
-        "institutional_books", {"work_id_candidates": ["work-a", "work-b"]}
+        "institutional_books", {"work_family_sha256": "a" * 64}
     )
     assert first == second
     assert len(first[0]) == 64

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sai.data.institutional_books_independent_agreement import (
     agreement_disposition,
+    assign_work_families,
     consensus_curriculum_metadata,
 )
 from tests.test_institutional_books_semantic_decision import _judgment
@@ -92,3 +93,27 @@ def test_consensus_curriculum_keeps_ranges_and_shared_graph_without_quotes() -> 
     assert result["shared_concept_edges"][0]["confidence_floor_ppm"] == 900_000
     assert "exact source quote" not in str(result)
     assert len(result["metadata_sha256"]) == 64
+
+
+def test_overlapping_work_candidates_form_one_transitive_family() -> None:
+    records = [
+        {
+            "candidate_identity_sha256": "1" * 64,
+            "consensus_curriculum": {"work_id_candidates": ["work-a", "work-b"]},
+        },
+        {
+            "candidate_identity_sha256": "2" * 64,
+            "consensus_curriculum": {"work_id_candidates": ["work-b", "work-c"]},
+        },
+        {
+            "candidate_identity_sha256": "3" * 64,
+            "consensus_curriculum": {"work_id_candidates": ["work-z"]},
+        },
+    ]
+
+    assign_work_families(records)
+
+    assert records[0]["work_family_sha256"] == records[1]["work_family_sha256"]
+    assert records[0]["work_family_sha256"] != records[2]["work_family_sha256"]
+    assert all(len(record["work_family_sha256"]) == 64 for record in records)
+    assert all(len(record["record_sha256"]) == 64 for record in records)
