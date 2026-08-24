@@ -162,9 +162,12 @@ The same fast path now covers PleIAs Common Corpus. The practical locator scan
 reopens every hash-pinned parent directly, accepts only rows labeled English
 with an explicit reusable license, rejects short/empty/malformed rows and every
 deterministic junk signature, and writes source-safe locators instead of a
-second multi-terabyte text copy. A stable 20% identity sample with a 2.0 TB
-aggregate hard ceiling supplies enough candidate mass for the final Books +
-PleIAs balancer. All 128 source-disjoint CPU shards can run concurrently and do
+second multi-terabyte text copy. Each fixed identity partition now orders its
+assigned parents by canonical source hash, retains 100% of eligible rows, and
+stops reading only after its 15,625,000,000-byte allocation is full. This
+cross-directory byte-cap sampling replaces the slower full-reservoir/20%-row
+pass: it reads several times fewer source bytes while supplying more usable
+candidate mass. All 128 source-disjoint CPU shards can run concurrently and do
 not wait for Hermès labels or the metadata-audit policy. The locator scan is a
 candidate pass; practical readiness is declared only after exact-content
 deduplication and final byte balancing. The admission pass uses an on-disk exact
@@ -173,12 +176,16 @@ content hash, and subtracts exact admitted Books UTF-8 bytes from the shared
 2,000,000,000,000-byte ceiling before writing final PleIAs locators. Official
 benchmark cleanliness remains a separate evaluation-claim axis.
 
-The practical graph is live. PleIAs locator array `820240_[0-127%128]` launched
-all 128 fixed source partitions; 117 were admitted immediately and the final 11
-remain scheduler-managed behind the account concurrency ceiling. Book practical
-admission `820358` is staged after the existing mechanical filter aggregate,
-and combined PleIAs exact-dedup/byte-balance admission `820359` is staged after
-both `820240` and `820358`. At launch, 60/64 book gate shards had accepted
+The practical graph is live. Initial full-replay array `820240` was stopped
+before any final locator or receipt existed after measured network throughput
+proved it inefficient; its 2.85 MB of unclosed partial files were permanently
+removed. Replacement PleIAs locator array `820410_[0-127%128]` launched all 128
+fixed source partitions under the byte-cap runtime; 117 were admitted
+immediately and the final 11 remain scheduler-managed behind the account
+concurrency ceiling. Book practical admission `820358` is staged after the
+existing mechanical filter aggregate, and combined PleIAs exact-dedup/byte-
+balance admission `820512` is staged after both `820410` and `820358`. At
+launch, 60/64 book gate shards had accepted
 358,031 of 358,120 examined works (99.975%) and accounted for 64,830,934,694
 materialized enriched tokens, with zero nonempty gate error logs. The complete
 repository regression suite passes: **1,316 tests, 2 dependency warnings**.
