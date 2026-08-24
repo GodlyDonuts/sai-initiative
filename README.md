@@ -2873,12 +2873,21 @@ training data.
 The live Institutional Books materializer has completed at least **63 of 64**
 private shards. The only unfinished identity shard is advancing independently;
 all completed shard receipts remain immutable. The PleIAs metadata census has
-completed at least **68 of 128** canonical shards, while every missing shard
-still maps to a running original worker. A dependency-staged dispatcher will
-split only genuinely unfinished identities into eight recovery segments after
-the original array terminates, preserving incomplete originals in the durable
-evidence root and preventing duplicate accepted custody. These are
-materialization/census measurements, not final admission counts.
+completed at least **78 of 128** canonical shards. At the four-hour acceleration
+cutoff, eight still-running identities—1, 42, 69, 72, 74, 75, 84, and 95—had
+measured projected remaining runtimes between 1.35× and 3.68× their remaining
+walltime. Those originals were terminated before any recovery work began; their
+partial directories were moved intact to the durable evidence root. Independent
+eight-segment arrays `818902`, `818911`, `818920`, `818929`, `818938`, `818947`,
+`818956`, and `818965` were then admitted immediately, with merge jobs `818903`,
+`818912`, `818921`, `818930`, `818939`, `818948`, `818957`, and `818966` rejoined
+to aggregate `818244`. The surviving likely-finish original workers continue
+unchanged, and the normal dispatcher recognizes the early dispatch markers so
+it cannot duplicate them. The source-safe acceleration receipt has SHA-256
+`11018582d87511616b52cd19c5bea5be84f45ed9e2d78f106f742efcfac401f8` and is
+copied with all eight dispatch markers beneath the authorized durable evidence
+root. These are materialization/census measurements, not final admission
+counts.
 
 The dependency graph already stages the complete PleIAs virtual pipeline:
 subdocument signatures, global signature aggregation, exact deletion decisions,
