@@ -1940,6 +1940,16 @@ empty for a culture-neutral work such as a general mathematics reference, but
 available non-Western evidence is no longer discarded from the corpus ledger.
 This makes “English-only is not Western-only” an auditable coverage property.
 
+A separate source-text-free real-row diagnostic now checks the same mechanical
+policy against private materialized book text rather than relying only on unit
+fixtures. It selects deterministic rows from every book shard complete at the
+moment of execution, verifies shard/parent/file/content hashes, runs the full
+mechanical gate on the complete text, and persists only measurements, flags,
+decisions, hashed barcodes, and exact source pointers. It is explicitly not an
+acceptance-rate estimate and cannot change admission. The bounded CPU job uses
+one thread and no GPU; any unexpected real-text flag becomes inspectable
+evidence for a precision correction before the full book gate runs.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
