@@ -1583,6 +1583,13 @@ decontamination, and global exact/near deduplication finish. The cap therefore
 protects both quality and Stokes quota while leaving room for the independently
 qualified books and other source families.
 
+The exact row-level array is Stokes job `818530_[0-127%64]`, dependency-bound
+to successful policy job `818525`; aggregate job `818531` is in turn bound to
+successful completion of every array identity. Both jobs have requeue disabled.
+The dependency graph was verified with `scontrol`: no row-level shard can begin
+before the census-derived policy exists, and aggregation requires the whole
+array. No GPU is requested by this graph.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
