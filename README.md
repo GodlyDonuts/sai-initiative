@@ -540,6 +540,11 @@ official-public benchmark boundary to independently retained rows. Neither
 stage can set `training_ready=true`; global deduplication and the prospective
 transfer ablation remain open afterward.
 
+NVIDIA's streamed endpoint does not currently supply token-usage fields for
+these receipts. The independent aggregate therefore records exact provider
+attempt counts and outcome counts, plus the number of receipts missing provider
+token telemetry; missing telemetry is explicitly not represented as zero usage.
+
 #### Prerequisite-edge compiler
 
 Sai is also converting Hermès's document-level `prerequisites_assumed` and

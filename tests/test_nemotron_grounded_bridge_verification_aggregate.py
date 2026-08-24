@@ -11,6 +11,7 @@ from sai.data.nemotron_grounded_bridge_verification_aggregate import (
     RETAINED_SCHEMA,
     REVISION_SCHEMA,
     NemotronBridgeVerificationAggregateError,
+    request_accounting,
     route_candidate,
     validate_receipt,
 )
@@ -94,6 +95,21 @@ def test_validate_receipt_accepts_exact_nvidia_binding_then_fails_on_drift() -> 
     )
     with pytest.raises(NemotronBridgeVerificationAggregateError, match="receipt"):
         validate_receipt(drifted, candidate)
+
+
+def test_request_accounting_preserves_missing_streamed_token_usage() -> None:
+    receipt = _sealed_nvidia_receipt()
+    receipt["usage"] = {
+        "prompt_tokens": None,
+        "completion_tokens": None,
+        "total_tokens": None,
+    }
+    accounting = request_accounting([receipt])
+    assert accounting["receipts"] == 1
+    assert accounting["provider_attempts"] == 1
+    assert accounting["attempt_outcomes"] == {"valid": 1}
+    assert accounting["receipts_without_provider_token_usage"] == 1
+    assert accounting["missing_provider_token_usage_is_zero_usage"] is False
 
 
 def test_retain_route_strips_anchor_text_and_remains_nontraining() -> None:

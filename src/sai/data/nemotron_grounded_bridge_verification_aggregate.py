@@ -58,6 +58,41 @@ class NemotronBridgeVerificationAggregateError(RuntimeError):
     """The verification population, receipt, shard, or route differs."""
 
 
+def request_accounting(receipts: list[dict[str, Any]]) -> dict[str, Any]:
+    """Account for provider attempts even when streamed token usage is absent."""
+
+    outcomes: Counter[str] = Counter()
+    attempts = 0
+    missing_usage = 0
+    for receipt in receipts:
+        rows = receipt.get("attempts")
+        usage = receipt.get("usage")
+        if not isinstance(rows, list) or not rows or not isinstance(usage, dict):
+            raise NemotronBridgeVerificationAggregateError(
+                "bridge verification request accounting differs"
+            )
+        attempts += len(rows)
+        for row in rows:
+            outcome = row.get("outcome") if isinstance(row, dict) else None
+            if not isinstance(outcome, str) or not outcome:
+                raise NemotronBridgeVerificationAggregateError(
+                    "bridge verification request accounting differs"
+                )
+            outcomes[outcome] += 1
+        if not any(
+            isinstance(value, int) and not isinstance(value, bool)
+            for value in usage.values()
+        ):
+            missing_usage += 1
+    return {
+        "receipts": len(receipts),
+        "provider_attempts": attempts,
+        "attempt_outcomes": dict(sorted(outcomes.items())),
+        "receipts_without_provider_token_usage": missing_usage,
+        "missing_provider_token_usage_is_zero_usage": False,
+    }
+
+
 def validate_receipt(
     receipt: dict[str, Any], candidate: dict[str, Any]
 ) -> dict[str, Any]:
@@ -283,6 +318,7 @@ def build_aggregate(
             "bridge verification receipt population differs"
         )
     rows_by_route: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    receipts = []
     receipt_hashes = []
     usage: Counter[str] = Counter()
     for candidate in candidates:
@@ -290,6 +326,7 @@ def build_aggregate(
             f"{candidate['candidate_identity_sha256']}.{OUTPUT_SUFFIX}.json"
         )
         receipt = validate_receipt(_load_receipt(path), candidate)
+        receipts.append(receipt)
         receipt_hashes.append(receipt["receipt_sha256"])
         route, row = route_candidate(candidate, receipt)
         rows_by_route[route].append(row)
@@ -346,6 +383,7 @@ def build_aggregate(
                 for route in ("retain", "revise", "reject")
             },
             "usage": dict(sorted(usage.items())),
+            "request_accounting": request_accounting(receipts),
             "source_text_persisted_in_outputs": False,
             "same_model_family_as_generator": False,
             "independent_request_verification_complete": True,
