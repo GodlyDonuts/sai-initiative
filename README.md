@@ -1558,6 +1558,31 @@ yield, clean full-source materialization, and training admission remain false;
 the live complete metadata census will attach exact token mass to the measured
 collection-language routes before any bulk retention decision.
 
+That census now feeds a second fail-closed boundary rather than a bulk copy.
+Stokes job `818525` is dependency-staged to join the complete metadata geometry
+to the source-disjoint Hermès calibration and produce collection-language work
+routes. Those routes are explicitly **not** row admission. After that policy
+closes, 128 source-parent-disjoint CPU shards will reopen one pinned Parquet
+parent at a time and apply a new row-level gate. Only rows in the strongest
+English direct-verification groups, with a complete explicitly reusable rights
+label, a stable identifier, coherent size metadata, and a clean mechanical
+quality decision can enter the bounded candidate population. Unknown or mixed
+rights labels fail closed; non-English material remains available for the
+separate high-value translation path; contextless answer keys, corruption,
+markup fragments, and duplicated boilerplate are excluded.
+
+Candidate diversity is selected by a deterministic source-row/content hash,
+not input order. The first pass samples 20,000 per million mechanically clean
+rows and enforces a hard maximum of **1,610,612,736 uncompressed text bytes per
+shard**, or **206,158,430,208 bytes across all 128 shards**. This is a storage-
+safe discovery population, not a quota to fill. Every output row retains its
+exact upstream repository, revision, parent path and SHA-256, row index,
+identifier, license, and content SHA-256. Even successful rows remain
+`training_ready=false` until semantic verification, official-boundary
+decontamination, and global exact/near deduplication finish. The cap therefore
+protects both quality and Stokes quota while leaving room for the independently
+qualified books and other source families.
+
 Two source-disjoint collection confirmations now sharpen that bulk pause with
 **80 additional rows across ten named collections**. Every collection has eight
 primary Hermès judgments and eight independent full-coverage Gemini 3.5 Flash
