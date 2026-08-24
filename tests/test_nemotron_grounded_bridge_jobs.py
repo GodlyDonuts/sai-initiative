@@ -7,6 +7,11 @@ def test_nemotron_bridge_runner_is_bounded_resumable_and_nonduplicating() -> Non
     ).read_text()
     assert "sai_lanes=9" in script
     assert "--concurrency 1" in script
+    assert (
+        "sai_judgments=artifacts/"
+        "sai_grounded_bridge_independent_nemotron_20260826_r1/judgments"
+        in script
+    )
     assert "if [[ -f \"${summary}\" ]]" in script
     assert "while ! python3 -m sai.data.nemotron_grounded_bridge_verifier" in script
     assert "nvidia/nemotron-3-ultra-550b-a55b" in script
