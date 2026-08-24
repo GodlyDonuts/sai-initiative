@@ -305,6 +305,20 @@ strips literal source quotes from derived candidates, and preserves only their
 SHA-256 bindings. Even after generation closes, the aggregate remains
 `training_ready=false` pending independent claim and transfer verification.
 
+The first complete generation campaign closed on 2026-08-26 with **512/512**
+pair receipts and **64/64** shard summaries. It produced 512 unique derived
+candidates spanning all **290** frozen directed bridge labels from 1,381
+source-disjoint anchors, using 3,488,388 prompt tokens and 1,169,045 completion
+tokens. Independent replay confirmed that no literal source quotes remain in
+the derived candidate file. Its candidate SHA-256 is
+`d46f7e2c637b71085876cf180fff572095030e2eecf553ff4875aaee13e96bde` and
+its canonical aggregate receipt is
+`f2eaccffa188fe6ced475f7544006c863f0f9d3979031e35d984a12a6b0566e5`.
+The exact aggregate and its 512-row verification population were copied and
+byte-replayed under the authorized Stokes evidence root. This is a completed
+generation result, not a quality result: the independently requested verifier
+is active, and every generated row remains `training_ready=false`.
+
 A second, dependency-staged Hermès pass now verifies all 512 synthesized bridges
 against both restored exact anchors. It must cover every generated claim with a
 byte-exact quote and separately judge the shared structure, substantive domain
