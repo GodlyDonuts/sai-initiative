@@ -17,6 +17,7 @@ from typing import Any, Protocol
 
 SCHEMA = "sai-ordered-token-stream-receipt-v1"
 ROW_SCHEMA = "sai-pretraining-document-v1"
+TOKENIZER_ROW_SCHEMA = "sai-tokenizer-training-document-v1"
 ALLOWED_DOMAINS = {"english", "code", "math", "science", "technical"}
 
 
@@ -161,6 +162,48 @@ def normalize_document(row: Any) -> dict[str, Any]:
     if row.get("identity_sha256") not in (None, identity):
         raise TokenStreamError("declared document identity differs")
     return {**normalized, "identity_sha256": identity}
+
+
+def normalize_tokenizer_document(row: Any) -> dict[str, Any]:
+    """Validate tokenizer-fitting text without inventing benchmark custody."""
+
+    if isinstance(row, dict) and row.get("schema") == ROW_SCHEMA:
+        return normalize_document(row)
+    if not isinstance(row, dict) or row.get("schema") != TOKENIZER_ROW_SCHEMA:
+        raise TokenStreamError("tokenizer document schema differs")
+    text = row.get("text")
+    source = row.get("source")
+    identity = row.get("selection_identity_sha256")
+    if (
+        not isinstance(text, str)
+        or not text
+        or row.get("text_sha256") != hashlib.sha256(text.encode()).hexdigest()
+        or row.get("tokenizer_training_only") is not True
+        or not isinstance(source, dict)
+        or not isinstance(source.get("dataset"), str)
+        or not source["dataset"]
+        or not isinstance(source.get("row_id"), str)
+        or not source["row_id"]
+        or not isinstance(source.get("license"), str)
+        or not source["license"]
+        or source.get("domain") not in ALLOWED_DOMAINS
+        or not isinstance(identity, str)
+        or len(identity) != 64
+    ):
+        raise TokenStreamError("tokenizer document evidence differs")
+    try:
+        bytes.fromhex(identity)
+    except ValueError as error:
+        raise TokenStreamError("tokenizer document identity differs") from error
+    return {
+        "schema": TOKENIZER_ROW_SCHEMA,
+        "text": text,
+        "source": dict(source),
+        "selection_identity_sha256": identity,
+        "text_sha256": row["text_sha256"],
+        "tokenizer_training_only": True,
+        "identity_sha256": identity,
+    }
 
 
 def _tokenize(

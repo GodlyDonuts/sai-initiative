@@ -13,7 +13,7 @@ from typing import Any
 from sai.data.token_stream import (
     TokenStreamError,
     canonical_sha256,
-    normalize_document,
+    normalize_tokenizer_document,
     sha256_file,
     sha256_tree,
 )
@@ -35,7 +35,7 @@ def _texts(paths: tuple[Path, ...]) -> Iterable[str]:
                     continue
                 try:
                     row = json.loads(line)
-                    yield normalize_document(row)["text"]
+                    yield normalize_tokenizer_document(row)["text"]
                 except (json.JSONDecodeError, TokenStreamError) as error:
                     raise TokenizerBuildError(
                         f"tokenizer corpus row differs: {path}"

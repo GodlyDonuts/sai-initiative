@@ -12,7 +12,7 @@ from typing import Any, Protocol
 from sai.data.token_stream import (
     TokenStreamError,
     canonical_sha256,
-    normalize_document,
+    normalize_tokenizer_document,
     sha256_file,
     sha256_tree,
 )
@@ -113,7 +113,7 @@ def _load_corpus_texts(paths: list[Path]) -> tuple[list[tuple[str, str]], Counte
                         "corpus row is malformed"
                     ) from error
                 try:
-                    normalized = normalize_document(row)
+                    normalized = normalize_tokenizer_document(row)
                 except TokenStreamError as error:
                     raise TokenizerQualificationError(
                         "corpus row contract differs"
