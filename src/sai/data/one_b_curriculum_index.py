@@ -332,12 +332,16 @@ def index_books(
     return _seal_shard(output_root, "books", -1, admission["receipt_sha256"], result)
 
 
-def _descriptor(admission: dict[str, Any], shard_index: int) -> dict[str, Any]:
+def _descriptor(
+    admission: dict[str, Any], shard_index: int, *, allow_empty: bool = False
+) -> dict[str, Any] | None:
     values = [
         row
         for row in admission.get("outputs", {}).get("descriptors", [])
         if row.get("shard_index") == shard_index
     ]
+    if allow_empty and not values:
+        return None
     if len(values) != 1:
         raise OneBCurriculumIndexError("source descriptor differs")
     return values[0]
@@ -354,6 +358,8 @@ def index_pleias_shard(
         raise OneBCurriculumIndexError("pyarrow is required") from error
     admission = _load_signed(admission_root / "receipt.json", PLEIAS_ADMISSION_SCHEMA)
     descriptor = _descriptor(admission, shard_index)
+    if descriptor is None:  # pragma: no cover - impossible without allow_empty
+        raise OneBCurriculumIndexError("PleIAs descriptor differs")
     path = admission_root / descriptor["path"]
     if (
         path.stat().st_size != descriptor["bytes"]
@@ -406,15 +412,17 @@ def index_code_shard(
     except ImportError as error:
         raise OneBCurriculumIndexError("pyarrow is required") from error
     admission = _load_signed(admission_root / "receipt.json", CODE_ADMISSION_SCHEMA)
-    descriptor = _descriptor(admission, shard_index)
-    path = admission_root / descriptor["path"]
-    if (
+    descriptor = _descriptor(admission, shard_index, allow_empty=True)
+    path = admission_root / descriptor["path"] if descriptor is not None else None
+    if descriptor is not None and path is not None and (
         path.stat().st_size != descriptor["bytes"]
         or sha256_file(path) != descriptor["sha256"]
     ):
         raise OneBCurriculumIndexError("code descriptor bytes differ")
 
     def rows() -> Iterable[dict[str, Any]]:
+        if descriptor is None or path is None:
+            return
         for batch in pq.ParquetFile(path).iter_batches(
             batch_size=8_192, use_threads=False
         ):
@@ -440,7 +448,8 @@ def index_code_shard(
                 }
 
     result = _write_index(rows(), output_root)
-    if result["counts"]["rows"] != descriptor["rows"]:
+    expected_rows = descriptor["rows"] if descriptor is not None else 0
+    if result["counts"].get("rows", 0) != expected_rows:
         raise OneBCurriculumIndexError("code index coverage differs")
     return _seal_shard(
         output_root, "code", shard_index, admission["receipt_sha256"], result

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from sai.data.one_b_curriculum_index import (
     _book_band,
+    _descriptor,
     _pleias_band,
     _priority,
     _split,
@@ -28,3 +29,9 @@ def test_split_and_priority_are_stable_and_component_bound() -> None:
     assert _split(identity, bulk=False) == "train"
     assert _priority("books", identity) == _priority("books", identity)
     assert _priority("books", identity) != _priority("pleias", identity)
+
+
+def test_optional_descriptor_distinguishes_an_empty_shard() -> None:
+    admission = {"outputs": {"descriptors": [{"shard_index": 1, "rows": 2}]}}
+    assert _descriptor(admission, 1) == {"shard_index": 1, "rows": 2}
+    assert _descriptor(admission, 7, allow_empty=True) is None
