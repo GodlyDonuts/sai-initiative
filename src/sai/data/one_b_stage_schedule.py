@@ -164,6 +164,7 @@ def build(window_path: Path, output_root: Path) -> dict[str, Any]:
                 boundary_sequences,
             )
             boundary_entry["source"] = "exact_boundary_batch"
+            boundary_entry["band"] = "foundation"
             for band in BANDS:
                 target = stage["band_sequences"][band]
                 connections = connection_by_band[band]
@@ -191,6 +192,8 @@ def build(window_path: Path, output_root: Path) -> dict[str, Any]:
                             "source": "verified_train_only_connections",
                         }
                     )
+                for entry in band_entries:
+                    entry["band"] = band
                 body_entries.extend(band_entries)
                 bands[band] = {
                     "target_sequences": target,
