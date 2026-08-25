@@ -9,6 +9,7 @@ import heapq
 import json
 import os
 import shutil
+import tempfile
 import uuid
 from collections import Counter
 from collections.abc import Iterable
@@ -17,8 +18,12 @@ from typing import Any
 
 from sai.data.agent_labeling import _atomic_create
 from sai.data.bridge_component_admission import SCHEMA as BRIDGE_SCHEMA
+from sai.data.common_pile_stack_edu_practical_admission import (
+    SCHEMA as CODE_SCHEMA,
+)
 from sai.data.institutional_books_practical_admission import SCHEMA as BOOK_SCHEMA
 from sai.data.one_b_curriculum_index import SHARD_SCHEMA as INDEX_SHARD_SCHEMA
+from sai.data.pleias_practical_admission import SCHEMA as PLEIAS_SCHEMA
 from sai.data.token_stream import (
     TOKENIZER_ROW_SCHEMA,
     canonical_sha256,
@@ -346,6 +351,236 @@ def sample_connections(
     )
 
 
+def _locator_descriptor(admission: dict[str, Any], shard: int) -> dict[str, Any]:
+    descriptors = [
+        row
+        for row in admission.get("outputs", {}).get("descriptors", [])
+        if row.get("shard_index") == shard
+    ]
+    if len(descriptors) != 1:
+        raise OneBTokenizerSampleError("tokenizer locator descriptor differs")
+    return descriptors[0]
+
+
+def _download_parent(locator: dict[str, Any], token: str, root: Path) -> Path:
+    if not token:
+        raise OneBTokenizerSampleError("Hugging Face token is required")
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError as error:
+        raise OneBTokenizerSampleError("huggingface_hub is required") from error
+    try:
+        path = Path(
+            hf_hub_download(
+                repo_id=locator["source_repository"],
+                filename=locator["source_path"],
+                repo_type="dataset",
+                revision=locator["source_revision"],
+                token=token,
+                local_dir=root,
+            )
+        )
+    except Exception as error:
+        raise OneBTokenizerSampleError("tokenizer parent download failed") from error
+    if (
+        not path.is_file()
+        or path.is_symlink()
+        or sha256_file(path) != locator["source_parent_sha256"]
+    ):
+        raise OneBTokenizerSampleError("tokenizer parent identity differs")
+    return path
+
+
+def _chosen_parent_paths(
+    rows: list[dict[str, Any]], component: str, maximum_parents: int
+) -> set[str]:
+    if component == "code":
+        totals: Counter[str] = Counter()
+        for row in rows:
+            totals[row["source_path"]] += row["text_utf8_bytes"]
+        return {totals.most_common(1)[0][0]}
+    by_open_type: dict[str, Counter[str]] = {}
+    for row in rows:
+        by_open_type.setdefault(row["open_type"], Counter())[row["source_path"]] += row[
+            "text_utf8_bytes"
+        ]
+    choices = [
+        (counter.most_common(1)[0][1], open_type, counter.most_common(1)[0][0])
+        for open_type, counter in by_open_type.items()
+    ]
+    choices.sort(key=lambda row: (-row[0], row[1], row[2]))
+    return {row[2] for row in choices[:maximum_parents]}
+
+
+def _remote_documents(
+    component: str,
+    locators: list[dict[str, Any]],
+    token: str,
+    scratch_root: Path,
+) -> Iterable[tuple[str, str, dict[str, Any]]]:
+    by_parent: dict[str, list[dict[str, Any]]] = {}
+    for row in locators:
+        by_parent.setdefault(row["source_path"], []).append(row)
+    for parent_number, (source_path, selected) in enumerate(
+        sorted(by_parent.items()), start=1
+    ):
+        first = selected[0]
+        if any(
+            row[key] != first[key]
+            for row in selected
+            for key in (
+                "source_repository",
+                "source_revision",
+                "source_parent_sha256",
+            )
+        ):
+            raise OneBTokenizerSampleError("tokenizer parent custody differs")
+        with tempfile.TemporaryDirectory(
+            prefix=f"sai-1b-tokenizer-{parent_number}-", dir=scratch_root
+        ) as temporary:
+            parent = _download_parent(first, token, Path(temporary))
+            wanted = {row["source_row_index"]: row for row in selected}
+            seen = set()
+            if component == "code":
+                with gzip.open(parent, "rt", encoding="utf-8") as handle:
+                    for row_index, line in enumerate(handle):
+                        locator = wanted.get(row_index)
+                        if locator is None:
+                            continue
+                        raw = json.loads(line)
+                        text = raw.get("text")
+                        if (
+                            not isinstance(text, str)
+                            or hashlib.sha256(text.encode()).hexdigest()
+                            != locator["content_sha256"]
+                        ):
+                            raise OneBTokenizerSampleError(
+                                "code tokenizer content differs"
+                            )
+                        identity = locator["source_row_identity_sha256"]
+                        seen.add(row_index)
+                        yield locator["language"], identity, {
+                            "schema": TOKENIZER_ROW_SCHEMA,
+                            "text": text,
+                            "selection_identity_sha256": identity,
+                            "text_sha256": locator["content_sha256"],
+                            "tokenizer_training_only": True,
+                            "source": {
+                                "dataset": (
+                                    f"{locator['source_repository']}@"
+                                    f"{locator['source_revision']}"
+                                ),
+                                "row_id": locator["blob_id"],
+                                "license": "+".join(locator["licenses"]),
+                                "domain": "code",
+                            },
+                        }
+                        if len(seen) == len(wanted):
+                            break
+            else:
+                try:
+                    import pyarrow.parquet as pq
+                except ImportError as error:
+                    raise OneBTokenizerSampleError("pyarrow is required") from error
+                next_row = 0
+                for batch in pq.ParquetFile(parent).iter_batches(
+                    batch_size=128,
+                    columns=("text", "identifier"),
+                    use_threads=False,
+                ):
+                    for raw in batch.to_pylist():
+                        locator = wanted.get(next_row)
+                        next_row += 1
+                        if locator is None:
+                            continue
+                        text = raw.get("text")
+                        if (
+                            not isinstance(text, str)
+                            or raw.get("identifier") != locator["identifier"]
+                            or hashlib.sha256(text.encode()).hexdigest()
+                            != locator["content_sha256"]
+                        ):
+                            raise OneBTokenizerSampleError(
+                                "PleIAs tokenizer content differs"
+                            )
+                        identity = locator["source_row_identity_sha256"]
+                        seen.add(locator["source_row_index"])
+                        stratum = (
+                            f"{locator['open_type']}::{locator['collection']}"
+                        )
+                        yield stratum, identity, {
+                            "schema": TOKENIZER_ROW_SCHEMA,
+                            "text": text,
+                            "selection_identity_sha256": identity,
+                            "text_sha256": locator["content_sha256"],
+                            "tokenizer_training_only": True,
+                            "source": {
+                                "dataset": (
+                                    f"{locator['source_repository']}@"
+                                    f"{locator['source_revision']}"
+                                ),
+                                "row_id": locator["identifier"],
+                                "license": locator["license"],
+                                "domain": _tokenizer_domain(locator["collection"]),
+                            },
+                        }
+            if seen != set(wanted):
+                raise OneBTokenizerSampleError(
+                    f"{component} tokenizer locator coverage differs: {source_path}"
+                )
+
+
+def sample_remote_component(
+    component: str,
+    admission_root: Path,
+    locator_shard: int,
+    output_root: Path,
+    token: str,
+    scratch_root: Path,
+    *,
+    maximum_jsonl_bytes: int,
+    maximum_parents: int,
+) -> dict[str, Any]:
+    """Rehydrate bounded admitted Code or PleIAs rows from pinned parents."""
+
+    try:
+        import pyarrow.parquet as pq
+    except ImportError as error:
+        raise OneBTokenizerSampleError("pyarrow is required") from error
+    schema = CODE_SCHEMA if component == "code" else PLEIAS_SCHEMA
+    admission = _load_signed(admission_root / "receipt.json", schema)
+    descriptor = _locator_descriptor(admission, locator_shard)
+    locator_path = admission_root / descriptor["path"]
+    if (
+        admission.get("training_ready") is not True
+        or locator_path.stat().st_size != descriptor["bytes"]
+        or sha256_file(locator_path) != descriptor["sha256"]
+    ):
+        raise OneBTokenizerSampleError("remote tokenizer admission differs")
+    rows = [
+        row
+        for row in pq.read_table(locator_path).to_pylist()
+        if int(row["source_row_identity_sha256"][:16], 16) % 1_000_000 >= 1_000
+    ]
+    parents = _chosen_parent_paths(rows, component, maximum_parents)
+    selected = [row for row in rows if row["source_path"] in parents]
+    encoded, counts = _bounded_by_stratum(
+        _remote_documents(component, selected, token, scratch_root),
+        maximum_jsonl_bytes,
+    )
+    counts["selected_source_parents"] = len(parents)
+    counts["selected_admitted_locators"] = len(selected)
+    return _write(
+        output_root,
+        encoded,
+        counts,
+        component=component,
+        source_receipt_sha256=admission["receipt_sha256"],
+        source_shard=locator_shard,
+        maximum_jsonl_bytes=maximum_jsonl_bytes,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -359,6 +594,15 @@ def main() -> int:
     connections.add_argument("--admission-root", type=Path, required=True)
     connections.add_argument("--output-root", type=Path, required=True)
     connections.add_argument("--maximum-jsonl-bytes", type=int, required=True)
+    for name in ("code", "pleias"):
+        remote = subparsers.add_parser(name)
+        remote.add_argument("--admission-root", type=Path, required=True)
+        remote.add_argument("--locator-shard", type=int, required=True)
+        remote.add_argument("--output-root", type=Path, required=True)
+        remote.add_argument("--maximum-jsonl-bytes", type=int, required=True)
+        remote.add_argument("--maximum-parents", type=int, required=True)
+        remote.add_argument("--token-env", required=True)
+        remote.add_argument("--scratch-root", type=Path, required=True)
     args = parser.parse_args()
     if args.command == "books":
         result = sample_book_shard(
@@ -368,11 +612,22 @@ def main() -> int:
             args.output_root,
             maximum_jsonl_bytes=args.maximum_jsonl_bytes,
         )
-    else:
+    elif args.command == "connections":
         result = sample_connections(
             args.admission_root,
             args.output_root,
             maximum_jsonl_bytes=args.maximum_jsonl_bytes,
+        )
+    else:
+        result = sample_remote_component(
+            args.command,
+            args.admission_root,
+            args.locator_shard,
+            args.output_root,
+            os.environ.get(args.token_env, ""),
+            args.scratch_root,
+            maximum_jsonl_bytes=args.maximum_jsonl_bytes,
+            maximum_parents=args.maximum_parents,
         )
     print(json.dumps({"receipt_sha256": result["receipt_sha256"]}, sort_keys=True))
     return 0

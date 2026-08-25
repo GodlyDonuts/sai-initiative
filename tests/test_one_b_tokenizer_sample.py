@@ -4,7 +4,7 @@ import hashlib
 
 import pytest
 
-from sai.data.one_b_tokenizer_sample import _bounded_by_stratum
+from sai.data.one_b_tokenizer_sample import _bounded_by_stratum, _chosen_parent_paths
 from sai.data.token_stream import TOKENIZER_ROW_SCHEMA, normalize_tokenizer_document
 
 
@@ -46,3 +46,13 @@ def test_bounded_selection_is_deterministic_and_stratified() -> None:
 def test_bounded_selection_rejects_tiny_cap() -> None:
     with pytest.raises(Exception, match="byte cap"):
         _bounded_by_stratum(iter(()), 999_999)
+
+
+def test_remote_parent_selection_is_bounded_and_open_type_broad() -> None:
+    rows = [
+        {"source_path": "a", "text_utf8_bytes": 10, "open_type": "science"},
+        {"source_path": "b", "text_utf8_bytes": 20, "open_type": "science"},
+        {"source_path": "c", "text_utf8_bytes": 15, "open_type": "culture"},
+    ]
+    assert _chosen_parent_paths(rows, "code", 1) == {"b"}
+    assert _chosen_parent_paths(rows, "pleias", 4) == {"b", "c"}
