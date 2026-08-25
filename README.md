@@ -186,12 +186,12 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T05:15Z: eight PleIAs practical scan shards
-have closed and the remaining 120 are running with zero nonempty error logs.
-Their latest complete-parent
-checkpoints account for **1,681,842,493,202 selected UTF-8 bytes** across 4,251
-parents; shard allocations are still open, so this is measured work in progress
-rather than admitted corpus size. Institutional Books practical admission has
+Execution snapshot at 2026-08-25T05:43Z: 29 PleIAs practical scan shards have
+closed and the remaining 99 are running with zero nonempty error logs. Their
+latest complete-parent checkpoints account for **1,804,785,107,558 selected
+UTF-8 bytes** across 4,572 parents; shard allocations are still open, so this
+is measured work in progress rather than admitted corpus size. Institutional
+Books practical admission has
 now closed successfully: **382,072 rows, 222,099,976,155 logical UTF-8 text
 bytes, and 69,795,954,639 enriched tokens** are admitted for private practical
 pretraining. Its 284,845,639-byte manifest independently rehashes to
@@ -199,8 +199,10 @@ pretraining. Its 284,845,639-byte manifest independently rehashes to
 and its canonical receipt rehashes to
 `904b4f64801239fe492d025990245c6773ff2cbf3de5ce64017fd25e6ff9bc83`.
 This puts measured Books plus live PleIAs candidate mass at
-**1,903,942,469,357 bytes** before the pending cross-source exact-dedup and
-two-terabyte balance pass. To concentrate scheduler slots and shared storage
+**2,026,885,083,713 bytes** before the pending cross-source exact-dedup and
+two-trillion-byte balance pass. The final admission still must prove the signed
+post-dedup total is within 1.9--2.0 trillion bytes; crossing the raw candidate
+floor is not represented as completion. To concentrate scheduler slots and shared storage
 bandwidth on this critical path, 122 nonblocking metadata-recovery workers were deferred after
 their exact identities, progress tails, 86 completed-receipt hashes, and resume
 rule were preserved in durable Stokes evidence. An automatic redispatch was
@@ -799,6 +801,16 @@ The final loader must include only the train split and cannot declare this
 overlay training-ready until foundation deduplication and the held-out transfer
 ablation close.
 
+This is a final-composition invariant, not a best-effort suggestion. A signed
+Sai training release must name the reconciled cross-domain component and its
+receipt alongside the practical prose and educational-code components. It must
+exclude the 168 pair-disjoint development documents from pretraining, retain
+their identities for the transfer gate, and fail closed if the 3,052
+prospective train documents are silently omitted or mixed in before their
+foundation-overlap and positive-transfer gates close. The multi-terabyte core
+cannot be used to claim that connection data was included; the connection
+component has separate byte, row, split, verification, and curriculum custody.
+
 #### Prerequisite-edge compiler
 
 Sai is also converting Hermès's document-level `prerequisites_assumed` and
@@ -871,6 +883,18 @@ breaks provider-side retry herds without changing prompts, judgments, candidate
 assignments, request hashes, or the content of any accepted training record.
 Every new receipt names the retry-timing policy, while completed receipts remain
 immutable and replayable.
+
+The PDR representation verifier exposed a separate direct-endpoint failure:
+thirteen concurrent Nemotron lanes converted almost all work into HTTP 429s,
+while unclosed HTTP-error response bodies accumulated 204 `CLOSE_WAIT` sockets.
+Commit `e083611e3e4dff765997bd3b8410ee8da83918aa` explicitly closes streamed
+HTTP-error responses and gives direct NVIDIA traffic one process-shared
+admission slot. Seven pre-fix worker instances were terminated only after their
+sealed receipts were counted; their persistent lane wrappers reloaded the fix
+and resumed missing identities under unchanged prompts and shard locks. Socket
+residue fell to single digits. The full repository passes **1,342 tests**. This
+is a transport-pressure correction, not a change to candidates, rubrics,
+models, verdicts, or already-created receipts.
 
 The resumed 1,024-row byte-weighted teacher population has now closed across
 FinePDFs, FineWeb-Edu, SmolLM, FineMath, Dolma, and OpenWebMath. Hermès returned
