@@ -24,6 +24,11 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export ARROW_NUM_THREADS=1
 
+sai_dedup_args=()
+if [[ "${SAI_SPLIT_PAYLOAD_DEDUP:-0}" == 1 ]]; then
+  sai_dedup_args+=(--split-payload-dedup)
+fi
+
 source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 
@@ -36,4 +41,5 @@ python -m sai.data.pleias_practical_admission \
   --logical-shards 128 \
   --total-text-byte-ceiling 2000000000000 \
   --output-shards 128 \
-  --scratch-root "${TMPDIR:-/tmp}"
+  --scratch-root "${TMPDIR:-/tmp}" \
+  "${sai_dedup_args[@]}"

@@ -55,4 +55,5 @@ python -m sai.data.pleias_practical_admission_recovery cleanup \
 
 export SAI_RUNTIME_ROOT="${SAI_SCIENTIFIC_RUNTIME_ROOT}"
 export SAI_RUNTIME_COMMIT="${SAI_SCIENTIFIC_RUNTIME_COMMIT}"
+export SAI_SPLIT_PAYLOAD_DEDUP=1
 exec bash "${SAI_SCIENTIFIC_RUNTIME_ROOT}/scripts/admit_pleias_practical_core_stokes.sbatch"

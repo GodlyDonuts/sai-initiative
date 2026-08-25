@@ -181,7 +181,9 @@ def _load_quarantine_content_hashes(root: Path) -> tuple[set[str], dict[str, Any
     }
 
 
-def _open_database(path: Path) -> sqlite3.Connection:
+def _open_database(
+    path: Path, *, split_payload_dedup: bool = False
+) -> sqlite3.Connection:
     connection = sqlite3.connect(path)
     # Admission runs on node-local scratch with 64 GiB and four reserved CPUs.
     # Use a bounded fraction of that memory for the content-hash B-tree and let
@@ -196,8 +198,13 @@ def _open_database(path: Path) -> sqlite3.Connection:
     connection.execute(f"PRAGMA mmap_size={SQLITE_MMAP_BYTES}")
     connection.execute(f"PRAGMA threads={SQLITE_WORKER_THREADS}")
     connection.execute("PRAGMA locking_mode=EXCLUSIVE")
+    payload_column = (
+        "payload_id INTEGER NOT NULL"
+        if split_payload_dedup
+        else "row_json TEXT NOT NULL"
+    )
     connection.execute(
-        """
+        f"""
         CREATE TABLE winners (
             content_sha256 TEXT PRIMARY KEY,
             identity_sha256 TEXT NOT NULL,
@@ -205,10 +212,24 @@ def _open_database(path: Path) -> sqlite3.Connection:
             text_utf8_bytes INTEGER NOT NULL,
             source_token_count INTEGER NOT NULL,
             license TEXT NOT NULL,
-            row_json TEXT NOT NULL
+            {payload_column}
         ) WITHOUT ROWID
         """
     )
+    if split_payload_dedup:
+        # The locator JSON dominates the database footprint. Keeping it in a
+        # monotonically written rowid table prevents every exact-hash lookup
+        # from traversing B-tree leaves containing kilobyte-scale payloads.
+        # Unreferenced payload rows are harmless scratch data; winner identity
+        # and canonical output ordering remain entirely in `winners`.
+        connection.execute(
+            """
+            CREATE TABLE payloads (
+                payload_id INTEGER PRIMARY KEY,
+                row_json TEXT NOT NULL
+            )
+            """
+        )
     return connection
 
 
@@ -224,6 +245,25 @@ ON CONFLICT(content_sha256) DO UPDATE SET
     source_token_count=excluded.source_token_count,
     license=excluded.license,
     row_json=excluded.row_json
+WHERE excluded.identity_sha256 < winners.identity_sha256
+"""
+
+_SPLIT_PAYLOAD_INSERT = """
+INSERT INTO payloads (payload_id, row_json) VALUES (?, ?)
+"""
+
+_SPLIT_PAYLOAD_UPSERT = """
+INSERT INTO winners (
+    content_sha256, identity_sha256, output_shard, text_utf8_bytes,
+    source_token_count, license, payload_id
+) VALUES (?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(content_sha256) DO UPDATE SET
+    identity_sha256=excluded.identity_sha256,
+    output_shard=excluded.output_shard,
+    text_utf8_bytes=excluded.text_utf8_bytes,
+    source_token_count=excluded.source_token_count,
+    license=excluded.license,
+    payload_id=excluded.payload_id
 WHERE excluded.identity_sha256 < winners.identity_sha256
 """
 
@@ -244,6 +284,7 @@ def build_admission(
     total_text_byte_ceiling: int,
     output_shards: int = 128,
     scratch_root: Path | None = None,
+    split_payload_dedup: bool = False,
 ) -> dict[str, Any]:
     """Verify all scans, exact-deduplicate locators, and fill the corpus ceiling."""
 
@@ -288,7 +329,10 @@ def build_admission(
         prefix="sai-pleias-practical-admission-", dir=scratch_root
     ) as temporary_directory:
         database_path = Path(temporary_directory) / "exact-dedup.sqlite3"
-        database = _open_database(database_path)
+        database = _open_database(
+            database_path, split_payload_dedup=split_payload_dedup
+        )
+        next_payload_id = 0
         try:
             for shard_index in range(logical_shards):
                 shard_root = scan_root / "shards" / f"shard_{shard_index:05d}"
@@ -396,7 +440,21 @@ def build_admission(
                                 json.dumps(row, sort_keys=True, separators=(",", ":")),
                             )
                         )
-                    database.executemany(_UPSERT, values)
+                    if split_payload_dedup:
+                        payload_values = []
+                        index_values = []
+                        for value in values:
+                            next_payload_id += 1
+                            payload_values.append((next_payload_id, value[-1]))
+                            index_values.append((*value[:-1], next_payload_id))
+                        database.executemany(
+                            _SPLIT_PAYLOAD_INSERT, payload_values
+                        )
+                        database.executemany(
+                            _SPLIT_PAYLOAD_UPSERT, index_values
+                        )
+                    else:
+                        database.executemany(_UPSERT, values)
                 selected = receipt.get("selected", {})
                 if (
                     observed_rows != selected.get("rows")
@@ -511,11 +569,20 @@ def build_admission(
                         }
                     )
 
-            cursor = database.execute(
-                "SELECT output_shard, text_utf8_bytes, "
-                "source_token_count, license, row_json FROM winners "
-                "ORDER BY content_sha256"
-            )
+            if split_payload_dedup:
+                cursor = database.execute(
+                    "SELECT winners.output_shard, winners.text_utf8_bytes, "
+                    "winners.source_token_count, winners.license, "
+                    "payloads.row_json FROM winners "
+                    "JOIN payloads USING (payload_id) "
+                    "ORDER BY winners.content_sha256"
+                )
+            else:
+                cursor = database.execute(
+                    "SELECT output_shard, text_utf8_bytes, "
+                    "source_token_count, license, row_json FROM winners "
+                    "ORDER BY content_sha256"
+                )
             for (
                 target,
                 text_bytes,
@@ -567,6 +634,11 @@ def build_admission(
             "mechanical_non_slop_gate_required": True,
             "known_quarantine_content_excluded": True,
             "exact_content_duplicate_policy": "smallest_identity_sha256_wins",
+            "exact_content_dedup_storage_layout": (
+                "split_sequential_payload_v1"
+                if split_payload_dedup
+                else "inline_payload_v1"
+            ),
             "byte_cap_selection_policy": "canonical_content_sha256_order",
             "output_partition_policy": "canonical_source_path_sha256_modulo",
             "semantic_model_review_required": False,
@@ -633,6 +705,7 @@ def main() -> int:
     parser.add_argument("--total-text-byte-ceiling", type=int, required=True)
     parser.add_argument("--output-shards", type=int, default=128)
     parser.add_argument("--scratch-root", type=Path)
+    parser.add_argument("--split-payload-dedup", action="store_true")
     args = parser.parse_args()
     result = build_admission(
         args.manifest,
@@ -644,6 +717,7 @@ def main() -> int:
         args.total_text_byte_ceiling,
         args.output_shards,
         args.scratch_root,
+        args.split_payload_dedup,
     )
     print(json.dumps(result, sort_keys=True))
     return 0

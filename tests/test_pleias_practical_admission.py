@@ -9,6 +9,8 @@ from sai.data.institutional_books_practical_admission import (
     SCHEMA as BOOKS_ADMISSION_SCHEMA,
 )
 from sai.data.pleias_practical_admission import (
+    _SPLIT_PAYLOAD_INSERT,
+    _SPLIT_PAYLOAD_UPSERT,
     _UPSERT,
     SQLITE_CACHE_KIB,
     SQLITE_PAGE_BYTES,
@@ -91,6 +93,33 @@ def test_sqlite_exact_dedup_keeps_smallest_identity(tmp_path: Path) -> None:
         connection.close()
 
 
+def test_split_payload_exact_dedup_keeps_smallest_identity(tmp_path: Path) -> None:
+    connection = _open_database(
+        tmp_path / "dedup.sqlite3", split_payload_dedup=True
+    )
+    try:
+        connection.executemany(
+            _SPLIT_PAYLOAD_INSERT,
+            [(1, '{"winner":false}'), (2, '{"winner":true}')],
+        )
+        connection.execute(
+            _SPLIT_PAYLOAD_UPSERT,
+            ("3" * 64, "f" * 64, 1, 10, 20, "public domain", 1),
+        )
+        connection.execute(
+            _SPLIT_PAYLOAD_UPSERT,
+            ("3" * 64, "0" * 64, 2, 11, 21, "cc0", 2),
+        )
+        row = connection.execute(
+            "SELECT winners.identity_sha256, winners.output_shard, "
+            "winners.text_utf8_bytes, payloads.row_json FROM winners "
+            "JOIN payloads USING (payload_id)"
+        ).fetchone()
+        assert row == ("0" * 64, 2, 11, '{"winner":true}')
+    finally:
+        connection.close()
+
+
 def test_source_local_partition_keeps_one_parent_together() -> None:
     assert _output_shard("data/one.parquet", 128) == _output_shard(
         "data/one.parquet", 128
@@ -157,8 +186,10 @@ def test_quarantine_registry_tamper_fails_closed(tmp_path: Path) -> None:
         _load_quarantine_content_hashes(root)
 
 
+@pytest.mark.parametrize("split_payload_dedup", [False, True])
 def test_build_admission_deduplicates_and_respects_combined_cap(
     tmp_path: Path,
+    split_payload_dedup: bool,
 ) -> None:
     manifest = tmp_path / "manifest.jsonl"
     manifest_row = {
@@ -278,6 +309,7 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
         total_text_byte_ceiling=8_000,
         output_shards=2,
         scratch_root=tmp_path,
+        split_payload_dedup=split_payload_dedup,
     )
 
     assert result["counts"]["exact_duplicate_rows_excluded"] == 1
@@ -297,6 +329,11 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
     assert sorted(row["content_sha256"] for row in admitted) == ["3" * 64, "5" * 64]
     assert result["policy"]["byte_cap_selection_policy"] == (
         "canonical_content_sha256_order"
+    )
+    assert result["policy"]["exact_content_dedup_storage_layout"] == (
+        "split_sequential_payload_v1"
+        if split_payload_dedup
+        else "inline_payload_v1"
     )
     assert result["global_exact_content_deduplication_complete"] is True
     assert result["known_quarantine_exclusions_applied"] is True
