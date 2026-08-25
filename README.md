@@ -231,15 +231,23 @@ normalization. Replacement population job `821500` completed successfully in
 single measured-safe Hermès lane is live while all later conservative decision,
 independent Nemotron, agreement,
 decontamination, subdocument-signature, and evidence jobs are dependency-staged.
-Lane 0 completed in 4h31m02s and lane 1 remains healthy. A scheduler audit then
-proved that no other Hermès request workers were active while the shared client
-still enforced its ten-request OS lock. Remaining lanes now advance in exact
-four-lane waves: each lane retains concurrency two, so at most eight requests
-can be live and two global slots remain as safety headroom. The dependency
-rewrite touched only pending tasks, preserves every frozen identity and output,
-and neither restarts lane 1 nor duplicates a completed judgment. This removes
-roughly a fourfold avoidable serial latency without weakening structured-output
-retry or downstream independent-verifier gates.
+Lane 0 completed in 4h31m02s. The original lane 1 then exposed an alternating
+strict-schema retry: fixing its English translation fields could reintroduce an
+unsupported concept edge, while fixing that edge could forget the translation
+constraint. The worker now carries every distinct validation hint across later
+attempts instead of remembering only the most recent failure. This changes no
+judgment, evidence rule, or output schema. The old worker was stopped only after
+all **309** valid receipts were counted intact; its pending siblings had written
+nothing. Immutable repair lane `822241_1` immediately produced the one missing
+valid judgment with zero failures and closed shard 33 at **28/28** receipts,
+receipt `4a7377b3801664609d079ec9bab0f850e3058fc74c00defeef83d3df0b12c1c7`.
+Replacement array `822242_[2-31%4]` will resume only unfinished identities after
+lane 1 closes. Each lane retains concurrency two, so at most eight requests can
+be live beneath the shared ten-request OS lock and two slots remain as headroom.
+This removes both the infinite alternation and roughly fourfold avoidable serial
+latency without weakening downstream independent-verifier gates. The complete
+repository passes **1,378 tests**, including a reproduction that alternates the
+two observed failures before returning a valid third response.
 
 The practical corpus now also has a separate educational-code overlay instead
 of misclassifying programming-language rows as non-English prose. Common Pile
@@ -938,7 +946,7 @@ additional CPU-only Newton stage verifies that publication, switches back to
 the Stokes scheduler, and submits the final signed release behind exact
 foundation-readiness audit `822236`. Thus neither cluster can race the other,
 and failed connection evidence cannot create a final-release job. The complete
-repository passes **1,376 tests**.
+repository passes **1,378 tests**.
 
 Final composition is now executable rather than an informal loader note.
 `final_training_release.py` refuses to sign unless the 1.9--2.0-trillion-byte
