@@ -10,6 +10,7 @@ sai_activate_verified_slurm_config() {
   local expected_cluster="$3"
   local actual_sha256
   local actual_cluster
+  local cluster_query_attempt
 
   [[ "${config_path}" == /* ]] || return 2
   [[ "${expected_sha256}" =~ ^[0-9a-f]{64}$ ]] || return 2
@@ -24,14 +25,23 @@ sai_activate_verified_slurm_config() {
 
   export SLURM_CONF="${config_path}"
   unset SLURM_CONF_SERVER
-  actual_cluster="$(
-    scontrol show config | awk -F= '
-      /^ClusterName/ {
-        gsub(/[[:space:]]/, "", $2)
-        print $2
-        exit
-      }
-    '
-  )" || return 2
+  actual_cluster=
+  # A newly started Stokes batch allocation can briefly return an empty
+  # `scontrol show config` response while the explicitly selected Newton
+  # controller becomes reachable. Retry only this read-only identity query;
+  # never retry a submission or accept an empty/mismatched cluster name.
+  for cluster_query_attempt in 1 2 3 4 5; do
+    actual_cluster="$(
+      scontrol show config 2>/dev/null | awk -F= '
+        /^ClusterName/ {
+          gsub(/[[:space:]]/, "", $2)
+          print $2
+          exit
+        }
+      '
+    )" || actual_cluster=
+    [[ -n "${actual_cluster}" ]] && break
+    sleep 1
+  done
   [[ "${actual_cluster}" == "${expected_cluster}" ]] || return 2
 }
