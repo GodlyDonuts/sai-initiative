@@ -186,4 +186,8 @@ def test_verified_slurm_config_rejects_unbound_or_wrong_cluster_files() -> None:
     assert "sha256sum" in script
     assert "unset SLURM_CONF_SERVER" in script
     assert 'actual_cluster' in script
-    assert '[[ "${actual_cluster}" == "${expected_cluster}" ]]' in script
+    assert (
+        '[[ "${actual_cluster}" == "${expected_cluster}" ]] || return 2'
+        in script
+    )
+    assert script.count("|| return 2") >= 7

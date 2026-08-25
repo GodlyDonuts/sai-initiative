@@ -11,16 +11,16 @@ sai_activate_verified_slurm_config() {
   local actual_sha256
   local actual_cluster
 
-  [[ "${config_path}" == /* ]]
-  [[ "${expected_sha256}" =~ ^[0-9a-f]{64}$ ]]
+  [[ "${config_path}" == /* ]] || return 2
+  [[ "${expected_sha256}" =~ ^[0-9a-f]{64}$ ]] || return 2
   case "${expected_cluster}" in
     newton|stokes) ;;
     *) return 2 ;;
   esac
-  [[ -f "${config_path}" && ! -L "${config_path}" ]]
-  [[ "$(stat -c '%h' -- "${config_path}")" == 1 ]]
-  actual_sha256="$(sha256sum -- "${config_path}" | awk '{print $1}')"
-  [[ "${actual_sha256}" == "${expected_sha256}" ]]
+  [[ -f "${config_path}" && ! -L "${config_path}" ]] || return 2
+  [[ "$(stat -c '%h' -- "${config_path}")" == 1 ]] || return 2
+  actual_sha256="$(sha256sum -- "${config_path}" | awk '{print $1}')" || return 2
+  [[ "${actual_sha256}" == "${expected_sha256}" ]] || return 2
 
   export SLURM_CONF="${config_path}"
   unset SLURM_CONF_SERVER
@@ -32,6 +32,6 @@ sai_activate_verified_slurm_config() {
         exit
       }
     '
-  )"
-  [[ "${actual_cluster}" == "${expected_cluster}" ]]
+  )" || return 2
+  [[ "${actual_cluster}" == "${expected_cluster}" ]] || return 2
 }
