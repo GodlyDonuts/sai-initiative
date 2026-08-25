@@ -885,8 +885,18 @@ authorizes matched multi-seed confirmation, not 4B training or a capability
 claim. The final signed corpus must physically include the confirmed train
 overlay and must keep its development identities excluded.
 
-Staged launcher job `822003` now holds only a one-CPU Stokes dependency on
-reconciliation job `821936`; it requests no GPU while waiting. Its immutable
+The pinned proxy was prefetched without a GPU by completed Stokes job `822240`.
+It downloaded only the exact five-file allowlist for
+`HuggingFaceTB/SmolLM2-360M` revision
+`f8027fd0eaeea54caa13c31d31b9fdc459c38b49`: **725,783,926 bytes** total.
+Every member size and SHA-256 was independently replayed with zero failures;
+the ordered manifest and receipt are
+`22805933b36a97e010cd2dc441ed32b9ff2fb8e4f4212830783db754604c0846`
+and `aaa1c7b20a5696e9a2e32392a290b46489930e7ba7ebf767cb4e42b6cd897e92`.
+
+Staged launcher job `822003` now holds only one-CPU Stokes dependencies on
+reconciliation job `822238` and completed model prefetch `822240`; it requests
+no GPU while waiting. Its immutable
 runtime is commit `dfa62e149f6bafe68b05ba99c3294e23c7c4fa86`, and static Slurm
 qualification succeeded independently for the launcher, all one-H100 arms, and
 the Newton aggregate. The launch receipt is
