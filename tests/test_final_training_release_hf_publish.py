@@ -8,8 +8,9 @@ from sai.data.final_training_release_hf_publish import (
     DESTINATION_PATH,
     FinalTrainingReleaseHfPublishError,
     publish,
+    record_preverified_publication,
 )
-from sai.data.token_stream import canonical_sha256
+from sai.data.token_stream import canonical_sha256, sha256_file
 
 
 class _Lfs:
@@ -74,3 +75,35 @@ def test_publish_rejects_release_without_connection_component(
     path.write_text(json.dumps(payload))
     with pytest.raises(FinalTrainingReleaseHfPublishError, match="manifest differs"):
         publish(path, tmp_path / "out.json", "token")
+
+
+def test_records_one_preverified_release_commit(tmp_path: Path) -> None:
+    path = tmp_path / "release.json"
+    release = _release(path)
+    revision = "b" * 40
+    size = path.stat().st_size
+    digest = sha256_file(path)
+    info = type(
+        "Info",
+        (),
+        {
+            "sha": revision,
+            "siblings": [
+                type(
+                    "Sibling",
+                    (),
+                    {
+                        "rfilename": DESTINATION_PATH,
+                        "size": size,
+                        "lfs": type("Lfs", (), {"size": size, "sha256": digest})(),
+                    },
+                )()
+            ],
+        },
+    )()
+    api = type("Api", (), {"dataset_info": lambda *args, **kwargs: info})()
+    result = record_preverified_publication(
+        path, tmp_path / "out.json", revision, "token", api=api
+    )
+    assert result["release_receipt_sha256"] == release["receipt_sha256"]
+    assert result["remote_output"]["commit"] == revision

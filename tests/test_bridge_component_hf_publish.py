@@ -9,6 +9,7 @@ from sai.data.bridge_component_hf_publish import (
     DESTINATION_PREFIX,
     DESTINATION_REPOSITORY,
     publish,
+    record_preverified_publication,
 )
 from sai.data.token_stream import canonical_sha256, sha256_file
 
@@ -86,3 +87,32 @@ def test_publishes_and_replays_only_train_component(
         f"{DESTINATION_PREFIX}/train.jsonl.gz",
         f"{DESTINATION_PREFIX}/receipt.lfs.json",
     ]
+
+
+def test_records_one_preverified_bridge_commit(tmp_path: Path) -> None:
+    admission = tmp_path / "admission"
+    _admission(admission)
+    revision = "a" * 40
+    paths = [
+        (admission / "train.jsonl.gz", f"{DESTINATION_PREFIX}/train.jsonl.gz"),
+        (admission / "receipt.json", f"{DESTINATION_PREFIX}/receipt.lfs.json"),
+    ]
+    siblings = [
+        SimpleNamespace(
+            rfilename=remote,
+            size=path.stat().st_size,
+            lfs=SimpleNamespace(size=path.stat().st_size, sha256=sha256_file(path)),
+        )
+        for path, remote in paths
+    ]
+    api = SimpleNamespace(
+        dataset_info=lambda *args, **kwargs: SimpleNamespace(
+            sha=revision, siblings=siblings
+        )
+    )
+    result = record_preverified_publication(
+        admission, tmp_path / "publication.json", revision, "token", api=api
+    )
+    assert result["remote_revision_verified"] == revision
+    assert {row["commit"] for row in result["remote_outputs"]} == {revision}
+    assert result["development_rows_uploaded"] is False

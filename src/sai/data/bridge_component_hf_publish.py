@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,7 @@ from sai.data.token_stream import canonical_sha256, sha256_file
 SCHEMA = "sai-bridge-training-component-hf-publication-v1"
 DESTINATION_REPOSITORY = "Godlydonuts/Sai"
 DESTINATION_PREFIX = "training/final/cross-domain-connections/20260826-r1"
+REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 
 
 class BridgeComponentHfPublishError(RuntimeError):
@@ -117,17 +119,111 @@ def publish(admission_root: Path, output: Path, token: str) -> dict[str, Any]:
     return payload
 
 
+def record_preverified_publication(
+    admission_root: Path,
+    output: Path,
+    revision: str,
+    token: str,
+    *,
+    api: Any | None = None,
+) -> dict[str, Any]:
+    """Record publication after one exact external Git-LFS commit."""
+
+    if (
+        output.exists()
+        or output.is_symlink()
+        or not token
+        or not REVISION_PATTERN.fullmatch(revision)
+    ):
+        raise BridgeComponentHfPublishError("preverified publication arguments differ")
+    admission = _load_admission(admission_root)
+    descriptor = admission.get("train")
+    if not isinstance(descriptor, dict):
+        raise BridgeComponentHfPublishError("train descriptor differs")
+    sources = [
+        (
+            admission_root / str(descriptor.get("path", "")),
+            f"{DESTINATION_PREFIX}/train.jsonl.gz",
+        ),
+        (admission_root / "receipt.json", f"{DESTINATION_PREFIX}/receipt.lfs.json"),
+    ]
+    if api is None:
+        try:
+            from huggingface_hub import HfApi
+        except ImportError as error:
+            raise BridgeComponentHfPublishError(
+                "huggingface_hub is required"
+            ) from error
+        api = HfApi(token=token)
+    info = api.dataset_info(
+        DESTINATION_REPOSITORY, revision=revision, files_metadata=True
+    )
+    if info.sha != revision:
+        raise BridgeComponentHfPublishError("preverified revision differs")
+    siblings = {row.rfilename: row for row in info.siblings or []}
+    remotes = []
+    for path, remote_path in sources:
+        if not path.is_file() or path.is_symlink() or path.stat().st_nlink != 1:
+            raise BridgeComponentHfPublishError("preverified source is unsafe")
+        size = path.stat().st_size
+        digest = sha256_file(path)
+        sibling = siblings.get(remote_path)
+        lfs = None if sibling is None else sibling.lfs
+        if (
+            sibling is None
+            or sibling.size != size
+            or lfs is None
+            or lfs.size != size
+            or lfs.sha256 != digest
+        ):
+            raise BridgeComponentHfPublishError(
+                "preverified remote LFS identity differs"
+            )
+        remotes.append(
+            {
+                "repository": DESTINATION_REPOSITORY,
+                "commit": revision,
+                "path": remote_path,
+                "bytes": size,
+                "sha256": digest,
+            }
+        )
+    payload = {
+        "schema": SCHEMA,
+        "status": "complete_bridge_training_component_hf_publication",
+        "admission_receipt_sha256": admission["receipt_sha256"],
+        "remote_repository": DESTINATION_REPOSITORY,
+        "remote_revision_verified": revision,
+        "remote_prefix": DESTINATION_PREFIX,
+        "remote_outputs": remotes,
+        "train_documents": admission["counts"]["train_documents"],
+        "train_text_utf8_bytes": descriptor["text_utf8_bytes"],
+        "development_rows_uploaded": False,
+        "transfer_ablation_complete": True,
+        "connection_component_admission_authorized": True,
+        "training_ready": True,
+        "four_b_training_authorized": False,
+    }
+    payload["receipt_sha256"] = canonical_sha256(payload)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    _atomic_create(output, payload)
+    return payload
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--admission-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--revision")
     parser.add_argument("--token-env", default="HF_TOKEN")
     args = parser.parse_args()
-    result = publish(
-        args.admission_root,
-        args.output,
-        os.environ.get(args.token_env, ""),
-    )
+    token = os.environ.get(args.token_env, "")
+    if args.revision:
+        result = record_preverified_publication(
+            args.admission_root, args.output, args.revision, token
+        )
+    else:
+        result = publish(args.admission_root, args.output, token)
     print(
         json.dumps(
             {
