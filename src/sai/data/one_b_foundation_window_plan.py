@@ -54,13 +54,10 @@ def build(ledger_path: Path, tokenizer_path: Path) -> dict[str, Any]:
     bands = {}
     for band, sequences in zip(BANDS, band_sequences, strict=True):
         target_tokens = sequences * SEQUENCE_LENGTH
-        train_bytes = ledger["counts"][
-            f"band::{band}::split::train::text_utf8_bytes"
-        ]
+        train_bytes = ledger["counts"][f"band::{band}::split::train::text_utf8_bytes"]
         estimated_48k_tokens = max(1, round(train_bytes / bytes_per_token))
         raw_ppm = math.ceil(
-            target_tokens * (1_000_000 + SELECTION_SAFETY_PPM)
-            / estimated_48k_tokens
+            target_tokens * (1_000_000 + SELECTION_SAFETY_PPM) / estimated_48k_tokens
         )
         bands[band] = {
             "target_sequences": sequences,
@@ -81,7 +78,7 @@ def build(ledger_path: Path, tokenizer_path: Path) -> dict[str, Any]:
         "source_token_ledger_receipt_sha256": ledger["receipt_sha256"],
         "tokenizer_qualification_receipt_sha256": tokenizer["receipt_sha256"],
         "tokenizer_identity_sha256": tokenizer["tokenizer_identity_sha256"],
-        "selection_function": "priority-sha256-first20-mod-1m-below-band-ppm",
+        "selection_function": "priority-sha256-first16-mod-1m-below-band-ppm",
         "selection_safety_ppm": SELECTION_SAFETY_PPM,
         "connection_documents_handled_separately": True,
         "maximum_connection_document_exposures": 16,
