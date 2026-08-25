@@ -833,6 +833,19 @@ This closes exact-content and source-split reconciliation without pretending it
 has performed normalized or semantic near-deduplication; positive transfer is
 still measured separately.
 
+The positive-transfer gate is a matched three-arm proxy experiment on the
+pinned SmolLM2-360M revision. Its unchanged arm, equal-token source-only arm,
+and verified-connection arm use identical held-out pair identities, decoding,
+optimizer budget, and source-retention measurement. Each arm is an independent
+single-H100 request; the connection arm must improve held-out connection NLL by
+at least 0.5% against both controls while keeping source-anchor NLL regression
+within 1%. A Stokes CPU launcher is dependency-staged after reconciliation and
+submits the three jobs to Newton's H100 controller without holding an idle GPU;
+their aggregate runs only after all three succeed. A positive proxy screen
+authorizes matched multi-seed confirmation, not 4B training or a capability
+claim. The final signed corpus must physically include the confirmed train
+overlay and must keep its development identities excluded.
+
 #### Prerequisite-edge compiler
 
 Sai is also converting Hermès's document-level `prerequisites_assumed` and

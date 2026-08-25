@@ -6,7 +6,7 @@
 #SBATCH --cpus-per-task=1
 #SBATCH --mem=2G
 #SBATCH --time=00:15:00
-#SBATCH --exclude=ec65
+#SBATCH --exclude=evc26,evc31,evc34,evc36,evc37,evc38,evc43,evc45,evc49,evc50
 #SBATCH --no-requeue
 #SBATCH --output=/lustre/fs1/home/sa305415/sai_data_sources/logs/bridge-transfer-aggregate-%j.out
 #SBATCH --error=/lustre/fs1/home/sa305415/sai_data_sources/logs/bridge-transfer-aggregate-%j.err
