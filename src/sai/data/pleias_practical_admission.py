@@ -282,12 +282,39 @@ def build_admission(
                     }
                 )
                 receipt_hashes.append(receipt["receipt_sha256"])
+                print(
+                    json.dumps(
+                        {
+                            "event": "pleias_practical_admission_scan_progress",
+                            "complete_scan_shards": shard_index + 1,
+                            "remaining_scan_shards": logical_shards - shard_index - 1,
+                            "candidate_rows": scan_counts["candidate_rows"],
+                            "candidate_text_utf8_bytes": scan_counts[
+                                "candidate_text_utf8_bytes"
+                            ],
+                        },
+                        sort_keys=True,
+                    ),
+                    flush=True,
+                )
             if seen_paths != expected_paths:
                 raise PleiasPracticalAdmissionError("source parent coverage differs")
             database.commit()
 
             unique_rows = database.execute("SELECT COUNT(*) FROM winners").fetchone()[0]
             duplicate_rows = scan_counts["candidate_rows"] - unique_rows
+            print(
+                json.dumps(
+                    {
+                        "event": "pleias_practical_admission_exact_dedup_complete",
+                        "candidate_rows": scan_counts["candidate_rows"],
+                        "unique_candidate_rows": unique_rows,
+                        "exact_duplicate_rows_excluded": duplicate_rows,
+                    },
+                    sort_keys=True,
+                ),
+                flush=True,
+            )
             output_parent = output_root / "shards"
             output_parent.mkdir()
             schema = _schema()
