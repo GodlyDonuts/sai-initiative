@@ -186,9 +186,9 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T04:17Z: all 128 PleIAs practical scan shards
+Execution snapshot at 2026-08-25T04:48Z: all 128 PleIAs practical scan shards
 are running with zero nonempty error logs. Their latest complete-parent
-checkpoints account for **1,378,178,703,597 selected UTF-8 bytes** across 3,480
+checkpoints account for **1,547,049,520,096 selected UTF-8 bytes** across 3,907
 parents; shard allocations are still open, so this is measured work in progress
 rather than admitted corpus size. Institutional Books practical admission has
 now closed successfully: **382,072 rows, 222,099,976,155 logical UTF-8 text
@@ -198,7 +198,7 @@ pretraining. Its 284,845,639-byte manifest independently rehashes to
 and its canonical receipt rehashes to
 `904b4f64801239fe492d025990245c6773ff2cbf3de5ce64017fd25e6ff9bc83`.
 This puts measured Books plus live PleIAs candidate mass at
-**1,600,278,679,752 bytes** before the pending cross-source exact-dedup and
+**1,769,149,496,251 bytes** before the pending cross-source exact-dedup and
 two-terabyte balance pass. To concentrate scheduler slots and shared storage
 bandwidth on this critical path, 122 nonblocking metadata-recovery workers were deferred after
 their exact identities, progress tails, 86 completed-receipt hashes, and resume
@@ -732,6 +732,21 @@ bridge can enter its retained file only when both Hermès and Nemotron return
 retain; a Hermès revision or rejection remains a hold even if Nemotron retains
 the row. Cross-family aggregation therefore cannot overwrite either family's
 more conservative disposition.
+
+The independent-family campaign closed on 2026-08-25 with **512/512** exact
+receipts and **64/64** shard summaries. Conservative cross-family routing
+retained **460** bridges, sent **47** to revision, and rejected **5**. The
+retained and route files replay byte-for-byte, and the canonical independent
+aggregate receipt is
+`ec7a946cb55a5884c1e360515bf57d464769d6e0218d112429a4501bf0ff9a1d`.
+The pinned post-generation benchmark screen then covered all **460/460**
+retained identities and found **0 contaminated rows**; its canonical receipt is
+`56b650e6e3f11f18a4ee49f0264e86b25f9ba569d0f2fbdebd271daeef0247b8`.
+Receipt self-hashes, every referenced file hash and byte count, and all 1,432
+aggregate/decontamination JSONL rows were independently replayed. This closes
+independent verification and benchmark decontamination for the retained bridge
+overlay, while correctly leaving global deduplication and transfer ablation
+open and `training_ready=false`.
 
 #### Prerequisite-edge compiler
 
