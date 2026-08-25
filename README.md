@@ -883,6 +883,20 @@ receipt beneath `training/final/cross-domain-connections/20260826-r1` and replay
 both remote LFS identities. A negative confirmation therefore produces no
 admitted file and no Hugging Face publication.
 
+Final composition is now executable rather than an informal loader note.
+`final_training_release.py` refuses to sign unless the 1.9--2.0-trillion-byte
+English foundation audit, admitted and remotely replayed educational-code
+overlay, and positively confirmed and remotely replayed cross-domain
+connection overlay all agree by canonical receipt hash. It accounts exact
+logical rows and UTF-8 bytes for all three components, requires the connection
+development documents to be physically absent from training, and keeps 4B
+training unauthorized. `final_training_release_hf_publish.py` then publishes
+the signed release as an explicit `.lfs.json` object beneath
+`training/final/metadata/20260826-r1/` and replays its remote LFS size and
+SHA-256. The full repository now passes **1,363 tests**; this code is staged
+preparation and cannot manufacture a release before the live foundation, code,
+and transfer gates actually pass.
+
 #### Prerequisite-edge compiler
 
 Sai is also converting Hermès's document-level `prerequisites_assumed` and
