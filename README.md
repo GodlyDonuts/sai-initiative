@@ -235,6 +235,16 @@ quarantine registry and a 150,000,000,000-byte code ceiling. Code admission is
 an overlay candidate until its scan and signed admission receipt close; it does
 not change the running PleIAs bytes or authorize the 4B run.
 
+The admitted-code publication path is now implemented at commit
+`b345d3c96853fa1671377a442fdeb917e07b30b7`. It validates every signed
+Stack-Edu output descriptor, refuses Parquet containing source text, publishes
+only the 32 compact locator partitions, and replays every remote LFS size and
+SHA-256 before publishing the admission metadata. The full repository passes
+**1,340 tests**. Dependency-bound jobs `821826_[0-31%16]`, `821827`, and
+`821828` are staged after admission job `821820`; their launch receipt is
+`f0f7b525cd99ce78201fbc1e50357e75c55f3751959a31c59e22b4e960945c9a`.
+No publication job can start before its exact prerequisite succeeds.
+
 Final locator shards preserve source locality: after global content-hash dedup,
 every winning row is assigned by canonical source-path hash, so all retained
 rows from one upstream Parquet stay together. The transient stream reader uses
@@ -3246,26 +3256,24 @@ completion watcher builds the query after independent bridge verification,
 copies candidates and hash evidence to Stokes, creates a read-only immutable
 runtime, and dependency-stages 128 PleIAs scans, 64 Books scans, their aggregate,
 and reconciliation behind the already-frozen final foundation jobs. The full
-implementation currently passes **1,309 tests**, including deterministic replay,
+implementation currently passes **1,340 tests**, including deterministic replay,
 tamper rejection, exact overlap ownership, source-key aliases, conflicting
 anchor splits, and compiler-to-query integration.
 
-The live connection-data verification population contains 512 grounded bridge
-candidates. Same-family review has sealed all 512 identities and all 64 shard
-summaries: 500 retain, 12 revise, and zero reject. The source-independent
-Nemotron Ultra pass has so far sealed 445/512 identities and 45/64 summaries:
-410 retain, 30 revise, and 5 reject. The first provider-enforced JSON receipt
-(`88c491f9…667b7`) replayed with a valid self-hash, exact `Nvidia` provider and
-canonical free-alias model binding, and two recorded unique-span evidence
-repairs. These are partial verifier routes, not an
-admission result; final retention requires both complete families, conservative
-disagreement handling, official-boundary decontamination, global foundation
-overlap reconciliation, and positive transfer measurement.
+The connection-data verification population has now closed all 512 grounded
+bridge candidates under both model families. Conservative intersection retains
+460, routes 47 to revision, and rejects 5; all 460 retained bridges pass the
+official-boundary contamination screen. Compilation produces 3,052 prospective
+train documents and withholds 168 pair-disjoint development documents. The
+complete candidate stream is hash-replayed in Hugging Face commit
+`2a05f42030c209c5f1c5221629bb44751c782c06`. This is a completed candidate
+result, not an admission result: final retention still requires global
+foundation overlap reconciliation and positive transfer measurement.
 
 These bridge lessons remain candidates, not admitted data. Their receipts keep
 global deduplication and split reconciliation against the final foundation
-corpus, transfer ablation, final bridge verification, Hugging Face publication,
-and training readiness false. This prevents attractive synthetic prose from entering Sai merely
+corpus, transfer ablation, and training readiness false. Candidate publication
+is complete, but publication alone is not admission. This prevents attractive synthetic prose from entering Sai merely
 because two model families liked it; the connection data must still demonstrate
 positive transfer and survive the complete corpus-wide duplicate boundary.
 
