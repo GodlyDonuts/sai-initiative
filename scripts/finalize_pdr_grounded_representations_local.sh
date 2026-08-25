@@ -2,6 +2,16 @@
 
 set -euo pipefail
 
+sai_root=$(cd "$(dirname "$0")/.." && pwd)
+cd "${sai_root}"
+
+set -a
+source .env
+set +a
+
+: "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is required}"
+: "${NVIDIA_API_KEY:?NVIDIA_API_KEY is required}"
+
 sai_population=artifacts/sai_pdr_representation_population_20260826_r2
 sai_generator_judgments=artifacts/sai_pdr_grounded_representation_generation_20260826_r2/judgments
 sai_generated_aggregate=artifacts/sai_pdr_grounded_representation_aggregate_20260826_r2
@@ -27,7 +37,6 @@ for sai_required in \
 done
 
 export PYTHONPATH=src
-export SAI_NOUS_LOOPBACK_KEY=local-proxy
 
 while true; do
   sai_summaries=$(find "${sai_generator_judgments}" -maxdepth 1 -type f \
@@ -79,8 +88,8 @@ run_lane() {
         --candidates "${sai_verification_population}/candidates.jsonl" \
         --output-root "${sai_verification_judgments}" \
         --model stealth/ox-alpha \
-        --base-url http://127.0.0.1:8645/v1 \
-        --api-key-env SAI_NOUS_LOOPBACK_KEY \
+        --base-url https://openrouter.ai/api/v1 \
+        --api-key-env OPENROUTER_API_KEY \
         --logical-shards "${sai_logical_shards}" \
         --shard-index "${sai_shard}" \
         --concurrency 1 \
@@ -96,9 +105,6 @@ run_lane() {
   done
 }
 
-set -a
-source .env
-set +a
 mkdir -p "${sai_independent_judgments}"
 
 run_independent_lane() {
