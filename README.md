@@ -181,8 +181,10 @@ each winner into its source-local output shard. The Books reservation therefore
 cannot erase a contiguous tail of source partitions, and SQLite can stream its
 primary-key order without an additional output-shard sort. This denylist and
 balancing work reads only compact locator hashes and does not slow or restart
-the live source scan. Official benchmark cleanliness remains a separate
-evaluation-claim axis.
+the live source scan. Admission also reconstructs each shard's deterministic
+scanned-parent prefix and rejects any locator whose repository, revision, path,
+or parent SHA differs from that exact manifest assignment. Official benchmark
+cleanliness remains a separate evaluation-claim axis.
 
 Execution snapshot at 2026-08-25T03:53Z: all 128 PleIAs practical scan shards
 are running with zero nonempty error logs. Their latest complete-parent

@@ -20,7 +20,12 @@ from sai.data.pleias_practical_admission import (
     _valid_locator,
     build_admission,
 )
-from sai.data.pleias_practical_locator_scan import LOCATOR_SCHEMA, SHARD_SCHEMA, _schema
+from sai.data.pleias_practical_locator_scan import (
+    LOCATOR_SCHEMA,
+    SHARD_SCHEMA,
+    _ordered_parents,
+    _schema,
+)
 from sai.data.quarantine_exclusion_registry import (
     RECORD_SCHEMA as QUARANTINE_RECORD_SCHEMA,
 )
@@ -198,6 +203,8 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
     ]
     locator_path = scan_shard / "locators.parquet"
     pq.write_table(pa.Table.from_pylist(rows, schema=_schema()), locator_path)
+    manifest_rows = [second_manifest_row, manifest_row]
+    ordered_parents, parent_scan_order = _ordered_parents(manifest_rows, True)
     scan_receipt = _signed(
         {
             "schema": SHARD_SCHEMA,
@@ -209,7 +216,15 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
                 "selected_paths_sha256": canonical_sha256(
                     ["data/c.parquet", "data/file.parquet"]
                 ),
+                "selected_parent_count": 2,
                 "scanned_parent_count": 2,
+                "ordered_scanned_paths_sha256": canonical_sha256(
+                    [row["source_path"] for row in ordered_parents]
+                ),
+            },
+            "policy": {
+                "parent_scan_order": parent_scan_order,
+                "stop_at_byte_cap": True,
             },
             "selected": {
                 "rows": 4,

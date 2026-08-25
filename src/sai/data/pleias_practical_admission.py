@@ -20,6 +20,7 @@ from sai.data.pleias_metadata_census import load_manifest, select_shard
 from sai.data.pleias_practical_locator_scan import (
     LOCATOR_SCHEMA,
     SHARD_SCHEMA,
+    _ordered_parents,
     _schema,
 )
 from sai.data.quarantine_exclusion_registry import (
@@ -299,6 +300,9 @@ def build_admission(
                 scanned_parent_count = receipt.get("source", {}).get(
                     "scanned_parent_count"
                 )
+                ordered_parents, parent_scan_order = _ordered_parents(
+                    selected_parents, True
+                )
                 if (
                     receipt.get("status")
                     != "complete_pleias_practical_locator_scan_shard"
@@ -316,6 +320,18 @@ def build_admission(
                     or isinstance(scanned_parent_count, bool)
                     or not isinstance(scanned_parent_count, int)
                     or not 1 <= scanned_parent_count <= len(selected_parents)
+                    or receipt.get("source", {}).get("selected_parent_count")
+                    != len(selected_parents)
+                    or receipt.get("source", {}).get("ordered_scanned_paths_sha256")
+                    != canonical_sha256(
+                        [
+                            row["source_path"]
+                            for row in ordered_parents[:scanned_parent_count]
+                        ]
+                    )
+                    or receipt.get("policy", {}).get("parent_scan_order")
+                    != parent_scan_order
+                    or receipt.get("policy", {}).get("stop_at_byte_cap") is not True
                     or receipt.get("training_ready") is not False
                     or receipt.get("byte_cap_respected") is not True
                     or not locator_path.is_file()
@@ -327,6 +343,10 @@ def build_admission(
                 ):
                     raise PleiasPracticalAdmissionError("scan shard differs")
                 seen_paths.update(selected_paths)
+                scanned_parents = {
+                    row["source_path"]: row
+                    for row in ordered_parents[:scanned_parent_count]
+                }
                 all_assigned_parents_scanned = bool(
                     all_assigned_parents_scanned
                     and receipt.get("complete_assigned_parent_scan") is True
@@ -339,7 +359,15 @@ def build_admission(
                     rows = batch.to_pylist()
                     values = []
                     for row in rows:
-                        if not _valid_locator(row):
+                        parent = scanned_parents.get(row.get("source_path"))
+                        if (
+                            not _valid_locator(row)
+                            or parent is None
+                            or row["source_repository"]
+                            != parent["source_repository"]
+                            or row["source_revision"] != parent["source_revision"]
+                            or row["source_parent_sha256"] != parent["sha256"]
+                        ):
                             raise PleiasPracticalAdmissionError("locator row differs")
                         observed_rows += 1
                         observed_bytes += row["text_utf8_bytes"]
