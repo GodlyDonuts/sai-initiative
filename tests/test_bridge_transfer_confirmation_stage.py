@@ -122,6 +122,8 @@ def test_stage_job_has_no_gpu_and_uses_exact_afterok_handoff() -> None:
     assert "#SBATCH --no-requeue" in script
     assert "#SBATCH --gres" not in script
     assert '[[ ! -e "${stage_root}" ]]' in script
+    assert 'mkdir -p "${stage_parent}"' in script
+    assert 'mkdir "${stage_root}"' in script
     assert '--dependency="afterok:${screen_aggregate_id}"' in script
     assert "--kill-on-invalid-dep=yes" in script
     assert script.count("sbatch --parsable") == 1

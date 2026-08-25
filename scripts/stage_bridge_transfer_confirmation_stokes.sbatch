@@ -33,12 +33,14 @@ source /lustre/fs1/home/sa305415/hfenv/bin/activate
 
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources
 screen_launch="${sai_root}/sai_evidence/bridge-transfer-proxy-screen/20260826-r1/launch-receipt.json"
-stage_root="${sai_root}/sai_evidence/bridge-transfer-proxy-confirmation/20260826-r1/staging"
+stage_parent="${sai_root}/sai_evidence/bridge-transfer-proxy-confirmation/20260826-r1"
+stage_root="${stage_parent}/staging"
 stage_receipt="${stage_root}/receipt.json"
 confirmation_launcher="${SAI_RUNTIME_ROOT}/scripts/launch_bridge_transfer_confirmation_newton.sh"
 
 [[ ! -e "${stage_root}" ]]
 [[ ! -e "${sai_root}/sai_evidence/bridge-transfer-proxy-confirmation/20260826-r1/launch-receipt.json" ]]
+mkdir -p "${stage_parent}"
 mkdir "${stage_root}"
 confirmation_launcher_id=
 cleanup() {
