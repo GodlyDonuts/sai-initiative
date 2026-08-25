@@ -337,11 +337,18 @@ Recovery `822772` then scanned all **128/128** immutable locator shards and
 reproduced the exact **82,229,028 rows / 1,999,999,974,278 source bytes**.
 Global exact dedup retained **77,166,100** unique candidates, excluded
 **5,062,924** exact duplicate rows, and excluded the four registered quarantine
-rows. The deterministic byte-cap writer is now emitting 128 compact locator
-shards with empty stderr. Publication `822233`, transient remote-stream smoke
-`822237`, bridge reconciliation `822238`, and the matched-control transfer
-screen remain automatically dependency-staged behind its signed terminal
-receipt; no 4B training is authorized by this data construction milestone.
+rows. The deterministic byte cap admitted **75,137,476 PleIAs rows,
+1,777,900,023,512 text bytes, and 442,250,953,545 source tokens**. With the
+already admitted Books component, the foundation is therefore
+**1,999,999,999,667 UTF-8 text bytes**, only 333 bytes below the two-trillion
+ceiling. Recovery completed in 2:28:07 with exit `0:0`, empty stderr, 128
+atomically closed locator shards, no partial files, and canonical receipt
+`32d838585084c0b9ac04d6b9614c5fc7a4a91562ea9d49544fe17577f14a7464`;
+an independent replay matched every descriptor size and SHA-256. Publication
+`822233`, transient remote-stream smoke `822237`, and bridge reconciliation
+`822238` released automatically. The matched-control transfer screen remains
+downstream of reconciliation; no 4B training is authorized by this data
+construction milestone.
 
 A cross-cluster scheduler preflight also found that `SLURM_CONF_SERVER` cannot
 override an already-present local `slurm.conf` on a Stokes compute node. The
