@@ -44,6 +44,62 @@ it may retain substantially less. No source, duplicate, synthetic example, or
 low-confidence row is admitted merely to fill that ceiling. Exact post-rewrite
 bytes, not upstream archive sizes or token estimates, determine compliance.
 
+#### Production corpus release — complete (2026-08-26 UTC)
+
+Sai's signed data release is now complete and remotely replayed. The
+two-trillion-byte ceiling applies to the broad English foundation; the two
+deliberate learning overlays are accounted separately rather than hidden inside
+that cap.
+
+| Component | Rows/documents | Logical UTF-8 bytes | Custody |
+| --- | ---: | ---: | --- |
+| English reality-anchor foundation | 75,519,548 | 1,999,999,999,667 | Private admitted Books plus pinned public PleIAs locators |
+| Educational-code overlay | 17,406,910 | 50,871,463,468 | Pinned Stack-Edu locators |
+| Verified cross-domain connection overlay | 3,052 | 3,449,253 | Published train-only deterministic gzip |
+| **Signed release total** | **92,929,510** | **2,050,874,912,388** | **Three hash-bound components** |
+
+The foundation contains 382,072 private Institutional Books rows and
+75,137,476 PleIAs rows. Its readiness receipt is
+`e6bcc97289cc7563583f69df11b2371931dff029e2c106d5bfe1244c8a19c942`.
+All 128 PleIAs locator shards replayed at Hugging Face commit
+[`292905ee5e439e3b56c373f85a8ceddfb9ce96fd`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/292905ee5e439e3b56c373f85a8ceddfb9ce96fd),
+and the complete Books/PleIAs metadata set replayed at commit
+[`1fa14755fc03a10918fcd0401252132938f0374a`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/1fa14755fc03a10918fcd0401252132938f0374a).
+The audit requires English labels, reusable-rights evidence, deterministic
+non-slop filtering, global exact-content deduplication, hash-balanced byte-cap
+selection, and exclusion of all matching known-quarantine rows. It does not
+claim that full official-benchmark decontamination or semantic deduplication of
+the bulk foundation is complete.
+
+The cross-domain overlay earned admission through a matched transfer test on
+the pinned SmolLM2-360M proxy, not by construction alone. Against identical
+held-out connection identities and equal token budgets, the screen improved
+connection NLL by **1.1560% versus unchanged** and **1.1106% versus the
+source-only equal-compute control**, with only **0.0835% source-anchor NLL
+regression versus that control**. Three fresh confirmation seeds all passed;
+their median improvements were **1.1557% versus unchanged** and **1.1049%
+versus source control**, with **0.0799% median source regression**. Confirmation
+receipt is
+`14d1022c3ea87514c319d8b9b71d4670ae4b55e0c028b2ff82f1dee9334ce6e6`.
+All 168 pair-disjoint development documents remain physically excluded from
+the 3,052-document training component. The admitted component replayed at
+Hugging Face commit
+[`7cf07ed683ddf09c682e3399cd949d6b2c488ea5`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/7cf07ed683ddf09c682e3399cd949d6b2c488ea5).
+This is positive small-proxy transfer evidence; it is not yet a 4B benchmark or
+general-capability claim.
+
+The canonical final release receipt is
+`86181995478518415e3ec44c825997e8636e6e22bfa159f149ae68c4ca0db52d`.
+Its exact 2,376-byte manifest, SHA-256
+`60c8e7b21c261301bc13a555bf4da5d2a78f6bc2172b2eface47fc071b4579aa`,
+was independently replayed at Hugging Face commit
+[`4bb4a5e0c01ec8fd255450726055c18905a43a00`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/4bb4a5e0c01ec8fd255450726055c18905a43a00).
+Publication receipt is
+`5c3cebf04bf850e96df1b972a3df9c7b96878a01b429367bd89a6f6bcf9f0f8a`.
+The finalizer completed as Stokes job `829247` with exit `0:0`; the repository
+passes **1,394 tests** and Ruff. Model training has not started, and the signed
+receipts keep 4B training unauthorized until the user's explicit order.
+
 The latest open-recipe evidence is reconciled in
 [`docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md`](docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md).
 Sai uses progressive composition with continuous broad rehearsal, retains
