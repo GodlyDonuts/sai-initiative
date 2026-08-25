@@ -923,6 +923,18 @@ recovered the exact 12,202,517-byte JSONL with SHA-256
 publication receipt
 `5f851099ffadeb92f261b2c088dd26cabf73dcd1b4652f110da35bcbeae8b8ae`
 is byte-mirrored to Stokes.
+An independent full-row replay at current HF head
+`5f624f7d7f1cf8abfbe1546f1b41af49ba22df75` reverified that exact LFS
+identity and all 3,220 decompressed candidates. It found 460 complete
+seven-document pairs—436 prospective train pairs and 24 physically separable
+development pairs—with the required overview, four grounded representations,
+analogy limits, and verification-question geometry. All 3,220 record, document,
+exact-content, normalized-content, and UTF-8 byte identities replayed uniquely;
+all passed the deterministic non-slop gate; all 20 semantic domains remained
+represented, with 161--455 documents per domain; and no validation failure was
+observed. The signed nontraining audit is
+`artifacts/sai_practical_cross_domain_connection_deep_replay_20260825_r1.json`,
+receipt `d976d7125a0bb04293c76788b5e9f48a9139692a53ef031f91cc9048008089c4`.
 The final loader must include only the train split and cannot declare this
 overlay training-ready until foundation deduplication and the held-out transfer
 ablation close.

@@ -1,0 +1,50 @@
+{
+  "candidate": {
+    "jsonl_bytes": 12202517,
+    "jsonl_sha256": "194c95f4b7fa4f7ff371b61f856e68cdcde5b73a651cc8bfbb28cf55364723b5",
+    "publication_path": "training/candidates/cross-domain-connections/20260826-r1/curriculum_candidates.jsonl.gz",
+    "published_gzip_bytes": 2265770,
+    "published_gzip_sha256": "c03cbb6b57bb70b4bf8800881c6b7adc79f75aa52e5d1cf55667d8455a12f82e",
+    "published_repository": "Godlydonuts/Sai",
+    "remote_replay_revision": "5f624f7d7f1cf8abfbe1546f1b41af49ba22df75",
+    "source_receipt_sha256": "8db1dc1f277b08a2b79ae7cc3d067ba49e3eadeb881ccc065caecc5f26a4fe1c"
+  },
+  "counts": {
+    "development_documents": 168,
+    "development_pairs": 24,
+    "documents": 3220,
+    "pairs": 460,
+    "semantic_domains": 20,
+    "train_documents": 3052,
+    "train_pairs": 436
+  },
+  "gates": {
+    "foundation_reconciliation_complete": false,
+    "four_b_training_authorized": false,
+    "positive_transfer_confirmation_complete": false,
+    "training_ready": false
+  },
+  "quality": {
+    "benchmark_decontamination_complete": true,
+    "content_hashes_unique": 3220,
+    "development_pair_identities_disjoint": true,
+    "document_identities_unique": 3220,
+    "independent_model_family_verification_complete": true,
+    "maximum_domain_documents": 455,
+    "maximum_non_ascii_alpha_fraction": 0.06910039113428944,
+    "mechanical_gate_pass_documents": 3220,
+    "minimum_domain_documents": 161,
+    "normalized_content_hashes_unique": 3220,
+    "pair_geometry": {
+      "analogy_limits": 1,
+      "bridge_overview": 1,
+      "verification_questions": 1,
+      "verified_representation": 4
+    },
+    "row_hash_and_byte_replay_failures": 0
+  },
+  "receipt_sha256": "d976d7125a0bb04293c76788b5e9f48a9139692a53ef031f91cc9048008089c4",
+  "runtime_commit": "d98f927edc112dc7ad25e389154469a32371dde6",
+  "schema": "sai-practical-cross-domain-connection-deep-replay-v1",
+  "status": "complete_nontraining_connection_candidate_deep_replay"
+}
