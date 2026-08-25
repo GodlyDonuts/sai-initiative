@@ -15,8 +15,8 @@ deterministic teaching sequence without changing its admitted content.
 
 ## Token horizon
 
-The full target is **4,000,000,000,000 tokens at sequence length 2,048**. It is
-exactly 1,953,125,000 packed sequences. This is an ambitious but evidence-based
+The full target is **4,000,000,000,000 tokens at sequence length 4,096**. It is
+exactly 976,562,500 packed sequences. This is an ambitious but evidence-based
 minimum for a frontier 1B attempt:
 
 - AllenAI's transparent OLMo 2 1B recipe trains stage 1 for 4T tokens and then
@@ -44,7 +44,7 @@ fractions and both difficulty tails.
 | Annealing | 3.8–4.0T | 10% | 20% | 35% | 35% |
 
 Foundation never reaches zero, expert material appears from the first stage,
-and every stage boundary aligns with a 2,048-token sequence. Integer sequence
+and every stage boundary aligns with a 4,096-token sequence. Integer sequence
 allocations use deterministic largest-remainder rounding.
 
 Difficulty is not inferred from source name alone. The production index binds:
@@ -83,7 +83,8 @@ epochs rather than pretending duplicated exposures are new information.
 ## Tokenizer
 
 The production capacity is fixed at **48,000 lossless byte-level BPE tokens**
-with tied embeddings and explicit pad/BOS/EOS/think/code tokens. The old 48K
+with untied input/output embeddings and explicit pad/BOS/EOS/think/code tokens.
+The old 48K
 tree is only a mechanically qualified default because its tournament population
 underrepresented code, mathematics, science, and technical text. A new 1B
 production tree must be trained on a stratified sample of all three released
@@ -97,6 +98,25 @@ components plus the complete connection overlay, then pass:
 
 This contract chooses capacity and pretokenization for launch. It does not claim
 that 48K is a universal empirical winner.
+
+## Production model and trainer
+
+Sai uses the published OLMo 2 1B design as the conservative architecture
+baseline: 16 reordered-norm Transformer blocks, width 2,048, 16 attention
+heads, QK normalization, 500,000-theta RoPE, SwiGLU width 5,504, FlashAttention,
+no bias or dropout, and untied embeddings. With Sai's 48K vocabulary this is
+1,006,241,792 parameters. The architecture is deliberately not presented as a
+Sai invention. It prevents another unvalidated mixer from confounding the data
+and curriculum experiment.
+
+The distributed training runtime is pinned to AllenAI OLMo commit
+`090253dac6688f2532509daa7aa2eb5fae50e956` and OLMo-core commit
+`b7e9671d7ea48af94838c4f124703c3ae36f0c70`. The optimizer follows the
+published 1B stage-1 recipe: AdamW at 4e-4, betas 0.9/0.95, weight decay 0.1,
+8,388,608,000 warmup tokens, cosine decay to 10% of peak, BF16 AMP, and FSDP
+`SHARD_GRAD_OP`. The ordinary global batch is 512 sequences; exact stage and
+terminal boundaries use a smaller deterministic final batch rather than
+silently crossing a curriculum boundary.
 
 ## Launch-readiness gates
 

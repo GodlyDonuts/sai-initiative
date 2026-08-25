@@ -12,7 +12,7 @@ from sai.data.token_stream import canonical_sha256
 
 SCHEMA = "sai-1b-4t-spiral-contract-v1"
 BANDS = ("foundation", "intermediate", "advanced", "expert")
-SEQUENCE_LENGTH = 2_048
+SEQUENCE_LENGTH = 4_096
 TOTAL_TOKENS = 4_000_000_000_000
 STAGES = (
     ("foundation", 1_000_000_000_000, (65, 25, 8, 2)),
