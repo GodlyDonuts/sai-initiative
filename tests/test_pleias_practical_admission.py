@@ -9,6 +9,9 @@ from sai.data.institutional_books_practical_admission import (
 )
 from sai.data.pleias_practical_admission import (
     _UPSERT,
+    SQLITE_CACHE_KIB,
+    SQLITE_PAGE_BYTES,
+    SQLITE_WORKER_THREADS,
     _open_database,
     _output_shard,
     _valid_locator,
@@ -50,6 +53,13 @@ def test_valid_locator_is_english_and_structurally_complete() -> None:
 def test_sqlite_exact_dedup_keeps_smallest_identity(tmp_path: Path) -> None:
     connection = _open_database(tmp_path / "dedup.sqlite3")
     try:
+        assert connection.execute("PRAGMA page_size").fetchone()[0] == SQLITE_PAGE_BYTES
+        assert (
+            connection.execute("PRAGMA cache_size").fetchone()[0] == -SQLITE_CACHE_KIB
+        )
+        assert (
+            connection.execute("PRAGMA threads").fetchone()[0] == SQLITE_WORKER_THREADS
+        )
         connection.execute(
             _UPSERT,
             ("3" * 64, "f" * 64, 1, 10, 20, "public domain", '{"winner":false}'),

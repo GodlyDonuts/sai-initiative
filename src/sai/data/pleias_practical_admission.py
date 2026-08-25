@@ -25,6 +25,10 @@ from sai.data.pleias_practical_locator_scan import (
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 SCHEMA = "sai-pleias-practical-admission-receipt-v1"
+SQLITE_PAGE_BYTES = 65_536
+SQLITE_CACHE_KIB = 4 * 1024 * 1024
+SQLITE_MMAP_BYTES = 16 * 1024 * 1024 * 1024
+SQLITE_WORKER_THREADS = 4
 
 
 class PleiasPracticalAdmissionError(RuntimeError):
@@ -89,9 +93,19 @@ def _valid_locator(row: dict[str, Any]) -> bool:
 
 def _open_database(path: Path) -> sqlite3.Connection:
     connection = sqlite3.connect(path)
+    # Admission runs on node-local scratch with 64 GiB and four reserved CPUs.
+    # Use a bounded fraction of that memory for the content-hash B-tree and let
+    # SQLite parallelize eligible sort work. These pragmas change only physical
+    # index execution; winner ordering and emitted scientific bytes are fixed by
+    # the SQL statements below.
+    connection.execute(f"PRAGMA page_size={SQLITE_PAGE_BYTES}")
     connection.execute("PRAGMA journal_mode=OFF")
     connection.execute("PRAGMA synchronous=OFF")
     connection.execute("PRAGMA temp_store=FILE")
+    connection.execute(f"PRAGMA cache_size=-{SQLITE_CACHE_KIB}")
+    connection.execute(f"PRAGMA mmap_size={SQLITE_MMAP_BYTES}")
+    connection.execute(f"PRAGMA threads={SQLITE_WORKER_THREADS}")
+    connection.execute("PRAGMA locking_mode=EXCLUSIVE")
     connection.execute(
         """
         CREATE TABLE winners (
