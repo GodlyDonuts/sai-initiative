@@ -282,10 +282,19 @@ def run(
     population_root: Path,
     output: Path,
     token: str,
+    seed: int = SEED,
 ) -> dict[str, Any]:
     """Train/evaluate one arm with matched model, token, seed, and score custody."""
 
-    if arm not in ARMS or output.exists() or output.is_symlink() or not token:
+    if (
+        arm not in ARMS
+        or output.exists()
+        or output.is_symlink()
+        or not token
+        or isinstance(seed, bool)
+        or not isinstance(seed, int)
+        or not 0 <= seed < 2**32
+    ):
         raise BridgeTransferScreenError("screen arguments differ")
     code_commit = os.environ.get("SAI_RUNTIME_COMMIT", "")
     if len(code_commit) != 40 or any(
@@ -301,9 +310,9 @@ def run(
         raise BridgeTransferScreenError("screen runtime is incomplete") from error
     if not torch.cuda.is_available() or not torch.cuda.is_bf16_supported():
         raise BridgeTransferScreenError("H100 BF16 runtime is unavailable")
-    random.seed(SEED)
-    torch.manual_seed(SEED)
-    torch.cuda.manual_seed_all(SEED)
+    random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
     torch.use_deterministic_algorithms(True, warn_only=False)
     sets, lineage = build_text_sets(reconciliation_root, population_root)
     snapshot = Path(
@@ -371,7 +380,7 @@ def run(
         batches = math.ceil(len(train_chunks) / MICRO_BATCH_SIZE)
         planned_steps = math.ceil(batches / GRADIENT_ACCUMULATION)
         warmup_steps = max(1, round(planned_steps * WARMUP_FRACTION))
-        generator = random.Random(SEED)
+        generator = random.Random(seed)
         order = list(range(len(train_chunks)))
         generator.shuffle(order)
         optimizer.zero_grad(set_to_none=True)
@@ -427,7 +436,7 @@ def run(
             "eos_token_id": tokenizer.eos_token_id,
         },
         "training": {
-            "seed": SEED,
+            "seed": seed,
             "block_size": BLOCK_SIZE,
             "matched_token_budget": budget,
             "used_train_tokens": 0 if arm == "unchanged" else used_train_tokens,
@@ -481,6 +490,7 @@ def main() -> int:
     parser.add_argument("--population-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--token-env", default="HF_TOKEN")
+    parser.add_argument("--seed", type=int, default=SEED)
     args = parser.parse_args()
     result = run(
         args.arm,
@@ -488,6 +498,7 @@ def main() -> int:
         args.population_root,
         args.output,
         os.environ.get(args.token_env, ""),
+        args.seed,
     )
     print(
         json.dumps(

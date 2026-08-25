@@ -855,6 +855,16 @@ qualification succeeded independently for the launcher, all one-H100 arms, and
 the Newton aggregate. The launch receipt is
 `6eacd42e6570133b8f72bcd1d1cc7967bddae9adb16d807da5e32789df4232ec`.
 
+Fresh-seed confirmation is code-ready but deliberately unscheduled until that
+screen passes. Seeds `20260827`, `20260828`, and `20260829` each repeat the
+unchanged, source-control, and connection arms as nine independent one-H100
+jobs. Confirmation requires the treatment to clear the same capability and
+retention thresholds on **every** fresh seed; a median win cannot conceal a
+failed seed. Only that aggregate may authorize physical connection-component
+admission, and it still cannot authorize 4B training. The complete repository
+passes 1,353 tests after adding seed identity, cross-seed custody, negative-seed,
+and tamper coverage.
+
 #### Prerequisite-edge compiler
 
 Sai is also converting Hermès's document-level `prerequisites_assumed` and
