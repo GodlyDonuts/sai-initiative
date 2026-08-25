@@ -22,7 +22,7 @@ sai_python=/lustre/fs1/home/sa305415/shohin/envs/product-reasoning-b3a3603/bin/p
 "${sai_python}" -m pip install --disable-pip-version-check --no-deps \
   regex==2025.11.3 \
   safetensors==0.8.0 \
-  tokenizers==0.23.0
+  tokenizers==0.22.2
 "${sai_python}" - <<'PY'
 import json
 import regex
