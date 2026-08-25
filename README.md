@@ -186,25 +186,30 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T12:13Z: 122 PleIAs practical scan shards have
-closed with zero scientific errors. Their signed receipts alone account for
-**1,906,249,975,423 selected UTF-8 bytes** across 4,880 complete parents. Six
-remaining original tasks were separately proven to be infrastructure failures:
+Execution snapshot at 2026-08-25T12:49Z: all **128/128** PleIAs practical scan
+shards have closed with zero scientific errors. Their signed receipts account
+for **82,229,028 rows, 1,999,999,974,278 selected UTF-8 bytes, and
+498,725,358,245 source tokens** across 5,120 deterministically scanned parent
+prefixes. Six original tasks were separately proven to be infrastructure failures:
 their CPU counters stopped advancing and each process retained a dead HTTPS
 socket in `CLOSE-WAIT`. They had no receipt or final locator. Only those six
 tasks were canceled, and their six unclosed partial Parquets (437,552,767 bytes
 total) were permanently removed; those partials are not locally recoverable.
-Identity-preserving replacements `822087`--`822092` now run from immutable
+Identity-preserving replacements `822087`--`822092` ran from immutable
 commit `f4d27458b942b8bd4414b472a512db847d4f8bbc` with bounded connect/read
 timeouts, closed response custody, exact-hash retries, and unchanged source and
 sampling bytes. The replacement downloader independently replayed exact 8,710-
 and 104,183,282-byte Hugging Face objects on Stokes before launch. All six
-repairs remain healthy: shards 41, 50, 56, and 125 have each closed 36 parents,
-and shards 105 and 126 have each closed 35. Together they account for
-**84,700,213,738** additional selected bytes in create-only partial locators,
-or 90.35% of their six fixed byte caps.
-Shard allocations are still open, so this is measured work in progress rather
-than admitted corpus size. Institutional
+repairs closed at their unchanged byte caps, contributing **3,856,461 rows,
+93,749,998,855 logical text bytes, 23,375,622,235 source tokens, and
+546,533,902 physical locator bytes**. Their canonical receipts are
+`e49603c89796eb03dead23c2a465670d825dd2f49b4361b53056b607dd50251d`,
+`e14f08b6b07081a486b923ac64dfa638cf8511909670ba7cb5de527f36b35910`,
+`925c1b8b820beb01c5aa3eb25a562a0b1fb893de5c640430b0627ad8710d5bf4`,
+`3dbf3969408be3f555742e500cb0716dbb5ee39fc0393943096d8338d5d9f53a`,
+`68b9a55df698a3c042b414e4787e9320cae9fa78a11f08df96b561e028cc7d8a`,
+and `eaaf38105e702eef515be668f573166b6cf052b60fd62ee100af31250e66445a`
+for shards 41, 50, 56, 105, 125, and 126. Institutional
 Books practical admission has
 now closed successfully: **382,072 rows, 222,099,976,155 logical UTF-8 text
 bytes, and 69,795,954,639 enriched tokens** are admitted for private practical
@@ -220,9 +225,15 @@ parents and account for 78,372,567 rows, 1,906,249,975,423 logical text bytes,
 zero receipt, manifest-partition, file-size, or file-hash failures. The pinned
 Books receipt, 10,000-parent source manifest, and 1,548-row quarantine registry
 also replay cleanly inside the exact immutable admission runtime.
-This puts measured Books plus live PleIAs candidate mass at
-**2,128,349,951,578 bytes** before the six replacements, pending cross-source exact-dedup, and
-two-trillion-byte balance pass. The final admission still must prove the signed
+Each of the six repairs was then independently parsed row by row: every locator
+matched its exact repository, revision, source path, and parent SHA; row
+identities were unique within each shard; and all file, row, byte, and token
+totals replayed with zero failures. Admission job `822232` started automatically
+after the sixth dependency cleared and is now independently replaying all 128
+shards, enforcing the quarantine registry, global exact-content deduplication,
+and the deterministic byte balance. This puts measured Books plus final PleIAs
+candidate mass at **2,222,099,950,433 bytes** before cross-source exact-dedup
+and the two-trillion-byte balance pass. The final admission still must prove the signed
 post-dedup total is within 1.9--2.0 trillion bytes; crossing the raw candidate
 floor is not represented as completion. To concentrate scheduler slots and shared storage
 bandwidth on this critical path, 122 nonblocking metadata-recovery workers were deferred after
