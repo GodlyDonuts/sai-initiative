@@ -908,6 +908,22 @@ SHA-256. The full repository now passes **1,363 tests**; this code is staged
 preparation and cannot manufacture a release before the live foundation, code,
 and transfer gates actually pass.
 
+The educational-code gate has now closed in production. All **95** pinned
+Stack-Edu parents replayed into **17,406,910** admitted rows carrying
+**50,871,463,468 logical UTF-8 text bytes**. The admission receipt is
+`52d9eac0472fa561620b3985bddcf17bd1a8dd84453a19fa5c1bbc659bc45324`.
+All **29** nonempty locator objects were then published to `Godlydonuts/Sai`;
+the aggregate independently replayed every remote LFS identity at revision
+`bf691b1302d7bb223b779e38d7862f497ae89d04` and signed receipt
+`6bf70c0c8418c273a0c4fc53e910f5c0046535c0dfe7fccd466881e69470bb58`.
+The metadata publication linked that aggregate to the exact admission receipt
+and signed
+`90a70387635dff2fef395c486d758f1dd0dd8caf94d54b868b696c83168fcc54`.
+The full repository passes **1,364 tests** after the production parser-memory
+repair. This milestone does not weaken the final boundary: the signed release
+still cannot exist without a positive, published cross-domain connection
+component, and development connection identities remain physically excluded.
+
 #### Prerequisite-edge compiler
 
 Sai is also converting Hermès's document-level `prerequisites_assumed` and
