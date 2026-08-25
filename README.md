@@ -268,6 +268,23 @@ exact-dedup database. This is measured scan progress, not the post-dedup
 admitted total; publication and readiness remain dependency-bound to the
 signed final receipt.
 
+At the independently replayed 2026-08-25T14:38:30Z checkpoint, admission
+`822232` had advanced to **99/128** shards, **63,621,207** candidate rows, and
+**1,546,874,980,776** candidate text bytes. Its 62,453,645,312-byte node-local
+exact-dedup database was still changing, the live worker had written
+469,880,053,760 physical bytes with no canceled writes, and stderr remained
+the canonical empty file. In parallel, the premium Books compiler reached
+**1,640** unique signed judgments and **49** sealed logical shards covering
+1,577 identities; a full replay found zero invalid receipts, duplicate or
+unexpected identities, bad shard summaries, or persisted credentials. The
+exact public Hugging Face connection candidate at commit `5f624f7...49ba22`
+also replayed byte-for-byte at 2,265,770 bytes and SHA-256
+`c03cbb6b57bb70b4bf8800881c6b7adc79f75aa52e5d1cf55667d8455a12f82e`.
+These live observations are signed in
+`artifacts/sai_live_data_readiness_checkpoint_20260825_r2.json`, receipt
+`ec2c440b47c06bf19ffc29aebf2447e299e20876898fd2173867789f46fa93f4`;
+they are progress evidence, not a completed training release.
+
 A cross-cluster scheduler preflight also found that `SLURM_CONF_SERVER` cannot
 override an already-present local `slurm.conf` on a Stokes compute node. The
 old pending connection launchers `822003` and `822239` would therefore have
