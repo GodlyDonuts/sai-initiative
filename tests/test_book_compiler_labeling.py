@@ -446,4 +446,7 @@ def test_book_compiler_job_uses_an_immutable_runtime() -> None:
     assert 'SAI_RUNTIME_ROOT:?' in script
     assert 'SAI_RUNTIME_COMMIT:?' in script
     assert 'export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"' in script
-    assert 'export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src' not in script
+    assert (
+        'export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src'
+        not in script
+    )

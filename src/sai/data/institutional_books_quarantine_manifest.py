@@ -12,6 +12,8 @@ from typing import Any
 from sai.data.agent_labeling import _atomic_create
 from sai.data.institutional_books_compiler_aggregate import (
     SCHEMA as AGGREGATE_SCHEMA,
+)
+from sai.data.institutional_books_compiler_aggregate import (
     _load_json,
     _validate_population,
     _validate_receipt,

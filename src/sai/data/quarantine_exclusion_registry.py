@@ -28,11 +28,15 @@ class QuarantineExclusionRegistryError(RuntimeError):
 
 def _load_json(path: Path) -> dict[str, Any]:
     if not path.is_file() or path.is_symlink() or path.stat().st_nlink != 1:
-        raise QuarantineExclusionRegistryError("quarantine evidence is missing or unsafe")
+        raise QuarantineExclusionRegistryError(
+            "quarantine evidence is missing or unsafe"
+        )
     try:
         value = json.loads(path.read_bytes())
     except (OSError, json.JSONDecodeError) as error:
-        raise QuarantineExclusionRegistryError("quarantine evidence is invalid") from error
+        raise QuarantineExclusionRegistryError(
+            "quarantine evidence is invalid"
+        ) from error
     if not isinstance(value, dict):
         raise QuarantineExclusionRegistryError("quarantine evidence is invalid")
     return value
@@ -121,7 +125,9 @@ def _load_manifest(root: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
                 )
             rows.append(row)
     if len(rows) != descriptor["rows"]:
-        raise QuarantineExclusionRegistryError("quarantine manifest row coverage differs")
+        raise QuarantineExclusionRegistryError(
+            "quarantine manifest row coverage differs"
+        )
     return rows, {
         "root_name": root.name,
         "schema": receipt["schema"],

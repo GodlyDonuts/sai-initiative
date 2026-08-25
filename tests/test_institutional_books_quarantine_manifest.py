@@ -84,7 +84,10 @@ def test_book_quarantine_manifest_excludes_without_source_text(
     population, judgments, aggregate = _inputs(tmp_path, monkeypatch)
     output = tmp_path / "output"
     result = build_quarantine_manifest(population, judgments, aggregate, output)
-    rows = [json.loads(line) for line in (output / "quarantine_exclusions.jsonl").open()]
+    rows = [
+        json.loads(line)
+        for line in (output / "quarantine_exclusions.jsonl").open()
+    ]
     assert len(rows) == 1
     assert rows[0]["source_book_id"] == "bad-book"
     assert rows[0]["dataset_materialization_allowed"] is False

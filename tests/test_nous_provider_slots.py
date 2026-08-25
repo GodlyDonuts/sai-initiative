@@ -4,8 +4,8 @@ import pytest
 
 from sai.data.nous_compiler_worker import (
     HERMES_LOOPBACK_URL,
-    NousLabelWorkerError,
     OPENROUTER_URL,
+    NousLabelWorkerError,
     _shared_provider_concurrency,
     _shared_provider_request_slot,
 )

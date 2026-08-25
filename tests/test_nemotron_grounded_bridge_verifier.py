@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from copy import deepcopy
 import json
+from copy import deepcopy
 
 import pytest
 
@@ -12,7 +12,6 @@ from sai.data.nemotron_grounded_bridge_verifier import (
     execute_one,
 )
 from sai.data.nemotron_grounded_bridge_verifier_labeling import (
-    NemotronBridgeVerifierError,
     build_messages,
     normalize_model_judgment,
     repair_evidence_quotes,

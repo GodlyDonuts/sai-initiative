@@ -11,7 +11,6 @@ from typing import Any
 
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-
 SCREEN_LAUNCH_SCHEMA = "sai-bridge-transfer-newton-launch-v1"
 SCHEMA = "sai-bridge-transfer-confirmation-stage-v1"
 _HEX40 = re.compile(r"[0-9a-f]{40}")

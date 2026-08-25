@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 ROOT = Path(__file__).parents[1]
 SCRIPTS = (
     "admit_pleias_practical_core_stokes.sbatch",
@@ -23,7 +22,10 @@ def test_practical_release_graph_uses_one_verified_immutable_runtime() -> None:
         assert 'rev-parse HEAD' in script
         assert 'status --porcelain' in script
         assert 'export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"' in script
-        assert 'export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src' not in script
+        assert (
+            'export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src'
+            not in script
+        )
 
 
 def test_practical_admission_binds_manifest_and_quarantine_to_runtime() -> None:

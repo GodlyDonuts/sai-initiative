@@ -10,7 +10,6 @@ from sai.data.bridge_transfer_confirmation_stage import (
 )
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-
 SCREEN_COMMIT = "a" * 40
 CONFIRMATION_COMMIT = "b" * 40
 
