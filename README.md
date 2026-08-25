@@ -810,6 +810,16 @@ prospective train documents are silently omitted or mixed in before their
 foundation-overlap and positive-transfer gates close. The multi-terabyte core
 cannot be used to claim that connection data was included; the connection
 component has separate byte, row, split, verification, and curriculum custody.
+Practical-foundation reconciliation job `821936` is dependency-bound to exact
+PleIAs admission job `820649`. It will hash-replay the 382,072-row Books
+manifest and every final PleIAs locator, scan only the compact content-hash
+columns, promote a provisional development pair to train if either source
+anchor is already present in the training foundation, and withhold an exact
+generated-text duplicate. Its launch receipt is
+`e88d4e0983d9a3869e1134ddc5bbcf5c57488173d21c89ad8c31147595e1aad3`.
+This closes exact-content and source-split reconciliation without pretending it
+has performed normalized or semantic near-deduplication; positive transfer is
+still measured separately.
 
 #### Prerequisite-edge compiler
 
