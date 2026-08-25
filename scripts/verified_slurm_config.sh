@@ -24,7 +24,9 @@ sai_activate_verified_slurm_config() {
   [[ "${actual_sha256}" == "${expected_sha256}" ]] || return 2
 
   export SLURM_CONF="${config_path}"
-  unset SLURM_CONF_SERVER
+  # Batch jobs inherit the submitting cluster name. Leaving `stokes` here
+  # suppresses Newton's ClusterName even when SLURM_CONF points at Newton.
+  unset SLURM_CONF_SERVER SLURM_CLUSTER_NAME
   actual_cluster=
   # A newly started Stokes batch allocation can briefly return an empty
   # `scontrol show config` response while the explicitly selected Newton

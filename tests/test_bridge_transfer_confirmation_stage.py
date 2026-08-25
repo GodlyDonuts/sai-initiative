@@ -184,7 +184,7 @@ def test_verified_slurm_config_rejects_unbound_or_wrong_cluster_files() -> None:
     ).read_text(encoding="utf-8")
     assert '[[ -f "${config_path}" && ! -L "${config_path}" ]]' in script
     assert "sha256sum" in script
-    assert "unset SLURM_CONF_SERVER" in script
+    assert "unset SLURM_CONF_SERVER SLURM_CLUSTER_NAME" in script
     assert 'actual_cluster' in script
     assert (
         '[[ "${actual_cluster}" == "${expected_cluster}" ]] || return 2'
