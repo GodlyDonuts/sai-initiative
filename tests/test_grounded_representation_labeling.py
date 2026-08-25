@@ -165,6 +165,12 @@ def test_validation_hint_preserves_requested_representation_order() -> None:
     assert "supplied order" in validation_hint("representation order differs")
 
 
+def test_validation_hint_pins_representation_concept_geometry() -> None:
+    hint = validation_hint("representation concepts differs")
+    assert "concepts to a JSON list" in hint
+    assert "1..8 unique, nonempty, lowercase strings" in hint
+
+
 def test_rejects_representation_order_drift() -> None:
     payload = _payload()
     payload["representations"].reverse()

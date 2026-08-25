@@ -77,6 +77,12 @@ class GroundedRepresentationError(RuntimeError):
 def validation_hint(error: str) -> str:
     """Give a schema-preserving correction for common generation failures."""
 
+    if "representation concepts" in error:
+        return (
+            " Every representations entry must set concepts to a JSON list of "
+            "1..8 unique, nonempty, lowercase strings, each at most 96 "
+            "characters. Do not use title case, nested objects, or repeated labels."
+        )
     if "prerequisite edge differs" in error:
         return (
             " Every prerequisite_edges entry must use two different nonempty "

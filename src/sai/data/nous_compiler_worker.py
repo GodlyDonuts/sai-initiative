@@ -359,8 +359,12 @@ def execute_contract(
                 if isinstance(value, str) and 0 < len(value) <= (1 << 20):
                     prior_content = value
             if prior_content is not None:
-                validation_hint = ""
-                if "concepts differs" in str(error):
+                validation_hint = (
+                    validation_hint_function(str(error))
+                    if validation_hint_function is not None
+                    else ""
+                )
+                if not validation_hint and "concepts differs" in str(error):
                     validation_hint = (
                         " concepts_taught must be a JSON list containing at most "
                         "20 unique, nonempty, lowercase strings; each string must "
@@ -368,13 +372,16 @@ def execute_contract(
                         "not use title case, symbols as standalone entries, or "
                         "nested objects."
                     )
-                elif "style differs" in str(error):
+                elif not validation_hint and "style differs" in str(error):
                     validation_hint = (
                         " style must be exactly one of: "
                         + ", ".join(STYLES)
                         + ". Do not invent, combine, or qualify a style label."
                     )
-                elif "translation disposition differs" in str(error):
+                elif (
+                    not validation_hint
+                    and "translation disposition differs" in str(error)
+                ):
                     validation_hint = (
                         " translation_disposition must be exactly one string chosen "
                         "only from: "
@@ -382,7 +389,7 @@ def execute_contract(
                         + ". If source_language is english, use "
                         "not_needed_english and translation_priority=0."
                     )
-                elif (
+                elif not validation_hint and (
                     evidence_container_name == "document"
                     and "risks fields differ" in str(error)
                 ):
@@ -392,7 +399,7 @@ def execute_contract(
                         + ", ".join(RISK_KEYS)
                         + ". Do not omit, rename, or add any risk key."
                     )
-                elif (
+                elif not validation_hint and (
                     evidence_container_name == "document"
                     and "recommended representations differs" in str(error)
                 ):
@@ -402,7 +409,7 @@ def execute_contract(
                         + ", ".join(REPRESENTATIONS)
                         + ". Do not invent, repeat, or combine labels."
                     )
-                elif (
+                elif not validation_hint and (
                     evidence_container_name == "document"
                     and "non-English translation plan differs" in str(error)
                 ):
@@ -422,8 +429,6 @@ def execute_contract(
                         "preservation_policy=reject; do not retain it merely because "
                         "it names a valuable work."
                     )
-                elif validation_hint_function is not None:
-                    validation_hint = validation_hint_function(str(error))
                 body["messages"] = [
                     *base_messages,
                     {"role": "assistant", "content": prior_content},

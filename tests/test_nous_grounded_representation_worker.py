@@ -122,3 +122,31 @@ def test_load_candidates_rejects_duplicate_identity(tmp_path: Path) -> None:
     path.write_text(line + "\n" + line + "\n")
     with pytest.raises(NousLabelWorkerError, match="duplicated"):
         load_candidates(path)
+
+
+def test_execute_one_uses_representation_specific_concept_retry_hint() -> None:
+    calls = []
+
+    def request_function(**kwargs):
+        calls.append(kwargs["body"])
+        response = _response()
+        if len(calls) == 1:
+            payload = json.loads(response["choices"][0]["message"]["content"])
+            payload["representations"][0]["concepts"] = ["Historical Craft"]
+            response["choices"][0]["message"]["content"] = json.dumps(payload)
+        return response, 200
+
+    execute_one(
+        _candidate(),
+        model="stealth/ox-alpha",
+        base_url="http://127.0.0.1:8645/v1",
+        api_key="loopback-only",
+        timeout_seconds=10,
+        maximum_attempts=2,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+    repair = calls[1]["messages"][-1]["content"]
+    assert "concepts to a JSON list" in repair
+    assert "1..8 unique, nonempty, lowercase strings" in repair
+    assert "concepts_taught" not in repair
