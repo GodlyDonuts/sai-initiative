@@ -100,8 +100,55 @@ was independently replayed at Hugging Face commit
 Publication receipt is
 `5c3cebf04bf850e96df1b972a3df9c7b96878a01b429367bd89a6f6bcf9f0f8a`.
 The finalizer completed as Stokes job `829247` with exit `0:0`; the repository
-passes **1,394 tests** and Ruff. Model training has not started, and the signed
+passes **1,421 tests** and Ruff. Model training has not started, and the signed
 receipts keep 4B training unauthorized until the user's explicit order.
+
+#### One-billion-parameter launch preparation — active (2026-08-25 EDT)
+
+The 1B target has an exact 4,000,000,000,000-token spiral contract over 4,096
+token sequences. The five stages retain foundational rehearsal and expert
+exposure throughout while moving the center of gravity from 65/25/8/2 percent
+foundation/intermediate/advanced/expert in the first trillion tokens to
+10/20/35/35 percent in the final 200 billion tokens. The conservative dense
+host contains exactly **1,006,241,792 parameters** with a 48K untied vocabulary,
+2,048 hidden width, 16 layers, 16 attention heads, conventional SwiGLU, QK
+normalization, and 500K-theta RoPE. Its pinned runtime is AllenAI OLMo commit
+`090253dac6688f2532509daa7aa2eb5fae50e956` plus OLMo-core v1.8.0 commit
+`7899e7cefaae44e30766ee654bd177f1e1474bc7`.
+
+The production tokenizer qualification completed as Stokes job `829675` in
+1:07:35. The selected 48K byte-fallback tokenizer has tree identity
+`a217db3495a5a8aca22381669ca20ad2ccdd031c5190d2ce4200173a970723cf`
+and qualification receipt
+`c3b8da7d5b640edc278e92a8daf3a6ea12b6c14762e6ef960a735a9c5c63a1df`.
+It encoded 48,806 sampled documents containing 2,242,943,450 UTF-8 bytes into
+545,006,881 tokens, or 4.11544 UTF-8 bytes per token, with zero unknown tokens,
+zero empty encodings, and zero round-trip failures. The protected English,
+code, math, LaTeX, URL, identifier, whitespace, Greek, and Unicode fallback
+suite also had zero failures.
+
+The resulting physical-window plan is exactly **102,400,000,000 tokens** and
+**204,800,000,000 uint16 bytes**. It selects 66.56B foundation, 25.6B
+intermediate, 8.192B advanced, and 2.048B expert tokens, and its measured source
+ledger has enough unique train material in every band before selection. Receipt
+is `f429c360ef343ad2aa2f64339f2ad52ee498e332330aeeae4d6906fd17093fda`.
+Independent PleIAs, educational-code, Institutional Books, and admitted
+connection pack lanes are active under Stokes jobs `830012`–`830015`; exact
+aggregate, stage schedule, configuration, and self-contained Hugging Face
+publication remain dependency-bound behind them.
+
+The 12.5GB Hugging Face head is intentionally a source-locator and evidence
+registry, not the two-trillion-byte source corpus and not the physical training
+stream. The active publication job `830330` corrects this operational gap by
+uploading the content-addressed packed uint16 files, qualified tokenizer, exact
+stage-exposure manifest, and lineage receipts. It will not sign success unless
+every remote LFS object has the expected byte count and SHA-256.
+
+The final readiness gate also requires the immutable CUDA environment and a
+single-H100 forward/backward preflight that constructs no optimizer, performs
+no update, and writes no checkpoint. Only after all signed inputs agree will
+`one_b_readiness.py` emit `training_ready_awaiting_explicit_user_order`.
+Training is not currently ready and has not started.
 
 The latest open-recipe evidence is reconciled in
 [`docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md`](docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md).
