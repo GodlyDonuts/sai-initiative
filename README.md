@@ -259,15 +259,19 @@ failed their Newton H100 preflight or addressed the wrong scheduler after the
 foundation closed. They were canceled before execution and replaced only after
 the current Newton and Stokes configurations were exported to immutable shared
 files, assigned SHA-256 identities, and tested in both directions. Runtime
-commit `5860f1c6fe3c6f03c126b71f9f5519ba4e2cba6d` now requires the exact
+commit `d98f927edc112dc7ad25e389154469a32371dde6` now requires the exact
 configuration path and hash, sets `SLURM_CONF` explicitly, and verifies the
-reported cluster name before any scheduler query or submission. Replacement
-screen launcher `822250` waits on reconciliation `822238`; confirmation handoff
-`822251` waits on `822250` and remains bound to foundation audit `822236`.
+reported cluster name before any scheduler query or submission. Every helper
+check now returns failure explicitly rather than relying on Bash `errexit`;
+wrong-hash, wrong-cluster, and symlink tamper probes all fail closed.
+Replacement screen launcher `822252` waits on reconciliation `822238`;
+confirmation handoff `822253` waits on `822252` and remains bound to foundation
+audit `822236`. The first repaired pending pair `822250`/`822251` was canceled
+before execution when the fail-closed hardening superseded it.
 The repair launched no H100 work and changed no scientific bytes. Its durable
 receipt is mirrored at
-`artifacts/sai_cross_cluster_slurm_config_repair_20260825_r1.json`, receipt
-`30fefef2987a8b1a27323cbe8e7460a5f408e196ad4e19d5eb4b93371df58d93`.
+`artifacts/sai_cross_cluster_slurm_config_repair_20260825_r2.json`, receipt
+`1c588cb8ea5a209b99794d976f3e912461a0f6747b578348e641b45212f42a8a`.
 The repaired repository passes **1,380 tests**, `ruff`, and shell syntax checks.
 
 The repaired premium Books path now runs independently of bulk admission. A
