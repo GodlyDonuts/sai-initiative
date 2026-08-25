@@ -37,6 +37,30 @@ def _nullable(value: Any) -> str | None:
     return value if isinstance(value, str) and value else None
 
 
+def _bounded_metadata_strings(
+    value: Any, *, maximum: int, label: str
+) -> list[str]:
+    """Deduplicate archive metadata and retain a deterministic bounded prefix."""
+
+    if value is None:
+        return []
+    if (
+        not isinstance(value, list)
+        or isinstance(maximum, bool)
+        or maximum < 1
+        or any(
+            not isinstance(item, str) or not item or len(item) > 512
+            for item in value
+        )
+    ):
+        raise InstitutionalBooksError(f"{label} differs")
+    # The unmodified metadata row remains bound by metadata_row_sha256.  The
+    # prompt-facing view removes repeated identifiers and bounds pathological
+    # edition clusters so one archive record cannot break or dominate a book
+    # review request.
+    return list(dict.fromkeys(value))[:maximum]
+
+
 def _utf8_prefix(value: str, maximum: int) -> str:
     encoded = value.encode("utf-8")
     if len(encoded) <= maximum:
@@ -109,11 +133,27 @@ def build_book_candidate(
         or not isinstance(enriched_row.get(TEXT_FIELD), str)
     ):
         raise InstitutionalBooksError("Institutional Books join differs")
-    duplicate_barcodes = metadata_row["likely_duplicates_barcodes_gen"] or []
-    identifiers = metadata_row["identifiers_src"] or {
+    duplicate_barcodes = _bounded_metadata_strings(
+        metadata_row["likely_duplicates_barcodes_gen"],
+        maximum=256,
+        label="duplicate barcodes",
+    )
+    raw_identifiers = metadata_row["identifiers_src"] or {
         "lccn": [],
         "isbn": [],
         "ocolc": [],
+    }
+    if not isinstance(raw_identifiers, dict) or set(raw_identifiers) != {
+        "lccn",
+        "isbn",
+        "ocolc",
+    }:
+        raise InstitutionalBooksError("identifiers differ")
+    identifiers = {
+        field: _bounded_metadata_strings(
+            raw_identifiers[field], maximum=64, label=field
+        )
+        for field in ("lccn", "isbn", "ocolc")
     }
     rights = metadata_row["hathitrust_data_ext"] or {}
     metadata_sha256 = canonical_sha256(metadata_row)
@@ -129,6 +169,9 @@ def build_book_candidate(
         "enriched_row_sha256": enriched_sha256,
         "join_key": barcode,
         "excerpt_policy": "beginning_middle_end_utf8_32768_v2",
+        "bibliographic_normalization_policy": (
+            "stable_first_unique_identifiers_64_duplicate_barcodes_256_v1"
+        ),
     }
     candidate = {
         "schema": CANDIDATE_SCHEMA,

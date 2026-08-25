@@ -75,3 +75,27 @@ def test_build_book_candidate_rejects_cross_book_join_and_metadata_tamper() -> N
     metadata.pop("hathitrust_data_ext")
     with pytest.raises(InstitutionalBooksError, match="metadata fields"):
         build_book_candidate(metadata, _enriched())
+
+
+def test_build_book_candidate_bounds_pathological_identifier_clusters() -> None:
+    metadata = _metadata()
+    metadata["identifiers_src"]["isbn"] = [
+        f"978000000{i:03d}" for i in range(70)
+    ] + ["978000000000"]
+    metadata["likely_duplicates_barcodes_gen"] = [
+        f"book-{index:03d}" for index in range(260)
+    ] + ["book-000"]
+    candidate = build_book_candidate(metadata, _enriched())
+    assert candidate["bibliographic"]["identifiers_src"]["isbn"] == [
+        f"978000000{i:03d}" for i in range(64)
+    ]
+    assert candidate["bibliographic"]["likely_duplicates_barcodes_gen"] == [
+        f"book-{index:03d}" for index in range(256)
+    ]
+
+
+def test_build_book_candidate_rejects_invalid_archive_identifier_values() -> None:
+    metadata = _metadata()
+    metadata["identifiers_src"]["isbn"] = ["valid", ""]
+    with pytest.raises(InstitutionalBooksError, match="isbn"):
+        build_book_candidate(metadata, _enriched())
