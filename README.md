@@ -186,7 +186,7 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T12:03Z: 122 PleIAs practical scan shards have
+Execution snapshot at 2026-08-25T12:13Z: 122 PleIAs practical scan shards have
 closed with zero scientific errors. Their signed receipts alone account for
 **1,906,249,975,423 selected UTF-8 bytes** across 4,880 complete parents. Six
 remaining original tasks were separately proven to be infrastructure failures:
@@ -199,10 +199,10 @@ commit `f4d27458b942b8bd4414b472a512db847d4f8bbc` with bounded connect/read
 timeouts, closed response custody, exact-hash retries, and unchanged source and
 sampling bytes. The replacement downloader independently replayed exact 8,710-
 and 104,183,282-byte Hugging Face objects on Stokes before launch. All six
-repairs remain healthy: shard 50 has closed 35 parents, and shards 41, 56, 105,
-125, and 126 have each closed 34. Together they account for
-**81,187,711,216** additional selected bytes in create-only partial locators,
-or 86.60% of their six fixed byte caps.
+repairs remain healthy: shards 41, 50, 56, and 125 have each closed 36 parents,
+and shards 105 and 126 have each closed 35. Together they account for
+**84,700,213,738** additional selected bytes in create-only partial locators,
+or 90.35% of their six fixed byte caps.
 Shard allocations are still open, so this is measured work in progress rather
 than admitted corpus size. Institutional
 Books practical admission has
@@ -262,13 +262,15 @@ latency without weakening downstream independent-verifier gates. The complete
 repository passes **1,378 tests**, including a reproduction that alternates the
 two observed failures before returning a valid third response.
 
-At the 2026-08-25T11:49Z execution snapshot, the immutable replacement workers
-have created **1,056** signed book judgments and sealed **30** logical-shard
+At the 2026-08-25T12:13Z execution snapshot, the immutable replacement workers
+have created **1,187** signed book judgments and sealed **34** logical-shard
 summaries. The cumulative-validation repair closed both previously stubborn
 shards 3 and 65 at exact 34/34 and 38/38 identity coverage; later shard lanes
 continue automatically under the same ten-slot request ceiling. Newly sealed
 shards 101 and 161 independently replay at exact 31/31 and 29/29 identity
-coverage with valid canonical hashes and no persisted API credentials. Ordinary 429
+coverage, and shards 130--133 replay at exact 40/40, 26/26, 44/44, and 28/28
+coverage. Every live judgment independently replays with a unique identity,
+valid canonical hash, and no persisted API credentials. Ordinary 429
 and strict evidence retries remain resumable and do not relax the book schema.
 
 The practical corpus now also has a separate educational-code overlay instead
@@ -995,6 +997,9 @@ the aggregate independently replayed every remote LFS identity at revision
 The metadata publication linked that aggregate to the exact admission receipt
 and signed
 `90a70387635dff2fef395c486d758f1dd0dd8caf94d54b868b696c83168fcc54`.
+An independent live replay at the pinned revision revalidated all 32 signed
+publication receipts, all 29 nonempty remote LFS sizes and SHA-256 identities,
+and 2,410,799,313 physical locator bytes with zero failures.
 The full repository passes **1,364 tests** after the production parser-memory
 repair. This milestone does not weaken the final boundary: the signed release
 still cannot exist without a positive, published cross-domain connection
