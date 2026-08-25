@@ -28,7 +28,7 @@ export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
 sai_manifest=/lustre/fs1/home/sa305415/sai-initiative/artifacts/sai_hf_materialized_source_lake_20260825_r1/manifest.jsonl
 sai_scan=/lustre/fs1/home/sa305415/sai_data_sources/stack-edu-practical-locators-20260826-r1
 sai_quarantine=/lustre/fs1/home/sa305415/sai-initiative/artifacts/sai_quarantine_exclusion_registry_20260826_r6
-sai_output=/lustre/fs1/home/sa305415/sai_data_sources/stack-edu-practical-admission-20260826-r1
+sai_output=/lustre/fs1/home/sa305415/sai_data_sources/common-pile-stack-edu-practical-admission-20260826-r1
 
 python -m sai.data.common_pile_stack_edu_practical_admission \
   --manifest "${sai_manifest}" \
