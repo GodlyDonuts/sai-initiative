@@ -242,6 +242,20 @@ rule were preserved in durable Stokes evidence. An automatic redispatch was
 also stopped, leaving zero metadata-recovery tasks active and the completed
 receipts intact.
 
+The complete 128-shard quality-route replay explains what entered that
+candidate mass. From **360,747,800** scanned source rows, the frozen policy held
+**260,945,309** non-English rows, **7,809,790** rows without admitted rights,
+**5,308,290** structurally unusable rows, **2,731,234** undersized rows,
+**478,100** high-confidence hard rejects, **102,316** duplicated-boilerplate
+cleanup cases, and every other nonpass route. Exactly **83,368,765** rows passed
+the deterministic English/reusable/non-slop gate; the per-shard byte caps then
+retained **82,229,028** locators totaling **1,999,999,974,278** source bytes.
+All 128 signed route receipts rehash under ordered digest
+`9111eacda6e8328c64fcec5a3047f60cdc9537b3781892c24c85330cbc75d766`.
+The compact replay artifact is
+`artifacts/sai_pleias_practical_quality_route_replay_20260825_r1.json`, receipt
+`7eeeff2eb2e561c7514bbb7dbbfd95e23b546f451d16912be5a7fa35cffcd088`.
+
 At the 2026-08-25T13:15Z checkpoint, admission `822232` had crossed its first
 quarter boundary: **33/128** locator shards replayed, **21,195,091** candidate
 rows and **515,624,994,591** candidate text bytes entered the disk-backed

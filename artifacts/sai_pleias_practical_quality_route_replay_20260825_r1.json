@@ -1,0 +1,28 @@
+{
+  "failures": 0,
+  "locator_hashes_previously_replayed": true,
+  "ordered_receipts_sha256": "9111eacda6e8328c64fcec5a3047f60cdc9537b3781892c24c85330cbc75d766",
+  "receipt_sha256": "7eeeff2eb2e561c7514bbb7dbbfd95e23b546f451d16912be5a7fa35cffcd088",
+  "route_counts": {
+    "hold_cleanup_review": 102316,
+    "hold_context_review": 1324,
+    "hold_hard_reject": 478100,
+    "hold_missing_required_value": 2534,
+    "hold_nonenglish": 260945309,
+    "hold_rights": 7809790,
+    "hold_structural": 5308290,
+    "hold_too_large": 138,
+    "hold_too_short": 2731234,
+    "pass_mechanical_gate": 83368765,
+    "pass_over_shard_byte_cap": 1139737,
+    "selected_locators": 82229028,
+    "source_rows": 360747800
+  },
+  "scanned_parents": 5120,
+  "schema": "sai-pleias-practical-quality-route-replay-v1",
+  "selected_rows": 82229028,
+  "selected_source_tokens": 498725358245,
+  "selected_text_utf8_bytes": 1999999974278,
+  "shards": 128,
+  "status": "complete_128_shard_quality_route_receipt_replay"
+}
