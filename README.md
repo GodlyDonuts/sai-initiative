@@ -846,6 +846,13 @@ authorizes matched multi-seed confirmation, not 4B training or a capability
 claim. The final signed corpus must physically include the confirmed train
 overlay and must keep its development identities excluded.
 
+Staged launcher job `822003` now holds only a one-CPU Stokes dependency on
+reconciliation job `821936`; it requests no GPU while waiting. Its immutable
+runtime is commit `dfa62e149f6bafe68b05ba99c3294e23c7c4fa86`, and static Slurm
+qualification succeeded independently for the launcher, all one-H100 arms, and
+the Newton aggregate. The launch receipt is
+`6eacd42e6570133b8f72bcd1d1cc7967bddae9adb16d807da5e32789df4232ec`.
+
 #### Prerequisite-edge compiler
 
 Sai is also converting Hermès's document-level `prerequisites_assumed` and
