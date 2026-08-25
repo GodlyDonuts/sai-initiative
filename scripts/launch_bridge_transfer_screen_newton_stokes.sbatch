@@ -15,7 +15,8 @@ set -euo pipefail
 
 : "${SAI_RUNTIME_ROOT:?immutable Sai runtime root is required}"
 : "${SAI_RUNTIME_COMMIT:?immutable Sai runtime commit is required}"
-: "${SAI_NEWTON_SLURM_CONF_SERVER:?Newton Slurm configuration server is required}"
+: "${SAI_NEWTON_SLURM_CONF_PATH:?Newton Slurm configuration path is required}"
+: "${SAI_NEWTON_SLURM_CONF_SHA256:?Newton Slurm configuration hash is required}"
 
 [[ "$(git -C "${SAI_RUNTIME_ROOT}" rev-parse HEAD)" == "${SAI_RUNTIME_COMMIT}" ]]
 [[ -z "$(git -C "${SAI_RUNTIME_ROOT}" status --porcelain)" ]]
@@ -35,7 +36,11 @@ aggregate_script="${SAI_RUNTIME_ROOT}/scripts/aggregate_bridge_transfer_screen_s
 mkdir -p "${evidence_root}"
 mkdir "${state_root}"
 
-export SLURM_CONF_SERVER="${SAI_NEWTON_SLURM_CONF_SERVER}"
+source "${SAI_RUNTIME_ROOT}/scripts/verified_slurm_config.sh"
+sai_activate_verified_slurm_config \
+  "${SAI_NEWTON_SLURM_CONF_PATH}" \
+  "${SAI_NEWTON_SLURM_CONF_SHA256}" \
+  newton
 sinfo -p normal -h -o '%G' | grep -qx 'gpu:nvidia_h100_pcie:2(S:0-1)'
 
 declare -a submitted=()

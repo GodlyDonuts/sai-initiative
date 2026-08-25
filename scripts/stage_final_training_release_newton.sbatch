@@ -15,7 +15,8 @@ set -euo pipefail
 
 : "${SAI_RUNTIME_ROOT:?immutable Sai runtime root is required}"
 : "${SAI_RUNTIME_COMMIT:?immutable Sai runtime commit is required}"
-: "${SAI_STOKES_SLURM_CONF_SERVER:?Stokes Slurm configuration server is required}"
+: "${SAI_STOKES_SLURM_CONF_PATH:?Stokes Slurm configuration path is required}"
+: "${SAI_STOKES_SLURM_CONF_SHA256:?Stokes Slurm configuration hash is required}"
 : "${SAI_FOUNDATION_AUDIT_JOB_ID:?foundation audit job identity is required}"
 [[ "$(git -C "${SAI_RUNTIME_ROOT}" rev-parse HEAD)" == "${SAI_RUNTIME_COMMIT}" ]]
 [[ -z "$(git -C "${SAI_RUNTIME_ROOT}" status --porcelain)" ]]
@@ -62,7 +63,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-export SLURM_CONF_SERVER="${SAI_STOKES_SLURM_CONF_SERVER}"
+source "${SAI_RUNTIME_ROOT}/scripts/verified_slurm_config.sh"
+sai_activate_verified_slurm_config \
+  "${SAI_STOKES_SLURM_CONF_PATH}" \
+  "${SAI_STOKES_SLURM_CONF_SHA256}" \
+  stokes
 sacct -n -X -P -j "${SAI_FOUNDATION_AUDIT_JOB_ID}" --format=JobIDRaw | \
   grep -qx "${SAI_FOUNDATION_AUDIT_JOB_ID}|"
 final_job_id="$({ sbatch --parsable \

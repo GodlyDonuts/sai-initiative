@@ -127,7 +127,11 @@ def test_stage_job_has_no_gpu_and_uses_exact_afterok_handoff() -> None:
     assert script.count("sbatch --parsable") == 1
     assert "SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT}" in script
     assert "SAI_SCREEN_RUNTIME_COMMIT" in script
-    assert "SAI_STOKES_SLURM_CONF_SERVER" in script
+    assert "SAI_NEWTON_SLURM_CONF_PATH" in script
+    assert "SAI_NEWTON_SLURM_CONF_SHA256" in script
+    assert "SAI_STOKES_SLURM_CONF_PATH" in script
+    assert "SAI_STOKES_SLURM_CONF_SHA256" in script
+    assert "sai_activate_verified_slurm_config" in script
     assert "SAI_FOUNDATION_AUDIT_JOB_ID" in script
     assert "four_b_training_authorized" not in script
 
@@ -139,7 +143,8 @@ def test_final_release_stage_waits_for_both_clusters_without_a_gpu() -> None:
     ).read_text(encoding="utf-8")
     assert "#SBATCH --no-requeue" in script
     assert "#SBATCH --gres" not in script
-    assert 'SAI_STOKES_SLURM_CONF_SERVER:?' in script
+    assert 'SAI_STOKES_SLURM_CONF_PATH:?' in script
+    assert 'SAI_STOKES_SLURM_CONF_SHA256:?' in script
     assert 'SAI_FOUNDATION_AUDIT_JOB_ID:?' in script
     assert 'complete_bridge_training_component_hf_publication' in script
     assert 'development_rows_uploaded' in script
@@ -156,4 +161,29 @@ def test_confirmation_launcher_stages_final_release_after_publication() -> None:
     assert "stage_final_training_release_newton.sbatch" in script
     assert '--dependency="afterok:${publication_id}"' in script
     assert 'SAI_FOUNDATION_AUDIT_JOB_ID=${SAI_FOUNDATION_AUDIT_JOB_ID}' in script
+    assert 'SAI_STOKES_SLURM_CONF_PATH=${SAI_STOKES_SLURM_CONF_PATH}' in script
+    assert 'SAI_STOKES_SLURM_CONF_SHA256=${SAI_STOKES_SLURM_CONF_SHA256}' in script
     assert '"final_release_stage_job": int(final_stage_id)' in script
+
+
+def test_initial_screen_launcher_forces_verified_newton_configuration() -> None:
+    script = (
+        Path(__file__).parents[1]
+        / "scripts/launch_bridge_transfer_screen_newton_stokes.sbatch"
+    ).read_text(encoding="utf-8")
+    assert 'SAI_NEWTON_SLURM_CONF_PATH:?' in script
+    assert 'SAI_NEWTON_SLURM_CONF_SHA256:?' in script
+    assert "sai_activate_verified_slurm_config" in script
+    assert "newton" in script
+    assert "SAI_NEWTON_SLURM_CONF_SERVER" not in script
+
+
+def test_verified_slurm_config_rejects_unbound_or_wrong_cluster_files() -> None:
+    script = (
+        Path(__file__).parents[1] / "scripts/verified_slurm_config.sh"
+    ).read_text(encoding="utf-8")
+    assert '[[ -f "${config_path}" && ! -L "${config_path}" ]]' in script
+    assert "sha256sum" in script
+    assert "unset SLURM_CONF_SERVER" in script
+    assert 'actual_cluster' in script
+    assert '[[ "${actual_cluster}" == "${expected_cluster}" ]]' in script

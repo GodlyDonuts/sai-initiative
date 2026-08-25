@@ -16,8 +16,10 @@ set -euo pipefail
 : "${SAI_RUNTIME_ROOT:?immutable Sai runtime root is required}"
 : "${SAI_RUNTIME_COMMIT:?immutable Sai runtime commit is required}"
 : "${SAI_SCREEN_RUNTIME_COMMIT:?initial screen runtime commit is required}"
-: "${SAI_NEWTON_SLURM_CONF_SERVER:?Newton Slurm configuration server is required}"
-: "${SAI_STOKES_SLURM_CONF_SERVER:?Stokes Slurm configuration server is required}"
+: "${SAI_NEWTON_SLURM_CONF_PATH:?Newton Slurm configuration path is required}"
+: "${SAI_NEWTON_SLURM_CONF_SHA256:?Newton Slurm configuration hash is required}"
+: "${SAI_STOKES_SLURM_CONF_PATH:?Stokes Slurm configuration path is required}"
+: "${SAI_STOKES_SLURM_CONF_SHA256:?Stokes Slurm configuration hash is required}"
 : "${SAI_FOUNDATION_AUDIT_JOB_ID:?foundation audit job identity is required}"
 [[ "${SAI_FOUNDATION_AUDIT_JOB_ID}" =~ ^[0-9]+$ ]]
 
@@ -55,7 +57,11 @@ screen_aggregate_id="$(python -m sai.data.bridge_transfer_confirmation_stage ins
   --screen-runtime-commit "${SAI_SCREEN_RUNTIME_COMMIT}")"
 [[ "${screen_aggregate_id}" =~ ^[0-9]+$ ]]
 
-export SLURM_CONF_SERVER="${SAI_NEWTON_SLURM_CONF_SERVER}"
+source "${SAI_RUNTIME_ROOT}/scripts/verified_slurm_config.sh"
+sai_activate_verified_slurm_config \
+  "${SAI_NEWTON_SLURM_CONF_PATH}" \
+  "${SAI_NEWTON_SLURM_CONF_SHA256}" \
+  newton
 sacct -n -X -P -j "${screen_aggregate_id}" --format=JobIDRaw | \
   grep -qx "${screen_aggregate_id}|"
 confirmation_launcher_id="$({ sbatch --parsable \
@@ -71,7 +77,7 @@ confirmation_launcher_id="$({ sbatch --parsable \
   --kill-on-invalid-dep=yes \
   --output="${sai_root}/logs/bridge-confirmation-launch-%j.out" \
   --error="${sai_root}/logs/bridge-confirmation-launch-%j.err" \
-  --export="ALL,SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT},SAI_RUNTIME_COMMIT=${SAI_RUNTIME_COMMIT},SAI_NEWTON_SLURM_CONF_SERVER=${SAI_NEWTON_SLURM_CONF_SERVER},SAI_STOKES_SLURM_CONF_SERVER=${SAI_STOKES_SLURM_CONF_SERVER},SAI_FOUNDATION_AUDIT_JOB_ID=${SAI_FOUNDATION_AUDIT_JOB_ID}" \
+  --export="ALL,SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT},SAI_RUNTIME_COMMIT=${SAI_RUNTIME_COMMIT},SAI_NEWTON_SLURM_CONF_PATH=${SAI_NEWTON_SLURM_CONF_PATH},SAI_NEWTON_SLURM_CONF_SHA256=${SAI_NEWTON_SLURM_CONF_SHA256},SAI_STOKES_SLURM_CONF_PATH=${SAI_STOKES_SLURM_CONF_PATH},SAI_STOKES_SLURM_CONF_SHA256=${SAI_STOKES_SLURM_CONF_SHA256},SAI_FOUNDATION_AUDIT_JOB_ID=${SAI_FOUNDATION_AUDIT_JOB_ID}" \
   "${confirmation_launcher}"; } | cut -d';' -f1)"
 if [[ ! "${confirmation_launcher_id}" =~ ^[0-9]+$ ]]; then
   exit 2

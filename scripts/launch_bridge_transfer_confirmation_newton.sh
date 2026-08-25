@@ -3,8 +3,10 @@ set -euo pipefail
 
 : "${SAI_RUNTIME_ROOT:?immutable Sai runtime root is required}"
 : "${SAI_RUNTIME_COMMIT:?immutable Sai runtime commit is required}"
-: "${SAI_NEWTON_SLURM_CONF_SERVER:?Newton Slurm configuration server is required}"
-: "${SAI_STOKES_SLURM_CONF_SERVER:?Stokes Slurm configuration server is required}"
+: "${SAI_NEWTON_SLURM_CONF_PATH:?Newton Slurm configuration path is required}"
+: "${SAI_NEWTON_SLURM_CONF_SHA256:?Newton Slurm configuration hash is required}"
+: "${SAI_STOKES_SLURM_CONF_PATH:?Stokes Slurm configuration path is required}"
+: "${SAI_STOKES_SLURM_CONF_SHA256:?Stokes Slurm configuration hash is required}"
 : "${SAI_FOUNDATION_AUDIT_JOB_ID:?foundation audit job identity is required}"
 [[ "${SAI_FOUNDATION_AUDIT_JOB_ID}" =~ ^[0-9]+$ ]]
 
@@ -38,7 +40,11 @@ PY
 
 mkdir -p "${evidence_root}"
 mkdir "${state_root}"
-export SLURM_CONF_SERVER="${SAI_NEWTON_SLURM_CONF_SERVER}"
+source "${SAI_RUNTIME_ROOT}/scripts/verified_slurm_config.sh"
+sai_activate_verified_slurm_config \
+  "${SAI_NEWTON_SLURM_CONF_PATH}" \
+  "${SAI_NEWTON_SLURM_CONF_SHA256}" \
+  newton
 sinfo -p normal -h -o '%G' | grep -qx 'gpu:nvidia_h100_pcie:2(S:0-1)'
 
 declare -a submitted=()
@@ -90,7 +96,7 @@ printf '%s\n' "${publication_id}" > "${state_root}/publication.job_id"
 
 final_stage_id="$({ sbatch --parsable \
   --dependency="afterok:${publication_id}" \
-  --export="ALL,SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT},SAI_RUNTIME_COMMIT=${SAI_RUNTIME_COMMIT},SAI_STOKES_SLURM_CONF_SERVER=${SAI_STOKES_SLURM_CONF_SERVER},SAI_FOUNDATION_AUDIT_JOB_ID=${SAI_FOUNDATION_AUDIT_JOB_ID}" \
+  --export="ALL,SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT},SAI_RUNTIME_COMMIT=${SAI_RUNTIME_COMMIT},SAI_STOKES_SLURM_CONF_PATH=${SAI_STOKES_SLURM_CONF_PATH},SAI_STOKES_SLURM_CONF_SHA256=${SAI_STOKES_SLURM_CONF_SHA256},SAI_FOUNDATION_AUDIT_JOB_ID=${SAI_FOUNDATION_AUDIT_JOB_ID}" \
   "${final_stage_script}"; } | cut -d';' -f1)"
 [[ "${final_stage_id}" =~ ^[0-9]+$ ]]
 submitted+=("${final_stage_id}")
