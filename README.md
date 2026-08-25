@@ -904,8 +904,10 @@ both remote LFS identities. A negative confirmation therefore produces no
 admitted file and no Hugging Face publication.
 
 The confirmation handoff is now dependency-staged without altering the frozen
-initial screen. Stokes job `822231`, built from immutable runtime
-`ce40e6ca92c616cc070482a76a437650b0b1d283`, waits behind the existing screen
+initial screen. The earlier pending CPU-only handoff `822231` produced no output
+and was replaced so the final-release stage could be included. Stokes job
+`822239`, built from immutable runtime
+`09de3777a47e2f2490ff028b5d0709d04dd4ed5e`, waits behind the existing screen
 launcher `822003`. It replays that launch receipt and exact older screen runtime,
 extracts the real Newton aggregate identity, and submits one CPU-only Newton
 launcher behind `afterok:<screen-aggregate>`. Only a positive aggregate can make
@@ -914,9 +916,14 @@ handoff records a create-only signed receipt, cancels a partially submitted
 launcher on failure, prohibits duplicate state, preserves equal token budgets,
 and keeps 4B training unauthorized. This removes a manual scheduling gap while
 ensuring the confirmation, admission, and LFS publisher use the newer runtime.
-The complete repository passes **1,370 tests**, including malformed-signature,
-runtime-substitution, overlapping-job, negative-contract, and occupied-output
-handoff cases.
+Coverage includes malformed-signature, runtime-substitution, overlapping-job,
+negative-contract, and occupied-output handoff cases. After positive connection
+admission and remote publication, one
+additional CPU-only Newton stage verifies that publication, switches back to
+the Stokes scheduler, and submits the final signed release behind exact
+foundation-readiness audit `822236`. Thus neither cluster can race the other,
+and failed connection evidence cannot create a final-release job. The complete
+repository passes **1,375 tests**.
 
 Final composition is now executable rather than an informal loader note.
 `final_training_release.py` refuses to sign unless the 1.9--2.0-trillion-byte
