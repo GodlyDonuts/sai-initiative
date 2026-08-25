@@ -53,6 +53,7 @@ def _inputs(root: Path) -> tuple[Path, Path, Path]:
                 "known_quarantine_rows_excluded": 2,
             },
             "source": {
+                "scan_logical_shards": 1,
                 "quarantine_registry": {
                     "receipt_sha256": "a" * 64,
                     "registry_sha256": "b" * 64,
@@ -60,8 +61,24 @@ def _inputs(root: Path) -> tuple[Path, Path, Path]:
                     "unique_content_hashes": 1_548,
                 }
             },
+            "policy": {
+                "byte_cap_selection_policy": "canonical_content_sha256_order",
+                "output_partition_policy": "canonical_source_path_sha256_modulo",
+            },
+            "outputs": {
+                "shards": 1,
+                "descriptors": [
+                    {
+                        "shard_index": 0,
+                        "rows": 20,
+                        "text_utf8_bytes": 3_000,
+                        "source_token_count": 750,
+                    }
+                ],
+            },
             "global_exact_content_deduplication_complete": True,
             "known_quarantine_exclusions_applied": True,
+            "complete_source_identity_partition_coverage": True,
             "source_text_copied": False,
             "official_benchmark_decontamination_complete": False,
             "practical_pretraining_ready": True,
@@ -102,6 +119,7 @@ def test_audit_seals_exact_ready_totals(tmp_path: Path) -> None:
     assert result["quality"]["row_level_rights_labels_complete"] is True
     assert result["quality"]["known_quarantine_registry_rows"] == 1_548
     assert result["quality"]["known_quarantine_rows_excluded"] == 2
+    assert result["quality"]["complete_source_partition_output_shards"] == 1
     assert (
         result["custody"]["institutional_books_public_redistribution_allowed"]
         is False
@@ -129,6 +147,29 @@ def test_audit_rejects_missing_quarantine_application(tmp_path: Path) -> None:
     payload["known_quarantine_exclusions_applied"] = False
     _write(pleias, payload)
     with pytest.raises(PracticalCorpusAuditError, match="evidence differs"):
+        build_audit(
+            books,
+            pleias,
+            publication,
+            tmp_path / "audit.json",
+            minimum_combined_text_bytes=3_900,
+            maximum_combined_text_bytes=4_100,
+        )
+
+
+def test_audit_rejects_collapsed_output_partition_coverage(tmp_path: Path) -> None:
+    books, pleias, publication = _inputs(tmp_path)
+    pleias_payload = json.loads(pleias.read_text())
+    pleias_payload.pop("receipt_sha256")
+    pleias_payload["source"]["scan_logical_shards"] = 2
+    pleias_payload = _write(pleias, pleias_payload)
+    publication_payload = json.loads(publication.read_text())
+    publication_payload.pop("receipt_sha256")
+    publication_payload["pleias_admission_receipt_sha256"] = pleias_payload[
+        "receipt_sha256"
+    ]
+    _write(publication, publication_payload)
+    with pytest.raises(PracticalCorpusAuditError, match="totals differ"):
         build_audit(
             books,
             pleias,

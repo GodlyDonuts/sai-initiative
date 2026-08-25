@@ -239,7 +239,7 @@ immediately and the remainder stay scheduler-managed behind the account
 concurrency ceiling. Book practical admission `820358` is complete, and combined
 PleIAs exact-dedup/byte-balance admission `820649` remains dependency-staged
 after all 128 `820530` identities close. The complete repository regression
-suite passes: **1,329 tests, 2 dependency warnings**.
+suite passes: **1,330 tests, 2 dependency warnings**.
 
 Publication is dependency-staged rather than manual. After combined admission,
 128 independently retryable workers validate that each final PleIAs Parquet is
@@ -256,7 +256,9 @@ authorized private Stokes root.
 The final readiness audit does not treat a merely successful pipeline as a
 2 TB result. It recomputes Books + PleIAs rows, source tokens, and logical UTF-8
 bytes from the two signed admissions; reconciles every PleIAs collection and
-rights count; binds the Hugging Face publication receipt; and requires the
+rights count; requires canonical content-hash cap selection and complete
+row/byte/token reconciliation across every logical output partition; binds the
+Hugging Face publication receipt; and requires the
 combined corpus to contain **1.9–2.0 trillion exact text bytes**. An underfilled
 corpus fails instead of being relabeled complete. Benchmark decontamination
 remains false and blocks evaluation claims, while 4B training remains explicitly

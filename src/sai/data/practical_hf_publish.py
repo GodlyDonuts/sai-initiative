@@ -49,12 +49,18 @@ def _load_signed(path: Path, schema: str) -> dict[str, Any]:
 def _pleias_admission(root: Path) -> dict[str, Any]:
     admission = _load_signed(root / "receipt.json", PLEIAS_SCHEMA)
     quarantine = admission.get("source", {}).get("quarantine_registry", {})
+    policy = admission.get("policy", {})
     if (
         admission.get("status") != "complete_practical_pleias_pretraining_admission"
         or admission.get("practical_pretraining_ready") is not True
         or admission.get("training_ready") is not True
         or admission.get("global_exact_content_deduplication_complete") is not True
         or admission.get("known_quarantine_exclusions_applied") is not True
+        or policy.get("byte_cap_selection_policy")
+        != "canonical_content_sha256_order"
+        or policy.get("output_partition_policy")
+        != "canonical_source_path_sha256_modulo"
+        or admission.get("complete_source_identity_partition_coverage") is not True
         or not isinstance(quarantine, dict)
         or not isinstance(quarantine.get("rows"), int)
         or isinstance(quarantine.get("rows"), bool)

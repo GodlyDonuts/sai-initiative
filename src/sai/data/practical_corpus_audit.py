@@ -64,6 +64,7 @@ def build_audit(
     pleias = _load_signed(pleias_path, PLEIAS_SCHEMA)
     publication = _load_signed(publication_path, METADATA_SCHEMA)
     quarantine = pleias.get("source", {}).get("quarantine_registry", {})
+    policy = pleias.get("policy", {})
     if (
         books.get("status") != "complete_practical_private_pretraining_admission"
         or books.get("practical_pretraining_ready") is not True
@@ -76,6 +77,11 @@ def build_audit(
         or pleias.get("training_ready") is not True
         or pleias.get("global_exact_content_deduplication_complete") is not True
         or pleias.get("known_quarantine_exclusions_applied") is not True
+        or policy.get("byte_cap_selection_policy")
+        != "canonical_content_sha256_order"
+        or policy.get("output_partition_policy")
+        != "canonical_source_path_sha256_modulo"
+        or pleias.get("complete_source_identity_partition_coverage") is not True
         or not isinstance(quarantine, dict)
         or not isinstance(quarantine.get("rows"), int)
         or isinstance(quarantine.get("rows"), bool)
@@ -103,6 +109,10 @@ def build_audit(
     pleias_tokens = _count(
         pleias_counts.get("admitted_source_token_count"), "PleIAs tokens"
     )
+    logical_shards = _count(
+        pleias.get("source", {}).get("scan_logical_shards"),
+        "PleIAs logical shards",
+    )
     quarantine_rows_excluded = _count(
         pleias_counts.get("known_quarantine_rows_excluded"),
         "known quarantine rows excluded",
@@ -111,8 +121,34 @@ def build_audit(
     combined_tokens = book_tokens + pleias_tokens
     collections = pleias_counts.get("collections")
     rights = pleias_counts.get("rights")
+    outputs = pleias.get("outputs", {})
+    descriptors = outputs.get("descriptors")
     if (
-        not isinstance(collections, dict)
+        logical_shards < 1
+        or not isinstance(descriptors, list)
+        or len(descriptors) != logical_shards
+        or outputs.get("shards") != logical_shards
+        or not all(isinstance(row, dict) for row in descriptors)
+        or not all(
+            isinstance(row.get("shard_index"), int)
+            and not isinstance(row["shard_index"], bool)
+            for row in descriptors
+        )
+        or sorted(row.get("shard_index") for row in descriptors)
+        != list(range(logical_shards))
+        or sum(_count(row.get("rows"), "output shard rows") for row in descriptors)
+        != pleias_rows
+        or sum(
+            _count(row.get("text_utf8_bytes"), "output shard text bytes")
+            for row in descriptors
+        )
+        != pleias_bytes
+        or sum(
+            _count(row.get("source_token_count"), "output shard source tokens")
+            for row in descriptors
+        )
+        != pleias_tokens
+        or not isinstance(collections, dict)
         or not collections
         or sum(_count(value, "collection rows") for value in collections.values())
         != pleias_rows
@@ -170,6 +206,8 @@ def build_audit(
             "known_quarantine_exclusions_applied": True,
             "known_quarantine_registry_rows": quarantine["rows"],
             "known_quarantine_rows_excluded": quarantine_rows_excluded,
+            "globally_hash_balanced_byte_cap": True,
+            "complete_source_partition_output_shards": logical_shards,
             "semantic_model_review_required_for_bulk_core": False,
         },
         "custody": {

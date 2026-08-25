@@ -57,6 +57,7 @@ def _admission(root: Path) -> tuple[Path, dict]:
                 "admitted_text_utf8_bytes": 600,
             },
             "source": {
+                "scan_logical_shards": 1,
                 "quarantine_registry": {
                     "receipt_sha256": "a" * 64,
                     "registry_sha256": "b" * 64,
@@ -64,9 +65,14 @@ def _admission(root: Path) -> tuple[Path, dict]:
                     "unique_content_hashes": 1_548,
                 }
             },
+            "policy": {
+                "byte_cap_selection_policy": "canonical_content_sha256_order",
+                "output_partition_policy": "canonical_source_path_sha256_modulo",
+            },
             "outputs": {"descriptors": [descriptor]},
             "global_exact_content_deduplication_complete": True,
             "known_quarantine_exclusions_applied": True,
+            "complete_source_identity_partition_coverage": True,
             "source_text_copied": False,
             "practical_pretraining_ready": True,
             "training_ready": True,
