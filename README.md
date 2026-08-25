@@ -257,7 +257,7 @@ concurrently across eight Stokes nodes. Book practical admission `820358` is
 complete, and combined
 PleIAs exact-dedup/byte-balance admission `820649` remains dependency-staged
 after all 128 `820530` identities close. The complete repository regression
-suite passes: **1,330 tests, 2 dependency warnings**.
+suite passes: **1,338 tests, 2 dependency warnings**.
 
 Publication is dependency-staged rather than manual. After combined admission,
 128 independently retryable workers validate that each final PleIAs Parquet is
