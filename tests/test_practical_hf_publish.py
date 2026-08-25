@@ -169,3 +169,14 @@ def test_git_repair_batches_only_the_six_missing_shards() -> None:
     assert script.count('git -C "${repository}" push --quiet origin HEAD:main') == 2
     assert "record-shards" in script
     assert "record-metadata" in script
+
+
+def test_metadata_repair_preuploads_before_one_pointer_commit() -> None:
+    script = (
+        Path(__file__).parents[1]
+        / "scripts/repair_practical_hf_metadata_git_stokes.sbatch"
+    ).read_text(encoding="utf-8")
+    assert "preupload_lfs_files" in script
+    assert "num_threads=4" in script
+    assert script.count("git -C \"${repository}\" push --quiet origin HEAD:main") == 1
+    assert "record-metadata" in script
