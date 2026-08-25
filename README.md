@@ -176,18 +176,28 @@ content hash, and subtracts exact admitted Books UTF-8 bytes from the shared
 2,000,000,000,000-byte ceiling before writing final PleIAs locators. Official
 benchmark cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T02:46Z: all 128 PleIAs practical scan shards
+Execution snapshot at 2026-08-25T03:02Z: all 128 PleIAs practical scan shards
 are running with zero nonempty error logs. Their latest complete-parent
-checkpoints account for **955,327,227,831 selected UTF-8 bytes** across 2,412
+checkpoints account for **1,024,342,426,681 selected UTF-8 bytes** across 2,586
 parents; shard allocations are still open, so this is measured work in progress
 rather than admitted corpus size. The Institutional Books filtered-corpus
-aggregate is running concurrently, with practical admission dependency-staged
-behind it. To concentrate scheduler slots and shared storage bandwidth on this
+aggregate completed successfully with 382,072 retained rows and 94 mechanical
+rejects; practical admission is now replaying the resulting 86.1 GB private
+corpus. To concentrate scheduler slots and shared storage bandwidth on this
 critical path, 122 nonblocking metadata-recovery workers were deferred after
 their exact identities, progress tails, 86 completed-receipt hashes, and resume
 rule were preserved in durable Stokes evidence. An automatic redispatch was
 also stopped, leaving zero metadata-recovery tasks active and the completed
 receipts intact.
+
+The repaired premium Books path now runs independently of bulk admission. A
+pathological archive record with more than 64 ISBNs exposed a prompt-metadata
+bound in the first 8,192-work population attempt. Sai now preserves the full
+raw metadata-row hash while passing Hermès a stable first-unique bounded view
+of identifiers and duplicate barcodes. Twenty-two focused tests cover this
+normalization, and replacement population job `821500` is live with all later
+Hermès, conservative decision, independent Nemotron, agreement,
+decontamination, subdocument-signature, and evidence jobs dependency-staged.
 
 Final locator shards preserve source locality: after global content-hash dedup,
 every winning row is assigned by canonical source-path hash, so all retained
