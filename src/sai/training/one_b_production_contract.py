@@ -13,7 +13,7 @@ from sai.data.token_stream import canonical_sha256
 
 SCHEMA = "sai-1b-production-model-contract-v1"
 OLMO_COMMIT = "090253dac6688f2532509daa7aa2eb5fae50e956"
-OLMO_CORE_COMMIT = "b7e9671d7ea48af94838c4f124703c3ae36f0c70"
+OLMO_CORE_COMMIT = "7899e7cefaae44e30766ee654bd177f1e1474bc7"
 
 
 class OneBProductionContractError(RuntimeError):
@@ -30,9 +30,11 @@ def _parameter_ledger() -> dict[str, int]:
     feed_forward_per_layer = 3 * width * hidden
     norms_per_layer = 4 * width
     final_norm = width
-    total = embeddings + layers * (
-        attention_per_layer + feed_forward_per_layer + norms_per_layer
-    ) + final_norm
+    total = (
+        embeddings
+        + layers * (attention_per_layer + feed_forward_per_layer + norms_per_layer)
+        + final_norm
+    )
     return {
         "untied_embeddings": embeddings,
         "attention": layers * attention_per_layer,

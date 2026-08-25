@@ -124,8 +124,10 @@ Sai invention. It prevents another unvalidated mixer from confounding the data
 and curriculum experiment.
 
 The distributed training runtime is pinned to AllenAI OLMo commit
-`090253dac6688f2532509daa7aa2eb5fae50e956` and OLMo-core commit
-`b7e9671d7ea48af94838c4f124703c3ae36f0c70`. The optimizer follows the
+`090253dac6688f2532509daa7aa2eb5fae50e956` and its compatible OLMo-core
+v1.8.0 commit `7899e7cefaae44e30766ee654bd177f1e1474bc7`. A newer OLMo-core 2.6 pin was
+rejected during preflight because it belongs to a different trainer/runtime
+generation. The optimizer follows the
 published 1B stage-1 recipe: AdamW at 4e-4, betas 0.9/0.95, weight decay 0.1,
 8,388,608,000 warmup tokens, cosine decay to 10% of peak, BF16 AMP, and FSDP
 `SHARD_GRAD_OP`. The ordinary global batch is 512 sequences; exact stage and
