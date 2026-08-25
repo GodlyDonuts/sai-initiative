@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import pytest
+
 from sai.data.one_b_curriculum_index import (
     _book_band,
     _descriptor,
     _pleias_band,
     _priority,
     _split,
+    _write_index,
 )
 
 
@@ -35,3 +38,13 @@ def test_optional_descriptor_distinguishes_an_empty_shard() -> None:
     admission = {"outputs": {"descriptors": [{"shard_index": 1, "rows": 2}]}}
     assert _descriptor(admission, 1) == {"shard_index": 1, "rows": 2}
     assert _descriptor(admission, 7, allow_empty=True) is None
+
+
+def test_empty_index_has_explicit_zero_accounting(tmp_path) -> None:
+    pytest.importorskip("pyarrow")
+    result = _write_index(iter(()), tmp_path / "empty")
+    assert result["output"]["rows"] == 0
+    assert result["counts"]["rows"] == 0
+    assert result["counts"]["text_utf8_bytes"] == 0
+    assert result["counts"]["band::expert::rows"] == 0
+    assert result["counts"]["split::development::rows"] == 0

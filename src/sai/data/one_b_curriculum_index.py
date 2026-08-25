@@ -232,6 +232,17 @@ def _write_index(rows: Iterable[dict[str, Any]], output_root: Path) -> dict[str,
     except BaseException:
         writer.close()
         raise
+    # Empty identities are part of a fixed shard namespace.  Preserve their
+    # custody with explicit zero counters instead of making downstream replay
+    # infer that a missing key means zero.
+    for key in ("rows", "text_utf8_bytes", "source_token_estimate"):
+        counts.setdefault(key, 0)
+    for band in BANDS:
+        counts.setdefault(f"band::{band}::rows", 0)
+        counts.setdefault(f"band::{band}::bytes", 0)
+    for split in ("train", "development"):
+        counts.setdefault(f"split::{split}::rows", 0)
+        counts.setdefault(f"split::{split}::bytes", 0)
     return {
         "counts": dict(sorted(counts.items())),
         "ordered_rows_sha256": ordered.hexdigest(),
