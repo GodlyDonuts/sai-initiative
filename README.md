@@ -241,10 +241,13 @@ all **309** valid receipts were counted intact; its pending siblings had written
 nothing. Immutable repair lane `822241_1` immediately produced the one missing
 valid judgment with zero failures and closed shard 33 at **28/28** receipts,
 receipt `4a7377b3801664609d079ec9bab0f850e3058fc74c00defeef83d3df0b12c1c7`.
-Replacement array `822242_[2-31%4]` will resume only unfinished identities after
-lane 1 closes. Each lane retains concurrency two, so at most eight requests can
-be live beneath the shared ten-request OS lock and two slots remain as headroom.
-This removes both the infinite alternation and roughly fourfold avoidable serial
+Replacement array `822242_[2-31%4]` resumes only unfinished identities. Its first
+four lanes were released alongside repair lane 1 only after the shared ten-slot
+OS lock and absence of every other Hermès worker were reverified. Each lane
+retains concurrency two, so the overlap saturates exactly ten requests and
+cannot exceed that ceiling; after lane 1 closes, the array falls back to eight.
+Aggregate `821502` is explicitly bound to both replacement populations. This
+removes both the infinite alternation and roughly fourfold avoidable serial
 latency without weakening downstream independent-verifier gates. The complete
 repository passes **1,378 tests**, including a reproduction that alternates the
 two observed failures before returning a valid third response.
