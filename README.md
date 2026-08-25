@@ -304,6 +304,27 @@ the staging receipt is
 `artifacts/sai_pleias_practical_admission_recovery_stage_20260825_r1.json`,
 receipt `5939fa1ba0e19045c70ddb4896b4c10208ee4bb4741faff463177d28973f2570`.
 
+The live primary remained healthy but reached **106/128** shards,
+**68,119,784** candidate rows, and **1,656,249,979,989** candidate text bytes
+as its inline-payload SQLite tree grew to 66,767,814,656 bytes. Sai therefore
+implemented a recovery-only physical-layout acceleration: exact content and
+winner identities remain in the canonical ordered B-tree, while full locator
+JSON is appended to a sequential rowid table. A real 640,783-row locator
+replay produced the same **637,153** ordered winners and identical winner
+digest `5d3b3fe0...817a`; the split layout completed in 28.72 seconds versus 33.02
+seconds for the legacy layout and used 606,470,144 versus 657,457,152 database
+bytes. This is an infrastructure optimization only: winner policy, row bytes,
+byte-cap ordering, output partitions, and downstream gates are unchanged.
+After the full **1,388-test** suite, Ruff, shell syntax, and real-data replay
+passed, pending fallback `822733` was replaced by `822772` at immutable runtime
+`3b315903f56166b210ae6361ccdc6e0064644c03`; publication `822233`, stream smoke
+`822237`, and reconciliation `822238` now depend on it. Fifty-eight jobs Slurm
+had already classified `DependencyNeverSatisfied` were canceled, leaving zero
+such dead entries without touching any running worker. The signed staging
+evidence is
+`artifacts/sai_pleias_admission_accelerated_recovery_stage_20260825_r1.json`,
+receipt `817b8cf351e5e7aaa3056b31623ac212158103aaa9aefc01960ae2912bc139a9`.
+
 A cross-cluster scheduler preflight also found that `SLURM_CONF_SERVER` cannot
 override an already-present local `slurm.conf` on a Stokes compute node. The
 old pending connection launchers `822003` and `822239` would therefore have
