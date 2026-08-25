@@ -186,11 +186,19 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T06:27Z: 72 PleIAs practical scan shards have
-closed and the remaining 56 are running with zero nonempty error logs. All 128
-identities have a current checkpoint; together they account for
-**1,950,548,509,702 selected UTF-8 bytes** across 4,963 complete parents, and
-even the least-complete shard has selected 13,061,221,729 bytes. Shard
+Execution snapshot at 2026-08-25T07:21Z: 122 PleIAs practical scan shards have
+closed with zero scientific errors. Their signed receipts alone account for
+**1,906,249,975,423 selected UTF-8 bytes** across 4,880 complete parents. Six
+remaining original tasks were separately proven to be infrastructure failures:
+their CPU counters stopped advancing and each process retained a dead HTTPS
+socket in `CLOSE-WAIT`. They had no receipt or final locator. Only those six
+tasks were canceled, and their six unclosed partial Parquets (437,552,767 bytes
+total) were permanently removed; those partials are not locally recoverable.
+Identity-preserving replacements `822087`--`822092` now run from immutable
+commit `f4d27458b942b8bd4414b472a512db847d4f8bbc` with bounded connect/read
+timeouts, closed response custody, exact-hash retries, and unchanged source and
+sampling bytes. The replacement downloader independently replayed exact 8,710-
+and 104,183,282-byte Hugging Face objects on Stokes before launch. Shard
 allocations are still open, so this
 is measured work in progress rather than admitted corpus size. Institutional
 Books practical admission has
@@ -201,7 +209,7 @@ pretraining. Its 284,845,639-byte manifest independently rehashes to
 and its canonical receipt rehashes to
 `904b4f64801239fe492d025990245c6773ff2cbf3de5ce64017fd25e6ff9bc83`.
 This puts measured Books plus live PleIAs candidate mass at
-**2,172,648,485,857 bytes** before the pending cross-source exact-dedup and
+**2,128,349,951,578 bytes** before the six replacements, pending cross-source exact-dedup, and
 two-trillion-byte balance pass. The final admission still must prove the signed
 post-dedup total is within 1.9--2.0 trillion bytes; crossing the raw candidate
 floor is not represented as completion. To concentrate scheduler slots and shared storage
