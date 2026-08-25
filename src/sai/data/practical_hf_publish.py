@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +24,7 @@ METADATA_PREFIX = "training/practical/metadata/20260826-r3"
 SHARD_SCHEMA = "sai-practical-hf-publish-shard-v1"
 AGGREGATE_SCHEMA = "sai-practical-hf-publish-aggregate-v1"
 METADATA_SCHEMA = "sai-practical-hf-publish-metadata-v1"
+REVISION_PATTERN = re.compile(r"[0-9a-f]{40}")
 
 
 class PracticalHfPublishError(RuntimeError):
@@ -184,6 +186,107 @@ def publish_shard(
     return payload
 
 
+def _verified_remote_sibling(
+    info: Any, remote_path: str, expected_bytes: int, expected_sha256: str
+) -> None:
+    sibling = next(
+        (item for item in info.siblings or [] if item.rfilename == remote_path),
+        None,
+    )
+    lfs = None if sibling is None else sibling.lfs
+    if (
+        sibling is None
+        or lfs is None
+        or sibling.size != expected_bytes
+        or lfs.size != expected_bytes
+        or lfs.sha256 != expected_sha256
+    ):
+        raise PracticalHfPublishError("preverified remote LFS identity differs")
+
+
+def record_preverified_shards(
+    admission_root: Path,
+    publish_root: Path,
+    shard_indices: list[int],
+    logical_shards: int,
+    revision: str,
+    token: str,
+    *,
+    api: Any | None = None,
+) -> dict[str, Any]:
+    """Record exact shard receipts after one externally verified Git-LFS commit."""
+
+    ordered_indices = sorted(shard_indices)
+    if (
+        not token
+        or not REVISION_PATTERN.fullmatch(revision)
+        or logical_shards < 1
+        or not ordered_indices
+        or len(set(ordered_indices)) != len(ordered_indices)
+        or any(not 0 <= value < logical_shards for value in ordered_indices)
+    ):
+        raise PracticalHfPublishError("preverified shard arguments differ")
+    if api is None:
+        try:
+            from huggingface_hub import HfApi
+        except ImportError as error:
+            raise PracticalHfPublishError("huggingface_hub is required") from error
+        api = HfApi(token=token)
+    admission = _pleias_admission(admission_root)
+    info = api.dataset_info(
+        DESTINATION_REPOSITORY, revision=revision, files_metadata=True
+    )
+    if info.sha != revision:
+        raise PracticalHfPublishError("preverified revision differs")
+    receipts: list[tuple[Path, dict[str, Any]]] = []
+    for shard_index in ordered_indices:
+        output_root = publish_root / "shards" / f"shard_{shard_index:05d}"
+        descriptor = _descriptor(admission, shard_index)
+        if output_root.exists() or output_root.is_symlink() or descriptor is None:
+            raise PracticalHfPublishError("preverified shard output differs")
+        local_path = admission_root / descriptor.get("path", "")
+        if (
+            not local_path.is_file()
+            or local_path.is_symlink()
+            or local_path.stat().st_nlink != 1
+            or local_path.stat().st_size != descriptor.get("bytes")
+            or sha256_file(local_path) != descriptor.get("sha256")
+        ):
+            raise PracticalHfPublishError("preverified local shard differs")
+        remote_path = f"{PLEIAS_PREFIX}/shards/shard_{shard_index:05d}/locators.parquet"
+        _verified_remote_sibling(
+            info, remote_path, descriptor["bytes"], descriptor["sha256"]
+        )
+        payload = {
+            "schema": SHARD_SCHEMA,
+            "status": "complete_practical_hf_publish_shard",
+            "logical_shards": logical_shards,
+            "shard_index": shard_index,
+            "admission_receipt_sha256": admission["receipt_sha256"],
+            "source_descriptor": descriptor,
+            "remote_output": {
+                "repository": DESTINATION_REPOSITORY,
+                "commit": revision,
+                "path": remote_path,
+                "bytes": descriptor["bytes"],
+                "sha256": descriptor["sha256"],
+            },
+            "source_text_uploaded": False,
+            "training_ready": True,
+        }
+        payload["receipt_sha256"] = canonical_sha256(payload)
+        receipts.append((output_root, payload))
+    for output_root, payload in receipts:
+        output_root.mkdir(parents=True)
+        _atomic_create(output_root / "receipt.json", payload)
+    return {
+        "status": "complete_preverified_practical_hf_shard_repair",
+        "revision": revision,
+        "shard_indices": ordered_indices,
+        "receipt_sha256s": [payload["receipt_sha256"] for _, payload in receipts],
+    }
+
+
 def aggregate_publish(
     admission_root: Path,
     publish_root: Path,
@@ -339,6 +442,88 @@ def publish_metadata(
     return payload
 
 
+def record_preverified_metadata(
+    books_root: Path,
+    pleias_root: Path,
+    publish_aggregate_path: Path,
+    output: Path,
+    revision: str,
+    token: str,
+    *,
+    api: Any | None = None,
+) -> dict[str, Any]:
+    """Record metadata publication after one exact external Git-LFS commit."""
+
+    if (
+        output.exists()
+        or output.is_symlink()
+        or not token
+        or not REVISION_PATTERN.fullmatch(revision)
+    ):
+        raise PracticalHfPublishError("preverified metadata arguments differ")
+    books = _load_signed(books_root / "receipt.json", BOOKS_SCHEMA)
+    pleias = _pleias_admission(pleias_root)
+    publication = _load_signed(publish_aggregate_path, AGGREGATE_SCHEMA)
+    if (
+        books.get("practical_pretraining_ready") is not True
+        or books.get("training_ready") is not True
+        or publication.get("admission_receipt_sha256") != pleias["receipt_sha256"]
+        or publication.get("all_remote_lfs_identities_verified") is not True
+    ):
+        raise PracticalHfPublishError("preverified metadata inputs differ")
+    if api is None:
+        try:
+            from huggingface_hub import HfApi
+        except ImportError as error:
+            raise PracticalHfPublishError("huggingface_hub is required") from error
+        api = HfApi(token=token)
+    info = api.dataset_info(
+        DESTINATION_REPOSITORY, revision=revision, files_metadata=True
+    )
+    if info.sha != revision:
+        raise PracticalHfPublishError("preverified metadata revision differs")
+    books_manifest = books_root / books.get("manifest", {}).get("path", "")
+    sources = [
+        (books_root / "receipt.json", f"{METADATA_PREFIX}/books/receipt.lfs.json"),
+        (books_manifest, f"{METADATA_PREFIX}/books/manifest.lfs.jsonl"),
+        (pleias_root / "receipt.json", f"{METADATA_PREFIX}/pleias/receipt.lfs.json"),
+        (
+            publish_aggregate_path,
+            f"{METADATA_PREFIX}/pleias/publish-aggregate.lfs.json",
+        ),
+    ]
+    remotes = []
+    for path, remote_path in sources:
+        if not path.is_file() or path.is_symlink() or path.stat().st_nlink != 1:
+            raise PracticalHfPublishError("preverified metadata source is unsafe")
+        size = path.stat().st_size
+        digest = sha256_file(path)
+        _verified_remote_sibling(info, remote_path, size, digest)
+        remotes.append(
+            {
+                "repository": DESTINATION_REPOSITORY,
+                "commit": revision,
+                "path": remote_path,
+                "bytes": size,
+                "sha256": digest,
+            }
+        )
+    payload = {
+        "schema": METADATA_SCHEMA,
+        "status": "complete_practical_hf_metadata_publication",
+        "books_admission_receipt_sha256": books["receipt_sha256"],
+        "pleias_admission_receipt_sha256": pleias["receipt_sha256"],
+        "locator_publication_receipt_sha256": publication["receipt_sha256"],
+        "remote_repository": DESTINATION_REPOSITORY,
+        "remote_outputs": remotes,
+        "source_text_uploaded": False,
+        "training_ready": True,
+    }
+    payload["receipt_sha256"] = canonical_sha256(payload)
+    _atomic_create(output, payload)
+    return payload
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -360,6 +545,22 @@ def main() -> int:
     metadata.add_argument("--publish-aggregate", type=Path, required=True)
     metadata.add_argument("--output", type=Path, required=True)
     metadata.add_argument("--token-env", default="HF_TOKEN")
+    record_shards = commands.add_parser("record-shards")
+    record_shards.add_argument("--admission-root", type=Path, required=True)
+    record_shards.add_argument("--publish-root", type=Path, required=True)
+    record_shards.add_argument(
+        "--shard-index", type=int, action="append", required=True
+    )
+    record_shards.add_argument("--logical-shards", type=int, required=True)
+    record_shards.add_argument("--revision", required=True)
+    record_shards.add_argument("--token-env", default="HF_TOKEN")
+    record_metadata = commands.add_parser("record-metadata")
+    record_metadata.add_argument("--books-root", type=Path, required=True)
+    record_metadata.add_argument("--pleias-root", type=Path, required=True)
+    record_metadata.add_argument("--publish-aggregate", type=Path, required=True)
+    record_metadata.add_argument("--output", type=Path, required=True)
+    record_metadata.add_argument("--revision", required=True)
+    record_metadata.add_argument("--token-env", default="HF_TOKEN")
     args = parser.parse_args()
     token = os.environ.get(args.token_env, "")
     if args.command == "shard":
@@ -378,12 +579,30 @@ def main() -> int:
             args.output,
             token,
         )
-    else:
+    elif args.command == "metadata":
         result = publish_metadata(
             args.books_root,
             args.pleias_root,
             args.publish_aggregate,
             args.output,
+            token,
+        )
+    elif args.command == "record-shards":
+        result = record_preverified_shards(
+            args.admission_root,
+            args.publish_root,
+            args.shard_index,
+            args.logical_shards,
+            args.revision,
+            token,
+        )
+    else:
+        result = record_preverified_metadata(
+            args.books_root,
+            args.pleias_root,
+            args.publish_aggregate,
+            args.output,
+            args.revision,
             token,
         )
     print(json.dumps(result, sort_keys=True))

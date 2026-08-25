@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pyarrow as pa
 import pyarrow.parquet as pq
@@ -63,7 +64,7 @@ def _admission(root: Path) -> tuple[Path, dict]:
                     "registry_sha256": "b" * 64,
                     "rows": 1_548,
                     "unique_content_hashes": 1_548,
-                }
+                },
             },
             "policy": {
                 "byte_cap_selection_policy": "canonical_content_sha256_order",
@@ -121,3 +122,50 @@ def test_publish_empty_logical_shard_does_not_upload(
     result = publish.publish_shard(admission, tmp_path / "published", 1, 2, "token")
     assert result["status"] == "complete_practical_hf_publish_empty_shard"
     assert result["remote_output"] is None
+
+
+def test_records_one_preverified_git_lfs_revision(tmp_path: Path) -> None:
+    admission = tmp_path / "admission"
+    path, admission_receipt = _admission(admission)
+    revision = "4" * 40
+    remote_path = f"{publish.PLEIAS_PREFIX}/shards/shard_00000/locators.parquet"
+    sibling = SimpleNamespace(
+        rfilename=remote_path,
+        size=path.stat().st_size,
+        lfs=SimpleNamespace(size=path.stat().st_size, sha256=sha256_file(path)),
+    )
+
+    class FakeApi:
+        def dataset_info(self, repository, revision, files_metadata):
+            assert repository == publish.DESTINATION_REPOSITORY
+            assert revision == "4" * 40
+            assert files_metadata is True
+            return SimpleNamespace(sha=revision, siblings=[sibling])
+
+    output = tmp_path / "published"
+    result = publish.record_preverified_shards(
+        admission,
+        output,
+        [0],
+        1,
+        revision,
+        "token",
+        api=FakeApi(),
+    )
+    receipt = json.loads(
+        (output / "shards" / "shard_00000" / "receipt.json").read_text()
+    )
+    assert result["shard_indices"] == [0]
+    assert receipt["admission_receipt_sha256"] == admission_receipt["receipt_sha256"]
+    assert receipt["remote_output"]["commit"] == revision
+    assert receipt["remote_output"]["sha256"] == sha256_file(path)
+
+
+def test_git_repair_batches_only_the_six_missing_shards() -> None:
+    script = (
+        Path(__file__).parents[1] / "scripts/repair_practical_hf_git_stokes.sbatch"
+    ).read_text(encoding="utf-8")
+    assert "missing_shards=(107 114 116 123 124 127)" in script
+    assert script.count('git -C "${repository}" push --quiet origin HEAD:main') == 2
+    assert "record-shards" in script
+    assert "record-metadata" in script
