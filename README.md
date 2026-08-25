@@ -184,9 +184,9 @@ balancing work reads only compact locator hashes and does not slow or restart
 the live source scan. Official benchmark cleanliness remains a separate
 evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T03:28Z: all 128 PleIAs practical scan shards
+Execution snapshot at 2026-08-25T03:53Z: all 128 PleIAs practical scan shards
 are running with zero nonempty error logs. Their latest complete-parent
-checkpoints account for **1,141,756,025,323 selected UTF-8 bytes** across 2,883
+checkpoints account for **1,264,194,120,745 selected UTF-8 bytes** across 3,193
 parents; shard allocations are still open, so this is measured work in progress
 rather than admitted corpus size. Institutional Books practical admission has
 now closed successfully: **382,072 rows, 222,099,976,155 logical UTF-8 text
@@ -196,7 +196,7 @@ pretraining. Its 284,845,639-byte manifest independently rehashes to
 and its canonical receipt rehashes to
 `904b4f64801239fe492d025990245c6773ff2cbf3de5ce64017fd25e6ff9bc83`.
 This puts measured Books plus live PleIAs candidate mass at
-**1,363,856,001,478 bytes** before the pending cross-source exact-dedup and
+**1,486,294,096,900 bytes** before the pending cross-source exact-dedup and
 two-terabyte balance pass. To concentrate scheduler slots and shared storage
 bandwidth on this critical path, 122 nonblocking metadata-recovery workers were deferred after
 their exact identities, progress tails, 86 completed-receipt hashes, and resume
