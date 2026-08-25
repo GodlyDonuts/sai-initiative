@@ -19,7 +19,7 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 
 sai_python=/lustre/fs1/home/sa305415/shohin/envs/product-reasoning-b3a3603/bin/python
-"${sai_python}" -m pip install --disable-pip-version-check --no-deps regex==2024.11.6
+"${sai_python}" -m pip install --disable-pip-version-check --no-deps regex==2025.11.3
 "${sai_python}" - <<'PY'
 import json
 import regex
