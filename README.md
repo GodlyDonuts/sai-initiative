@@ -186,7 +186,7 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T11:10Z: 122 PleIAs practical scan shards have
+Execution snapshot at 2026-08-25T11:43Z: 122 PleIAs practical scan shards have
 closed with zero scientific errors. Their signed receipts alone account for
 **1,906,249,975,423 selected UTF-8 bytes** across 4,880 complete parents. Six
 remaining original tasks were separately proven to be infrastructure failures:
@@ -199,10 +199,10 @@ commit `f4d27458b942b8bd4414b472a512db847d4f8bbc` with bounded connect/read
 timeouts, closed response custody, exact-hash retries, and unchanged source and
 sampling bytes. The replacement downloader independently replayed exact 8,710-
 and 104,183,282-byte Hugging Face objects on Stokes before launch. All six
-repairs remain healthy: shards 41, 50, 56, and 125 have each closed 28 parents,
-and shards 105 and 126 have each closed 27. Together they account for
-**65,730,185,267** additional selected bytes in create-only partial locators,
-or 70.11% of their six fixed byte caps.
+repairs remain healthy: shards 41, 50, 56, 125, and 126 have each closed 32
+parents, and shard 105 has closed 31. Together they account for
+**75,620,024,216** additional selected bytes in create-only partial locators,
+or 80.66% of their six fixed byte caps.
 Shard allocations are still open, so this is measured work in progress rather
 than admitted corpus size. Institutional
 Books practical admission has
@@ -254,8 +254,8 @@ latency without weakening downstream independent-verifier gates. The complete
 repository passes **1,378 tests**, including a reproduction that alternates the
 two observed failures before returning a valid third response.
 
-At the 2026-08-25T11:10Z execution snapshot, the immutable replacement workers
-have created **852** signed book judgments and sealed **24** logical-shard
+At the 2026-08-25T11:43Z execution snapshot, the immutable replacement workers
+have created **1,017** signed book judgments and sealed **28** logical-shard
 summaries. The cumulative-validation repair closed both previously stubborn
 shards 3 and 65 at exact 34/34 and 38/38 identity coverage; later shard lanes
 continue automatically under the same ten-slot request ceiling. Ordinary 429
