@@ -22,6 +22,12 @@ from sai.data.pleias_practical_locator_scan import (
     SHARD_SCHEMA,
     _schema,
 )
+from sai.data.quarantine_exclusion_registry import (
+    RECORD_SCHEMA as QUARANTINE_RECORD_SCHEMA,
+)
+from sai.data.quarantine_exclusion_registry import (
+    SCHEMA as QUARANTINE_REGISTRY_SCHEMA,
+)
 from sai.data.token_stream import canonical_sha256, sha256_file
 
 SCHEMA = "sai-pleias-practical-admission-receipt-v1"
@@ -93,6 +99,82 @@ def _valid_locator(row: dict[str, Any]) -> bool:
     )
 
 
+def _load_quarantine_content_hashes(root: Path) -> tuple[set[str], dict[str, Any]]:
+    """Verify the global deny registry and return its exact content hashes."""
+
+    receipt = _load_signed(root / "receipt.json", QUARANTINE_REGISTRY_SCHEMA)
+    descriptor = receipt.get("registry", {})
+    path = root / descriptor.get("path", "")
+    if (
+        receipt.get("status") != "complete_quarantine_exclusion_registry"
+        or receipt.get("dataset_materialization_allowed") is not False
+        or receipt.get("source_text_persisted") is not False
+        or receipt.get("training_ready") is not False
+        or descriptor.get("path") != "quarantine_registry.jsonl"
+        or isinstance(descriptor.get("rows"), bool)
+        or not isinstance(descriptor.get("rows"), int)
+        or descriptor["rows"] < 1
+        or not path.is_file()
+        or path.is_symlink()
+        or path.stat().st_nlink != 1
+        or path.stat().st_size != descriptor.get("bytes")
+        or sha256_file(path) != descriptor.get("sha256")
+    ):
+        raise PleiasPracticalAdmissionError("quarantine registry differs")
+    hashes: set[str] = set()
+    identities: set[str] = set()
+    record_hashes = []
+    rows = 0
+    with path.open() as handle:
+        for line in handle:
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError as error:
+                raise PleiasPracticalAdmissionError(
+                    "quarantine registry row differs"
+                ) from error
+            if not isinstance(row, dict):
+                raise PleiasPracticalAdmissionError(
+                    "quarantine registry row differs"
+                )
+            unsigned = {
+                key: value for key, value in row.items() if key != "record_sha256"
+            }
+            if (
+                row.get("schema") != QUARANTINE_RECORD_SCHEMA
+                or row.get("route") != "quarantine"
+                or row.get("dataset_materialization_allowed") is not False
+                or row.get("source_text_persisted") is not False
+                or not _valid_hex(row.get("candidate_identity_sha256"))
+                or not _valid_hex(row.get("source_content_sha256"))
+                or not _valid_hex(row.get("source_manifest_receipt_sha256"))
+                or not _valid_hex(row.get("source_record_sha256"))
+                or not _valid_hex(row.get("record_sha256"))
+                or row["record_sha256"] != canonical_sha256(unsigned)
+                or row["candidate_identity_sha256"] in identities
+            ):
+                raise PleiasPracticalAdmissionError(
+                    "quarantine registry row differs"
+                )
+            rows += 1
+            identities.add(row["candidate_identity_sha256"])
+            hashes.add(row["source_content_sha256"])
+            record_hashes.append(row["record_sha256"])
+    if (
+        rows != descriptor["rows"]
+        or receipt.get("unique_quarantine_rows") != rows
+        or descriptor.get("ordered_records_sha256")
+        != canonical_sha256(record_hashes)
+    ):
+        raise PleiasPracticalAdmissionError("quarantine registry coverage differs")
+    return hashes, {
+        "receipt_sha256": receipt["receipt_sha256"],
+        "registry_sha256": descriptor["sha256"],
+        "rows": rows,
+        "unique_content_hashes": len(hashes),
+    }
+
+
 def _open_database(path: Path) -> sqlite3.Connection:
     connection = sqlite3.connect(path)
     # Admission runs on node-local scratch with 64 GiB and four reserved CPUs.
@@ -150,6 +232,7 @@ def build_admission(
     manifest_path: Path,
     scan_root: Path,
     books_receipt_path: Path,
+    quarantine_registry_root: Path,
     output_root: Path,
     logical_shards: int,
     total_text_byte_ceiling: int,
@@ -184,6 +267,9 @@ def build_admission(
     ):
         raise PleiasPracticalAdmissionError("Books practical admission differs")
     maximum_pleias_bytes = total_text_byte_ceiling - books_bytes
+    quarantine_hashes, quarantine_registry = _load_quarantine_content_hashes(
+        quarantine_registry_root
+    )
     manifest = load_manifest(manifest_path)
     expected_paths = {row["source_path"] for row in manifest}
     seen_paths: set[str] = set()
@@ -253,6 +339,19 @@ def build_admission(
                         observed_rows += 1
                         observed_bytes += row["text_utf8_bytes"]
                         observed_tokens += row["source_token_count"]
+                        if row["content_sha256"] in quarantine_hashes:
+                            scan_counts.update(
+                                {
+                                    "known_quarantine_rows_excluded": 1,
+                                    "known_quarantine_text_utf8_bytes_excluded": row[
+                                        "text_utf8_bytes"
+                                    ],
+                                    "known_quarantine_source_tokens_excluded": row[
+                                        "source_token_count"
+                                    ],
+                                }
+                            )
+                            continue
                         values.append(
                             (
                                 row["content_sha256"],
@@ -302,12 +401,19 @@ def build_admission(
             database.commit()
 
             unique_rows = database.execute("SELECT COUNT(*) FROM winners").fetchone()[0]
-            duplicate_rows = scan_counts["candidate_rows"] - unique_rows
+            duplicate_rows = (
+                scan_counts["candidate_rows"]
+                - scan_counts["known_quarantine_rows_excluded"]
+                - unique_rows
+            )
             print(
                 json.dumps(
                     {
                         "event": "pleias_practical_admission_exact_dedup_complete",
                         "candidate_rows": scan_counts["candidate_rows"],
+                        "known_quarantine_rows_excluded": scan_counts[
+                            "known_quarantine_rows_excluded"
+                        ],
                         "unique_candidate_rows": unique_rows,
                         "exact_duplicate_rows_excluded": duplicate_rows,
                     },
@@ -414,11 +520,13 @@ def build_admission(
             "scan_logical_shards": logical_shards,
             "ordered_scan_receipts_sha256": canonical_sha256(receipt_hashes),
             "books_admission_receipt_sha256": books["receipt_sha256"],
+            "quarantine_registry": quarantine_registry,
         },
         "policy": {
             "english_only": True,
             "explicit_reusable_rights_only": True,
             "mechanical_non_slop_gate_required": True,
+            "known_quarantine_content_excluded": True,
             "exact_content_duplicate_policy": "smallest_identity_sha256_wins",
             "output_partition_policy": "canonical_source_path_sha256_modulo",
             "semantic_model_review_required": False,
@@ -450,6 +558,7 @@ def build_admission(
         "complete_source_parent_content_scan": all_assigned_parents_scanned,
         "deterministic_byte_cap_sampling_complete": True,
         "global_exact_content_deduplication_complete": True,
+        "known_quarantine_exclusions_applied": True,
         "global_near_deduplication_complete": False,
         "official_benchmark_decontamination_complete": False,
         "evaluation_claims_allowed": False,
@@ -474,6 +583,7 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--scan-root", type=Path, required=True)
     parser.add_argument("--books-receipt", type=Path, required=True)
+    parser.add_argument("--quarantine-registry-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--logical-shards", type=int, required=True)
     parser.add_argument("--total-text-byte-ceiling", type=int, required=True)
@@ -484,6 +594,7 @@ def main() -> int:
         args.manifest,
         args.scan_root,
         args.books_receipt,
+        args.quarantine_registry_root,
         args.output_root,
         args.logical_shards,
         args.total_text_byte_ceiling,

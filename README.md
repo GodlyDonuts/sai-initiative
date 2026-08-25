@@ -172,9 +172,13 @@ not wait for Hermès labels or the metadata-audit policy. The locator scan is a
 candidate pass; practical readiness is declared only after exact-content
 deduplication and final byte balancing. The admission pass uses an on-disk exact
 hash index, keeps the lexicographically smallest source identity per identical
-content hash, and subtracts exact admitted Books UTF-8 bytes from the shared
-2,000,000,000,000-byte ceiling before writing final PleIAs locators. Official
-benchmark cleanliness remains a separate evaluation-claim axis.
+content hash, verifies the signed 1,548-identity global quarantine registry,
+removes every matching known-bad content hash before deduplication, and
+subtracts exact admitted Books UTF-8 bytes from the shared
+2,000,000,000,000-byte ceiling before writing final PleIAs locators. This
+denylist application reads only compact locator hashes and therefore does not
+slow or restart the live source scan. Official benchmark cleanliness remains a
+separate evaluation-claim axis.
 
 Execution snapshot at 2026-08-25T03:28Z: all 128 PleIAs practical scan shards
 are running with zero nonempty error logs. Their latest complete-parent
@@ -229,7 +233,7 @@ immediately and the remainder stay scheduler-managed behind the account
 concurrency ceiling. Book practical admission `820358` is complete, and combined
 PleIAs exact-dedup/byte-balance admission `820649` remains dependency-staged
 after all 128 `820530` identities close. The complete repository regression
-suite passes: **1,327 tests, 2 dependency warnings**.
+suite passes: **1,328 tests, 2 dependency warnings**.
 
 Publication is dependency-staged rather than manual. After combined admission,
 128 independently retryable workers validate that each final PleIAs Parquet is
