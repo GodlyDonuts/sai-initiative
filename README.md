@@ -186,9 +186,9 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T04:48Z: all 128 PleIAs practical scan shards
+Execution snapshot at 2026-08-25T05:01Z: all 128 PleIAs practical scan shards
 are running with zero nonempty error logs. Their latest complete-parent
-checkpoints account for **1,547,049,520,096 selected UTF-8 bytes** across 3,907
+checkpoints account for **1,597,057,705,392 selected UTF-8 bytes** across 4,033
 parents; shard allocations are still open, so this is measured work in progress
 rather than admitted corpus size. Institutional Books practical admission has
 now closed successfully: **382,072 rows, 222,099,976,155 logical UTF-8 text
@@ -198,7 +198,7 @@ pretraining. Its 284,845,639-byte manifest independently rehashes to
 and its canonical receipt rehashes to
 `904b4f64801239fe492d025990245c6773ff2cbf3de5ce64017fd25e6ff9bc83`.
 This puts measured Books plus live PleIAs candidate mass at
-**1,769,149,496,251 bytes** before the pending cross-source exact-dedup and
+**1,819,157,681,547 bytes** before the pending cross-source exact-dedup and
 two-terabyte balance pass. To concentrate scheduler slots and shared storage
 bandwidth on this critical path, 122 nonblocking metadata-recovery workers were deferred after
 their exact identities, progress tails, 86 completed-receipt hashes, and resume
@@ -442,6 +442,24 @@ manifest were remotely replayed at Hugging Face evidence head
 Ordered concatenation of the four remote parts reproduced all 13,974 rows and
 the exact manifest SHA-256. The parts descriptor has canonical receipt
 `3287b272bd78bd12fca1b9a580928a8b0556815ecc404f57b3cb6ee401632c7a`.
+
+After the manifest-covered practical scans no longer required duplicate HF
+custody, public-storage quota prevented even a 12 MB connection-curriculum
+upload. Sai therefore reclaimed exactly **12,724** current `/data/` mirror
+objects totaling **5,719,811,111,395 bytes** and compacted repository history.
+Every removed path, byte size, and LFS SHA-256 matched the tracked source-lake
+manifest; all remain reconstructable from their pinned upstream repository,
+revision, path, and source SHA-256. The operation preserved all **110** small
+source manifests/READMEs plus every registry, evidence, curriculum, and training
+object. Its exact compressed deletion ledger and signed preflight/completion
+receipts live in
+[`artifacts/sai_hf_source_mirror_reclamation_20260825_r1`](artifacts/sai_hf_source_mirror_reclamation_20260825_r1)
+and were copied to the authorized Stokes evidence root. The compact HF dataset
+now holds 622 current files and 2,084,546,276 bytes at head
+`2a05f42030c209c5f1c5221629bb44751c782c06`. Historical HF commit IDs in this
+document remain provenance labels, while their byte evidence is preserved by
+the tracked manifests and durable receipts rather than retained repository
+history.
 
 This is a major storage and custody milestone, not a training-readiness claim.
 These are compressed source candidates, not eight trillion tokens and not a
@@ -747,6 +765,28 @@ aggregate/decontamination JSONL rows were independently replayed. This closes
 independent verification and benchmark decontamination for the retained bridge
 overlay, while correctly leaving global deduplication and transfer ablation
 open and `training_ready=false`.
+
+Those 460 clean bridges have now been compiled into **3,220** exact curriculum
+documents totaling **3,641,531 UTF-8 text bytes** across 20 semantic domain
+families. The pair-disjoint split assigns **3,052** documents to the prospective
+training stream and withholds **168** development documents from pretraining for
+the transfer measurement. A 920-anchor foundation query binds every exact and
+normalized candidate identity before final-corpus deduplication. The candidate
+and query receipts are
+`8db1dc1f277b08a2b79ae7cc3d067ba49e3eadeb881ccc065caecc5f26a4fe1c`
+and
+`cb9d081817df2eba713d27ae63ac1e57b9c49561573e3d2a70c9176265560a60`.
+All records are now published under
+`training/candidates/cross-domain-connections/20260826-r1` in HF commit
+[`2a05f42030c209c5f1c5221629bb44751c782c06`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2a05f42030c209c5f1c5221629bb44751c782c06).
+Because the account's LFS quota had not yet refreshed after compaction, the
+exact gzip stream is stored as 18 base64-JSON parts under signed multipart
+receipt `7f9bfa8f84fc39f0c7712b85745b5bc04f261e76620ffbca0c8f0c06486bbf00`.
+Remote reassembly recovered the exact 12,202,517-byte JSONL with SHA-256
+`194c95f4b7fa4f7ff371b61f856e68cdcde5b73a651cc8bfbb28cf55364723b5`.
+The final loader must include only the train split and cannot declare this
+overlay training-ready until foundation deduplication and the held-out transfer
+ablation close.
 
 #### Prerequisite-edge compiler
 
