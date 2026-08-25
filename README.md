@@ -256,15 +256,17 @@ The compact replay artifact is
 `artifacts/sai_pleias_practical_quality_route_replay_20260825_r1.json`, receipt
 `7eeeff2eb2e561c7514bbb7dbbfd95e23b546f451d16912be5a7fa35cffcd088`.
 
-At the 2026-08-25T13:15Z checkpoint, admission `822232` had crossed its first
-quarter boundary: **33/128** locator shards replayed, **21,195,091** candidate
-rows and **515,624,994,591** candidate text bytes entered the disk-backed
-global exact-content index, and stderr remained exactly empty. The live worker
-was independently observed on `ec57` at the pinned `6a024e4…25d9` runtime,
-with requeue disabled, one fully utilized admission process, and ample local
-scratch and Lustre quota headroom. This is measured scan progress, not the
-post-dedup admitted total; publication and readiness remain dependency-bound to
-the signed final receipt.
+At the 2026-08-25T13:45Z checkpoint, admission `822232` reached its exact
+halfway boundary: **64/128** locator shards replayed, **41,119,246** candidate
+rows and **999,999,989,050** candidate text bytes entered the disk-backed
+global exact-content index. The complete progress log was 11,645 bytes with
+SHA-256 `1ba211864f3111418b3654cce29d36f0af8698506c885dc3da009ee357e6bce6`;
+stderr remained the canonical empty file. The live worker was independently
+observed on `ec57` at the pinned `6a024e4…25d9` runtime, requeue disabled,
+99.3% CPU, about 6.6 GB resident memory, and a 41,089,957,888-byte node-local
+exact-dedup database. This is measured scan progress, not the post-dedup
+admitted total; publication and readiness remain dependency-bound to the
+signed final receipt.
 
 A cross-cluster scheduler preflight also found that `SLURM_CONF_SERVER` cannot
 override an already-present local `slurm.conf` on a Stokes compute node. The
@@ -319,15 +321,19 @@ latency without weakening downstream independent-verifier gates. The complete
 repository passes **1,378 tests**, including a reproduction that alternates the
 two observed failures before returning a valid third response.
 
-At the 2026-08-25T13:15Z execution snapshot, the immutable replacement workers
-have created **1,401** signed book judgments and sealed **42** logical-shard
+At the 2026-08-25T13:45Z execution snapshot, the immutable replacement workers
+have created **1,520** signed book judgments and sealed **44** logical-shard
 summaries. The cumulative-validation repair closed both previously stubborn
 shards 3 and 65 at exact 34/34 and 38/38 identity coverage; later shard lanes
 continue automatically under the same ten-slot request ceiling. Newly sealed
 shards 101 and 161 independently replay at exact 31/31 and 29/29 identity
 coverage, and shards 130--133 replay at exact 40/40, 26/26, 44/44, and 28/28
 coverage. Every live judgment independently replays with a unique identity,
-valid canonical hash, and no persisted API credentials. Ordinary 429
+valid canonical hash, and no persisted API credentials. The ordered live and
+sealed-summary receipt digests are
+`6e261a5eb3175b6631aaf15b751b6809473a03898ab6253c80862a663cd8948f`
+and `ec01afe37bcc9eee1adcd12215e397b01efb8544ba0f96a4782e3fa37650ecab`.
+Ordinary 429
 and strict evidence retries remain resumable and do not relax the book schema.
 
 The practical corpus now also has a separate educational-code overlay instead
