@@ -186,7 +186,7 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T07:21Z: 122 PleIAs practical scan shards have
+Execution snapshot at 2026-08-25T09:03Z: 122 PleIAs practical scan shards have
 closed with zero scientific errors. Their signed receipts alone account for
 **1,906,249,975,423 selected UTF-8 bytes** across 4,880 complete parents. Six
 remaining original tasks were separately proven to be infrastructure failures:
@@ -198,9 +198,11 @@ Identity-preserving replacements `822087`--`822092` now run from immutable
 commit `f4d27458b942b8bd4414b472a512db847d4f8bbc` with bounded connect/read
 timeouts, closed response custody, exact-hash retries, and unchanged source and
 sampling bytes. The replacement downloader independently replayed exact 8,710-
-and 104,183,282-byte Hugging Face objects on Stokes before launch. Shard
-allocations are still open, so this
-is measured work in progress rather than admitted corpus size. Institutional
+and 104,183,282-byte Hugging Face objects on Stokes before launch. All six
+repairs remain healthy and have each closed 11 parents, totaling
+**26,211,705,264** additional selected bytes in create-only partial locators.
+Shard allocations are still open, so this is measured work in progress rather
+than admitted corpus size. Institutional
 Books practical admission has
 now closed successfully: **382,072 rows, 222,099,976,155 logical UTF-8 text
 bytes, and 69,795,954,639 enriched tokens** are admitted for private practical
@@ -289,13 +291,20 @@ proved it inefficient; its 2.85 MB of unclosed partial files were permanently
 removed. The first byte-cap staging `820410` was also stopped before a final
 locator existed when Slurm denied extension of its unsafe 12-hour limit; its
 0.50 MB of unclosed partials were removed. Final PleIAs locator array
-`820530_[0-127%128]` launched all 128 fixed source partitions with the same
-scientific bytes and a 24-hour termination margin; all 128 are now running
-concurrently across eight Stokes nodes. Book practical admission `820358` is
-complete, and combined
-PleIAs exact-dedup/byte-balance admission `820649` remains dependency-staged
-after all 128 `820530` identities close. The complete repository regression
-suite passes: **1,338 tests, 2 dependency warnings**.
+`820530_[0-127%128]` closed 122 fixed source partitions and the six exact-
+identity repairs are `822087`--`822092`. Book practical admission `820358` is
+complete. A pre-execution audit found that the old pending admission/publication
+chain imported the mutable live checkout and that its captured admission bytes
+omitted the now-required quarantine registry. It had produced no output and was
+canceled as an infrastructure/custody failure. Replacement admission `822232`
+runs only after the six repairs from immutable runtime
+`6a024e448f383abf38c1674b8cacabcf0ded25d9`; it binds both the source
+manifest and 1,548-identity quarantine registry to that same runtime. Dependent
+jobs are publication array `822233`, remote aggregate `822234`, metadata
+publication `822235`, final readiness audit `822236`, transient reconstruction
+smoke `822237`, and connection reconciliation `822238`. All remain byte-bound
+and requeue-disabled. The complete repository regression suite passes:
+**1,373 tests, 2 dependency warnings**.
 
 Publication is dependency-staged rather than manual. After combined admission,
 128 independently retryable workers validate that each final PleIAs Parquet is
@@ -847,8 +856,8 @@ prospective train documents are silently omitted or mixed in before their
 foundation-overlap and positive-transfer gates close. The multi-terabyte core
 cannot be used to claim that connection data was included; the connection
 component has separate byte, row, split, verification, and curriculum custody.
-Practical-foundation reconciliation job `821936` is dependency-bound to exact
-PleIAs admission job `820649`. It will hash-replay the 382,072-row Books
+Practical-foundation reconciliation job `822238` is dependency-bound to exact
+PleIAs admission job `822232`. It will hash-replay the 382,072-row Books
 manifest and every final PleIAs locator, scan only the compact content-hash
 columns, promote a provisional development pair to train if either source
 anchor is already present in the training foundation, and withhold an exact
