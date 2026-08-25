@@ -14,10 +14,12 @@ import hashlib
 import json
 import os
 import tempfile
+import time
 import uuid
 from collections import Counter
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 from sai.data.agent_labeling import _atomic_create
 from sai.data.pleias_bounded_mechanical_candidates import (
@@ -25,7 +27,6 @@ from sai.data.pleias_bounded_mechanical_candidates import (
     MINIMUM_TEXT_BYTES,
     MINIMUM_WORD_COUNT,
     REQUIRED_COLUMNS,
-    _download,
     license_allowed,
 )
 from sai.data.pleias_metadata_census import load_manifest, select_shard
@@ -38,6 +39,60 @@ SHARD_SCHEMA = "sai-pleias-practical-locator-scan-shard-v1"
 
 class PleiasPracticalLocatorScanError(RuntimeError):
     """A pinned parent, row, or practical admission invariant differs."""
+
+
+def _download_pinned_parent(
+    row: dict[str, Any], token: str, scratch: Path, attempts: int = 5
+) -> Path:
+    """Stream one exact parent with bounded reads and closed retry responses."""
+
+    if not token or attempts < 1:
+        raise PleiasPracticalLocatorScanError("parent download arguments differ")
+    try:
+        import httpx
+    except ImportError as error:
+        raise PleiasPracticalLocatorScanError("httpx is required") from error
+    url = (
+        "https://huggingface.co/datasets/"
+        f"{quote(row['source_repository'], safe='/')}/resolve/"
+        f"{quote(row['source_revision'], safe='')}/"
+        f"{quote(row['source_path'], safe='/')}"
+    )
+    scratch.mkdir(parents=True, exist_ok=True)
+    target = scratch / "parent.parquet"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept-Encoding": "identity",
+        "User-Agent": "sai-practical-locator/1.0",
+    }
+    last_error: BaseException | None = None
+    for attempt in range(attempts):
+        target.unlink(missing_ok=True)
+        try:
+            timeout = httpx.Timeout(180.0, connect=30.0, write=30.0, pool=30.0)
+            with httpx.Client(follow_redirects=True, timeout=timeout) as client:
+                with client.stream("GET", url, headers=headers) as response:
+                    response.raise_for_status()
+                    with target.open("xb") as handle:
+                        for chunk in response.iter_bytes(chunk_size=8 * 1024 * 1024):
+                            if chunk:
+                                handle.write(chunk)
+                        handle.flush()
+                        os.fsync(handle.fileno())
+            if (
+                target.stat().st_size != row["bytes"]
+                or sha256_file(target) != row["sha256"]
+            ):
+                raise PleiasPracticalLocatorScanError("PleIAs parent identity differs")
+            return target
+        except (OSError, httpx.HTTPError, PleiasPracticalLocatorScanError) as error:
+            last_error = error
+            target.unlink(missing_ok=True)
+            if attempt + 1 < attempts:
+                time.sleep(min(30, 2**attempt * 2))
+    raise PleiasPracticalLocatorScanError(
+        "bounded parent download failed"
+    ) from last_error
 
 
 def _schema():
@@ -170,7 +225,7 @@ def run_shard(
             with tempfile.TemporaryDirectory(
                 prefix="sai-pleias-practical-", dir=scratch_root
             ) as directory:
-                local = _download(parent, token, Path(directory))
+                local = _download_pinned_parent(parent, token, Path(directory))
                 parquet = pq.ParquetFile(local)
                 if not REQUIRED_COLUMNS.issubset(parquet.schema_arrow.names):
                     raise PleiasPracticalLocatorScanError("parent columns differ")

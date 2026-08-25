@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+
+import httpx
+
 from sai.data.pleias_practical_locator_scan import (
+    _download_pinned_parent,
     _hash_selected,
     _ordered_parents,
     _route,
@@ -63,3 +68,41 @@ def test_early_stop_parent_order_is_deterministic_and_not_path_ordered():
     assert method == repeated_method == "canonical_source_identity_sha256"
     assert ordered == repeated
     assert ordered != parents
+
+
+def test_bounded_parent_download_retries_and_closes_response(tmp_path, monkeypatch):
+    content = b"exact pinned parquet payload"
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        if len(requests) == 1:
+            raise httpx.ReadTimeout("transient closed response", request=request)
+        assert request.headers["Authorization"] == "Bearer token"
+        assert request.headers["Accept-Encoding"] == "identity"
+        return httpx.Response(200, content=content, request=request)
+
+    real_client = httpx.Client
+    transport = httpx.MockTransport(handler)
+
+    def client(**kwargs):
+        return real_client(
+            transport=transport,
+            follow_redirects=kwargs["follow_redirects"],
+            timeout=kwargs["timeout"],
+        )
+
+    monkeypatch.setattr(httpx, "Client", client)
+    monkeypatch.setattr(
+        "sai.data.pleias_practical_locator_scan.time.sleep", lambda _: None
+    )
+    row = {
+        "source_repository": "example/source",
+        "source_path": "data/parent.parquet",
+        "source_revision": "1" * 40,
+        "bytes": len(content),
+        "sha256": hashlib.sha256(content).hexdigest(),
+    }
+    path = _download_pinned_parent(row, "token", tmp_path, attempts=2)
+    assert path.read_bytes() == content
+    assert len(requests) == 2

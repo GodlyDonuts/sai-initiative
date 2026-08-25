@@ -221,6 +221,10 @@ normalization. Replacement population job `821500` completed successfully in
 single measured-safe Hermès lane is live while all later conservative decision,
 independent Nemotron, agreement,
 decontamination, subdocument-signature, and evidence jobs are dependency-staged.
+The remaining 31 Hermès array lanes are now released behind an exact serial
+`afterok` chain from lane 0 through lane 31. This preserves the measured
+one-lane provider limit and every frozen identity while removing manual gaps;
+it cannot increase concurrent API pressure or duplicate a completed judgment.
 
 The practical corpus now also has a separate educational-code overlay instead
 of misclassifying programming-language rows as non-English prose. Common Pile
