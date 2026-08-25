@@ -325,6 +325,24 @@ evidence is
 `artifacts/sai_pleias_admission_accelerated_recovery_stage_20260825_r1.json`,
 receipt `817b8cf351e5e7aaa3056b31623ac212158103aaa9aefc01960ae2912bc139a9`.
 
+The measured recovery decision has now executed. Primary `822232` was stopped
+only after the verified split-payload runtime, its 128 GiB allocation, and 49
+idle normal nodes made completion through recovery decisively faster; it had
+reached **107/128** shards, **68,762,140** rows, and
+**1,671,874,979,638** candidate bytes with no final artifact. Cleanup was
+restricted to that unreleased partial root, which contained zero durable output
+files, and is signed by receipt
+`c887cca90c948007f73248a8f2c1e7aae3dd976fbac46f66bb1a26a5a6897390`.
+Recovery `822772` then scanned all **128/128** immutable locator shards and
+reproduced the exact **82,229,028 rows / 1,999,999,974,278 source bytes**.
+Global exact dedup retained **77,166,100** unique candidates, excluded
+**5,062,924** exact duplicate rows, and excluded the four registered quarantine
+rows. The deterministic byte-cap writer is now emitting 128 compact locator
+shards with empty stderr. Publication `822233`, transient remote-stream smoke
+`822237`, bridge reconciliation `822238`, and the matched-control transfer
+screen remain automatically dependency-staged behind its signed terminal
+receipt; no 4B training is authorized by this data construction milestone.
+
 A cross-cluster scheduler preflight also found that `SLURM_CONF_SERVER` cannot
 override an already-present local `slurm.conf` on a Stokes compute node. The
 old pending connection launchers `822003` and `822239` would therefore have
