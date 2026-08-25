@@ -176,15 +176,21 @@ content hash, and subtracts exact admitted Books UTF-8 bytes from the shared
 2,000,000,000,000-byte ceiling before writing final PleIAs locators. Official
 benchmark cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T03:02Z: all 128 PleIAs practical scan shards
+Execution snapshot at 2026-08-25T03:28Z: all 128 PleIAs practical scan shards
 are running with zero nonempty error logs. Their latest complete-parent
-checkpoints account for **1,024,342,426,681 selected UTF-8 bytes** across 2,586
+checkpoints account for **1,141,756,025,323 selected UTF-8 bytes** across 2,883
 parents; shard allocations are still open, so this is measured work in progress
-rather than admitted corpus size. The Institutional Books filtered-corpus
-aggregate completed successfully with 382,072 retained rows and 94 mechanical
-rejects; practical admission is now replaying the resulting 86.1 GB private
-corpus. To concentrate scheduler slots and shared storage bandwidth on this
-critical path, 122 nonblocking metadata-recovery workers were deferred after
+rather than admitted corpus size. Institutional Books practical admission has
+now closed successfully: **382,072 rows, 222,099,976,155 logical UTF-8 text
+bytes, and 69,795,954,639 enriched tokens** are admitted for private practical
+pretraining. Its 284,845,639-byte manifest independently rehashes to
+`8cd4981dcfc2349ef36e4f53b4ee5ff6555df8909d917f389e44deebc9d8e992`,
+and its canonical receipt rehashes to
+`904b4f64801239fe492d025990245c6773ff2cbf3de5ce64017fd25e6ff9bc83`.
+This puts measured Books plus live PleIAs candidate mass at
+**1,363,856,001,478 bytes** before the pending cross-source exact-dedup and
+two-terabyte balance pass. To concentrate scheduler slots and shared storage
+bandwidth on this critical path, 122 nonblocking metadata-recovery workers were deferred after
 their exact identities, progress tails, 86 completed-receipt hashes, and resume
 rule were preserved in durable Stokes evidence. An automatic redispatch was
 also stopped, leaving zero metadata-recovery tasks active and the completed
@@ -195,9 +201,11 @@ pathological archive record with more than 64 ISBNs exposed a prompt-metadata
 bound in the first 8,192-work population attempt. Sai now preserves the full
 raw metadata-row hash while passing Hermès a stable first-unique bounded view
 of identifiers and duplicate barcodes. Twenty-two focused tests cover this
-normalization, and replacement population job `821500` is live with all later
-Hermès, conservative decision, independent Nemotron, agreement,
-decontamination, subdocument-signature, and evidence jobs dependency-staged.
+normalization. Replacement population job `821500` completed successfully in
+19m44s with all 8,192 selected works and 1,206,849,389 candidate tokens; the
+single measured-safe Hermès lane is live while all later conservative decision,
+independent Nemotron, agreement,
+decontamination, subdocument-signature, and evidence jobs are dependency-staged.
 
 Final locator shards preserve source locality: after global content-hash dedup,
 every winning row is assigned by canonical source-path hash, so all retained
@@ -218,13 +226,10 @@ locator existed when Slurm denied extension of its unsafe 12-hour limit; its
 `820530_[0-127%128]` launched all 128 fixed source partitions with the same
 scientific bytes and a 24-hour termination margin; 118 were admitted
 immediately and the remainder stay scheduler-managed behind the account
-concurrency ceiling. Book practical admission `820358` is staged after the
-existing mechanical filter aggregate, and combined PleIAs exact-dedup/byte-
-balance admission `820649` is staged after both `820530` and `820358`. At
-launch, 60/64 book gate shards had accepted
-358,031 of 358,120 examined works (99.975%) and accounted for 64,830,934,694
-materialized enriched tokens, with zero nonempty gate error logs. The complete
-repository regression suite passes: **1,327 tests, 2 dependency warnings**.
+concurrency ceiling. Book practical admission `820358` is complete, and combined
+PleIAs exact-dedup/byte-balance admission `820649` remains dependency-staged
+after all 128 `820530` identities close. The complete repository regression
+suite passes: **1,327 tests, 2 dependency warnings**.
 
 Publication is dependency-staged rather than manual. After combined admission,
 128 independently retryable workers validate that each final PleIAs Parquet is
