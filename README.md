@@ -217,6 +217,24 @@ single measured-safe Hermès lane is live while all later conservative decision,
 independent Nemotron, agreement,
 decontamination, subdocument-signature, and evidence jobs are dependency-staged.
 
+The practical corpus now also has a separate educational-code overlay instead
+of misclassifying programming-language rows as non-English prose. Common Pile
+Stack-Edu revision `c354dbe8…54de` contributes 95 exact compressed parents
+(83,037,672,896 physical bytes) spanning Markdown and fourteen programming
+languages. The locator policy accepts only integer educational scores 3–4,
+UTF-8 source rows, non-vendor and non-generated files, and complete permissive
+license sets drawn from the frozen Stack-Edu allowlist. It excludes bounded
+secret/credential matches, personal-email candidates, JWT/high-entropy tokens,
+extreme minification or repetition, generated-code markers, and Python that
+does not parse as Python 3. Like the prose path, it preserves only exact parent,
+row, repository, license, language, score, byte-count, and content-hash
+locators—not source text. Array `821719_[0-94%95]` is staged behind the live
+PleIAs scan so it reuses released CPU slots rather than competing with the 2 TB
+critical path. A separate on-disk exact-dedup admission then enforces the global
+quarantine registry and a 150,000,000,000-byte code ceiling. Code admission is
+an overlay candidate until its scan and signed admission receipt close; it does
+not change the running PleIAs bytes or authorize the 4B run.
+
 Final locator shards preserve source locality: after global content-hash dedup,
 every winning row is assigned by canonical source-path hash, so all retained
 rows from one upstream Parquet stay together. The transient stream reader uses
