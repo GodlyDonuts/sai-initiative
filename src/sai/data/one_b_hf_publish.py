@@ -216,7 +216,7 @@ def publish(
         ]
         uploads = packed + tokenizer_files + metadata
         try:
-            from huggingface_hub import CommitOperationAdd, HfApi
+            from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
         except ImportError as error:
             raise OneBHfPublishError("huggingface_hub is required") from error
         api = HfApi(token=token)
@@ -255,16 +255,29 @@ def publish(
             )
         final_info = api.dataset_info(REPOSITORY, files_metadata=True)
         remotes = {row.rfilename: row for row in final_info.siblings}
-        for row in packed:
+        for row in uploads:
             remote = remotes.get(row["remote_path"])
             lfs = None if remote is None else remote.lfs
-            if (
-                remote is None
-                or lfs is None
-                or remote.size != row["bytes"]
-                or lfs.sha256 != row["sha256"]
-            ):
-                raise OneBHfPublishError("remote packed LFS identity differs")
+            if remote is None or remote.size != row["bytes"]:
+                raise OneBHfPublishError("remote publication identity differs")
+            if lfs is not None:
+                if lfs.sha256 != row["sha256"]:
+                    raise OneBHfPublishError("remote publication identity differs")
+            else:
+                downloaded = Path(
+                    hf_hub_download(
+                        repo_id=REPOSITORY,
+                        filename=row["remote_path"],
+                        repo_type="dataset",
+                        revision=final_info.sha,
+                        token=token,
+                    )
+                )
+                if (
+                    downloaded.stat().st_size != row["bytes"]
+                    or sha256_file(downloaded) != row["sha256"]
+                ):
+                    raise OneBHfPublishError("remote publication identity differs")
         payload = {
             "schema": SCHEMA,
             "status": "complete_self_contained_1b_packed_hf_publication",
@@ -280,6 +293,7 @@ def publish(
             "tokenizer_files": len(tokenizer_files),
             "stage_exposure_rows": len(exposures),
             "all_packed_lfs_identities_verified": True,
+            "all_remote_identities_verified": True,
             "development_rows_excluded": True,
             "source_text_uploaded": False,
             "packed_training_tokens_uploaded": True,

@@ -141,6 +141,7 @@ def build(
         != tokenizer["receipt_sha256"]
         or hf.get("config_receipt_sha256") != config["receipt_sha256"]
         or hf.get("all_packed_lfs_identities_verified") is not True
+        or hf.get("all_remote_identities_verified") is not True
         or hf.get("development_rows_excluded") is not True
         or hf.get("packed_training_tokens_uploaded") is not True
         or hf.get("directly_trainable_after_download") is not True
