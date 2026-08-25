@@ -1,8 +1,10 @@
 # Sai Initiative
 
 Sai is Project Shohin's return to its original objective: build the strongest
-practical model near four billion parameters. This repository is the live
-scratchpad and implementation surface for that effort.
+practical **one-billion-parameter English polymath**. This repository is the
+live scratchpad and implementation surface for that effort. The former 4B
+target is retired; historical 4B contracts remain only as provenance and cannot
+authorize a run.
 
 Nothing is called an improvement until it beats the unchanged parent and an
 equal-compute control on real, source-disjoint benchmarks.
@@ -11,10 +13,11 @@ equal-compute control on real, source-disjoint benchmarks.
 sequence: verified source bytes, quality and duplication controls, explicit
 prerequisite coverage, gradual difficulty, later rehearsal of fundamentals,
 and source-disjoint evaluation. A sophisticated mixer cannot compensate for
-bad examples or for teaching dependent concepts before their primitives. A 4B
-run may now be used as the decisive architecture experiment once its data is
-qualified, but the architecture is not called successful until that checkpoint
-beats the unchanged and equal-compute baselines on real benchmarks.
+bad examples or for teaching dependent concepts before their primitives. A 1B
+run may be used as the decisive model experiment once its exact tokenizer,
+curriculum index, packed-stream plan, and execution preflight are qualified,
+but the model is not called successful until that checkpoint beats the
+unchanged and equal-compute baselines on real benchmarks.
 
 Sai treats data admission as three separate scientific questions:
 
