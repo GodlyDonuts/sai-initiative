@@ -282,6 +282,7 @@ def execute_contract(
     raw_judgment = None
     judgment = None
     evidence_repairs: list[dict[str, Any]] = []
+    cumulative_validation_hints: list[str] = []
     choice = None
     shared_provider_concurrency = _shared_provider_concurrency(base_url)
     for attempt in range(1, maximum_attempts + 1):
@@ -438,6 +439,11 @@ def execute_contract(
                         "preservation_policy=reject; do not retain it merely because "
                         "it names a valuable work."
                     )
+                if (
+                    validation_hint
+                    and validation_hint not in cumulative_validation_hints
+                ):
+                    cumulative_validation_hints.append(validation_hint)
                 body["messages"] = [
                     *base_messages,
                     {"role": "assistant", "content": prior_content},
@@ -450,7 +456,7 @@ def execute_contract(
                             "the prior answer. Remove any claim or edge that cannot be "
                             "supported by a byte-for-byte quote from "
                             f"{evidence_container_name}."
-                            + validation_hint
+                            + "".join(cumulative_validation_hints)
                             + (
                                 " You MUST replace evidence_quotes only with one "
                                 "to four complete, exact strings copied from "

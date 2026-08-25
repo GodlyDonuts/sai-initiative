@@ -384,3 +384,66 @@ def test_book_validation_hints_pin_high_frequency_repairs() -> None:
     evidence = validation_hint("concept edge evidence differs")
     assert "exact contiguous substring" in evidence
     assert "concept_edges=[]" in evidence
+
+
+def test_book_worker_carries_prior_validation_hints_across_retries() -> None:
+    candidate = _candidate()
+    bad_translation = _judgment()
+    bad_translation["translation_type"] = "use_existing_human_translation"
+    bad_translation["translation_confidence_ppm"] = 700_000
+    bad_translation["human_translation_search_required"] = True
+    bad_translation["preserve_original_language_anchor"] = True
+    bad_edge = _judgment()
+    bad_edge["concept_edges"][0]["evidence_quote"] = "not in the excerpt"
+    payloads = [bad_translation, bad_edge, _judgment()]
+    calls = []
+
+    def request_function(**kwargs):
+        calls.append(kwargs["body"])
+        return (
+            {
+                "choices": [
+                    {
+                        "message": {
+                            "content": json.dumps(payloads[len(calls) - 1])
+                        },
+                        "finish_reason": "stop",
+                    }
+                ]
+            },
+            200,
+        )
+
+    receipt = execute_one(
+        candidate,
+        model="stealth/ox-alpha",
+        base_url="http://127.0.0.1:8645/v1",
+        api_key="loopback-only",
+        timeout_seconds=1,
+        maximum_attempts=3,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+
+    assert [attempt["outcome"] for attempt in receipt["attempts"]] == [
+        "invalid_model_output",
+        "invalid_model_output",
+        "valid",
+    ]
+    final_repair = calls[2]["messages"][-1]["content"]
+    assert "translation_type=none_english" in final_repair
+    assert "concept_edges=[]" in final_repair
+    assert len(set(receipt["attempt_request_sha256s"])) == 3
+
+
+def test_book_compiler_job_uses_an_immutable_runtime() -> None:
+    script = (
+        Path(__file__).parents[1]
+        / "scripts/run_institutional_books_semantic_compiler_stokes.sbatch"
+    ).read_text(encoding="utf-8")
+    assert "#SBATCH --no-requeue" in script
+    assert "#SBATCH --gres" not in script
+    assert 'SAI_RUNTIME_ROOT:?' in script
+    assert 'SAI_RUNTIME_COMMIT:?' in script
+    assert 'export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"' in script
+    assert 'export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src' not in script

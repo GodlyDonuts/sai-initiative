@@ -13,6 +13,11 @@
 
 set -euo pipefail
 
+: "${SAI_RUNTIME_ROOT:?immutable Sai runtime root is required}"
+: "${SAI_RUNTIME_COMMIT:?immutable Sai runtime commit is required}"
+[[ "$(git -C "${SAI_RUNTIME_ROOT}" rev-parse HEAD)" == "${SAI_RUNTIME_COMMIT}" ]]
+[[ -z "$(git -C "${SAI_RUNTIME_ROOT}" status --porcelain)" ]]
+
 export OPENBLAS_NUM_THREADS=1
 export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
@@ -22,7 +27,7 @@ source /lustre/fs1/home/sa305415/hfenv/bin/activate
 set -a
 source /lustre/fs1/home/sa305415/sai-initiative/.env
 set +a
-export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
+export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 
 sai_population=/lustre/fs1/home/sa305415/sai_data_sources/institutional-books-semantic-population-20260826-r1
 sai_candidates=${sai_population}/candidates.jsonl
