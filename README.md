@@ -393,6 +393,25 @@ and `ec01afe37bcc9eee1adcd12215e397b01efb8544ba0f96a4782e3fa37650ecab`.
 Ordinary 429
 and strict evidence retries remain resumable and do not relax the book schema.
 
+During scheduler cleanup, canceling permanently unsatisfiable original array
+`818512` satisfied the `afterany` dependency on its obsolete retry array
+`818615`. Sixteen superseded tasks ran for 13m09s--13m11s before the release
+was detected and the entire old array was canceled; the intended four tasks in
+`822242` were not stopped. The shared ten-request contract therefore cannot be
+claimed for that bounded interval. Because receipts are create-only and the
+old and new arrays addressed the same candidate identities, model, rubric, and
+paths, every resulting artifact was preserved and independently replayed.
+The post-event snapshot contains **2,147** unique valid receipts and **63**
+valid sealed summaries covering **2,004** identities, with zero unexpected
+receipts and no persisted API credential. Its ordered receipt and summary
+digests are `6ce413b7...9349` and `d2aff866...dd2`. The remaining obsolete
+`818xxx` dependency graph was then canceled leaves-first, including its retry
+arrays before their parents; zero pending or running `818xxx` jobs remain.
+Only the active `821xxx` Books evidence chain and `822xxx` practical-release
+chain remain. The signed audit is
+`artifacts/sai_obsolete_scheduler_graph_cleanup_20260825_r1.json`, receipt
+`f8634d5a891c2c350f3b36029b188b8562729af65b390613d01b3fdc39e5e55a`.
+
 The practical corpus now also has a separate educational-code overlay instead
 of misclassifying programming-language rows as non-English prose. Common Pile
 Stack-Edu revision `c354dbe8…54de` contributes 95 exact compressed parents
