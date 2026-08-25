@@ -28,17 +28,16 @@ sai_activate_verified_slurm_config() {
   # suppresses Newton's ClusterName even when SLURM_CONF points at Newton.
   unset SLURM_CONF_SERVER SLURM_CLUSTER_NAME
   actual_cluster=
-  # A newly started Stokes batch allocation can briefly return an empty
-  # `scontrol show config` response while the explicitly selected Newton
-  # controller becomes reachable. Retry only this read-only identity query;
-  # never retry a submission or accept an empty/mismatched cluster name.
+  # Retry only this read-only identity query; never retry a submission or
+  # accept an empty/mismatched cluster name.  The parser deliberately consumes
+  # all output: exiting after ClusterName would give `scontrol` SIGPIPE under
+  # the launcher's `pipefail` and discard an otherwise valid result.
   for cluster_query_attempt in 1 2 3 4 5; do
     actual_cluster="$(
       scontrol show config 2>/dev/null | awk -F= '
         /^ClusterName/ {
           gsub(/[[:space:]]/, "", $2)
           print $2
-          exit
         }
       '
     )" || actual_cluster=
