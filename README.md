@@ -186,7 +186,7 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T11:49Z: 122 PleIAs practical scan shards have
+Execution snapshot at 2026-08-25T12:03Z: 122 PleIAs practical scan shards have
 closed with zero scientific errors. Their signed receipts alone account for
 **1,906,249,975,423 selected UTF-8 bytes** across 4,880 complete parents. Six
 remaining original tasks were separately proven to be infrastructure failures:
@@ -199,10 +199,10 @@ commit `f4d27458b942b8bd4414b472a512db847d4f8bbc` with bounded connect/read
 timeouts, closed response custody, exact-hash retries, and unchanged source and
 sampling bytes. The replacement downloader independently replayed exact 8,710-
 and 104,183,282-byte Hugging Face objects on Stokes before launch. All six
-repairs remain healthy: shards 41, 50, and 56 have each closed 33 parents, and
-shards 105, 125, and 126 have each closed 32. Together they account for
-**77,230,134,201** additional selected bytes in create-only partial locators,
-or 82.38% of their six fixed byte caps.
+repairs remain healthy: shard 50 has closed 35 parents, and shards 41, 56, 105,
+125, and 126 have each closed 34. Together they account for
+**81,187,711,216** additional selected bytes in create-only partial locators,
+or 86.60% of their six fixed byte caps.
 Shard allocations are still open, so this is measured work in progress rather
 than admitted corpus size. Institutional
 Books practical admission has
@@ -212,6 +212,14 @@ pretraining. Its 284,845,639-byte manifest independently rehashes to
 `8cd4981dcfc2349ef36e4f53b4ee5ff6555df8909d917f389e44deebc9d8e992`,
 and its canonical receipt rehashes to
 `904b4f64801239fe492d025990245c6773ff2cbf3de5ce64017fd25e6ff9bc83`.
+A read-only compute-node admission preflight independently replayed every
+currently sealed scan receipt and full locator-object SHA-256 before the live
+repairs closed. The **122/122** sealed identities cover 9,532 distinct manifest
+parents and account for 78,372,567 rows, 1,906,249,975,423 logical text bytes,
+475,349,736,010 source tokens, and 11,103,231,222 physical locator bytes with
+zero receipt, manifest-partition, file-size, or file-hash failures. The pinned
+Books receipt, 10,000-parent source manifest, and 1,548-row quarantine registry
+also replay cleanly inside the exact immutable admission runtime.
 This puts measured Books plus live PleIAs candidate mass at
 **2,128,349,951,578 bytes** before the six replacements, pending cross-source exact-dedup, and
 two-trillion-byte balance pass. The final admission still must prove the signed
