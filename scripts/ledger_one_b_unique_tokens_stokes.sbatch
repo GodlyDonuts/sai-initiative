@@ -18,7 +18,9 @@ set -euo pipefail
 [[ -z "$(git -C "${SAI_RUNTIME_ROOT}" status --porcelain)" ]]
 source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
-sai_root=/lustre/fs1/home/sa305415/sai_data_sources/one-b-curriculum-index-20260826-r1
+sai_data_root=/lustre/fs1/home/sa305415/sai_data_sources
+curriculum_release="${SAI_ONE_B_CURRICULUM_RELEASE:-one-b-curriculum-index-20260826-r2}"
+sai_root="${sai_data_root}/${curriculum_release}"
 python -m sai.data.one_b_unique_token_ledger \
   --root "${sai_root}" \
   --output "${sai_root}/unique-token-ledger.json"

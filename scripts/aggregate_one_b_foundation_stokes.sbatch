@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=sai-1b-pack-connect
+#SBATCH --job-name=sai-1b-foundation-aggregate
 #SBATCH --partition=normal
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=2
 #SBATCH --mem=4G
-#SBATCH --time=01:00:00
+#SBATCH --time=04:00:00
 #SBATCH --exclude=ec65
 #SBATCH --no-requeue
-#SBATCH --output=/lustre/fs1/home/sa305415/sai_data_sources/logs/one-b-pack-connect-%j.out
-#SBATCH --error=/lustre/fs1/home/sa305415/sai_data_sources/logs/one-b-pack-connect-%j.err
+#SBATCH --output=/lustre/fs1/home/sa305415/sai_data_sources/logs/one-b-foundation-aggregate-%j.out
+#SBATCH --error=/lustre/fs1/home/sa305415/sai_data_sources/logs/one-b-foundation-aggregate-%j.err
 
 set -euo pipefail
 : "${SAI_RUNTIME_ROOT:?immutable runtime is required}"
@@ -18,13 +18,9 @@ set -euo pipefail
 [[ -z "$(git -C "${SAI_RUNTIME_ROOT}" status --porcelain)" ]]
 source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
-export TOKENIZERS_PARALLELISM=false
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources
-curriculum_release="${SAI_ONE_B_CURRICULUM_RELEASE:-one-b-curriculum-index-20260826-r2}"
 foundation_release="${SAI_ONE_B_FOUNDATION_RELEASE:-one-b-foundation-window-20260826-r2}"
-python -m sai.data.one_b_foundation_pack connections \
-  --admission-root "${sai_root}/bridge-training-component-admission-20260826-r1" \
-  --index-root "${sai_root}/${curriculum_release}/connections" \
+python -m sai.data.one_b_foundation_aggregate \
+  --pack-root "${sai_root}/${foundation_release}/packed" \
   --plan "${sai_root}/${foundation_release}/plan.json" \
-  --tokenizer-root "${sai_root}/one-b-production-tokenizer-20260826-r1/build/48k" \
-  --output-root "${sai_root}/${foundation_release}/packed/connections"
+  --output-root "${sai_root}/${foundation_release}/exact"

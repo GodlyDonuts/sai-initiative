@@ -19,6 +19,7 @@ set -euo pipefail
 source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources
+curriculum_release="${SAI_ONE_B_CURRICULUM_RELEASE:-one-b-curriculum-index-20260826-r2}"
 python -m sai.data.one_b_curriculum_index connections \
   --admission-root "${sai_root}/bridge-training-component-admission-20260826-r1" \
-  --output-root "${sai_root}/one-b-curriculum-index-20260826-r1/connections"
+  --output-root "${sai_root}/${curriculum_release}/connections"

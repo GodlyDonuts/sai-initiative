@@ -30,15 +30,14 @@ from sai.data.institutional_books_practical_admission import (
 from sai.data.pleias_practical_admission import SCHEMA as PLEIAS_ADMISSION_SCHEMA
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-ROW_SCHEMA = "sai-1b-curriculum-index-row-v1"
-SHARD_SCHEMA = "sai-1b-curriculum-index-shard-v1"
-AGGREGATE_SCHEMA = "sai-1b-curriculum-index-aggregate-v1"
+ROW_SCHEMA = "sai-1b-curriculum-index-row-v2"
+SHARD_SCHEMA = "sai-1b-curriculum-index-shard-v2"
+AGGREGATE_SCHEMA = "sai-1b-curriculum-index-aggregate-v2"
 BANDS = ("foundation", "intermediate", "advanced", "expert")
 COMPONENTS = ("books", "pleias", "code", "connections")
 DEVELOPMENT_FRACTION_PPM = 1_000
 _WORLD_HISTORY = (
-    "WORLD HISTORY AND HISTORY OF EUROPE, ASIA, AFRICA, AUSTRALIA, "
-    "NEW ZEALAND, ETC."
+    "WORLD HISTORY AND HISTORY OF EUROPE, ASIA, AFRICA, AUSTRALIA, " "NEW ZEALAND, ETC."
 )
 
 _BOOK_BASE = {
@@ -126,29 +125,49 @@ def _split(identity: str, *, bulk: bool = True) -> str:
     )
 
 
-def _book_band(topic: str, tokens: int) -> tuple[str, int]:
+def _bucket(identity: str) -> int:
+    return int(identity[:16], 16) % 100
+
+
+def _distributed_band(identity: str, weights: tuple[int, int, int, int]) -> int:
+    value = _bucket(identity)
+    cumulative = 0
+    for index, weight in enumerate(weights):
+        cumulative += weight
+        if value < cumulative:
+            return index
+    raise OneBCurriculumIndexError("curriculum tier weights differ")
+
+
+def _book_band(topic: str, tokens: int, identity: str) -> tuple[str, int]:
     base = _BOOK_BASE.get(topic, 1)
-    adjustment = -1 if tokens < 25_000 else (1 if tokens >= 200_000 else 0)
-    value = min(3, max(0, base + adjustment))
-    return BANDS[value], value * 1_000 + 500
+    if base == 0:
+        weights = (70, 30, 0, 0)
+    elif base == 1:
+        weights = (20, 60, 20, 0)
+    else:
+        weights = (0, 10, 60, 30)
+    value = _distributed_band(identity, weights)
+    within_tier = min(999, max(0, tokens.bit_length() * 55 - 300))
+    return BANDS[value], value * 1_000 + within_tier
 
 
-def _pleias_band(collection: str, word_count: int, token_count: int) -> tuple[str, int]:
+def _pleias_band(
+    collection: str, word_count: int, token_count: int, identity: str
+) -> tuple[str, int]:
     folded = collection.casefold()
     if any(pattern in folded for pattern in _PLEIAS_EXPERT):
-        base = 3
+        weights = (0, 20, 50, 30)
     elif any(pattern in folded for pattern in _PLEIAS_ADVANCED):
-        base = 2
+        weights = (0, 25, 55, 20)
     elif any(pattern in folded for pattern in _PLEIAS_FOUNDATION):
-        base = 0
+        weights = (75, 25, 0, 0)
     else:
-        base = 1
+        weights = (30, 45, 20, 5)
+    value = _distributed_band(identity, weights)
     ratio_milli = token_count * 1_000 // max(1, word_count)
-    adjustment = 1 if ratio_milli >= 1_650 or word_count >= 1_500 else 0
-    if ratio_milli <= 1_100 or word_count < 100:
-        adjustment = -1
-    value = min(3, max(0, base + adjustment))
-    difficulty = value * 1_000 + min(999, max(0, ratio_milli - 900))
+    complexity = ratio_milli - 900 + min(400, word_count // 25)
+    difficulty = value * 1_000 + min(999, max(0, complexity))
     return BANDS[value], difficulty
 
 
@@ -315,8 +334,8 @@ def index_books(
                 if row.get("schema") != BOOK_RECORD_SCHEMA or metadata is None:
                     raise OneBCurriculumIndexError("book admission row differs")
                 topic, source_tokens = metadata
-                band, difficulty = _book_band(topic, source_tokens)
                 identity = _hex(row["record_sha256"], "book record identity")
+                band, difficulty = _book_band(topic, source_tokens, identity)
                 yield {
                     "schema": ROW_SCHEMA,
                     "component": "books",
@@ -385,7 +404,10 @@ def index_pleias_shard(
             for row in batch.to_pylist():
                 identity = _hex(row["source_row_identity_sha256"], "PleIAs identity")
                 band, difficulty = _pleias_band(
-                    row["collection"], row["word_count"], row["source_token_count"]
+                    row["collection"],
+                    row["word_count"],
+                    row["source_token_count"],
+                    identity,
                 )
                 yield {
                     "schema": ROW_SCHEMA,
@@ -425,9 +447,13 @@ def index_code_shard(
     admission = _load_signed(admission_root / "receipt.json", CODE_ADMISSION_SCHEMA)
     descriptor = _descriptor(admission, shard_index, allow_empty=True)
     path = admission_root / descriptor["path"] if descriptor is not None else None
-    if descriptor is not None and path is not None and (
-        path.stat().st_size != descriptor["bytes"]
-        or sha256_file(path) != descriptor["sha256"]
+    if (
+        descriptor is not None
+        and path is not None
+        and (
+            path.stat().st_size != descriptor["bytes"]
+            or sha256_file(path) != descriptor["sha256"]
+        )
     ):
         raise OneBCurriculumIndexError("code descriptor bytes differ")
 

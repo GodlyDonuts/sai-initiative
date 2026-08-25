@@ -19,7 +19,9 @@ set -euo pipefail
 source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources
+curriculum_release="${SAI_ONE_B_CURRICULUM_RELEASE:-one-b-curriculum-index-20260826-r2}"
+foundation_release="${SAI_ONE_B_FOUNDATION_RELEASE:-one-b-foundation-window-20260826-r2}"
 python -m sai.data.one_b_foundation_window_plan \
-  --ledger "${sai_root}/one-b-curriculum-index-20260826-r1/unique-token-ledger.json" \
+  --ledger "${sai_root}/${curriculum_release}/unique-token-ledger.json" \
   --tokenizer "${sai_root}/one-b-production-tokenizer-20260826-r1/qualification.json" \
-  --output "${sai_root}/one-b-foundation-window-20260826-r1/plan.json"
+  --output "${sai_root}/${foundation_release}/plan.json"

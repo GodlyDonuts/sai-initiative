@@ -20,8 +20,9 @@ set -euo pipefail
 source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources
+curriculum_release="${SAI_ONE_B_CURRICULUM_RELEASE:-one-b-curriculum-index-20260826-r2}"
 printf -v sai_shard 'shard_%05d' "${SLURM_ARRAY_TASK_ID}"
 python -m sai.data.one_b_curriculum_index pleias \
   --admission-root "${sai_root}/pleias-practical-admission-20260826-r3" \
   --shard-index "${SLURM_ARRAY_TASK_ID}" \
-  --output-root "${sai_root}/one-b-curriculum-index-20260826-r1/pleias/${sai_shard}"
+  --output-root "${sai_root}/${curriculum_release}/pleias/${sai_shard}"

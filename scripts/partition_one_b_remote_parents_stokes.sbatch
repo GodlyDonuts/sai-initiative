@@ -21,8 +21,10 @@ set -euo pipefail
 source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources
+curriculum_release="${SAI_ONE_B_CURRICULUM_RELEASE:-one-b-curriculum-index-20260826-r2}"
+partition_release="${SAI_ONE_B_PARTITION_RELEASE:-one-b-parent-partitions-20260826-r2}"
 printf -v sai_shard 'shard_%05d' "${SLURM_ARRAY_TASK_ID}"
 python -m sai.data.one_b_parent_partition \
   --component "${SAI_PARENT_COMPONENT}" \
-  --index-root "${sai_root}/one-b-curriculum-index-20260826-r1/${SAI_PARENT_COMPONENT}/${sai_shard}" \
-  --output-root "${sai_root}/one-b-parent-partitions-20260826-r1/${SAI_PARENT_COMPONENT}/${sai_shard}"
+  --index-root "${sai_root}/${curriculum_release}/${SAI_PARENT_COMPONENT}/${sai_shard}" \
+  --output-root "${sai_root}/${partition_release}/${SAI_PARENT_COMPONENT}/${sai_shard}"

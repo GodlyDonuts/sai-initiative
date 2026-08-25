@@ -21,11 +21,13 @@ source /lustre/fs1/home/sa305415/hfenv/bin/activate
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 export TOKENIZERS_PARALLELISM=false
 sai_root=/lustre/fs1/home/sa305415/sai_data_sources
+curriculum_release="${SAI_ONE_B_CURRICULUM_RELEASE:-one-b-curriculum-index-20260826-r2}"
+foundation_release="${SAI_ONE_B_FOUNDATION_RELEASE:-one-b-foundation-window-20260826-r2}"
 printf -v sai_shard 'shard_%05d' "${SLURM_ARRAY_TASK_ID}"
 python -m sai.data.one_b_foundation_pack books \
   --admission-root "${sai_root}/institutional-books-practical-admission-20260826-r1" \
-  --index-root "${sai_root}/one-b-curriculum-index-20260826-r1/books" \
+  --index-root "${sai_root}/${curriculum_release}/books" \
   --source-shard "${SLURM_ARRAY_TASK_ID}" \
-  --plan "${sai_root}/one-b-foundation-window-20260826-r1/plan.json" \
+  --plan "${sai_root}/${foundation_release}/plan.json" \
   --tokenizer-root "${sai_root}/one-b-production-tokenizer-20260826-r1/build/48k" \
-  --output-root "${sai_root}/one-b-foundation-window-20260826-r1/packed/books/${sai_shard}"
+  --output-root "${sai_root}/${foundation_release}/packed/books/${sai_shard}"

@@ -47,7 +47,19 @@ Foundation never reaches zero, expert material appears from the first stage,
 and every stage boundary aligns with a 4,096-token sequence. Integer sequence
 allocations use deterministic largest-remainder rounding.
 
-Difficulty is not inferred from source name alone. The production index binds:
+The first complete index replay (`r1`) proved that treating length as a proxy
+for conceptual difficulty was invalid: it assigned only 2,387,625,863 train
+source tokens to foundation while assigning 460,466,425,296 to
+advanced/expert. That release is rejected for training because the 65%
+foundation stage would have replayed a tiny basic pool hundreds of times.
+
+Production `r2` instead uses source-informed exposure tiers with a stable
+identity-hash distribution inside each source family. The hash only balances
+the pool; it never changes source custody, split, content, or rights. Broad
+reference/narrative sources populate foundation and intermediate tiers;
+research, patent, legal, and code sources remain concentrated in advanced and
+expert tiers. Document length affects only within-tier ordering and never
+promotes a document to a harder conceptual tier. The production index binds:
 
 - Institutional Books topic, genre, length, OCR, and rights metadata;
 - PleIAs collection, open type, word count, source-token count, license, and
@@ -56,9 +68,11 @@ Difficulty is not inferred from source name alone. The production index binds:
 - the verified connection overlay's explicit difficulty, prerequisites,
   domains, split, and transfer receipt.
 
-Surface-length adjustments are bounded to one neighboring band. They cannot
-turn an introductory source into expert data or demote verified technical work
-to foundation solely because it is short.
+This is an exposure curriculum, not a claim that every web document has a
+perfect scalar pedagogical difficulty. Its first quantitative gate is that
+every tier has enough distinct train text for the physical window without a
+degenerate repetition ratio. The exact `r2` ledger must pass that gate before
+packing.
 
 ## Exposure policy
 

@@ -22,6 +22,7 @@ from sai.data.institutional_books_practical_admission import SCHEMA as BOOK_SCHE
 from sai.data.one_b_curriculum_index import SHARD_SCHEMA as INDEX_SCHEMA
 from sai.data.one_b_foundation_window_plan import SCHEMA as PLAN_SCHEMA
 from sai.data.one_b_parent_partition import PARTITION_COUNT
+from sai.data.one_b_parent_partition import SCHEMA as PARTITION_SCHEMA
 from sai.data.token_stream import canonical_sha256, sha256_file, sha256_tree
 
 SCHEMA = "sai-1b-foundation-pack-shard-v1"
@@ -175,6 +176,48 @@ def _manifest(path: Path) -> dict[str, dict[str, Any]]:
     return values
 
 
+def _partition_files(
+    partition_root: Path, component: str, bucket: int
+) -> tuple[list[Path], list[str]]:
+    """Replay every parent-partition receipt and return one exact bucket."""
+
+    expected_paths: list[Path] = []
+    receipt_hashes: list[str] = []
+    shard_roots = sorted(partition_root.glob("shard_*"))
+    expected_shards = 128 if component == "pleias" else 32
+    if len(shard_roots) != expected_shards:
+        raise OneBFoundationPackError("parent partition shard coverage differs")
+    for shard_root in shard_roots:
+        receipt = _load_signed(shard_root / "receipt.json", PARTITION_SCHEMA)
+        if (
+            receipt.get("component") != component
+            or receipt.get("partition_count") != PARTITION_COUNT
+            or receipt.get("development_rows_excluded") is not True
+        ):
+            raise OneBFoundationPackError("parent partition receipt differs")
+        receipt_hashes.append(receipt["receipt_sha256"])
+        for descriptor in receipt.get("files", []):
+            relative = descriptor.get("path", "")
+            if not relative.startswith(f"parent_bucket={bucket}/"):
+                continue
+            path = shard_root / relative
+            if (
+                not path.is_file()
+                or path.is_symlink()
+                or path.stat().st_size != descriptor.get("bytes")
+                or sha256_file(path) != descriptor.get("sha256")
+            ):
+                raise OneBFoundationPackError("parent partition file differs")
+            expected_paths.append(path)
+    actual_paths = sorted(
+        partition_root.glob(f"shard_*/parent_bucket={bucket}/*.parquet")
+    )
+    expected_paths.sort()
+    if actual_paths != expected_paths:
+        raise OneBFoundationPackError("parent partition file set differs")
+    return expected_paths, receipt_hashes
+
+
 def _download(parent: dict[str, Any], token: str, root: Path) -> Path:
     if not token:
         raise OneBFoundationPackError("Hugging Face token is required")
@@ -218,6 +261,16 @@ def _account(counts: Counter[str], band: str, token_count: int) -> None:
     counts[f"band::{band}::tokens"] += token_count
 
 
+def _pad_writers(writers: dict[str, _PartWriter], token_id: int) -> int:
+    padding_tokens = 0
+    for writer in writers.values():
+        if writer.tokens_in_part:
+            padding = (-writer.tokens_in_part) % SEQUENCE_LENGTH
+            writer.append([token_id] * padding)
+            padding_tokens += padding
+    return padding_tokens
+
+
 def pack_remote_bucket(
     component: str,
     partition_root: Path,
@@ -245,8 +298,8 @@ def pack_remote_bucket(
     plan = _load_signed(plan_path, PLAN_SCHEMA)
     tokenizer, tokenizer_identity = _tokenizer(tokenizer_root)
     parents = _manifest(manifest_path)
-    locator_files = sorted(
-        partition_root.glob(f"shard_*/parent_bucket={bucket}/*.parquet")
+    locator_files, partition_receipts = _partition_files(
+        partition_root, component, bucket
     )
     rows_by_parent: dict[str, list[dict[str, Any]]] = {}
     for path in locator_files:
@@ -328,6 +381,7 @@ def pack_remote_bucket(
                     "selected_rows": len(wanted),
                 }
             )
+        tail_padding_tokens = _pad_writers(writers, tokenizer.eos_token_id)
         band_outputs = {band: writers[band].finish() for band in BANDS}
         retained_tokens = sum(row["retained_tokens"] for row in band_outputs.values())
         payload = {
@@ -339,6 +393,7 @@ def pack_remote_bucket(
             "plan_receipt_sha256": plan["receipt_sha256"],
             "tokenizer_identity_sha256": tokenizer_identity,
             "source_manifest_sha256": sha256_file(manifest_path),
+            "parent_partition_receipts_sha256": canonical_sha256(partition_receipts),
             "locator_files": [str(path.resolve()) for path in locator_files],
             "locator_files_sha256": canonical_sha256(
                 [sha256_file(path) for path in locator_files]
@@ -352,6 +407,8 @@ def pack_remote_bucket(
             "retained_sequences": retained_tokens // SEQUENCE_LENGTH,
             "sequence_length": SEQUENCE_LENGTH,
             "part_sequences": PART_SEQUENCES,
+            "tail_padding_tokens": tail_padding_tokens,
+            "tail_padding_token_id": tokenizer.eos_token_id,
             "uint16_little_endian": True,
             "eos_between_documents": True,
             "development_rows_excluded": True,
@@ -378,7 +435,11 @@ def _finish_local(
     writers: dict[str, _PartWriter],
     counts: Counter[str],
     identities: set[str],
+    pad_tail_token: int | None = None,
 ) -> dict[str, Any]:
+    tail_padding_tokens = (
+        _pad_writers(writers, pad_tail_token) if pad_tail_token is not None else 0
+    )
     band_outputs = {band: writers[band].finish() for band in BANDS}
     retained_tokens = sum(row["retained_tokens"] for row in band_outputs.values())
     payload = {
@@ -396,6 +457,8 @@ def _finish_local(
         "retained_sequences": retained_tokens // SEQUENCE_LENGTH,
         "sequence_length": SEQUENCE_LENGTH,
         "part_sequences": PART_SEQUENCES,
+        "tail_padding_tokens": tail_padding_tokens,
+        "tail_padding_token_id": pad_tail_token,
         "uint16_little_endian": True,
         "eos_between_documents": True,
         "development_rows_excluded": True,
@@ -486,6 +549,7 @@ def pack_book_shard(
             writers,
             counts,
             identities,
+            pad_tail_token=tokenizer.eos_token_id,
         )
     except BaseException:
         shutil.rmtree(stage, ignore_errors=True)
@@ -557,6 +621,7 @@ def pack_connections(
             writers,
             counts,
             identities,
+            pad_tail_token=tokenizer.eos_token_id,
         )
     except BaseException:
         shutil.rmtree(stage, ignore_errors=True)
