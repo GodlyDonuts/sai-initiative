@@ -938,7 +938,7 @@ additional CPU-only Newton stage verifies that publication, switches back to
 the Stokes scheduler, and submits the final signed release behind exact
 foundation-readiness audit `822236`. Thus neither cluster can race the other,
 and failed connection evidence cannot create a final-release job. The complete
-repository passes **1,375 tests**.
+repository passes **1,376 tests**.
 
 Final composition is now executable rather than an informal loader note.
 `final_training_release.py` refuses to sign unless the 1.9--2.0-trillion-byte
