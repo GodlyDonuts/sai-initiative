@@ -15,6 +15,8 @@
 set -euo pipefail
 
 : "${SAI_BRIDGE_TRANSFER_ARM:?bridge transfer arm is required}"
+: "${SAI_RUNTIME_ROOT:?immutable Sai runtime root is required}"
+: "${SAI_RUNTIME_COMMIT:?immutable Sai runtime commit is required}"
 case "${SAI_BRIDGE_TRANSFER_ARM}" in
   unchanged|source_control|connections) ;;
   *) echo 'bridge transfer arm differs' >&2; exit 2 ;;
@@ -26,7 +28,9 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export TOKENIZERS_PARALLELISM=false
 export PYTHONNOUSERSITE=1
-export PYTHONPATH=/lustre/fs1/home/sa305415/sai-initiative/src
+[[ "$(git -C "${SAI_RUNTIME_ROOT}" rev-parse HEAD)" == "${SAI_RUNTIME_COMMIT}" ]]
+[[ -z "$(git -C "${SAI_RUNTIME_ROOT}" status --porcelain)" ]]
+export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"
 export HF_HOME=/lustre/fs1/home/sa305415/sai_data_sources/hf-cache/bridge-transfer-smollm2-360m
 
 set -a

@@ -287,6 +287,11 @@ def run(
 
     if arm not in ARMS or output.exists() or output.is_symlink() or not token:
         raise BridgeTransferScreenError("screen arguments differ")
+    code_commit = os.environ.get("SAI_RUNTIME_COMMIT", "")
+    if len(code_commit) != 40 or any(
+        character not in "0123456789abcdef" for character in code_commit
+    ):
+        raise BridgeTransferScreenError("immutable runtime commit differs")
     try:
         import torch
         import transformers
@@ -407,6 +412,7 @@ def run(
         "schema": SCHEMA,
         "status": "complete_bridge_transfer_proxy_arm",
         "arm": arm,
+        "code_commit": code_commit,
         "lineage": lineage,
         "model": {
             "repository": MODEL_REPOSITORY,

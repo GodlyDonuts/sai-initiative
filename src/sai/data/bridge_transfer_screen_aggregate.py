@@ -60,7 +60,10 @@ def aggregate(arm_root: Path, output: Path) -> dict[str, Any]:
     common = arms["unchanged"]
     for arm, payload in arms.items():
         if (
-            payload.get("lineage") != common.get("lineage")
+            payload.get("code_commit") != common.get("code_commit")
+            or not isinstance(payload.get("code_commit"), str)
+            or len(payload["code_commit"]) != 40
+            or payload.get("lineage") != common.get("lineage")
             or payload.get("model", {}).get("repository")
             != common.get("model", {}).get("repository")
             or payload.get("model", {}).get("revision")
@@ -116,6 +119,7 @@ def aggregate(arm_root: Path, output: Path) -> dict[str, Any]:
     payload = {
         "schema": SCHEMA,
         "status": "complete_bridge_transfer_proxy_screen",
+        "code_commit": common["code_commit"],
         "inputs": {
             arm: {
                 "path": path.name,

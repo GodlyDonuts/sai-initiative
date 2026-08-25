@@ -19,6 +19,7 @@ def _arm(name: str, connection_nll: float, source_nll: float) -> dict:
         "schema": ARM_SCHEMA,
         "status": "complete_bridge_transfer_proxy_arm",
         "arm": name,
+        "code_commit": "1" * 40,
         "lineage": {"reconciliation_receipt_sha256": "b" * 64},
         "model": {
             "repository": "HuggingFaceTB/SmolLM2-360M",
