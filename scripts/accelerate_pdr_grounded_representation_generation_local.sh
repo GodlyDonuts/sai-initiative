@@ -13,16 +13,18 @@ export PYTHONPATH=src
 : "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is required}"
 
 # The primary resume process uses six shared OpenRouter request slots.  A
-# reverse-order companion can safely use six additional slots because every
+# reverse-order companion can safely use two additional slots because every
 # logical shard is guarded by the worker's advisory lock and every record is
 # created atomically.  Both paths retain the same model, rubric, and request
-# contract, so completed shard summaries remain aggregate-compatible.
-export SAI_OPENROUTER_SHARED_PROVIDER_CONCURRENCY=12
+# contract, so completed shard summaries remain aggregate-compatible.  A
+# measured 12-slot trial triggered provider HTTP 429s; eight is the fastest
+# observed stable ceiling rather than an arbitrary caution margin.
+export SAI_OPENROUTER_SHARED_PROVIDER_CONCURRENCY=8
 
 sai_candidates=artifacts/sai_pdr_representation_population_20260826_r2/candidates.jsonl
 sai_output=artifacts/sai_pdr_grounded_representation_generation_20260826_r2/judgments
 sai_logical_shards=128
-sai_lanes=6
+sai_lanes=2
 sai_expected_records=758
 
 [[ -f "${sai_candidates}" ]] || {
