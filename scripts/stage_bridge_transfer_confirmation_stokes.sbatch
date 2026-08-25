@@ -17,6 +17,9 @@ set -euo pipefail
 : "${SAI_RUNTIME_COMMIT:?immutable Sai runtime commit is required}"
 : "${SAI_SCREEN_RUNTIME_COMMIT:?initial screen runtime commit is required}"
 : "${SAI_NEWTON_SLURM_CONF_SERVER:?Newton Slurm configuration server is required}"
+: "${SAI_STOKES_SLURM_CONF_SERVER:?Stokes Slurm configuration server is required}"
+: "${SAI_FOUNDATION_AUDIT_JOB_ID:?foundation audit job identity is required}"
+[[ "${SAI_FOUNDATION_AUDIT_JOB_ID}" =~ ^[0-9]+$ ]]
 
 [[ "$(git -C "${SAI_RUNTIME_ROOT}" rev-parse HEAD)" == "${SAI_RUNTIME_COMMIT}" ]]
 [[ -z "$(git -C "${SAI_RUNTIME_ROOT}" status --porcelain)" ]]
@@ -68,7 +71,7 @@ confirmation_launcher_id="$({ sbatch --parsable \
   --kill-on-invalid-dep=yes \
   --output="${sai_root}/logs/bridge-confirmation-launch-%j.out" \
   --error="${sai_root}/logs/bridge-confirmation-launch-%j.err" \
-  --export="ALL,SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT},SAI_RUNTIME_COMMIT=${SAI_RUNTIME_COMMIT},SAI_NEWTON_SLURM_CONF_SERVER=${SAI_NEWTON_SLURM_CONF_SERVER}" \
+  --export="ALL,SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT},SAI_RUNTIME_COMMIT=${SAI_RUNTIME_COMMIT},SAI_NEWTON_SLURM_CONF_SERVER=${SAI_NEWTON_SLURM_CONF_SERVER},SAI_STOKES_SLURM_CONF_SERVER=${SAI_STOKES_SLURM_CONF_SERVER},SAI_FOUNDATION_AUDIT_JOB_ID=${SAI_FOUNDATION_AUDIT_JOB_ID}" \
   "${confirmation_launcher}"; } | cut -d';' -f1)"
 if [[ ! "${confirmation_launcher_id}" =~ ^[0-9]+$ ]]; then
   exit 2

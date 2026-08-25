@@ -4,6 +4,9 @@ set -euo pipefail
 : "${SAI_RUNTIME_ROOT:?immutable Sai runtime root is required}"
 : "${SAI_RUNTIME_COMMIT:?immutable Sai runtime commit is required}"
 : "${SAI_NEWTON_SLURM_CONF_SERVER:?Newton Slurm configuration server is required}"
+: "${SAI_STOKES_SLURM_CONF_SERVER:?Stokes Slurm configuration server is required}"
+: "${SAI_FOUNDATION_AUDIT_JOB_ID:?foundation audit job identity is required}"
+[[ "${SAI_FOUNDATION_AUDIT_JOB_ID}" =~ ^[0-9]+$ ]]
 
 [[ "$(git -C "${SAI_RUNTIME_ROOT}" rev-parse HEAD)" == "${SAI_RUNTIME_COMMIT}" ]]
 [[ -z "$(git -C "${SAI_RUNTIME_ROOT}" status --porcelain)" ]]
@@ -18,6 +21,7 @@ arm_script="${SAI_RUNTIME_ROOT}/scripts/run_bridge_transfer_confirmation_arm_new
 aggregate_script="${SAI_RUNTIME_ROOT}/scripts/aggregate_bridge_transfer_confirmation_newton.sbatch"
 admission_script="${SAI_RUNTIME_ROOT}/scripts/admit_bridge_component_newton.sbatch"
 publication_script="${SAI_RUNTIME_ROOT}/scripts/publish_bridge_component_hf_newton.sbatch"
+final_stage_script="${SAI_RUNTIME_ROOT}/scripts/stage_final_training_release_newton.sbatch"
 sai_python=/lustre/fs1/home/sa305415/hfenv/bin/python
 
 [[ -f "${screen_path}" ]]
@@ -84,9 +88,17 @@ publication_id="$({ sbatch --parsable \
 submitted+=("${publication_id}")
 printf '%s\n' "${publication_id}" > "${state_root}/publication.job_id"
 
+final_stage_id="$({ sbatch --parsable \
+  --dependency="afterok:${publication_id}" \
+  --export="ALL,SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT},SAI_RUNTIME_COMMIT=${SAI_RUNTIME_COMMIT},SAI_STOKES_SLURM_CONF_SERVER=${SAI_STOKES_SLURM_CONF_SERVER},SAI_FOUNDATION_AUDIT_JOB_ID=${SAI_FOUNDATION_AUDIT_JOB_ID}" \
+  "${final_stage_script}"; } | cut -d';' -f1)"
+[[ "${final_stage_id}" =~ ^[0-9]+$ ]]
+submitted+=("${final_stage_id}")
+printf '%s\n' "${final_stage_id}" > "${state_root}/final-stage.job_id"
+
 PYTHONPATH="${SAI_RUNTIME_ROOT}/src" "${sai_python}" - \
   "${receipt_path}" "${screen_path}" "${SAI_RUNTIME_COMMIT}" \
-  "${aggregate_id}" "${admission_id}" "${publication_id}" \
+  "${aggregate_id}" "${admission_id}" "${publication_id}" "${final_stage_id}" \
   "${submitted[@]:0:9}" <<'PY'
 import json
 import os
@@ -103,6 +115,7 @@ from sai.data.token_stream import canonical_sha256, sha256_file
     aggregate_id,
     admission_id,
     publication_id,
+    final_stage_id,
     *arm_ids,
 ) = sys.argv[1:]
 if len(arm_ids) != 9:
@@ -131,6 +144,8 @@ payload = {
     "aggregate_job": int(aggregate_id),
     "admission_job": int(admission_id),
     "publication_job": int(publication_id),
+    "final_release_stage_job": int(final_stage_id),
+    "foundation_audit_job": int(os.environ["SAI_FOUNDATION_AUDIT_JOB_ID"]),
     "one_h100_per_arm": True,
     "matched_token_budget": True,
     "four_b_training_authorized": False,
@@ -147,5 +162,5 @@ os.replace(temporary, path)
 PY
 
 trap - EXIT
-printf 'confirmation_arms=9 aggregate=%s admission=%s publication=%s\n' \
-  "${aggregate_id}" "${admission_id}" "${publication_id}"
+printf 'confirmation_arms=9 aggregate=%s admission=%s publication=%s final_stage=%s\n' \
+  "${aggregate_id}" "${admission_id}" "${publication_id}" "${final_stage_id}"

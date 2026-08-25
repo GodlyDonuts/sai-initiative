@@ -128,4 +128,33 @@ def test_stage_job_has_no_gpu_and_uses_exact_afterok_handoff() -> None:
     assert script.count("sbatch --parsable") == 1
     assert "SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT}" in script
     assert "SAI_SCREEN_RUNTIME_COMMIT" in script
+    assert "SAI_STOKES_SLURM_CONF_SERVER" in script
+    assert "SAI_FOUNDATION_AUDIT_JOB_ID" in script
     assert "four_b_training_authorized" not in script
+
+
+def test_final_release_stage_waits_for_both_clusters_without_a_gpu() -> None:
+    script = (
+        Path(__file__).parents[1]
+        / "scripts/stage_final_training_release_newton.sbatch"
+    ).read_text(encoding="utf-8")
+    assert "#SBATCH --no-requeue" in script
+    assert "#SBATCH --gres" not in script
+    assert 'SAI_STOKES_SLURM_CONF_SERVER:?' in script
+    assert 'SAI_FOUNDATION_AUDIT_JOB_ID:?' in script
+    assert 'complete_bridge_training_component_hf_publication' in script
+    assert 'development_rows_uploaded' in script
+    assert '--dependency="afterok:${SAI_FOUNDATION_AUDIT_JOB_ID}"' in script
+    assert script.count("sbatch --parsable") == 1
+    assert "build_final_training_release_stokes.sbatch" in script
+
+
+def test_confirmation_launcher_stages_final_release_after_publication() -> None:
+    script = (
+        Path(__file__).parents[1]
+        / "scripts/launch_bridge_transfer_confirmation_newton.sh"
+    ).read_text(encoding="utf-8")
+    assert "stage_final_training_release_newton.sbatch" in script
+    assert '--dependency="afterok:${publication_id}"' in script
+    assert 'SAI_FOUNDATION_AUDIT_JOB_ID=${SAI_FOUNDATION_AUDIT_JOB_ID}' in script
+    assert '"final_release_stage_job": int(final_stage_id)' in script
