@@ -1,0 +1,46 @@
+{
+  "configs": {
+    "newton": {
+      "bytes": 19843,
+      "hard_links": 1,
+      "path": "/lustre/fs1/home/sa305415/sai_data_sources/sai_evidence/slurm-configs/20260825-r1/newton.conf",
+      "sha256": "6f709b71852bc3313941609e79de7dc648af2418e32f0efd0665689a19312a68"
+    },
+    "stokes": {
+      "bytes": 35853,
+      "hard_links": 1,
+      "path": "/lustre/fs1/home/sa305415/sai_data_sources/sai_evidence/slurm-configs/20260825-r1/stokes.conf",
+      "sha256": "d09f173225de7b7949acf07571bd8fb8d77f450d66cdef6eece5a8d5f9f5d668"
+    }
+  },
+  "proof": {
+    "bash_syntax_passed": true,
+    "config_hashes_bound_in_pending_jobs": true,
+    "full_pytest_passed": 1380,
+    "h100_jobs_launched_by_repair": false,
+    "newton_normal_h100_geometry_verified": true,
+    "newton_to_stokes_cluster_verified": true,
+    "ruff_passed": true,
+    "scientific_bytes_changed": false,
+    "stokes_to_newton_cluster_verified": true
+  },
+  "receipt_sha256": "30fefef2987a8b1a27323cbe8e7460a5f408e196ad4e19d5eb4b93371df58d93",
+  "replaced_jobs": {
+    "confirmation_stage": 822239,
+    "screen_launcher": 822003,
+    "terminal_state": "cancelled_verified_infrastructure_failure"
+  },
+  "replacement_jobs": {
+    "confirmation_dependency": "afterok:822250",
+    "confirmation_stage": 822251,
+    "foundation_audit_job": 822236,
+    "screen_dependency": "afterok:822238",
+    "screen_launcher": 822250
+  },
+  "runtime": {
+    "commit": "5860f1c6fe3c6f03c126b71f9f5519ba4e2cba6d",
+    "path": "/lustre/fs1/home/sa305415/sai-initiative-5860f1c"
+  },
+  "schema": "sai-cross-cluster-slurm-config-repair-v1",
+  "status": "complete_verified_cross_cluster_scheduler_repair"
+}

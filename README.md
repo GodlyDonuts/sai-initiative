@@ -242,6 +242,34 @@ rule were preserved in durable Stokes evidence. An automatic redispatch was
 also stopped, leaving zero metadata-recovery tasks active and the completed
 receipts intact.
 
+At the 2026-08-25T13:15Z checkpoint, admission `822232` had crossed its first
+quarter boundary: **33/128** locator shards replayed, **21,195,091** candidate
+rows and **515,624,994,591** candidate text bytes entered the disk-backed
+global exact-content index, and stderr remained exactly empty. The live worker
+was independently observed on `ec57` at the pinned `6a024e4…25d9` runtime,
+with requeue disabled, one fully utilized admission process, and ample local
+scratch and Lustre quota headroom. This is measured scan progress, not the
+post-dedup admitted total; publication and readiness remain dependency-bound to
+the signed final receipt.
+
+A cross-cluster scheduler preflight also found that `SLURM_CONF_SERVER` cannot
+override an already-present local `slurm.conf` on a Stokes compute node. The
+old pending connection launchers `822003` and `822239` would therefore have
+failed their Newton H100 preflight or addressed the wrong scheduler after the
+foundation closed. They were canceled before execution and replaced only after
+the current Newton and Stokes configurations were exported to immutable shared
+files, assigned SHA-256 identities, and tested in both directions. Runtime
+commit `5860f1c6fe3c6f03c126b71f9f5519ba4e2cba6d` now requires the exact
+configuration path and hash, sets `SLURM_CONF` explicitly, and verifies the
+reported cluster name before any scheduler query or submission. Replacement
+screen launcher `822250` waits on reconciliation `822238`; confirmation handoff
+`822251` waits on `822250` and remains bound to foundation audit `822236`.
+The repair launched no H100 work and changed no scientific bytes. Its durable
+receipt is mirrored at
+`artifacts/sai_cross_cluster_slurm_config_repair_20260825_r1.json`, receipt
+`30fefef2987a8b1a27323cbe8e7460a5f408e196ad4e19d5eb4b93371df58d93`.
+The repaired repository passes **1,380 tests**, `ruff`, and shell syntax checks.
+
 The repaired premium Books path now runs independently of bulk admission. A
 pathological archive record with more than 64 ISBNs exposed a prompt-metadata
 bound in the first 8,192-work population attempt. Sai now preserves the full
@@ -273,8 +301,8 @@ latency without weakening downstream independent-verifier gates. The complete
 repository passes **1,378 tests**, including a reproduction that alternates the
 two observed failures before returning a valid third response.
 
-At the 2026-08-25T12:13Z execution snapshot, the immutable replacement workers
-have created **1,187** signed book judgments and sealed **34** logical-shard
+At the 2026-08-25T13:15Z execution snapshot, the immutable replacement workers
+have created **1,401** signed book judgments and sealed **42** logical-shard
 summaries. The cumulative-validation repair closed both previously stubborn
 shards 3 and 65 at exact 34/34 and 38/38 identity coverage; later shard lanes
 continue automatically under the same ten-slot request ceiling. Newly sealed
