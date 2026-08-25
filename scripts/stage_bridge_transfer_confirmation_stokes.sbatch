@@ -65,7 +65,7 @@ sai_activate_verified_slurm_config \
   "${SAI_NEWTON_SLURM_CONF_SHA256}" \
   newton
 sacct -n -X -P -j "${screen_aggregate_id}" --format=JobIDRaw | \
-  grep -qx "${screen_aggregate_id}|"
+  grep -qx "${screen_aggregate_id}"
 confirmation_launcher_id="$({ sbatch --parsable \
   --partition=normal \
   --nodes=1 \
