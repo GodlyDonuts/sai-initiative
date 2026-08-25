@@ -28,6 +28,7 @@ export MKL_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export TOKENIZERS_PARALLELISM=false
 export PYTHONNOUSERSITE=1
+export CUBLAS_WORKSPACE_CONFIG=:4096:8
 [[ "$(git -C "${SAI_RUNTIME_ROOT}" rev-parse HEAD)" == "${SAI_RUNTIME_COMMIT}" ]]
 [[ -z "$(git -C "${SAI_RUNTIME_ROOT}" status --porcelain)" ]]
 export PYTHONPATH="${SAI_RUNTIME_ROOT}/src"

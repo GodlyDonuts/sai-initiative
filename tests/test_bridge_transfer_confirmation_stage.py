@@ -139,6 +139,16 @@ def test_stage_job_has_no_gpu_and_uses_exact_afterok_handoff() -> None:
     assert "four_b_training_authorized" not in script
 
 
+def test_bridge_gpu_arms_configure_deterministic_cublas() -> None:
+    root = Path(__file__).parents[1] / "scripts"
+    for name in (
+        "run_bridge_transfer_screen_arm_stokes.sbatch",
+        "run_bridge_transfer_confirmation_arm_newton.sbatch",
+    ):
+        script = (root / name).read_text(encoding="utf-8")
+        assert "export CUBLAS_WORKSPACE_CONFIG=:4096:8" in script
+
+
 def test_final_release_stage_waits_for_both_clusters_without_a_gpu() -> None:
     script = (
         Path(__file__).parents[1]
