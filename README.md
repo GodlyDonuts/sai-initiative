@@ -792,11 +792,23 @@ and
 All records are now published under
 `training/candidates/cross-domain-connections/20260826-r1` in HF commit
 [`2a05f42030c209c5f1c5221629bb44751c782c06`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/2a05f42030c209c5f1c5221629bb44751c782c06).
-Because the account's LFS quota had not yet refreshed after compaction, the
-exact gzip stream is stored as 18 base64-JSON parts under signed multipart
-receipt `7f9bfa8f84fc39f0c7712b85745b5bc04f261e76620ffbca0c8f0c06486bbf00`.
-Remote reassembly recovered the exact 12,202,517-byte JSONL with SHA-256
-`194c95f4b7fa4f7ff371b61f856e68cdcde5b73a651cc8bfbb28cf55364723b5`.
+The temporary quota-safe representation remains replayable as 18 base64-JSON
+parts under signed multipart receipt
+`7f9bfa8f84fc39f0c7712b85745b5bc04f261e76620ffbca0c8f0c06486bbf00`.
+Hugging Face garbage collection has since removed all unreachable mirror
+objects, reducing account LFS usage from 8.803 TB to five live objects totaling
+1,012,813,803 bytes. The ordinary deterministic gzip is therefore also
+published directly at `curriculum_candidates.jsonl.gz` in commit
+[`1c8572cd35d888a4a90e24c68e5a1d66f2250f7d`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/1c8572cd35d888a4a90e24c68e5a1d66f2250f7d).
+It contains 2,265,770 bytes with SHA-256
+`c03cbb6b57bb70b4bf8800881c6b7adc79f75aa52e5d1cf55667d8455a12f82e`.
+A force-download from receipt commit
+[`6aa60d393930677bcd5894b2ffde062fbf465aed`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/6aa60d393930677bcd5894b2ffde062fbf465aed)
+recovered the exact 12,202,517-byte JSONL with SHA-256
+`194c95f4b7fa4f7ff371b61f856e68cdcde5b73a651cc8bfbb28cf55364723b5`;
+publication receipt
+`5f851099ffadeb92f261b2c088dd26cabf73dcd1b4652f110da35bcbeae8b8ae`
+is byte-mirrored to Stokes.
 The final loader must include only the train split and cannot declare this
 overlay training-ready until foundation deduplication and the held-out transfer
 ablation close.
