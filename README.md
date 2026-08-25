@@ -175,10 +175,14 @@ hash index, keeps the lexicographically smallest source identity per identical
 content hash, verifies the signed 1,548-identity global quarantine registry,
 removes every matching known-bad content hash before deduplication, and
 subtracts exact admitted Books UTF-8 bytes from the shared
-2,000,000,000,000-byte ceiling before writing final PleIAs locators. This
-denylist application reads only compact locator hashes and therefore does not
-slow or restart the live source scan. Official benchmark cleanliness remains a
-separate evaluation-claim axis.
+2,000,000,000,000-byte ceiling before writing final PleIAs locators. Byte-cap
+selection follows canonical content-hash order globally and only then routes
+each winner into its source-local output shard. The Books reservation therefore
+cannot erase a contiguous tail of source partitions, and SQLite can stream its
+primary-key order without an additional output-shard sort. This denylist and
+balancing work reads only compact locator hashes and does not slow or restart
+the live source scan. Official benchmark cleanliness remains a separate
+evaluation-claim axis.
 
 Execution snapshot at 2026-08-25T03:28Z: all 128 PleIAs practical scan shards
 are running with zero nonempty error logs. Their latest complete-parent

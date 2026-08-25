@@ -165,7 +165,14 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
         "sha256": "2" * 64,
         "raw_source_is_training_ready": False,
     }
-    manifest.write_text(json.dumps(manifest_row) + "\n")
+    second_manifest_row = {
+        **manifest_row,
+        "source_path": "data/c.parquet",
+        "bytes": 456,
+    }
+    manifest.write_text(
+        json.dumps(manifest_row) + "\n" + json.dumps(second_manifest_row) + "\n"
+    )
     scan_shard = tmp_path / "scan" / "shards" / "shard_00000"
     scan_shard.mkdir(parents=True)
     rows = [
@@ -181,6 +188,7 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
         },
         {
             **_locator("2" * 64),
+            "source_path": "data/c.parquet",
             "content_sha256": "5" * 64,
             "text_utf8_bytes": 2_000,
             "source_token_count": 500,
@@ -198,8 +206,10 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
             "shard_index": 0,
             "source": {
                 "manifest_sha256": sha256_file(manifest),
-                "selected_paths_sha256": canonical_sha256(["data/file.parquet"]),
-                "scanned_parent_count": 1,
+                "selected_paths_sha256": canonical_sha256(
+                    ["data/c.parquet", "data/file.parquet"]
+                ),
+                "scanned_parent_count": 2,
             },
             "selected": {
                 "rows": 4,
@@ -255,6 +265,14 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
     assert result["counts"]["combined_books_plus_pleias_text_utf8_bytes"] == 3_400
     assert result["counts"]["admitted_collection_count"] == 1
     assert result["counts"]["collections"] == {"books": 1}
+    admitted = pq.read_table(
+        tmp_path / "output" / result["outputs"]["descriptors"][0]["path"]
+    ).to_pylist()
+    assert [row["content_sha256"] for row in admitted] == ["3" * 64]
+    assert result["outputs"]["descriptors"][0]["shard_index"] == 1
+    assert result["policy"]["byte_cap_selection_policy"] == (
+        "canonical_content_sha256_order"
+    )
     assert result["global_exact_content_deduplication_complete"] is True
     assert result["known_quarantine_exclusions_applied"] is True
     assert result["source"]["quarantine_registry"]["rows"] == 1

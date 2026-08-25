@@ -430,46 +430,63 @@ def build_admission(
             output_parent.mkdir()
             schema = _schema()
             descriptors = []
-            current_index = None
-            writer = None
-            temporary_path = None
-            output_path = None
-            pending = []
-            shard_rows = shard_bytes = shard_tokens = 0
+            writers: dict[int, Any] = {}
+            temporary_paths: dict[int, Path] = {}
+            output_paths: dict[int, Path] = {}
+            pending: dict[int, list[dict[str, Any]]] = {}
+            shard_rows: Counter[int] = Counter()
+            shard_bytes: Counter[int] = Counter()
+            shard_tokens: Counter[int] = Counter()
             admitted_rows = admitted_bytes = admitted_tokens = 0
             byte_cap_excluded_rows = byte_cap_excluded_bytes = 0
             rights: Counter[str] = Counter()
             collections: Counter[str] = Counter()
             open_types: Counter[str] = Counter()
 
-            def close_writer() -> None:
-                nonlocal writer, temporary_path, output_path
-                nonlocal pending, shard_rows, shard_bytes, shard_tokens
-                if writer is None or temporary_path is None or output_path is None:
-                    return
-                if pending:
-                    writer.write_table(pa.Table.from_pylist(pending, schema=schema))
-                    pending = []
-                writer.close()
-                os.replace(temporary_path, output_path)
-                descriptors.append(
-                    {
-                        "shard_index": current_index,
-                        "path": str(output_path.relative_to(output_root)),
-                        "rows": shard_rows,
-                        "text_utf8_bytes": shard_bytes,
-                        "source_token_count": shard_tokens,
-                        "bytes": output_path.stat().st_size,
-                        "sha256": sha256_file(output_path),
-                    }
+            def open_writer(target: int) -> None:
+                shard_root = output_parent / f"shard_{target:05d}"
+                shard_root.mkdir()
+                output_path = shard_root / "locators.parquet"
+                temporary_path = shard_root / (
+                    f".locators.partial.{uuid.uuid4().hex}.parquet"
                 )
-                writer = temporary_path = output_path = None
-                shard_rows = shard_bytes = shard_tokens = 0
+                writers[target] = pq.ParquetWriter(
+                    temporary_path, schema, compression="zstd"
+                )
+                temporary_paths[target] = temporary_path
+                output_paths[target] = output_path
+                pending[target] = []
+
+            def flush_writer(target: int) -> None:
+                rows = pending[target]
+                if rows:
+                    writers[target].write_table(
+                        pa.Table.from_pylist(rows, schema=schema)
+                    )
+                    rows.clear()
+
+            def close_writers() -> None:
+                for target in sorted(writers):
+                    flush_writer(target)
+                    writers[target].close()
+                    os.replace(temporary_paths[target], output_paths[target])
+                    output_path = output_paths[target]
+                    descriptors.append(
+                        {
+                            "shard_index": target,
+                            "path": str(output_path.relative_to(output_root)),
+                            "rows": shard_rows[target],
+                            "text_utf8_bytes": shard_bytes[target],
+                            "source_token_count": shard_tokens[target],
+                            "bytes": output_path.stat().st_size,
+                            "sha256": sha256_file(output_path),
+                        }
+                    )
 
             cursor = database.execute(
                 "SELECT output_shard, text_utf8_bytes, "
                 "source_token_count, license, row_json FROM winners "
-                "ORDER BY output_shard, content_sha256"
+                "ORDER BY content_sha256"
             )
             for (
                 target,
@@ -482,33 +499,22 @@ def build_admission(
                     byte_cap_excluded_rows += 1
                     byte_cap_excluded_bytes += text_bytes
                     continue
-                if current_index != target:
-                    close_writer()
-                    current_index = target
-                    shard_root = output_parent / f"shard_{target:05d}"
-                    shard_root.mkdir()
-                    output_path = shard_root / "locators.parquet"
-                    temporary_path = shard_root / (
-                        f".locators.partial.{uuid.uuid4().hex}.parquet"
-                    )
-                    writer = pq.ParquetWriter(
-                        temporary_path, schema, compression="zstd"
-                    )
+                if target not in writers:
+                    open_writer(target)
                 row = json.loads(row_json)
-                pending.append(row)
+                pending[target].append(row)
                 admitted_rows += 1
                 admitted_bytes += text_bytes
                 admitted_tokens += tokens
-                shard_rows += 1
-                shard_bytes += text_bytes
-                shard_tokens += tokens
+                shard_rows[target] += 1
+                shard_bytes[target] += text_bytes
+                shard_tokens[target] += tokens
                 rights[license_name] += 1
                 collections[row["collection"]] += 1
                 open_types[row["open_type"]] += 1
-                if len(pending) >= 4096:
-                    writer.write_table(pa.Table.from_pylist(pending, schema=schema))
-                    pending = []
-            close_writer()
+                if len(pending[target]) >= 4096:
+                    flush_writer(target)
+            close_writers()
         finally:
             database.close()
 
@@ -533,6 +539,7 @@ def build_admission(
             "mechanical_non_slop_gate_required": True,
             "known_quarantine_content_excluded": True,
             "exact_content_duplicate_policy": "smallest_identity_sha256_wins",
+            "byte_cap_selection_policy": "canonical_content_sha256_order",
             "output_partition_policy": "canonical_source_path_sha256_modulo",
             "semantic_model_review_required": False,
             "total_books_plus_pleias_text_byte_ceiling": total_text_byte_ceiling,
