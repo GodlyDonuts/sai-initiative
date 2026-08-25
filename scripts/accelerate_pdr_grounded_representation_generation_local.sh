@@ -12,14 +12,16 @@ export PYTHONPATH=src
 
 : "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is required}"
 
-# The primary resume process uses six shared OpenRouter request slots.  A
-# reverse-order companion safely fills idle slots within that same ceiling
+# A reverse-order companion safely fills idle slots within the same local
+# ceiling
 # because every logical shard is guarded by the worker's advisory lock and every
 # record is created atomically. Both paths retain the same model, rubric, and
-# request contract, so completed shard summaries remain aggregate-compatible. Measured
-# 12- and 8-slot trials both triggered provider HTTP 429s; six is the proven
-# stable key-wide ceiling.
-export SAI_OPENROUTER_SHARED_PROVIDER_CONCURRENCY=6
+# request contract, so completed shard summaries remain aggregate-compatible.
+# Measured 12- and 8-call trials caused heavy HTTP 429s, and successful receipts
+# still showed sporadic 429s at four local calls plus two Stokes calls. Three
+# local calls is therefore the current throughput setting while the two-call
+# Stokes Books worker shares this key.
+export SAI_OPENROUTER_SHARED_PROVIDER_CONCURRENCY=3
 
 sai_candidates=artifacts/sai_pdr_representation_population_20260826_r2/candidates.jsonl
 sai_output=artifacts/sai_pdr_grounded_representation_generation_20260826_r2/judgments

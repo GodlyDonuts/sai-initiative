@@ -12,6 +12,10 @@ export PYTHONPATH=src
 
 : "${OPENROUTER_API_KEY:?OPENROUTER_API_KEY is required}"
 
+# Five total in-flight calls (three local plus the two-call Stokes Books worker)
+# eliminated the avoidable retry load still observed at six.
+export SAI_OPENROUTER_SHARED_PROVIDER_CONCURRENCY=3
+
 sai_candidates=artifacts/sai_pdr_representation_population_20260826_r2/candidates.jsonl
 sai_output=artifacts/sai_pdr_grounded_representation_generation_20260826_r2/judgments
 sai_logical_shards=128
