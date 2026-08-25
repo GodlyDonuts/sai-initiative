@@ -252,6 +252,17 @@ quarantine registry and a 150,000,000,000-byte code ceiling. Code admission is
 an overlay candidate until its scan and signed admission receipt close; it does
 not change the running PleIAs bytes or authorize the 4B run.
 
+The resource dependency was released when Stokes exposed 3,168 idle normal-
+partition cores, and all 95 frozen identities launched away from PleIAs repair
+node `ec57`. The scan exposed one genuine pathological-input failure: shard 4
+could force Python's parser to raise `MemoryError` even with a 128 GB allocation
+despite the existing 1 MB per-document ceiling. Sai now treats parser memory
+exhaustion exactly like another fail-closed Python syntax-review result and
+quarantines the row instead of allocating unbounded memory. No successful shard
+was rerun and the source, revision, manifest, rights, quality, safety, and output
+bytes remain unchanged. The complete repository passes **1,364 tests**,
+including explicit parser-exhaustion coverage.
+
 The admitted-code publication path is now implemented at commit
 `b345d3c96853fa1671377a442fdeb917e07b30b7`. It validates every signed
 Stack-Edu output descriptor, refuses Parquet containing source text, publishes

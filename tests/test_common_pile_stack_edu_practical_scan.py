@@ -43,9 +43,10 @@ def test_route_accepts_useful_permissive_code_and_rejects_unsafe_rows():
     route, selected = subject._route(_row())
     assert route == "pass_practical_code_gate"
     assert selected is not None
-    assert selected["content_sha256"] == hashlib.sha256(
-        _python_text().encode()
-    ).hexdigest()
+    assert (
+        selected["content_sha256"]
+        == hashlib.sha256(_python_text().encode()).hexdigest()
+    )
     assert selected["licenses"] == ["MIT"]
 
     route, _ = subject._route(_row(int_score=2))
@@ -69,6 +70,16 @@ def test_route_accepts_useful_permissive_code_and_rejects_unsafe_rows():
     )
     route, _ = subject._route(_row(text=broken))
     assert route == "hold_python_syntax"
+
+
+def test_route_quarantines_python_that_exhausts_parser_memory(monkeypatch):
+    def exhaust_parser_memory(*args, **kwargs):
+        raise MemoryError
+
+    monkeypatch.setattr("sai.data.stack_edu_safety.ast.parse", exhaust_parser_memory)
+    route, selected = subject._route(_row())
+    assert route == "hold_python_syntax"
+    assert selected is None
 
 
 def test_load_parents_rejects_incomplete_geometry(tmp_path: Path):
@@ -157,4 +168,4 @@ def test_stokes_job_preserves_one_parent_per_array_identity():
     assert "#SBATCH --exclude=ec65" in script
     assert "#SBATCH --no-requeue" in script
     assert "--expected-parents 95" in script
-    assert 'shard_$(printf \'%05d\' "${SLURM_ARRAY_TASK_ID}")' in script
+    assert "shard_$(printf '%05d' \"${SLURM_ARRAY_TASK_ID}\")" in script

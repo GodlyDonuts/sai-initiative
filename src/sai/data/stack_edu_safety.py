@@ -196,7 +196,7 @@ def _scan_text(text: str, *, source_path: str) -> dict[str, Any]:
     syntax_status = "parsed_python3"
     try:
         ast.parse(text, filename=source_path)
-    except (SyntaxError, ValueError, TypeError):
+    except (SyntaxError, ValueError, TypeError, MemoryError):
         syntax_status = "python3_parse_failed"
         review.append("python3_syntax_or_version_review")
     comment_lines = sum(line.lstrip().startswith("#") for line in lines)
