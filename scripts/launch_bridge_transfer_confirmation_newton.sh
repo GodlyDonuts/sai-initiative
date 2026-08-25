@@ -16,6 +16,8 @@ state_root="${evidence_root}/launch-state"
 receipt_path="${evidence_root}/launch-receipt.json"
 arm_script="${SAI_RUNTIME_ROOT}/scripts/run_bridge_transfer_confirmation_arm_newton.sbatch"
 aggregate_script="${SAI_RUNTIME_ROOT}/scripts/aggregate_bridge_transfer_confirmation_newton.sbatch"
+admission_script="${SAI_RUNTIME_ROOT}/scripts/admit_bridge_component_newton.sbatch"
+publication_script="${SAI_RUNTIME_ROOT}/scripts/publish_bridge_component_hf_newton.sbatch"
 sai_python=/lustre/fs1/home/sa305415/hfenv/bin/python
 
 [[ -f "${screen_path}" ]]
@@ -66,8 +68,25 @@ aggregate_id="$({ sbatch --parsable \
 submitted+=("${aggregate_id}")
 printf '%s\n' "${aggregate_id}" > "${state_root}/aggregate.job_id"
 
+admission_id="$({ sbatch --parsable \
+  --dependency="afterok:${aggregate_id}" \
+  --export="ALL,SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT},SAI_RUNTIME_COMMIT=${SAI_RUNTIME_COMMIT}" \
+  "${admission_script}"; } | cut -d';' -f1)"
+[[ "${admission_id}" =~ ^[0-9]+$ ]]
+submitted+=("${admission_id}")
+printf '%s\n' "${admission_id}" > "${state_root}/admission.job_id"
+
+publication_id="$({ sbatch --parsable \
+  --dependency="afterok:${admission_id}" \
+  --export="ALL,SAI_RUNTIME_ROOT=${SAI_RUNTIME_ROOT},SAI_RUNTIME_COMMIT=${SAI_RUNTIME_COMMIT}" \
+  "${publication_script}"; } | cut -d';' -f1)"
+[[ "${publication_id}" =~ ^[0-9]+$ ]]
+submitted+=("${publication_id}")
+printf '%s\n' "${publication_id}" > "${state_root}/publication.job_id"
+
 PYTHONPATH="${SAI_RUNTIME_ROOT}/src" "${sai_python}" - \
-  "${receipt_path}" "${screen_path}" "${SAI_RUNTIME_COMMIT}" "${aggregate_id}" \
+  "${receipt_path}" "${screen_path}" "${SAI_RUNTIME_COMMIT}" \
+  "${aggregate_id}" "${admission_id}" "${publication_id}" \
   "${submitted[@]:0:9}" <<'PY'
 import json
 import os
@@ -77,7 +96,15 @@ from pathlib import Path
 from sai.data.bridge_transfer_confirmation import _load_screen
 from sai.data.token_stream import canonical_sha256, sha256_file
 
-destination, screen_path, runtime_commit, aggregate_id, *arm_ids = sys.argv[1:]
+(
+    destination,
+    screen_path,
+    runtime_commit,
+    aggregate_id,
+    admission_id,
+    publication_id,
+    *arm_ids,
+) = sys.argv[1:]
 if len(arm_ids) != 9:
     raise SystemExit("confirmation launch job coverage differs")
 screen = _load_screen(Path(screen_path))
@@ -102,6 +129,8 @@ payload = {
     "arms": list(arms),
     "arm_jobs": jobs,
     "aggregate_job": int(aggregate_id),
+    "admission_job": int(admission_id),
+    "publication_job": int(publication_id),
     "one_h100_per_arm": True,
     "matched_token_budget": True,
     "four_b_training_authorized": False,
@@ -118,4 +147,5 @@ os.replace(temporary, path)
 PY
 
 trap - EXIT
-printf 'confirmation_arms=9 aggregate=%s\n' "${aggregate_id}"
+printf 'confirmation_arms=9 aggregate=%s admission=%s publication=%s\n' \
+  "${aggregate_id}" "${admission_id}" "${publication_id}"

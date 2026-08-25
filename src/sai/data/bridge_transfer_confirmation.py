@@ -239,6 +239,7 @@ def aggregate(screen_path: Path, arm_root: Path, output: Path) -> dict[str, Any]
             "seed": screen["seed"],
         },
         "confirmation_code_commit": reference["code_commit"],
+        "lineage": reference["lineage"],
         "inputs": input_descriptors,
         "seeds": list(CONFIRMATION_SEEDS),
         "model_repository": reference["model"]["repository"],

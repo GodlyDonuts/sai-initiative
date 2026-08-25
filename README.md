@@ -862,8 +862,14 @@ jobs. Confirmation requires the treatment to clear the same capability and
 retention thresholds on **every** fresh seed; a median win cannot conceal a
 failed seed. Only that aggregate may authorize physical connection-component
 admission, and it still cannot authorize 4B training. The complete repository
-passes 1,353 tests after adding seed identity, cross-seed custody, negative-seed,
-and tamper coverage.
+passes 1,357 tests after adding seed identity, cross-seed custody, negative-seed,
+and tamper coverage. A successful confirmation automatically feeds a separate
+admission job that rewrites only reconciled train rows with completed transfer
+custody, emits a deterministic train-only gzip, and physically excludes every
+development row. Its dependent publisher uploads that gzip and signed admission
+receipt beneath `training/final/cross-domain-connections/20260826-r1` and replays
+both remote LFS identities. A negative confirmation therefore produces no
+admitted file and no Hugging Face publication.
 
 #### Prerequisite-edge compiler
 
