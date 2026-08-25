@@ -263,9 +263,17 @@ def _post_json_sse(
         },
         method="POST",
     )
-    with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
-        status = response.status
-        payload = _parse_sse_chat_completion(response)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout_seconds) as response:
+            status = response.status
+            payload = _parse_sse_chat_completion(response)
+    except urllib.error.HTTPError as error:
+        # urlopen raises before entering the response context manager for HTTP
+        # failures.  Providers can return many retryable 429s during a large
+        # fan-out; explicitly close each error response so those retries cannot
+        # accumulate CLOSE_WAIT sockets and eventually stall the worker.
+        error.close()
+        raise
     return payload, status
 
 

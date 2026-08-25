@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -26,6 +29,7 @@ from sai.data.nous_compiler_worker import (
 from sai.data.nous_label_worker import (
     NousLabelWorkerError,
     _parse_sse_chat_completion,
+    _post_json_sse,
 )
 from sai.data.token_stream import canonical_sha256
 
@@ -833,6 +837,31 @@ def test_sse_clean_eof_requires_terminal_finish_reason() -> None:
     terminal["choices"][0]["finish_reason"] = None
     with pytest.raises(NousLabelWorkerError, match="incomplete"):
         _parse_sse_chat_completion([f"data: {json.dumps(terminal)}\n".encode()])
+
+
+def test_sse_http_error_response_is_closed_before_retry(monkeypatch) -> None:
+    response_body = io.BytesIO(b'{"error":"rate limited"}')
+    error = urllib.error.HTTPError(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        429,
+        "Too Many Requests",
+        {},
+        response_body,
+    )
+
+    def fail_urlopen(*_args, **_kwargs):
+        raise error
+
+    monkeypatch.setattr(urllib.request, "urlopen", fail_urlopen)
+    with pytest.raises(urllib.error.HTTPError) as raised:
+        _post_json_sse(
+            base_url="https://integrate.api.nvidia.com/v1",
+            api_key="redacted-test-key",
+            body={"model": "test", "messages": [], "stream": True},
+            timeout_seconds=1.0,
+        )
+    assert raised.value is error
+    assert response_body.closed
 
 
 def test_stored_compiler_judgment_replays_exact_evidence() -> None:
