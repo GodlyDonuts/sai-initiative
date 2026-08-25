@@ -285,6 +285,25 @@ These live observations are signed in
 `ec2c440b47c06bf19ffc29aebf2447e299e20876898fd2173867789f46fa93f4`;
 they are progress evidence, not a completed training release.
 
+Late-stage exact-dedup inserts became increasingly file-cache-bound after the
+node-local SQLite index exceeded 64 GB. Slurm correctly rejected an attempted
+in-place increase from 64 to 96 GiB because admission `822232` was already
+running; its allocation, process, and scientific bytes remained unchanged.
+Sai therefore stages recovery `822733` behind `afterany:822232` rather than
+canceling or duplicating the healthy worker. A valid primary receipt makes the
+recovery job validate and exit without recomputation. Only a terminal primary
+without a valid receipt can durably inventory and remove the exact incomplete
+`pleias-practical-admission-20260826-r3` root and rerun the identical
+`6a024e4...25d9` scientific runtime with 128 GiB. Publication `822233`, stream
+smoke `822237`, and connection reconciliation `822238` now wait on recovery,
+so either a valid no-op handoff or a successful identical rerun releases the
+same downstream graph. The recovery implementation and destructive-target
+tamper tests pass the full **1,386-test** suite, Ruff, and shell syntax checks.
+Its immutable runtime is `8b838e43913cec710849689e76aa852375cc9ebc`;
+the staging receipt is
+`artifacts/sai_pleias_practical_admission_recovery_stage_20260825_r1.json`,
+receipt `5939fa1ba0e19045c70ddb4896b4c10208ee4bb4741faff463177d28973f2570`.
+
 A cross-cluster scheduler preflight also found that `SLURM_CONF_SERVER` cannot
 override an already-present local `slurm.conf` on a Stokes compute node. The
 old pending connection launchers `822003` and `822239` would therefore have
