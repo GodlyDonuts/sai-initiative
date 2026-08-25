@@ -37,6 +37,11 @@ SQLITE_CACHE_KIB = 4 * 1024 * 1024
 # supported ceiling avoids pretending a larger mapping was admitted.
 SQLITE_MMAP_BYTES = 0x7FFF0000
 SQLITE_WORKER_THREADS = 4
+DEFAULT_QUARANTINE_REGISTRY_ROOT = (
+    Path(__file__).resolve().parents[3]
+    / "artifacts"
+    / "sai_quarantine_exclusion_registry_20260826_r6"
+)
 
 
 class PleiasPracticalAdmissionError(RuntimeError):
@@ -583,7 +588,11 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--scan-root", type=Path, required=True)
     parser.add_argument("--books-receipt", type=Path, required=True)
-    parser.add_argument("--quarantine-registry-root", type=Path, required=True)
+    parser.add_argument(
+        "--quarantine-registry-root",
+        type=Path,
+        default=DEFAULT_QUARANTINE_REGISTRY_ROOT,
+    )
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--logical-shards", type=int, required=True)
     parser.add_argument("--total-text-byte-ceiling", type=int, required=True)
