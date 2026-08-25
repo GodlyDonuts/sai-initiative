@@ -403,7 +403,11 @@ manifest and 1,548-identity quarantine registry to that same runtime. Dependent
 jobs are publication array `822233`, remote aggregate `822234`, metadata
 publication `822235`, final readiness audit `822236`, transient reconstruction
 smoke `822237`, and connection reconciliation `822238`. All remain byte-bound
-and requeue-disabled. The complete repository regression suite passes:
+and requeue-disabled. The readiness audit now has the exact conjunctive
+dependency `afterok:822235,afterok:822237`, so successful metadata publication
+alone cannot mark the corpus ready unless one complete admitted locator shard
+also reconstructs and streams successfully from its pinned source objects.
+The complete repository regression suite passes:
 **1,373 tests, 2 dependency warnings**.
 
 Publication is dependency-staged rather than manual. After combined admission,
