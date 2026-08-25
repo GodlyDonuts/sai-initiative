@@ -25,7 +25,7 @@ git -c fetch.parallel=1 clone -q https://github.com/allenai/OLMo.git "${stage}/s
 git -C "${stage}/sources/OLMo" checkout -q 090253dac6688f2532509daa7aa2eb5fae50e956
 git -c fetch.parallel=1 clone -q https://github.com/allenai/OLMo-core.git "${stage}/sources/OLMo-core"
 git -C "${stage}/sources/OLMo-core" checkout -q 7899e7cefaae44e30766ee654bd177f1e1474bc7
-python -m venv "${stage}/venv"
+python3 -m venv "${stage}/venv"
 source "${stage}/venv/bin/activate"
 python -m pip install --disable-pip-version-check --upgrade pip setuptools wheel
 python -m pip install --disable-pip-version-check \
