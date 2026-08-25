@@ -200,6 +200,14 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
             "source_row_index": 6,
             "identifier": "doc-6",
         },
+        {
+            **_locator("3" * 64),
+            "content_sha256": "6" * 64,
+            "text_utf8_bytes": 3_000,
+            "source_token_count": 750,
+            "source_row_index": 7,
+            "identifier": "doc-7",
+        },
     ]
     locator_path = scan_shard / "locators.parquet"
     pq.write_table(pa.Table.from_pylist(rows, schema=_schema()), locator_path)
@@ -227,9 +235,9 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
                 "stop_at_byte_cap": True,
             },
             "selected": {
-                "rows": 4,
-                "text_utf8_bytes": 8_800,
-                "source_token_count": 2_200,
+                "rows": 5,
+                "text_utf8_bytes": 11_800,
+                "source_token_count": 2_950,
             },
             "output": {
                 "path": locator_path.name,
@@ -267,7 +275,7 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
         quarantine_root,
         tmp_path / "output",
         logical_shards=1,
-        total_text_byte_ceiling=5_000,
+        total_text_byte_ceiling=8_000,
         output_shards=2,
         scratch_root=tmp_path,
     )
@@ -276,15 +284,17 @@ def test_build_admission_deduplicates_and_respects_combined_cap(
     assert result["counts"]["known_quarantine_rows_excluded"] == 1
     assert result["counts"]["known_quarantine_text_utf8_bytes_excluded"] == 2_000
     assert result["counts"]["byte_cap_excluded_rows"] == 1
-    assert result["counts"]["admitted_rows"] == 1
-    assert result["counts"]["combined_books_plus_pleias_text_utf8_bytes"] == 3_400
+    assert result["counts"]["admitted_rows"] == 2
+    assert result["counts"]["combined_books_plus_pleias_text_utf8_bytes"] == 5_400
     assert result["counts"]["admitted_collection_count"] == 1
-    assert result["counts"]["collections"] == {"books": 1}
-    admitted = pq.read_table(
-        tmp_path / "output" / result["outputs"]["descriptors"][0]["path"]
-    ).to_pylist()
-    assert [row["content_sha256"] for row in admitted] == ["3" * 64]
-    assert result["outputs"]["descriptors"][0]["shard_index"] == 1
+    assert result["counts"]["collections"] == {"books": 2}
+    assert [row["shard_index"] for row in result["outputs"]["descriptors"]] == [0, 1]
+    admitted = []
+    for descriptor in result["outputs"]["descriptors"]:
+        admitted.extend(
+            pq.read_table(tmp_path / "output" / descriptor["path"]).to_pylist()
+        )
+    assert sorted(row["content_sha256"] for row in admitted) == ["3" * 64, "5" * 64]
     assert result["policy"]["byte_cap_selection_policy"] == (
         "canonical_content_sha256_order"
     )
