@@ -755,6 +755,35 @@ def test_streaming_compiler_transport_is_explicit_and_hashed() -> None:
     assert receipt["retry_timing_policy"] == RETRY_TIMING_POLICY
 
 
+def test_direct_nvidia_requests_share_one_process_wide_admission_slot() -> None:
+    candidate = _candidate()
+    raw = _judgment(candidate)
+
+    def request_function(**_kwargs):
+        return {
+            "id": "response-1",
+            "model": "nvidia/nemotron-3-ultra-550b-a55b",
+            "created": 1,
+            "choices": [
+                {"message": {"content": json.dumps(raw)}, "finish_reason": "stop"}
+            ],
+            "usage": {},
+        }, 200
+
+    receipt = execute_one(
+        candidate,
+        model="nvidia/nemotron-3-ultra-550b-a55b",
+        base_url="https://integrate.api.nvidia.com/v1",
+        api_key="not-persisted",
+        timeout_seconds=1.0,
+        maximum_attempts=1,
+        stream_transport=True,
+        request_function=request_function,
+        sleep_function=lambda _seconds: None,
+    )
+    assert receipt["shared_provider_concurrency_limit"] == 1
+
+
 def test_transient_http_retry_delay_is_deterministically_staggered() -> None:
     identity = "a" * 64
     first = _retry_delay_seconds(identity, 1, "transient_http_error")

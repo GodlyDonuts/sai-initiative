@@ -48,7 +48,9 @@ MAXIMUM_RESUME_RECEIPT_BYTES = 4 << 20
 DEFAULT_SHARED_PROVIDER_CONCURRENCY = 16
 HERMES_LOOPBACK_URL = "http://127.0.0.1:8645/v1"
 OPENROUTER_URL = "https://openrouter.ai/api/v1"
+NVIDIA_URL = "https://integrate.api.nvidia.com/v1"
 DEFAULT_OPENROUTER_SHARED_PROVIDER_CONCURRENCY = 6
+DEFAULT_NVIDIA_SHARED_PROVIDER_CONCURRENCY = 1
 RETRY_TIMING_POLICY = "identity_staggered_exponential_v1"
 
 
@@ -61,6 +63,9 @@ def _shared_provider_concurrency(base_url: str) -> int | None:
     elif base_url == OPENROUTER_URL:
         environment_name = "SAI_OPENROUTER_SHARED_PROVIDER_CONCURRENCY"
         default = DEFAULT_OPENROUTER_SHARED_PROVIDER_CONCURRENCY
+    elif base_url == NVIDIA_URL:
+        environment_name = "SAI_NVIDIA_SHARED_PROVIDER_CONCURRENCY"
+        default = DEFAULT_NVIDIA_SHARED_PROVIDER_CONCURRENCY
     else:
         return None
     raw = os.environ.get(
@@ -137,8 +142,12 @@ def _shared_provider_request_slot(
         yield None
         return
     root = _shared_provider_slot_root()
-    if base_url == OPENROUTER_URL:
-        root = root / "openrouter"
+    endpoint_directory = {
+        OPENROUTER_URL: "openrouter",
+        NVIDIA_URL: "nvidia",
+    }.get(base_url)
+    if endpoint_directory is not None:
+        root = root / endpoint_directory
         root.mkdir(mode=0o700, exist_ok=True)
         metadata = root.lstat()
         if root.is_symlink() or not root.is_dir() or metadata.st_uid != os.getuid():
