@@ -27,7 +27,9 @@ from sai.data.token_stream import canonical_sha256, sha256_file
 SCHEMA = "sai-pleias-practical-admission-receipt-v1"
 SQLITE_PAGE_BYTES = 65_536
 SQLITE_CACHE_KIB = 4 * 1024 * 1024
-SQLITE_MMAP_BYTES = 16 * 1024 * 1024 * 1024
+# Stokes's SQLite build reports MAX_MMAP_SIZE=0x7fff0000; requesting its exact
+# supported ceiling avoids pretending a larger mapping was admitted.
+SQLITE_MMAP_BYTES = 0x7FFF0000
 SQLITE_WORKER_THREADS = 4
 
 
