@@ -6,7 +6,6 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
 #SBATCH --time=08:00:00
-#SBATCH --exclude=ec65
 #SBATCH --no-requeue
 #SBATCH --output=/lustre/fs1/home/sa305415/sai_data_sources/logs/one-b-olmo-env-%j.out
 #SBATCH --error=/lustre/fs1/home/sa305415/sai_data_sources/logs/one-b-olmo-env-%j.err
