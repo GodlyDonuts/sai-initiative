@@ -231,10 +231,15 @@ normalization. Replacement population job `821500` completed successfully in
 single measured-safe Hermès lane is live while all later conservative decision,
 independent Nemotron, agreement,
 decontamination, subdocument-signature, and evidence jobs are dependency-staged.
-The remaining 31 Hermès array lanes are now released behind an exact serial
-`afterok` chain from lane 0 through lane 31. This preserves the measured
-one-lane provider limit and every frozen identity while removing manual gaps;
-it cannot increase concurrent API pressure or duplicate a completed judgment.
+Lane 0 completed in 4h31m02s and lane 1 remains healthy. A scheduler audit then
+proved that no other Hermès request workers were active while the shared client
+still enforced its ten-request OS lock. Remaining lanes now advance in exact
+four-lane waves: each lane retains concurrency two, so at most eight requests
+can be live and two global slots remain as safety headroom. The dependency
+rewrite touched only pending tasks, preserves every frozen identity and output,
+and neither restarts lane 1 nor duplicates a completed judgment. This removes
+roughly a fourfold avoidable serial latency without weakening structured-output
+retry or downstream independent-verifier gates.
 
 The practical corpus now also has a separate educational-code overlay instead
 of misclassifying programming-language rows as non-English prose. Common Pile
