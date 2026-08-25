@@ -894,6 +894,21 @@ receipt beneath `training/final/cross-domain-connections/20260826-r1` and replay
 both remote LFS identities. A negative confirmation therefore produces no
 admitted file and no Hugging Face publication.
 
+The confirmation handoff is now dependency-staged without altering the frozen
+initial screen. Stokes job `822231`, built from immutable runtime
+`ce40e6ca92c616cc070482a76a437650b0b1d283`, waits behind the existing screen
+launcher `822003`. It replays that launch receipt and exact older screen runtime,
+extracts the real Newton aggregate identity, and submits one CPU-only Newton
+launcher behind `afterok:<screen-aggregate>`. Only a positive aggregate can make
+that launcher create the nine independent one-H100 confirmation arms. The
+handoff records a create-only signed receipt, cancels a partially submitted
+launcher on failure, prohibits duplicate state, preserves equal token budgets,
+and keeps 4B training unauthorized. This removes a manual scheduling gap while
+ensuring the confirmation, admission, and LFS publisher use the newer runtime.
+The complete repository passes **1,370 tests**, including malformed-signature,
+runtime-substitution, overlapping-job, negative-contract, and occupied-output
+handoff cases.
+
 Final composition is now executable rather than an informal loader note.
 `final_training_release.py` refuses to sign unless the 1.9--2.0-trillion-byte
 English foundation audit, admitted and remotely replayed educational-code
