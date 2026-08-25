@@ -92,11 +92,18 @@ def _candidate_rows(root: Path) -> tuple[dict[str, Any], list[dict[str, Any]]]:
                     or not _hex(row.get("content_sha256"))
                     or not isinstance(row.get("anchor_source_content_sha256s"), list)
                     or len(row["anchor_source_content_sha256s"]) != 2
-                    or any(not _hex(value) for value in row["anchor_source_content_sha256s"])
+                    or any(
+                        not _hex(value)
+                        for value in row["anchor_source_content_sha256s"]
+                    )
                     or row.get("training_ready") is not False
                     or row["record_sha256"]
                     != canonical_sha256(
-                        {key: value for key, value in row.items() if key != "record_sha256"}
+                        {
+                            key: value
+                            for key, value in row.items()
+                            if key != "record_sha256"
+                        }
                     )
                 ):
                     raise PracticalBridgeReconcileError("bridge candidate row differs")
@@ -193,7 +200,9 @@ def _pleias_hits(
             raise PracticalBridgeReconcileError("PleIAs locator differs")
         parquet = pq.ParquetFile(path)
         shard_rows = 0
-        for batch in parquet.iter_batches(columns=["content_sha256"], batch_size=65_536):
+        for batch in parquet.iter_batches(
+            columns=["content_sha256"], batch_size=65_536
+        ):
             for value in batch.column(0).to_pylist():
                 if not _hex(value):
                     raise PracticalBridgeReconcileError("PleIAs content hash differs")
