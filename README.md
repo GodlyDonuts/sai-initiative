@@ -186,9 +186,9 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T03:53Z: all 128 PleIAs practical scan shards
+Execution snapshot at 2026-08-25T04:17Z: all 128 PleIAs practical scan shards
 are running with zero nonempty error logs. Their latest complete-parent
-checkpoints account for **1,264,194,120,745 selected UTF-8 bytes** across 3,193
+checkpoints account for **1,378,178,703,597 selected UTF-8 bytes** across 3,480
 parents; shard allocations are still open, so this is measured work in progress
 rather than admitted corpus size. Institutional Books practical admission has
 now closed successfully: **382,072 rows, 222,099,976,155 logical UTF-8 text
@@ -198,7 +198,7 @@ pretraining. Its 284,845,639-byte manifest independently rehashes to
 and its canonical receipt rehashes to
 `904b4f64801239fe492d025990245c6773ff2cbf3de5ce64017fd25e6ff9bc83`.
 This puts measured Books plus live PleIAs candidate mass at
-**1,486,294,096,900 bytes** before the pending cross-source exact-dedup and
+**1,600,278,679,752 bytes** before the pending cross-source exact-dedup and
 two-terabyte balance pass. To concentrate scheduler slots and shared storage
 bandwidth on this critical path, 122 nonblocking metadata-recovery workers were deferred after
 their exact identities, progress tails, 86 completed-receipt hashes, and resume
@@ -234,9 +234,9 @@ removed. The first byte-cap staging `820410` was also stopped before a final
 locator existed when Slurm denied extension of its unsafe 12-hour limit; its
 0.50 MB of unclosed partials were removed. Final PleIAs locator array
 `820530_[0-127%128]` launched all 128 fixed source partitions with the same
-scientific bytes and a 24-hour termination margin; 118 were admitted
-immediately and the remainder stay scheduler-managed behind the account
-concurrency ceiling. Book practical admission `820358` is complete, and combined
+scientific bytes and a 24-hour termination margin; all 128 are now running
+concurrently across eight Stokes nodes. Book practical admission `820358` is
+complete, and combined
 PleIAs exact-dedup/byte-balance admission `820649` remains dependency-staged
 after all 128 `820530` identities close. The complete repository regression
 suite passes: **1,330 tests, 2 dependency warnings**.
