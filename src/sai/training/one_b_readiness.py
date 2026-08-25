@@ -48,7 +48,7 @@ def _load_signed(path: Path, schema: str) -> dict[str, Any]:
 def _never_trained(*payloads: dict[str, Any]) -> None:
     if any(
         payload.get("model_training_started") is not False
-        or payload.get("one_b_training_authorized", False) is not False
+        or payload.get("one_b_training_authorized") is not False
         for payload in payloads
     ):
         raise OneBReadinessError("training authorization boundary differs")
