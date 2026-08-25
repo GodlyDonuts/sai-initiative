@@ -186,9 +186,10 @@ scanned-parent prefix and rejects any locator whose repository, revision, path,
 or parent SHA differs from that exact manifest assignment. Official benchmark
 cleanliness remains a separate evaluation-claim axis.
 
-Execution snapshot at 2026-08-25T05:01Z: all 128 PleIAs practical scan shards
-are running with zero nonempty error logs. Their latest complete-parent
-checkpoints account for **1,597,057,705,392 selected UTF-8 bytes** across 4,033
+Execution snapshot at 2026-08-25T05:15Z: eight PleIAs practical scan shards
+have closed and the remaining 120 are running with zero nonempty error logs.
+Their latest complete-parent
+checkpoints account for **1,681,842,493,202 selected UTF-8 bytes** across 4,251
 parents; shard allocations are still open, so this is measured work in progress
 rather than admitted corpus size. Institutional Books practical admission has
 now closed successfully: **382,072 rows, 222,099,976,155 logical UTF-8 text
@@ -198,7 +199,7 @@ pretraining. Its 284,845,639-byte manifest independently rehashes to
 and its canonical receipt rehashes to
 `904b4f64801239fe492d025990245c6773ff2cbf3de5ce64017fd25e6ff9bc83`.
 This puts measured Books plus live PleIAs candidate mass at
-**1,819,157,681,547 bytes** before the pending cross-source exact-dedup and
+**1,903,942,469,357 bytes** before the pending cross-source exact-dedup and
 two-terabyte balance pass. To concentrate scheduler slots and shared storage
 bandwidth on this critical path, 122 nonblocking metadata-recovery workers were deferred after
 their exact identities, progress tails, 86 completed-receipt hashes, and resume
