@@ -63,6 +63,7 @@ def build_audit(
     books = _load_signed(books_path, BOOKS_SCHEMA)
     pleias = _load_signed(pleias_path, PLEIAS_SCHEMA)
     publication = _load_signed(publication_path, METADATA_SCHEMA)
+    quarantine = pleias.get("source", {}).get("quarantine_registry", {})
     if (
         books.get("status") != "complete_practical_private_pretraining_admission"
         or books.get("practical_pretraining_ready") is not True
@@ -74,6 +75,14 @@ def build_audit(
         or pleias.get("practical_pretraining_ready") is not True
         or pleias.get("training_ready") is not True
         or pleias.get("global_exact_content_deduplication_complete") is not True
+        or pleias.get("known_quarantine_exclusions_applied") is not True
+        or not isinstance(quarantine, dict)
+        or not isinstance(quarantine.get("rows"), int)
+        or isinstance(quarantine.get("rows"), bool)
+        or quarantine["rows"] < 1
+        or not isinstance(quarantine.get("unique_content_hashes"), int)
+        or isinstance(quarantine.get("unique_content_hashes"), bool)
+        or not 1 <= quarantine["unique_content_hashes"] <= quarantine["rows"]
         or pleias.get("official_benchmark_decontamination_complete") is not False
         or publication.get("status") != "complete_practical_hf_metadata_publication"
         or publication.get("books_admission_receipt_sha256") != books["receipt_sha256"]
@@ -93,6 +102,10 @@ def build_audit(
     )
     pleias_tokens = _count(
         pleias_counts.get("admitted_source_token_count"), "PleIAs tokens"
+    )
+    quarantine_rows_excluded = _count(
+        pleias_counts.get("known_quarantine_rows_excluded"),
+        "known quarantine rows excluded",
     )
     combined_bytes = book_bytes + pleias_bytes
     combined_tokens = book_tokens + pleias_tokens
@@ -154,6 +167,9 @@ def build_audit(
             "mechanical_non_slop_gate_complete": True,
             "row_level_rights_labels_complete": True,
             "global_exact_content_deduplication_complete": True,
+            "known_quarantine_exclusions_applied": True,
+            "known_quarantine_registry_rows": quarantine["rows"],
+            "known_quarantine_rows_excluded": quarantine_rows_excluded,
             "semantic_model_review_required_for_bulk_core": False,
         },
         "custody": {

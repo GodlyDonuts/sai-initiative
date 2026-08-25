@@ -56,8 +56,17 @@ def _admission(root: Path) -> tuple[Path, dict]:
                 "admitted_rows": 1,
                 "admitted_text_utf8_bytes": 600,
             },
+            "source": {
+                "quarantine_registry": {
+                    "receipt_sha256": "a" * 64,
+                    "registry_sha256": "b" * 64,
+                    "rows": 1_548,
+                    "unique_content_hashes": 1_548,
+                }
+            },
             "outputs": {"descriptors": [descriptor]},
             "global_exact_content_deduplication_complete": True,
+            "known_quarantine_exclusions_applied": True,
             "source_text_copied": False,
             "practical_pretraining_ready": True,
             "training_ready": True,

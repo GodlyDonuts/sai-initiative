@@ -48,11 +48,26 @@ def _load_signed(path: Path, schema: str) -> dict[str, Any]:
 
 def _pleias_admission(root: Path) -> dict[str, Any]:
     admission = _load_signed(root / "receipt.json", PLEIAS_SCHEMA)
+    quarantine = admission.get("source", {}).get("quarantine_registry", {})
     if (
         admission.get("status") != "complete_practical_pleias_pretraining_admission"
         or admission.get("practical_pretraining_ready") is not True
         or admission.get("training_ready") is not True
         or admission.get("global_exact_content_deduplication_complete") is not True
+        or admission.get("known_quarantine_exclusions_applied") is not True
+        or not isinstance(quarantine, dict)
+        or not isinstance(quarantine.get("rows"), int)
+        or isinstance(quarantine.get("rows"), bool)
+        or quarantine["rows"] < 1
+        or not isinstance(quarantine.get("unique_content_hashes"), int)
+        or isinstance(quarantine.get("unique_content_hashes"), bool)
+        or not 1 <= quarantine["unique_content_hashes"] <= quarantine["rows"]
+        or not all(
+            isinstance(quarantine.get(key), str)
+            and len(quarantine[key]) == 64
+            and all(character in "0123456789abcdef" for character in quarantine[key])
+            for key in ("receipt_sha256", "registry_sha256")
+        )
         or admission.get("source_text_copied") is not False
     ):
         raise PracticalHfPublishError("PleIAs practical admission differs")
