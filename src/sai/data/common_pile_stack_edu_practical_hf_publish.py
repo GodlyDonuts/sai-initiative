@@ -286,8 +286,11 @@ def publish_metadata(
         raise StackEduPracticalHfPublishError("metadata inputs differ")
     remotes = []
     for path, remote_path in (
-        (admission_root / "receipt.json", f"{METADATA_PREFIX}/admission.json"),
-        (aggregate_path, f"{METADATA_PREFIX}/publish-aggregate.json"),
+        (
+            admission_root / "receipt.json",
+            f"{METADATA_PREFIX}/admission.lfs.json",
+        ),
+        (aggregate_path, f"{METADATA_PREFIX}/publish-aggregate.lfs.json"),
     ):
         remotes.append(
             upload_verified(path, remote_path, token, repository=DESTINATION_REPOSITORY)

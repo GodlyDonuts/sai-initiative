@@ -84,5 +84,5 @@ def test_publishes_and_replays_only_train_component(
     assert result["four_b_training_authorized"] is False
     assert [row["path"] for row in remotes] == [
         f"{DESTINATION_PREFIX}/train.jsonl.gz",
-        f"{DESTINATION_PREFIX}/receipt.json",
+        f"{DESTINATION_PREFIX}/receipt.lfs.json",
     ]

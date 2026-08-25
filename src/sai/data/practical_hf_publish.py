@@ -56,8 +56,7 @@ def _pleias_admission(root: Path) -> dict[str, Any]:
         or admission.get("training_ready") is not True
         or admission.get("global_exact_content_deduplication_complete") is not True
         or admission.get("known_quarantine_exclusions_applied") is not True
-        or policy.get("byte_cap_selection_policy")
-        != "canonical_content_sha256_order"
+        or policy.get("byte_cap_selection_policy") != "canonical_content_sha256_order"
         or policy.get("output_partition_policy")
         != "canonical_source_path_sha256_modulo"
         or admission.get("complete_source_identity_partition_coverage") is not True
@@ -304,10 +303,13 @@ def publish_metadata(
         raise PracticalHfPublishError("metadata publication inputs differ")
     books_manifest = books_root / books.get("manifest", {}).get("path", "")
     sources = [
-        (books_root / "receipt.json", f"{METADATA_PREFIX}/books/receipt.json"),
-        (books_manifest, f"{METADATA_PREFIX}/books/manifest.jsonl"),
-        (pleias_root / "receipt.json", f"{METADATA_PREFIX}/pleias/receipt.json"),
-        (publish_aggregate_path, f"{METADATA_PREFIX}/pleias/publish-aggregate.json"),
+        (books_root / "receipt.json", f"{METADATA_PREFIX}/books/receipt.lfs.json"),
+        (books_manifest, f"{METADATA_PREFIX}/books/manifest.lfs.jsonl"),
+        (pleias_root / "receipt.json", f"{METADATA_PREFIX}/pleias/receipt.lfs.json"),
+        (
+            publish_aggregate_path,
+            f"{METADATA_PREFIX}/pleias/publish-aggregate.lfs.json",
+        ),
     ]
     remotes = []
     for path, remote_path in sources:

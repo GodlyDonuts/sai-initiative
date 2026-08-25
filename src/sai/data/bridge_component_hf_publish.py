@@ -73,7 +73,7 @@ def publish(admission_root: Path, output: Path, token: str) -> dict[str, Any]:
         ),
         upload_verified(
             receipt,
-            f"{DESTINATION_PREFIX}/receipt.json",
+            f"{DESTINATION_PREFIX}/receipt.lfs.json",
             token,
             repository=DESTINATION_REPOSITORY,
         ),
