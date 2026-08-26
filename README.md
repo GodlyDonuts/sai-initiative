@@ -141,13 +141,16 @@ receipt identities are
 `0edccc794354c99cfc3e2744e713a46de547b75990d103455aa2ca6273a10350`,
 `418832e56d8435657c10ff0019022d79156bef584ce05d6f237d68933f1975ec`,
 and `fbfaa574ff6b345e462f6782a7b2d84e3eb54798725ac635fa4af4f6b4c819da`.
-PleIAs job `830012` is the remaining packing lane: all 128 exact
-parent-disjoint identities are running concurrently, with no nonempty error
-logs or duplicate identities. Exact aggregate `830716` replaces an unused
-pending job whose required immutable-runtime exports were absent; it carries
-the exact `8f3c7bd` runtime and remains dependency-bound behind all 128 pack
-identities. Stage schedule `830328` now depends on `830716`, followed by
-configuration `830329` and self-contained Hugging Face publication `830454`.
+PleIAs job `830012` is the remaining packing lane. At the 2026-08-25 21:52 EDT
+custody snapshot, buckets 4, 5, and 14 had completed with scheduler exit 0 and
+all 56 packed-file hashes replayed; together they contain 300,702 documents and
+2,011,377,664 retained tokens. The other 125 exact parent-disjoint identities
+were running concurrently, with no nonempty error logs or duplicate
+identities. Exact aggregate `830716` replaces an unused pending job whose
+required immutable-runtime exports were absent; it carries the exact `8f3c7bd`
+runtime and remains dependency-bound behind all 128 pack identities. Stage
+schedule `830328` now depends on `830716`, followed by configuration `830329`
+and self-contained Hugging Face publication `830454`.
 
 The 12.5GB Hugging Face head is intentionally a source-locator and evidence
 registry, not the two-trillion-byte source corpus and not the physical training
