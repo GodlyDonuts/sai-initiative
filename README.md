@@ -103,7 +103,7 @@ The finalizer completed as Stokes job `829247` with exit `0:0`; the repository
 passes **1,421 tests** and Ruff. Model training has not started, and the signed
 receipts keep 4B training unauthorized until the user's explicit order.
 
-#### One-billion-parameter launch preparation — active (2026-08-25 EDT)
+#### One-billion-parameter launch preparation — complete (2026-08-26 EDT)
 
 The 1B target has an exact 4,000,000,000,000-token spiral contract over 4,096
 token sequences. The five stages retain foundational rehearsal and expert
@@ -174,18 +174,30 @@ weight, or training authorization changed.
 
 The former 12.5GB Hugging Face head was intentionally a source-locator and
 evidence registry, not the two-trillion-byte source corpus and not the physical
-training stream. A pre-execution audit found that pending job
-`830454` would have uploaded the configuration receipt without the ten actual
-phase configurations. It was canceled at zero runtime and replaced by
-dependency-bound job `830800` from clean runtime `2d1babc`. The replacement
-uploads the content-addressed packed uint16 files, qualified tokenizer, exact
-stage-exposure manifest, ten release-relative OLMo phase configurations, and
-lineage receipts. It preserves explicit checkpoint handoff placeholders while
-removing Stokes-only data and tokenizer paths. Canceled pending jobs `830330`
-and `830454` are obsolete. Job `830800` is now actively hash-replaying and
-publishing the self-contained stream. It will not sign success unless every
-packed LFS object and every small remote object has the expected byte count and
-SHA-256.
+training stream. A pre-execution audit found that pending job `830454` would
+have uploaded the configuration receipt without the ten actual phase
+configurations. It was canceled at zero runtime; canceled pending jobs `830330`
+and `830454` are obsolete. The first corrected publisher `830800` failed before
+any upload because one stage-2 boundary pathname was a byte-identical alias of
+the stage-0 boundary and the content-addressed publisher retained only the
+first pathname. Commit `0bc896ed500e131da8f73c5760b8c58489baf4e7`
+preserves every verified pathname alias while uploading each SHA identity once
+and regression-tests that exact case. No scientific byte, schedule exposure,
+or configuration changed.
+
+Clean retry `830881` completed with exit `0:0` and published the self-contained
+stream to Hugging Face dataset revision
+[`737e76bed445d0c6f976b327312718ea8ad5f64f`](https://huggingface.co/datasets/Godlydonuts/Sai/commit/737e76bed445d0c6f976b327312718ea8ad5f64f).
+The immutable prefix contains 3,029 files and 204,847,282,637 total bytes:
+3,009 LFS objects plus 20 small Git objects. It includes 3,009 unique packed
+uint16 files totaling 204,819,152,896 bytes / 102,409,576,448 physical tokens,
+the qualified tokenizer, exact 19,451-row stage-exposure manifest, all ten
+release-relative OLMo phase configurations, and lineage receipts. The signed
+publication receipt is
+`098e8fc7f1f8335ba6252f905c8799146a2528cfef7498ba06dff187e2f7ce23`.
+Every packed LFS SHA, every small remote byte identity, portable path, and
+checkpoint placeholder was replayed at the pinned revision; development rows
+remain physically excluded.
 
 Newton job `775999` completed the immutable CUDA 12.4, PyTorch 2.5.1+cu124,
 OLMo, OLMo-core, and FlashAttention 2.6.3 environment in 04:37:30 with exit
@@ -202,11 +214,20 @@ replays exactly 1,006,241,792 parameters, two identical 11.2959709 losses,
 21,048.71 steady tokens/second, 16,683,960,832 peak allocated bytes, and
 17,725,128,704 peak reserved bytes on one H100 PCIe. It constructed no
 optimizer, performed no update, wrote no checkpoint, and did not launch the
-training entry point. Only
-after all signed inputs agree will `one_b_readiness.py` emit
-`training_ready_awaiting_explicit_user_order`; that audit must use runtime
-`2d1babc` or later so portable phase-config coverage is mandatory. Training is not currently ready
-and has not started.
+training entry point.
+
+Final CPU audit `831077` completed in two seconds with exit `0:0` from clean
+runtime `2d1babc586fe7b3cbd46f786cb7022ee1a48f57c`. Its canonical receipt is
+`f27194cc7f6dd14541c4c2319722fd3ce701a15413a6a56b43c6531783ee88fd`,
+and its terminal status is **`training_ready_awaiting_explicit_user_order`**.
+The receipt jointly binds 92,929,510 source rows / 2,050,874,912,388 logical
+UTF-8 bytes, 92,836,395 train rows, physical exclusion of 93,115 development
+rows, nonzero coverage in all four curriculum bands, the exact 102.4B-token
+physical window, exact 4T schedule, 1,006,241,792 parameters, the immutable
+environment, measured one-H100 preflight, and pinned Hugging Face revision.
+Training has not started: no training command was executed, no optimizer update
+was performed, and no checkpoint was written. Launch still requires the user's
+explicit order.
 
 The latest open-recipe evidence is reconciled in
 [`docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md`](docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md).
