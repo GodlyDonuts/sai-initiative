@@ -141,10 +141,10 @@ receipt identities are
 `0edccc794354c99cfc3e2744e713a46de547b75990d103455aa2ca6273a10350`,
 `418832e56d8435657c10ff0019022d79156bef584ce05d6f237d68933f1975ec`,
 and `fbfaa574ff6b345e462f6782a7b2d84e3eb54798725ac635fa4af4f6b4c819da`.
-PleIAs job `830012` is the remaining packing lane. At the 2026-08-25 22:29 EDT
-custody snapshot, buckets 0, 2, 4, 5, 7, 8, 14, and 39 had completed with
-scheduler exit 0 and all 157 packed-file hashes replayed; together they contain
-847,766 documents and 5,662,691,328 retained tokens. The other 120 exact
+PleIAs job `830012` is the remaining packing lane. At the 2026-08-25 22:38 EDT
+custody snapshot, buckets 0, 2, 3, 4, 5, 7, 8, 14, 39, and 107 had completed
+with scheduler exit 0 and all 198 packed-file hashes replayed; together they
+contain 1,073,792 documents and 7,173,959,680 retained tokens. The other 118 exact
 parent-disjoint identities were running concurrently with no duplicate
 identities. Task 71 emitted one Hugging Face HEAD read timeout followed by its
 built-in first retry; it remained running with increasing I/O and no exhausted
@@ -153,16 +153,21 @@ pending job whose required immutable-runtime exports were absent; it carries
 the exact `8f3c7bd` runtime and remains dependency-bound behind all 128 pack
 identities. Stage
 schedule `830328` now depends on `830716`, followed by configuration `830329`
-and self-contained Hugging Face publication `830454`.
+and self-contained Hugging Face publication `830800`.
 
 The 12.5GB Hugging Face head is intentionally a source-locator and evidence
 registry, not the two-trillion-byte source corpus and not the physical training
 stream. At pinned head `4bb4a5e0c01ec8fd255450726055c18905a43a00`, the
 target `training/packed/one-b/20260826-r2/` namespace remains empty before its
-single authorized publication. Replacement job `830454` corrects this
-operational gap by uploading the content-addressed packed uint16 files,
-qualified tokenizer, exact stage-exposure manifest, and lineage receipts.
-Canceled pending job `830330` is obsolete. Publication will not sign success
+single authorized publication. A pre-execution audit found that pending job
+`830454` would have uploaded the configuration receipt without the ten actual
+phase configurations. It was canceled at zero runtime and replaced by
+dependency-bound job `830800` from clean runtime `2d1babc`. The replacement
+uploads the content-addressed packed uint16 files, qualified tokenizer, exact
+stage-exposure manifest, ten release-relative OLMo phase configurations, and
+lineage receipts. It preserves explicit checkpoint handoff placeholders while
+removing Stokes-only data and tokenizer paths. Canceled pending jobs `830330`
+and `830454` are obsolete. Publication will not sign success
 unless every packed LFS object and every small remote object has the expected
 byte count and SHA-256.
 
@@ -171,7 +176,8 @@ OLMo-core, and FlashAttention environment in parallel with packing. The final
 readiness gate then requires a single-H100 forward/backward preflight that
 constructs no optimizer, performs no update, and writes no checkpoint. Only
 after all signed inputs agree will `one_b_readiness.py` emit
-`training_ready_awaiting_explicit_user_order`. Training is not currently ready
+`training_ready_awaiting_explicit_user_order`; that audit must use runtime
+`2d1babc` or later so portable phase-config coverage is mandatory. Training is not currently ready
 and has not started.
 
 The latest open-recipe evidence is reconciled in
