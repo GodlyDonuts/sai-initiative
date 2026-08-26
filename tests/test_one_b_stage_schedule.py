@@ -43,7 +43,9 @@ def test_cycle_records_atomic_final_prefix_location(tmp_path: Path) -> None:
     final = tmp_path / "schedule"
 
     entries = _cycle(parts, 4, stage, "band", receipt_root=final)
+    stage.replace(final)
 
     tail = next(row for row in entries if row["source"] == "exact_stage_prefix")
     assert tail["path"] == str((final / "band-exact-tail.bin").resolve())
-    assert (stage / "band-exact-tail.bin").is_file()
+    assert Path(tail["path"]).is_file()
+    assert sha256_file(Path(tail["path"])) == tail["sha256"]

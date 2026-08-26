@@ -4,6 +4,7 @@ from pathlib import Path
 
 from sai.data.one_b_foundation_aggregate import _copy_prefix
 from sai.data.one_b_foundation_pack import SEQUENCE_LENGTH
+from sai.data.token_stream import sha256_file
 
 
 def test_copy_prefix_is_exact_uint16_sequence_geometry(tmp_path: Path) -> None:
@@ -20,11 +21,15 @@ def test_copy_prefix_is_exact_uint16_sequence_geometry(tmp_path: Path) -> None:
 def test_copy_prefix_can_record_atomic_final_location(tmp_path: Path) -> None:
     source = tmp_path / "source.bin"
     source.write_bytes(b"a" * SEQUENCE_LENGTH * 2)
-    stage = tmp_path / ".exact.partial" / "prefix.bin"
-    stage.parent.mkdir()
-    final = tmp_path / "exact" / "prefix.bin"
+    stage_root = tmp_path / ".exact.partial"
+    stage = stage_root / "prefix.bin"
+    stage_root.mkdir()
+    final_root = tmp_path / "exact"
+    final = final_root / "prefix.bin"
 
     descriptor = _copy_prefix(source, stage, 1, receipt_path=final)
+    stage_root.replace(final_root)
 
     assert descriptor["path"] == str(final.resolve())
-    assert stage.is_file()
+    assert final.is_file()
+    assert sha256_file(final) == descriptor["sha256"]
