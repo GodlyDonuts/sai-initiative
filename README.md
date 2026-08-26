@@ -143,9 +143,11 @@ receipt identities are
 and `fbfaa574ff6b345e462f6782a7b2d84e3eb54798725ac635fa4af4f6b4c819da`.
 PleIAs job `830012` is the remaining packing lane: all 128 exact
 parent-disjoint identities are running concurrently, with no nonempty error
-logs or duplicate identities. Exact aggregate `830016`, stage schedule
-`830328`, configuration `830329`, and self-contained Hugging Face publication
-`830454` remain dependency-bound behind it.
+logs or duplicate identities. Exact aggregate `830716` replaces an unused
+pending job whose required immutable-runtime exports were absent; it carries
+the exact `8f3c7bd` runtime and remains dependency-bound behind all 128 pack
+identities. Stage schedule `830328` now depends on `830716`, followed by
+configuration `830329` and self-contained Hugging Face publication `830454`.
 
 The 12.5GB Hugging Face head is intentionally a source-locator and evidence
 registry, not the two-trillion-byte source corpus and not the physical training
