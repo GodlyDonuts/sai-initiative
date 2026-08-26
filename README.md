@@ -141,12 +141,14 @@ receipt identities are
 `0edccc794354c99cfc3e2744e713a46de547b75990d103455aa2ca6273a10350`,
 `418832e56d8435657c10ff0019022d79156bef584ce05d6f237d68933f1975ec`,
 and `fbfaa574ff6b345e462f6782a7b2d84e3eb54798725ac635fa4af4f6b4c819da`.
-PleIAs job `830012` is the remaining packing lane. At the 2026-08-25 22:12 EDT
-custody snapshot, buckets 0, 4, 5, 8, and 14 had completed with scheduler exit
-0 and all 98 packed-file hashes replayed; together they contain 526,612
-documents and 3,519,807,488 retained tokens. The other 123 exact
-parent-disjoint identities were running concurrently, with no nonempty error
-logs or duplicate identities. Exact aggregate `830716` replaces an unused
+PleIAs job `830012` is the remaining packing lane. At the 2026-08-25 22:16 EDT
+custody snapshot, buckets 0, 4, 5, 7, 8, and 14 had completed with scheduler
+exit 0 and all 120 packed-file hashes replayed; together they contain 650,099
+documents and 4,341,387,264 retained tokens. The other 122 exact
+parent-disjoint identities were running concurrently with no duplicate
+identities. Task 71 emitted one Hugging Face HEAD read timeout followed by its
+built-in first retry; it remained running with increasing I/O and no exhausted
+retry, traceback, or scheduler failure. Exact aggregate `830716` replaces an unused
 pending job whose required immutable-runtime exports were absent; it carries
 the exact `8f3c7bd` runtime and remains dependency-bound behind all 128 pack
 identities. Stage
