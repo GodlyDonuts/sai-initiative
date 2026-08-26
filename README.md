@@ -172,9 +172,15 @@ and `830454` are obsolete. Publication will not sign success
 unless every packed LFS object and every small remote object has the expected
 byte count and SHA-256.
 
-Newton job `775999` is building the immutable CUDA 12.4, PyTorch 2.5.1, OLMo,
-OLMo-core, and FlashAttention environment in parallel with packing. The final
-readiness gate then requires a single-H100 forward/backward preflight that
+Newton job `775999` completed the immutable CUDA 12.4, PyTorch 2.5.1+cu124,
+OLMo, OLMo-core, and FlashAttention 2.6.3 environment in 04:37:30 with exit
+`0:0`. Its signed receipt is
+`f9e02696e46c6bbef9700816c1bdd1df15c57ccf98bbe0a0d57a858ff10a2c07`;
+the pinned source commits and trees, Python executable, complete package freeze,
+package versions, and explicit no-training fields were independently replayed.
+Short compute-node replay job `777075` then imported all five runtime packages
+under CUDA 12.4 in 11 seconds with exit `0:0`. The final readiness gate still
+requires a single-H100 forward/backward preflight that
 constructs no optimizer, performs no update, and writes no checkpoint. Only
 after all signed inputs agree will `one_b_readiness.py` emit
 `training_ready_awaiting_explicit_user_order`; that audit must use runtime
