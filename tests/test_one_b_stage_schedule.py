@@ -24,3 +24,26 @@ def test_cycle_uses_references_and_one_exact_prefix(tmp_path: Path) -> None:
     entries = _cycle(parts, 11, tmp_path, "band")
     assert sum(row["sequences_per_repeat"] * row["repeat"] for row in entries) == 11
     assert any(row["source"] == "exact_stage_prefix" for row in entries)
+
+
+def test_cycle_records_atomic_final_prefix_location(tmp_path: Path) -> None:
+    source = tmp_path / "part.bin"
+    source.write_bytes(b"a" * 3 * SEQUENCE_LENGTH * 2)
+    parts = [
+        {
+            "path": str(source),
+            "sequences": 3,
+            "tokens": 3 * SEQUENCE_LENGTH,
+            "bytes": source.stat().st_size,
+            "sha256": sha256_file(source),
+        }
+    ]
+    stage = tmp_path / ".schedule.partial"
+    stage.mkdir()
+    final = tmp_path / "schedule"
+
+    entries = _cycle(parts, 4, stage, "band", receipt_root=final)
+
+    tail = next(row for row in entries if row["source"] == "exact_stage_prefix")
+    assert tail["path"] == str((final / "band-exact-tail.bin").resolve())
+    assert (stage / "band-exact-tail.bin").is_file()

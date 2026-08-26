@@ -55,7 +55,11 @@ def _verify_part(part: dict[str, Any]) -> None:
 
 
 def _copy_prefix(
-    source: dict[str, Any], output: Path, sequences: int
+    source: dict[str, Any],
+    output: Path,
+    sequences: int,
+    *,
+    receipt_path: Path | None = None,
 ) -> dict[str, Any]:
     remaining = sequences * SEQUENCE_LENGTH * 2
     temporary = output.with_name(f".{output.name}.partial.{uuid.uuid4().hex}")
@@ -73,7 +77,7 @@ def _copy_prefix(
         os.fsync(output_handle.fileno())
     os.replace(temporary, output)
     return {
-        "path": str(output.resolve()),
+        "path": str((receipt_path or output).resolve()),
         "sha256": sha256_file(output),
         "sequences_per_repeat": sequences,
         "tokens_per_repeat": sequences * SEQUENCE_LENGTH,
@@ -84,7 +88,12 @@ def _copy_prefix(
 
 
 def _cycle(
-    parts: list[dict[str, Any]], target: int, stage_root: Path, label: str
+    parts: list[dict[str, Any]],
+    target: int,
+    stage_root: Path,
+    label: str,
+    *,
+    receipt_root: Path | None = None,
 ) -> list[dict[str, Any]]:
     if target < 0 or not parts:
         raise OneBStageScheduleError("stage cycle target differs")
@@ -128,7 +137,11 @@ def _cycle(
             raise OneBStageScheduleError("stage cycle prefix differs")
         entries.append(
             _copy_prefix(
-                prefix_source, stage_root / f"{label}-exact-tail.bin", remainder
+                prefix_source,
+                stage_root / f"{label}-exact-tail.bin",
+                remainder,
+                receipt_path=(receipt_root or stage_root)
+                / f"{label}-exact-tail.bin",
             )
         )
     if sum(row["sequences_per_repeat"] * row["repeat"] for row in entries) != target:
@@ -162,6 +175,7 @@ def build(window_path: Path, output_root: Path) -> dict[str, Any]:
                 window["bands"]["foundation"]["parts"][0],
                 stage_root / f"{stage['index']}-exact-boundary.bin",
                 boundary_sequences,
+                receipt_path=output_root / f"{stage['index']}-exact-boundary.bin",
             )
             boundary_entry["source"] = "exact_boundary_batch"
             boundary_entry["band"] = "foundation"
@@ -180,6 +194,7 @@ def build(window_path: Path, output_root: Path) -> dict[str, Any]:
                     target - connection_sequences - reserved_boundary,
                     stage_root,
                     f"{stage['index']}-{band}",
+                    receipt_root=output_root,
                 )
                 for part in connections:
                     band_entries.append(

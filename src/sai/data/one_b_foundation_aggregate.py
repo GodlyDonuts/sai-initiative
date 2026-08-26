@@ -132,7 +132,13 @@ def _priority(part: dict[str, Any]) -> str:
     )
 
 
-def _copy_prefix(source: Path, destination: Path, sequences: int) -> dict[str, Any]:
+def _copy_prefix(
+    source: Path,
+    destination: Path,
+    sequences: int,
+    *,
+    receipt_path: Path | None = None,
+) -> dict[str, Any]:
     remaining = sequences * SEQUENCE_LENGTH * 2
     temporary = destination.with_name(f".{destination.name}.partial.{uuid.uuid4().hex}")
     with source.open("rb") as input_handle, temporary.open("xb") as output_handle:
@@ -147,7 +153,7 @@ def _copy_prefix(source: Path, destination: Path, sequences: int) -> dict[str, A
     os.replace(temporary, destination)
     return {
         "component": "exact_trim",
-        "path": str(destination.resolve()),
+        "path": str((receipt_path or destination).resolve()),
         "sequences": sequences,
         "tokens": sequences * SEQUENCE_LENGTH,
         "bytes": destination.stat().st_size,
@@ -157,7 +163,11 @@ def _copy_prefix(source: Path, destination: Path, sequences: int) -> dict[str, A
 
 
 def _select_exact(
-    parts: list[dict[str, Any]], target: int, stage: Path, band: str
+    parts: list[dict[str, Any]],
+    target: int,
+    stage: Path,
+    output_root: Path,
+    band: str,
 ) -> list[dict[str, Any]]:
     ordered = sorted(parts, key=lambda value: (_priority(value), value["path"]))
     selected: list[dict[str, Any]] = []
@@ -175,7 +185,10 @@ def _select_exact(
         if prefix_source is None or prefix_source["sequences"] < remaining:
             raise OneBFoundationAggregateError(f"insufficient packed {band} sequences")
         tail = _copy_prefix(
-            Path(prefix_source["path"]), stage / f"exact-{band}-tail.bin", remaining
+            Path(prefix_source["path"]),
+            stage / f"exact-{band}-tail.bin",
+            remaining,
+            receipt_path=output_root / f"exact-{band}-tail.bin",
         )
         tail["band"] = band
         selected.append(tail)
@@ -198,7 +211,11 @@ def build(pack_root: Path, plan_path: Path, output_root: Path) -> dict[str, Any]
         all_parts = []
         for band in BANDS:
             selected = _select_exact(
-                by_band[band], plan["bands"][band]["target_sequences"], stage, band
+                by_band[band],
+                plan["bands"][band]["target_sequences"],
+                stage,
+                output_root,
+                band,
             )
             bands[band] = {
                 "target_sequences": plan["bands"][band]["target_sequences"],
