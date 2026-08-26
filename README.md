@@ -156,17 +156,25 @@ preserved as provenance under `exact-stale-atomic-locators-7401d803`.
 Commit `71843fa1d9205b88e0f21c8021fa78f84e589c88` fixes final-path recording in
 both atomic aggregate and schedule publication; commit `0d2f2d7` additionally
 regression-tests the actual directory rename and final SHA replay. Both are on
-`main` and `codex/sai-readiness`. Clean immutable repair aggregate `830850` is
-actively replaying the 2,985 selected parts, followed automatically by fixed
-schedule `830851`, existing configuration `830329`, and self-contained Hugging
-Face publication `830800`. No scientific row, packed part, tokenizer identity,
-curriculum weight, or training authorization changed.
+`main` and `codex/sai-readiness`. Clean immutable repair aggregate `830850`
+completed in 15:32 with exit `0:0`; its canonical receipt is
+`ab3b2b721819f0cfd7712debe07f95af343344ca0bc9966dc249fbdc16b3f66a`.
+All 2,985 selected paths exist at their signed final locations and total exactly
+25,000,000 sequences / 102,400,000,000 tokens. Fixed schedule `830851` then
+completed in 01:09:58 with exit `0:0`. Receipt
+`68117ffd0689afbb1e6d9270dce853cbb725f23c461c9373d8959ff5f4a99f71`
+seals five stages, 976,562,500 sequences, exactly 4T tokens, 16 bounded
+connection-document exposures, physical exclusion of development rows, and 23
+generated final files. Configuration `830329` completed in 01:43:57 with exit
+`0:0`; receipt
+`a769bacf3eece45f239e87580b7b8b66237db61dfb9c99e717d5a603c35b4396`
+hash-binds all ten body/boundary OLMo configs and their exact checkpoint-handoff
+placeholders. No scientific row, packed part, tokenizer identity, curriculum
+weight, or training authorization changed.
 
-The 12.5GB Hugging Face head is intentionally a source-locator and evidence
-registry, not the two-trillion-byte source corpus and not the physical training
-stream. At pinned head `4bb4a5e0c01ec8fd255450726055c18905a43a00`, the
-target `training/packed/one-b/20260826-r2/` namespace remains empty before its
-single authorized publication. A pre-execution audit found that pending job
+The former 12.5GB Hugging Face head was intentionally a source-locator and
+evidence registry, not the two-trillion-byte source corpus and not the physical
+training stream. A pre-execution audit found that pending job
 `830454` would have uploaded the configuration receipt without the ten actual
 phase configurations. It was canceled at zero runtime and replaced by
 dependency-bound job `830800` from clean runtime `2d1babc`. The replacement
@@ -174,9 +182,10 @@ uploads the content-addressed packed uint16 files, qualified tokenizer, exact
 stage-exposure manifest, ten release-relative OLMo phase configurations, and
 lineage receipts. It preserves explicit checkpoint handoff placeholders while
 removing Stokes-only data and tokenizer paths. Canceled pending jobs `830330`
-and `830454` are obsolete. Publication will not sign success
-unless every packed LFS object and every small remote object has the expected
-byte count and SHA-256.
+and `830454` are obsolete. Job `830800` is now actively hash-replaying and
+publishing the self-contained stream. It will not sign success unless every
+packed LFS object and every small remote object has the expected byte count and
+SHA-256.
 
 Newton job `775999` completed the immutable CUDA 12.4, PyTorch 2.5.1+cu124,
 OLMo, OLMo-core, and FlashAttention 2.6.3 environment in 04:37:30 with exit
@@ -185,9 +194,10 @@ OLMo, OLMo-core, and FlashAttention 2.6.3 environment in 04:37:30 with exit
 the pinned source commits and trees, Python executable, complete package freeze,
 package versions, and explicit no-training fields were independently replayed.
 Short compute-node replay job `777075` then imported all five runtime packages
-under CUDA 12.4 in 11 seconds with exit `0:0`. The final readiness gate still
-requires a single-H100 forward/backward preflight that
-constructs no optimizer, performs no update, and writes no checkpoint. Only
+under CUDA 12.4 in 11 seconds with exit `0:0`. Exactly one single-H100
+forward/backward preflight, Newton job `777349`, is now submitted against the
+signed config bundle. It constructs no optimizer, performs no update, writes no
+checkpoint, and does not launch the training entry point. Only
 after all signed inputs agree will `one_b_readiness.py` emit
 `training_ready_awaiting_explicit_user_order`; that audit must use runtime
 `2d1babc` or later so portable phase-config coverage is mandatory. Training is not currently ready
