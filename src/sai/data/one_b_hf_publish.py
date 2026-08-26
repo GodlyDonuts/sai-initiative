@@ -43,27 +43,40 @@ def _load_signed(path: Path, schema: str) -> dict[str, Any]:
 
 def _packed_files(
     schedule: dict[str, Any],
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, str]]:
     files: dict[str, dict[str, Any]] = {}
     exposures = []
+    path_remotes: dict[str, str] = {}
+    verified_paths: dict[str, tuple[str, int]] = {}
     for stage in schedule["stages"]:
         for phase in ("body", "boundary"):
             for entry in stage[f"{phase}_entries"]:
                 path = Path(entry["path"])
                 sha256 = entry["sha256"]
-                if (
-                    not path.is_file()
-                    or path.is_symlink()
-                    or sha256_file(path) != sha256
-                    or path.stat().st_size != entry["sequences_per_repeat"] * 4_096 * 2
-                ):
-                    raise OneBHfPublishError("packed schedule file differs")
+                resolved_path = str(path.resolve())
+                expected_bytes = entry["sequences_per_repeat"] * 4_096 * 2
+                expected_identity = (sha256, expected_bytes)
+                prior_identity = verified_paths.get(resolved_path)
+                if prior_identity is None:
+                    if (
+                        not path.is_file()
+                        or path.is_symlink()
+                        or path.stat().st_size != expected_bytes
+                        or sha256_file(path) != sha256
+                    ):
+                        raise OneBHfPublishError("packed schedule file differs")
+                    verified_paths[resolved_path] = expected_identity
+                elif prior_identity != expected_identity:
+                    raise OneBHfPublishError("packed path identity overlaps")
                 remote = f"{PREFIX}/data/{sha256[:2]}/{sha256}.bin"
+                prior_remote = path_remotes.setdefault(resolved_path, remote)
+                if prior_remote != remote:
+                    raise OneBHfPublishError("packed path identity overlaps")
                 descriptor = {
                     "sha256": sha256,
-                    "local_path": str(path.resolve()),
+                    "local_path": resolved_path,
                     "remote_path": remote,
-                    "bytes": path.stat().st_size,
+                    "bytes": expected_bytes,
                     "sequences": entry["sequences_per_repeat"],
                     "tokens": entry["tokens_per_repeat"],
                 }
@@ -87,7 +100,11 @@ def _packed_files(
                         "repeat": entry["repeat"],
                     }
                 )
-    return sorted(files.values(), key=lambda row: row["remote_path"]), exposures
+    return (
+        sorted(files.values(), key=lambda row: row["remote_path"]),
+        exposures,
+        path_remotes,
+    )
 
 
 def _tokenizer_files(root: Path, identity: str) -> list[dict[str, Any]]:
@@ -123,17 +140,11 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
 def _portable_configs(
     configs: dict[str, Any],
     config_root: Path,
-    packed: list[dict[str, Any]],
+    packed_paths: dict[str, str],
     metadata_root: Path,
 ) -> list[dict[str, Any]]:
     """Rewrite hash-verified local paths into release-root-relative paths."""
 
-    packed_paths = {
-        str(Path(row["local_path"]).resolve()): row["remote_path"].removeprefix(
-            f"{PREFIX}/"
-        )
-        for row in packed
-    }
     portable_root = metadata_root / "portable-configs"
     portable_root.mkdir()
     uploads = []
@@ -168,7 +179,7 @@ def _portable_configs(
             remote = packed_paths.get(str(Path(path).resolve()))
             if remote is None:
                 raise OneBHfPublishError("config data path is absent from publication")
-            portable_paths.append(remote)
+            portable_paths.append(remote.removeprefix(f"{PREFIX}/"))
         value["data"]["paths"] = portable_paths
         tokenizer = value.get("tokenizer")
         if not isinstance(tokenizer, dict) or not tokenizer.get("identifier"):
@@ -229,7 +240,7 @@ def publish(
         != qualification["receipt_sha256"]
     ):
         raise OneBHfPublishError("packed publication lineage differs")
-    packed, exposures = _packed_files(schedule)
+    packed, exposures, packed_paths = _packed_files(schedule)
     tokenizer_files = _tokenizer_files(
         tokenizer_root, qualification["tokenizer_identity_sha256"]
     )
@@ -237,7 +248,7 @@ def publish(
     metadata_root.mkdir(parents=True)
     try:
         portable_configs = _portable_configs(
-            configs, config_receipt_path.parent, packed, metadata_root
+            configs, config_receipt_path.parent, packed_paths, metadata_root
         )
         file_manifest = metadata_root / "physical-files.jsonl"
         exposure_manifest = metadata_root / "stage-exposures.jsonl"
