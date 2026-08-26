@@ -15,7 +15,7 @@ from sai.data.token_stream import canonical_sha256, sha256_file, sha256_tree
 from sai.tokenizer.production_qualification import SCHEMA as TOKENIZER_SCHEMA
 from sai.training.one_b_olmo_config import SCHEMA as CONFIG_SCHEMA
 
-SCHEMA = "sai-1b-packed-hf-publication-v1"
+SCHEMA = "sai-1b-packed-hf-publication-v2"
 REPOSITORY = "Godlydonuts/Sai"
 PREFIX = "training/packed/one-b/20260826-r2"
 
@@ -120,6 +120,91 @@ def _write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             handle.write("\n")
 
 
+def _portable_configs(
+    configs: dict[str, Any],
+    config_root: Path,
+    packed: list[dict[str, Any]],
+    metadata_root: Path,
+) -> list[dict[str, Any]]:
+    """Rewrite hash-verified local paths into release-root-relative paths."""
+
+    packed_paths = {
+        str(Path(row["local_path"]).resolve()): row["remote_path"].removeprefix(
+            f"{PREFIX}/"
+        )
+        for row in packed
+    }
+    portable_root = metadata_root / "portable-configs"
+    portable_root.mkdir()
+    uploads = []
+    seen = set()
+    for descriptor in configs.get("configs", []):
+        name = descriptor.get("path")
+        if (
+            not isinstance(name, str)
+            or not name
+            or Path(name).name != name
+            or name in seen
+        ):
+            raise OneBHfPublishError("config descriptor path differs")
+        seen.add(name)
+        source = config_root / name
+        if (
+            not source.is_file()
+            or source.is_symlink()
+            or source.stat().st_size != descriptor.get("bytes")
+            or sha256_file(source) != descriptor.get("sha256")
+        ):
+            raise OneBHfPublishError("config bundle member differs")
+        try:
+            value = json.loads(source.read_bytes())
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise OneBHfPublishError("config bundle member differs") from error
+        paths = value.get("data", {}).get("paths")
+        if not isinstance(paths, list) or not paths:
+            raise OneBHfPublishError("config data paths differ")
+        portable_paths = []
+        for path in paths:
+            remote = packed_paths.get(str(Path(path).resolve()))
+            if remote is None:
+                raise OneBHfPublishError("config data path is absent from publication")
+            portable_paths.append(remote)
+        value["data"]["paths"] = portable_paths
+        tokenizer = value.get("tokenizer")
+        if not isinstance(tokenizer, dict) or not tokenizer.get("identifier"):
+            raise OneBHfPublishError("config tokenizer path differs")
+        tokenizer["identifier"] = "tokenizer"
+        load_path = value.get("load_path")
+        if load_path is not None and load_path not in {
+            "__REQUIRED_PREVIOUS_STAGE_BOUNDARY_CHECKPOINT__",
+            "__REQUIRED_CURRENT_STAGE_BODY_CHECKPOINT__",
+        }:
+            raise OneBHfPublishError("config checkpoint placeholder differs")
+        target = portable_root / name
+        target.write_text(
+            json.dumps(
+                value,
+                ensure_ascii=False,
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
+            encoding="utf-8",
+        )
+        uploads.append(
+            {
+                "stage": descriptor["stage"],
+                "phase": descriptor["phase"],
+                "local_path": str(target),
+                "remote_path": f"{PREFIX}/configs/{name}",
+                "bytes": target.stat().st_size,
+                "sha256": sha256_file(target),
+            }
+        )
+    if len(uploads) != len(configs.get("configs", [])) or not uploads:
+        raise OneBHfPublishError("portable config coverage differs")
+    return uploads
+
+
 def publish(
     schedule_path: Path,
     qualification_path: Path,
@@ -151,8 +236,12 @@ def publish(
     metadata_root = output.parent / f".hf-publication.partial.{uuid.uuid4().hex}"
     metadata_root.mkdir(parents=True)
     try:
+        portable_configs = _portable_configs(
+            configs, config_receipt_path.parent, packed, metadata_root
+        )
         file_manifest = metadata_root / "physical-files.jsonl"
         exposure_manifest = metadata_root / "stage-exposures.jsonl"
+        config_manifest = metadata_root / "portable-configs.jsonl"
         _write_jsonl(
             file_manifest,
             [
@@ -164,6 +253,16 @@ def publish(
             ],
         )
         _write_jsonl(exposure_manifest, exposures)
+        _write_jsonl(
+            config_manifest,
+            [
+                {
+                    key: row[key]
+                    for key in ("stage", "phase", "remote_path", "sha256", "bytes")
+                }
+                for row in portable_configs
+            ],
+        )
         card = metadata_root / "README.md"
         card.write_text(
             "# Sai 1B packed production stream\n\n"
@@ -173,7 +272,10 @@ def publish(
             "the self-contained payload complement to the source locator registry. "
             "Development rows are physically excluded. Full source text is not "
             "duplicated because the token bytes are the production training "
-            "representation.\n",
+            "representation. Run a portable phase config from this release root so "
+            "its `data/` and `tokenizer/` paths resolve locally. Stage-transition "
+            "checkpoint placeholders must be replaced with the checkpoint produced "
+            "by the immediately preceding phase.\n",
             encoding="utf-8",
         )
         metadata = [
@@ -188,6 +290,12 @@ def publish(
                 "remote_path": f"{PREFIX}/manifests/{exposure_manifest.name}",
                 "bytes": exposure_manifest.stat().st_size,
                 "sha256": sha256_file(exposure_manifest),
+            },
+            {
+                "local_path": str(config_manifest),
+                "remote_path": f"{PREFIX}/manifests/{config_manifest.name}",
+                "bytes": config_manifest.stat().st_size,
+                "sha256": sha256_file(config_manifest),
             },
             {
                 "local_path": str(card),
@@ -214,7 +322,7 @@ def publish(
                 "sha256": sha256_file(config_receipt_path),
             },
         ]
-        uploads = packed + tokenizer_files + metadata
+        uploads = packed + tokenizer_files + portable_configs + metadata
         try:
             from huggingface_hub import CommitOperationAdd, HfApi, hf_hub_download
         except ImportError as error:
@@ -291,6 +399,18 @@ def publish(
             "physical_data_bytes": sum(row["bytes"] for row in packed),
             "physical_unique_tokens": sum(row["tokens"] for row in packed),
             "tokenizer_files": len(tokenizer_files),
+            "portable_config_files": len(portable_configs),
+            "portable_configs_sha256": canonical_sha256(
+                [
+                    {
+                        key: row[key]
+                        for key in ("stage", "phase", "remote_path", "sha256", "bytes")
+                    }
+                    for row in portable_configs
+                ]
+            ),
+            "portable_paths_are_release_relative": True,
+            "portable_checkpoint_placeholders_preserved": True,
             "stage_exposure_rows": len(exposures),
             "all_packed_lfs_identities_verified": True,
             "all_remote_identities_verified": True,
@@ -305,8 +425,13 @@ def publish(
         _atomic_create(output, payload)
         return payload
     finally:
-        for path in sorted(metadata_root.glob("*")):
-            path.unlink(missing_ok=True)
+        for path in sorted(
+            metadata_root.rglob("*"), key=lambda value: len(value.parts), reverse=True
+        ):
+            if path.is_dir():
+                path.rmdir()
+            else:
+                path.unlink(missing_ok=True)
         metadata_root.rmdir()
 
 

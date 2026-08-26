@@ -10,6 +10,7 @@ from sai.training.one_b_readiness import (
     OneBReadinessError,
     _load_signed,
     _never_trained,
+    _portable_publication_ready,
 )
 
 
@@ -31,3 +32,16 @@ def test_never_trained_requires_explicit_false_authorization() -> None:
     )
     with pytest.raises(OneBReadinessError, match="authorization boundary differs"):
         _never_trained({"model_training_started": False})
+
+
+def test_portable_publication_requires_every_phase_config() -> None:
+    config = {"configs": [{"path": "a.json"}, {"path": "b.json"}]}
+    publication = {
+        "portable_config_files": 2,
+        "portable_configs_sha256": "a" * 64,
+        "portable_paths_are_release_relative": True,
+        "portable_checkpoint_placeholders_preserved": True,
+    }
+    assert _portable_publication_ready(publication, config)
+    publication["portable_config_files"] = 1
+    assert not _portable_publication_ready(publication, config)

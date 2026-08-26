@@ -54,6 +54,20 @@ def _never_trained(*payloads: dict[str, Any]) -> None:
         raise OneBReadinessError("training authorization boundary differs")
 
 
+def _portable_publication_ready(
+    publication: dict[str, Any], config: dict[str, Any]
+) -> bool:
+    """Require every signed phase config to have a verified portable counterpart."""
+
+    return (
+        publication.get("portable_config_files") == len(config.get("configs", []))
+        and publication.get("portable_config_files", 0) > 0
+        and bool(publication.get("portable_configs_sha256"))
+        and publication.get("portable_paths_are_release_relative") is True
+        and publication.get("portable_checkpoint_placeholders_preserved") is True
+    )
+
+
 def build(
     release_path: Path,
     ledger_path: Path,
@@ -147,6 +161,7 @@ def build(
         or hf.get("directly_trainable_after_download") is not True
         or hf.get("physical_data_files", 0) <= 0
         or hf.get("physical_data_bytes", 0) <= 0
+        or not _portable_publication_ready(hf, config)
     ):
         raise OneBReadinessError("one billion parameter readiness gate differs")
     payload = {
