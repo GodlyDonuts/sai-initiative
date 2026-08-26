@@ -132,23 +132,39 @@ The resulting physical-window plan is exactly **102,400,000,000 tokens** and
 intermediate, 8.192B advanced, and 2.048B expert tokens, and its measured source
 ledger has enough unique train material in every band before selection. Receipt
 is `f429c360ef343ad2aa2f64339f2ad52ee498e332330aeeae4d6906fd17093fda`.
-Independent PleIAs, educational-code, Institutional Books, and admitted
-connection pack lanes are active under Stokes jobs `830012`–`830015`; exact
-aggregate, stage schedule, configuration, and self-contained Hugging Face
-publication remain dependency-bound behind them.
+Educational-code job `830013` completed all 128 identities with 809,811
+documents and 745,054,208 retained packed tokens. Institutional Books job
+`830014` completed all 64 identities with 65,815 documents and 8,402,931,712
+retained packed tokens. Train-only connection job `830015` completed with 3,052
+documents and 737,280 retained packed tokens. Their respective population or
+receipt identities are
+`0edccc794354c99cfc3e2744e713a46de547b75990d103455aa2ca6273a10350`,
+`418832e56d8435657c10ff0019022d79156bef584ce05d6f237d68933f1975ec`,
+and `fbfaa574ff6b345e462f6782a7b2d84e3eb54798725ac635fa4af4f6b4c819da`.
+PleIAs job `830012` is the remaining packing lane: all 128 exact
+parent-disjoint identities are running concurrently, with no nonempty error
+logs or duplicate identities. Exact aggregate `830016`, stage schedule
+`830328`, configuration `830329`, and self-contained Hugging Face publication
+`830454` remain dependency-bound behind it.
 
 The 12.5GB Hugging Face head is intentionally a source-locator and evidence
 registry, not the two-trillion-byte source corpus and not the physical training
-stream. The active publication job `830330` corrects this operational gap by
-uploading the content-addressed packed uint16 files, qualified tokenizer, exact
-stage-exposure manifest, and lineage receipts. It will not sign success unless
-every remote LFS object has the expected byte count and SHA-256.
+stream. At pinned head `4bb4a5e0c01ec8fd255450726055c18905a43a00`, the
+target `training/packed/one-b/20260826-r2/` namespace remains empty before its
+single authorized publication. Replacement job `830454` corrects this
+operational gap by uploading the content-addressed packed uint16 files,
+qualified tokenizer, exact stage-exposure manifest, and lineage receipts.
+Canceled pending job `830330` is obsolete. Publication will not sign success
+unless every packed LFS object and every small remote object has the expected
+byte count and SHA-256.
 
-The final readiness gate also requires the immutable CUDA environment and a
-single-H100 forward/backward preflight that constructs no optimizer, performs
-no update, and writes no checkpoint. Only after all signed inputs agree will
-`one_b_readiness.py` emit `training_ready_awaiting_explicit_user_order`.
-Training is not currently ready and has not started.
+Newton job `775999` is building the immutable CUDA 12.4, PyTorch 2.5.1, OLMo,
+OLMo-core, and FlashAttention environment in parallel with packing. The final
+readiness gate then requires a single-H100 forward/backward preflight that
+constructs no optimizer, performs no update, and writes no checkpoint. Only
+after all signed inputs agree will `one_b_readiness.py` emit
+`training_ready_awaiting_explicit_user_order`. Training is not currently ready
+and has not started.
 
 The latest open-recipe evidence is reconciled in
 [`docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md`](docs/SAI_2026_DATA_RESEARCH_SYNTHESIS.md).
