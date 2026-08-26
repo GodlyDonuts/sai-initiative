@@ -195,9 +195,14 @@ the pinned source commits and trees, Python executable, complete package freeze,
 package versions, and explicit no-training fields were independently replayed.
 Short compute-node replay job `777075` then imported all five runtime packages
 under CUDA 12.4 in 11 seconds with exit `0:0`. Exactly one single-H100
-forward/backward preflight, Newton job `777349`, is now submitted against the
-signed config bundle. It constructs no optimizer, performs no update, writes no
-checkpoint, and does not launch the training entry point. Only
+forward/backward preflight, Newton job `777349`, completed on `evc32` in 3:01
+with exit `0:0`. Receipt
+`60bd4be252a1e8e9d07aab6a2b01de1abb906a2bea01625a3792d727e780597d`
+replays exactly 1,006,241,792 parameters, two identical 11.2959709 losses,
+21,048.71 steady tokens/second, 16,683,960,832 peak allocated bytes, and
+17,725,128,704 peak reserved bytes on one H100 PCIe. It constructed no
+optimizer, performed no update, wrote no checkpoint, and did not launch the
+training entry point. Only
 after all signed inputs agree will `one_b_readiness.py` emit
 `training_ready_awaiting_explicit_user_order`; that audit must use runtime
 `2d1babc` or later so portable phase-config coverage is mandatory. Training is not currently ready
