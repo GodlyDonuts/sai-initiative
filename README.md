@@ -141,22 +141,26 @@ receipt identities are
 `0edccc794354c99cfc3e2744e713a46de547b75990d103455aa2ca6273a10350`,
 `418832e56d8435657c10ff0019022d79156bef584ce05d6f237d68933f1975ec`,
 and `fbfaa574ff6b345e462f6782a7b2d84e3eb54798725ac635fa4af4f6b4c819da`.
-PleIAs job `830012` is the remaining packing lane. At the 2026-08-26 00:39 EDT
-custody snapshot, buckets 0–11, 13–17, 19, 20, 25, 26, 29, 31, 33–35, 39,
-41, 49–53, 59, 60, 62–65, 67, 69, 74, 75, 79, 80, 82–84, 86, 89, 93, 94,
-96–105 except 104, 107, 111, 113, 115, 118–121, 124, 126, and 127 had
-completed with scheduler exit 0 and all 1,536 packed-file hashes replayed;
-together they contain 8,385,107 documents and 55,959,506,944 retained tokens.
-The other 56 exact
-parent-disjoint identities were running concurrently with no duplicate
-identities. Task 71 emitted one Hugging Face HEAD read timeout followed by its
-built-in first retry; it remained running with increasing I/O and no exhausted
-retry, traceback, or scheduler failure. Exact aggregate `830716` replaces an unused
-pending job whose required immutable-runtime exports were absent; it carries
-the exact `8f3c7bd` runtime and remains dependency-bound behind all 128 pack
-identities. Stage
-schedule `830328` now depends on `830716`, followed by configuration `830329`
-and self-contained Hugging Face publication `830800`.
+PleIAs job `830012` completed all **128/128** exact parent-disjoint buckets with
+scheduler exit `0:0`: 16,166,852 documents, 107,892,170,752 retained tokens,
+2,914 packed parts, and 215,784,341,504 physical uint16 bytes. Aggregate
+`830716` replayed every signed pack receipt and packed-file hash and selected
+the exact 102.4B-token window, but its atomic directory publication exposed a
+locator-only defect: four generated tail descriptors retained their temporary
+`.exact.partial` paths after the directory rename. All four final tail files
+match the signed byte counts and SHA-256 values, so no training bytes were
+corrupt. Schedule `830328` failed on the stale absolute locators before it
+could emit an artifact. The invalid receipt and four hash-matched tails are
+preserved as provenance under `exact-stale-atomic-locators-7401d803`.
+
+Commit `71843fa1d9205b88e0f21c8021fa78f84e589c88` fixes final-path recording in
+both atomic aggregate and schedule publication; commit `0d2f2d7` additionally
+regression-tests the actual directory rename and final SHA replay. Both are on
+`main` and `codex/sai-readiness`. Clean immutable repair aggregate `830850` is
+actively replaying the 2,985 selected parts, followed automatically by fixed
+schedule `830851`, existing configuration `830329`, and self-contained Hugging
+Face publication `830800`. No scientific row, packed part, tokenizer identity,
+curriculum weight, or training authorization changed.
 
 The 12.5GB Hugging Face head is intentionally a source-locator and evidence
 registry, not the two-trillion-byte source corpus and not the physical training
