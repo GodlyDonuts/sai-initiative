@@ -141,11 +141,11 @@ receipt identities are
 `0edccc794354c99cfc3e2744e713a46de547b75990d103455aa2ca6273a10350`,
 `418832e56d8435657c10ff0019022d79156bef584ce05d6f237d68933f1975ec`,
 and `fbfaa574ff6b345e462f6782a7b2d84e3eb54798725ac635fa4af4f6b4c819da`.
-PleIAs job `830012` is the remaining packing lane. At the 2026-08-25 22:49 EDT
-custody snapshot, buckets 0, 2, 3, 4, 5, 7, 8, 14, 16, 39, 107, and 119 had
-completed with scheduler exit 0 and all 231 packed-file hashes replayed;
-together they contain 1,246,234 documents and 8,325,488,640 retained tokens.
-The other 116 exact
+PleIAs job `830012` is the remaining packing lane. At the 2026-08-25 22:52 EDT
+custody snapshot, buckets 0, 2, 3, 4, 5, 6, 7, 8, 14, 16, 39, 107, and 119
+had completed with scheduler exit 0 and all 258 packed-file hashes replayed;
+together they contain 1,401,587 documents and 9,366,048,768 retained tokens.
+The other 115 exact
 parent-disjoint identities were running concurrently with no duplicate
 identities. Task 71 emitted one Hugging Face HEAD read timeout followed by its
 built-in first retry; it remained running with increasing I/O and no exhausted
